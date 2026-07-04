@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 0, 0, 0;
+  --background-end-rgb: 0, 0, 0;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+  position: relative;
+}
+
+body > div {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+main {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: #ffffff;
+  caret-color: #ffffff;
+  box-shadow: 0 0 0 1000px #030712 inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-purple-400 via-pink-400 to-blue-400 bg-clip-text text-transparent;
+  }
+
+  /* Destaque do hero — gradiente mais vivo (menos “apagado” que o .gradient-text padrão) */
+  .gradient-text-hero-accent {
+    background: linear-gradient(
+      90deg,
+      #e9d5ff 0%,
+      #d946ef 28%,
+      #a855f7 55%,
+      #38bdf8 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  
+  .neon-glow {
+    box-shadow: 0 0 10px rgba(176, 38, 255, 0.5),
+                0 0 20px rgba(176, 38, 255, 0.3),
+                0 0 30px rgba(176, 38, 255, 0.2);
+  }
+  
+  .neon-glow-blue {
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.5),
+                0 0 20px rgba(0, 240, 255, 0.3),
+                0 0 30px rgba(0, 240, 255, 0.2);
+  }
+  
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+  
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+}
