@@ -69,6 +69,15 @@ type MetaAdsCampaign = {
   registrations: number
 }
 
+type MetaAdsAccountBalance = {
+  adAccountId: string
+  currency: string
+  balanceDue: number | null
+  amountSpent: number | null
+  spendCap: number | null
+  availableBalance: number | null
+}
+
 // Campanhas/anúncios de divulgação de música que não devem entrar no custo por padrão.
 const META_ADS_EXCLUDE_PATTERNS = [
   'tem amores que passam',
@@ -125,6 +134,99 @@ function shouldConsiderMetaAd(row: {
   const name = normalizeMetaName(`${row.campaignName} ${row.adName}`)
   // Considera todas as campanhas por padrão; só ignora as explicitamente excluídas.
   return !META_ADS_EXCLUDE_PATTERNS.some(pattern => name.includes(pattern))
+}
+
+function parseMetaMoney(value: unknown) {
+  if (value == null || value === '') return null
+  const numberValue = Number(value)
+  if (!Number.isFinite(numberValue)) return null
+  return numberValue / 100
+}
+
+async function getMetaAdsBalanceSummary() {
+  const accessToken = process.env.META_ACCESS_TOKEN
+  const adAccountIds = getMetaAdAccountIds()
+
+  if (!accessToken || adAccountIds.length === 0) {
+    return {
+      configured: false,
+      currency: 'BRL',
+      balanceDue: null,
+      amountSpent: null,
+      spendCap: null,
+      availableBalance: null,
+      adAccounts: [] as MetaAdsAccountBalance[],
+      error: 'META_ACCESS_TOKEN e META_AD_ACCOUNT_ID ou META_AD_ACCOUNT_IDS não configurados',
+      checkedAt: new Date().toISOString(),
+    }
+  }
+
+  try {
+    const apiVersion = process.env.META_GRAPH_API_VERSION || 'v20.0'
+    const accountBalances: MetaAdsAccountBalance[] = []
+    const accountErrors: string[] = []
+
+    for (const adAccountId of adAccountIds) {
+      const params = new URLSearchParams({
+        access_token: accessToken,
+        fields: 'currency,balance,amount_spent,spend_cap',
+      })
+      const response = await fetch(`https://graph.facebook.com/${apiVersion}/${adAccountId}?${params.toString()}`, { cache: 'no-store' })
+      const payload: any = await response.json().catch(() => null)
+
+      if (!response.ok || payload?.error) {
+        accountErrors.push(`${adAccountId}: ${payload?.error?.message || 'não foi possível consultar saldo'}`)
+        continue
+      }
+
+      const spendCap = parseMetaMoney(payload?.spend_cap)
+      const amountSpent = parseMetaMoney(payload?.amount_spent)
+
+      accountBalances.push({
+        adAccountId,
+        currency: payload?.currency || 'BRL',
+        balanceDue: parseMetaMoney(payload?.balance),
+        amountSpent,
+        spendCap,
+        availableBalance: spendCap != null && spendCap > 0 && amountSpent != null
+          ? Math.max(0, spendCap - amountSpent)
+          : null,
+      })
+    }
+
+    const currency = accountBalances[0]?.currency || 'BRL'
+    const sumNullable = (field: keyof Pick<MetaAdsAccountBalance, 'balanceDue' | 'amountSpent' | 'spendCap' | 'availableBalance'>) => {
+      const values = accountBalances
+        .map(account => account[field])
+        .filter((value): value is number => typeof value === 'number')
+
+      return values.length > 0 ? values.reduce((total, value) => total + value, 0) : null
+    }
+
+    return {
+      configured: true,
+      currency,
+      balanceDue: sumNullable('balanceDue'),
+      amountSpent: sumNullable('amountSpent'),
+      spendCap: sumNullable('spendCap'),
+      availableBalance: sumNullable('availableBalance'),
+      adAccounts: accountBalances,
+      error: accountErrors.length > 0 ? accountErrors.join(' | ') : null,
+      checkedAt: new Date().toISOString(),
+    }
+  } catch (error: any) {
+    return {
+      configured: true,
+      currency: 'BRL',
+      balanceDue: null,
+      amountSpent: null,
+      spendCap: null,
+      availableBalance: null,
+      adAccounts: [] as MetaAdsAccountBalance[],
+      error: error.message || 'Erro ao consultar saldo da Meta Ads',
+      checkedAt: new Date().toISOString(),
+    }
+  }
 }
 
 async function getMetaAdsSummary(startDate: Date, endDateExclusive: Date) {
@@ -549,6 +651,7 @@ export async function GET(request: NextRequest) {
       openAiPeriodCost,
       openAiMonthCost,
       metaAdsSummary,
+      metaAdsBalance,
     ] = await Promise.all([
       supabaseAdmin
         .from('dccmusic_payments')
@@ -631,6 +734,7 @@ export async function GET(request: NextRequest) {
       getOpenAiCostSummary(startDate, endExclusive),
       getOpenAiCostSummary(monthStart, monthEnd, 900),
       getMetaAdsSummary(startDate, endExclusive),
+      getMetaAdsBalanceSummary(),
     ])
 
     await Promise.all([
@@ -929,6 +1033,7 @@ export async function GET(request: NextRequest) {
           alertThresholdPercent: Number(process.env.OPENAI_ALERT_THRESHOLD_PERCENT || '80'),
         },
         metaAds: metaAdsSummary,
+        metaAdsBalance,
         mercadoPago: {
           configured: true,
           estimatedCost: costs.mercadoPagoFees,

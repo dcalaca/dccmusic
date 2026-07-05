@@ -155,6 +155,24 @@ type FinanceSummary = {
       error: string | null
       checkedAt: string
     }
+    metaAdsBalance?: {
+      configured: boolean
+      currency: string
+      balanceDue: number | null
+      amountSpent: number | null
+      spendCap: number | null
+      availableBalance: number | null
+      adAccounts: Array<{
+        adAccountId: string
+        currency: string
+        balanceDue: number | null
+        amountSpent: number | null
+        spendCap: number | null
+        availableBalance: number | null
+      }>
+      error: string | null
+      checkedAt: string
+    }
     mercadoPago?: {
       configured: boolean
       estimatedCost: number
@@ -265,6 +283,11 @@ function formatAdMoney(value: number, currency = 'BRL') {
     style: 'currency',
     currency,
   })
+}
+
+function formatOptionalAdMoney(value: number | null | undefined, currency = 'BRL') {
+  if (value == null) return '-'
+  return formatAdMoney(value, currency)
 }
 
 function formatNumber(value: number) {
@@ -671,6 +694,35 @@ export default function FinancePanel() {
                   {summary.externalBalances?.suno?.error
                     ? summary.externalBalances.suno.error
                     : 'Créditos disponíveis na API'}
+                </p>
+              </div>
+
+              <div className="min-w-0 bg-gray-950/70 border border-sky-900/60 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="truncate text-sm text-gray-400">Saldo Meta Ads</span>
+                  <FiDollarSign className="w-5 h-5 text-sky-400" />
+                </div>
+                <div className="whitespace-nowrap text-xl font-bold text-sky-300 2xl:text-2xl">
+                  {formatOptionalAdMoney(
+                    summary.externalBalances?.metaAdsBalance?.availableBalance ?? summary.externalBalances?.metaAdsBalance?.balanceDue,
+                    summary.externalBalances?.metaAdsBalance?.currency || 'BRL'
+                  )}
+                </div>
+                <p
+                  className="truncate text-xs text-gray-500 mt-1"
+                  title={
+                    summary.externalBalances?.metaAdsBalance?.error
+                      ? summary.externalBalances.metaAdsBalance.error
+                      : summary.externalBalances?.metaAdsBalance?.availableBalance != null
+                        ? `Disponível: ${formatOptionalAdMoney(summary.externalBalances.metaAdsBalance.availableBalance, summary.externalBalances.metaAdsBalance.currency)} · Gasto: ${formatOptionalAdMoney(summary.externalBalances.metaAdsBalance.amountSpent, summary.externalBalances.metaAdsBalance.currency)} de ${formatOptionalAdMoney(summary.externalBalances.metaAdsBalance.spendCap, summary.externalBalances.metaAdsBalance.currency)}`
+                        : `Em aberto: ${formatOptionalAdMoney(summary.externalBalances?.metaAdsBalance?.balanceDue, summary.externalBalances?.metaAdsBalance?.currency || 'BRL')}`
+                  }
+                >
+                  {summary.externalBalances?.metaAdsBalance?.error
+                    ? summary.externalBalances.metaAdsBalance.error
+                    : summary.externalBalances?.metaAdsBalance?.availableBalance != null
+                      ? `Disponível · ${summary.externalBalances.metaAdsBalance.adAccounts.length} conta(s)`
+                      : 'Valor em aberto na Meta'}
                 </p>
               </div>
 
