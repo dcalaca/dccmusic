@@ -20,6 +20,7 @@ export default function PartnerAttribution() {
 
   useEffect(() => {
     const partnerCode = searchParams.get('partner')
+    const serverTracked = searchParams.get('partnerTracked') === '1'
 
     if (partnerCode) {
       fetch('/api/partners/attribute', {
@@ -28,11 +29,12 @@ export default function PartnerAttribution() {
         body: JSON.stringify({
           partnerCode,
           path: window.location.pathname + window.location.search,
+          serverTracked,
         }),
       })
         .then((response) => response.json())
         .then((data) => {
-          if (data?.attributed && data?.partner) {
+          if (data?.partner) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data.partner))
           }
         })

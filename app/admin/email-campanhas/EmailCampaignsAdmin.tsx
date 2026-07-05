@@ -26,6 +26,12 @@ type Campaign = {
     failed: number
     skipped: number
   }
+  clicks?: {
+    total: number
+    human: number
+    bot: number
+    unknown: number
+  }
 }
 
 const campaignIdeas = [
@@ -380,6 +386,8 @@ export default function EmailCampaignsAdmin() {
               const sentCount = campaign.deliveries?.sent || campaign.sent_count || 0
               const failedCount = campaign.deliveries?.failed || campaign.failed_count || 0
               const skippedCount = campaign.deliveries?.skipped || 0
+              const humanClicks = campaign.clicks?.human || 0
+              const totalClicks = campaign.clicks?.total || 0
               const estimatedTotal = audienceCounts[campaign.audience] || 0
               const estimatedRemaining = Math.max(0, estimatedTotal - sentCount - skippedCount)
               const sendButtonLabel = sentCount > 0 ? 'Enviar próximo lote' : 'Enviar agora'
@@ -397,6 +405,9 @@ export default function EmailCampaignsAdmin() {
                     <p className="mt-1 text-sm font-semibold text-gray-300">{campaign.subject}</p>
                     <p className="mt-2 text-xs text-gray-500">
                       Próximo envio: {formatDateTime(campaign.next_run_at || campaign.scheduled_at)} · Enviados: {sentCount} · Restantes estimados: {estimatedRemaining} · Falhas: {failedCount}
+                    </p>
+                    <p className="mt-1 text-xs text-fuchsia-200">
+                      Cliques no botão: {humanClicks} humano(s) · {totalClicks} total(is)
                     </p>
                   </div>
 

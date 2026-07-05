@@ -60,6 +60,64 @@ async function getDeliveryStats(campaignIds: string[]) {
   return stats
 }
 
+async function getClickStats(campaignIds: string[]) {
+  const emptyStats = new Map<string, { total: number; human: number; bot: number; unknown: number }>()
+  campaignIds.forEach((id) => emptyStats.set(id, { total: 0, human: 0, bot: 0, unknown: 0 }))
+
+  if (campaignIds.length === 0) return emptyStats
+
+  try {
+    const { data: links, error: linksError } = await supabaseAdmin
+      .from('dccmusic_tracked_links')
+      .select('id, notes')
+      .eq('created_by', 'admin_email_campaign')
+      .limit(5000)
+
+    if (linksError) throw linksError
+
+    const linkCampaignMap = new Map<string, string>()
+
+    for (const link of links || []) {
+      try {
+        const notes = JSON.parse((link as any).notes || '{}')
+        if (!campaignIds.includes(notes.campaignId)) continue
+        linkCampaignMap.set((link as any).id, notes.campaignId)
+      } catch {
+        continue
+      }
+    }
+
+    const linkIds = Array.from(linkCampaignMap.keys())
+    if (linkIds.length === 0) return emptyStats
+
+    const { data: clicks, error: clicksError } = await supabaseAdmin
+      .from('dccmusic_link_clicks')
+      .select('link_id, click_type')
+      .in('link_id', linkIds)
+      .limit(10000)
+
+    if (clicksError) throw clicksError
+
+    for (const click of clicks || []) {
+      const campaignId = linkCampaignMap.get((click as any).link_id)
+      if (!campaignId) continue
+
+      const item = emptyStats.get(campaignId) || { total: 0, human: 0, bot: 0, unknown: 0 }
+      const clickType = (click as any).click_type
+      item.total += 1
+      if (clickType === 'HUMAN_CLICK') item.human += 1
+      else if (clickType === 'BOT_PREVIEW') item.bot += 1
+      else item.unknown += 1
+      emptyStats.set(campaignId, item)
+    }
+
+    return emptyStats
+  } catch (error) {
+    console.warn('[ADMIN EMAIL CAMPAIGNS] Não foi possível carregar cliques:', error)
+    return emptyStats
+  }
+}
+
 export async function GET() {
   try {
     await requireAuth()
@@ -72,7 +130,11 @@ export async function GET() {
     if (error) throw error
 
     const campaigns = data || []
-    const stats = await getDeliveryStats(campaigns.map((campaign: any) => campaign.id))
+    const campaignIds = campaigns.map((campaign: any) => campaign.id)
+    const [stats, clickStats] = await Promise.all([
+      getDeliveryStats(campaignIds),
+      getClickStats(campaignIds),
+    ])
     const [allRecipients, composerRecipients, siteUserRecipients] = await Promise.all([
       getCampaignRecipients('all'),
       getCampaignRecipients('composers'),
@@ -83,6 +145,7 @@ export async function GET() {
       campaigns: campaigns.map((campaign: any) => ({
         ...campaign,
         deliveries: stats.get(campaign.id) || { sent: 0, failed: 0, skipped: 0 },
+        clicks: clickStats.get(campaign.id) || { total: 0, human: 0, bot: 0, unknown: 0 },
       })),
       audienceCounts: {
         all: allRecipients.length,

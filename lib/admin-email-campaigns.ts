@@ -1,6 +1,7 @@
 import { supabaseAdmin } from './supabase'
 import { sendMarketingCampaignEmail } from './dcc-emails'
 import { getEmailOptOutUrl, getOptedOutEmailSet, normalizeMarketingEmail } from './email-opt-outs'
+import { createCampaignButtonUrl } from './email-magic-login'
 
 export type EmailCampaign = {
   id: string
@@ -168,6 +169,19 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
 
   for (const recipient of pendingRecipients) {
     try {
+      const trackedCtaUrl = campaign.cta_label && campaign.cta_url
+        ? await createCampaignButtonUrl({
+          campaignId,
+          campaignName: campaign.name,
+          recipientType: recipient.type,
+          recipientId: recipient.id,
+          recipientEmail: recipient.email,
+          recipientName: recipient.name,
+          ctaLabel: campaign.cta_label,
+          ctaUrl: campaign.cta_url,
+        })
+        : null
+
       const result = await sendMarketingCampaignEmail({
         to: recipient.email,
         name: recipient.name,
@@ -175,7 +189,7 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
         preview: campaign.preview,
         body: campaign.body,
         ctaLabel: campaign.cta_label,
-        ctaUrl: campaign.cta_url,
+        ctaUrl: trackedCtaUrl || campaign.cta_url,
         unsubscribeUrl: getEmailOptOutUrl({
           email: recipient.email,
           recipientType: recipient.type,
