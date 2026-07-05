@@ -18,10 +18,12 @@ const USD_TO_BRL = Number(process.env.USD_TO_BRL || '5.40')
 const SUPABASE_MONTHLY_USD = Number(process.env.SUPABASE_MONTHLY_COST_USD || '35')
 const VERCEL_MONTHLY_USD = Number(process.env.VERCEL_MONTHLY_COST_USD || '20')
 const RESEND_MONTHLY_USD = Number(process.env.RESEND_MONTHLY_COST_USD || '20')
+const CURSOR_MONTHLY_USD = Number(process.env.CURSOR_MONTHLY_COST_USD || '20')
 
 const supabaseMonthlyFixedBrl = Number(process.env.SUPABASE_MONTHLY_FIXED_COST_BRL || '') || (SUPABASE_MONTHLY_USD * USD_TO_BRL)
 const vercelMonthlyFixedBrl = Number(process.env.VERCEL_MONTHLY_FIXED_COST_BRL || '') || (VERCEL_MONTHLY_USD * USD_TO_BRL)
 const resendMonthlyFixedBrl = Number(process.env.RESEND_MONTHLY_FIXED_COST_BRL || '') || (RESEND_MONTHLY_USD * USD_TO_BRL)
+const cursorMonthlyFixedBrl = Number(process.env.CURSOR_MONTHLY_FIXED_COST_BRL || '') || (CURSOR_MONTHLY_USD * USD_TO_BRL)
 
 const COST_ASSUMPTIONS = {
   sunoCreditCostBrl: SUNO_CREDIT_COST_BRL,
@@ -37,6 +39,7 @@ const COST_ASSUMPTIONS = {
   resendPerEmail: Number(process.env.RESEND_COST_PER_EMAIL_BRL || '0') || (Number(process.env.RESEND_COST_PER_1000_EMAILS_BRL || '0') / 1000),
   vercelMonthlyFixed: vercelMonthlyFixedBrl,
   supabaseMonthlyFixed: supabaseMonthlyFixedBrl,
+  cursorMonthlyFixed: cursorMonthlyFixedBrl,
   mercadoPagoPixRate: Number(process.env.MERCADOPAGO_PIX_FEE_RATE || '0.01'),
   mercadoPagoCardRate: Number(process.env.MERCADOPAGO_CARD_FEE_RATE || '0.025'),
   openAiUsdToBrl: Number(process.env.OPENAI_USD_TO_BRL || '') || USD_TO_BRL,
@@ -1026,6 +1029,7 @@ export async function GET(request: NextRequest) {
     const proratedResendFixedCost = (COST_ASSUMPTIONS.resendMonthlyFixed / 30.44) * periodDayCount
     const proratedVercelFixedCost = (COST_ASSUMPTIONS.vercelMonthlyFixed / 30.44) * periodDayCount
     const proratedSupabaseFixedCost = (COST_ASSUMPTIONS.supabaseMonthlyFixed / 30.44) * periodDayCount
+    const proratedCursorFixedCost = (COST_ASSUMPTIONS.cursorMonthlyFixed / 30.44) * periodDayCount
     const estimatedLyricCost = lyricGenerations * COST_ASSUMPTIONS.lyricGeneration
     const estimatedSimpleCoverCost = simpleCovers * COST_ASSUMPTIONS.simpleCover
     const estimatedPremiumCoverCost = premiumCovers * COST_ASSUMPTIONS.premiumCover
@@ -1048,6 +1052,7 @@ export async function GET(request: NextRequest) {
       resendEmails: (sentEmails * COST_ASSUMPTIONS.resendPerEmail) + proratedResendFixedCost,
       vercelHosting: proratedVercelFixedCost,
       supabaseHosting: proratedSupabaseFixedCost,
+      cursor: proratedCursorFixedCost,
       suno: paidMusicCost + freeMusicCost + (lyricVideos * COST_ASSUMPTIONS.lyricVideo),
       openAi: openAiActualCostBrl ?? estimatedOpenAiCost,
     }
@@ -1055,7 +1060,8 @@ export async function GET(request: NextRequest) {
       supabase: costs.supabaseHosting,
       vercel: costs.vercelHosting,
       resend: costs.resendEmails,
-      total: costs.supabaseHosting + costs.vercelHosting + costs.resendEmails,
+      cursor: costs.cursor,
+      total: costs.supabaseHosting + costs.vercelHosting + costs.resendEmails + costs.cursor,
     }
     const variableCosts = {
       metaAds: costs.metaAds,

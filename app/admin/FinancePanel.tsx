@@ -28,6 +28,7 @@ type FinanceSummary = {
     resendEmails: number
     vercelHosting: number
     supabaseHosting: number
+    cursor: number
     sunoPaidMusic: number
     sunoFreeMusic: number
     sunoLyricVideos: number
@@ -37,6 +38,7 @@ type FinanceSummary = {
       supabase: number
       vercel: number
       resend: number
+      cursor: number
       total: number
     }
     variable: {
@@ -107,6 +109,7 @@ type FinanceSummary = {
     resendPerEmail: number
     vercelMonthlyFixed: number
     supabaseMonthlyFixed: number
+    cursorMonthlyFixed: number
     mercadoPagoPixRate: number
     mercadoPagoCardRate: number
     openAiUsdToBrl: number
@@ -777,6 +780,10 @@ export default function FinancePanel() {
                       <span className="text-gray-400">Resend (e-mails)</span>
                       <span className="font-medium">{formatMoney(summary.costs.fixed.resend)}</span>
                     </div>
+                    <div className="flex justify-between gap-4">
+                      <span className="text-gray-400">Cursor (programação)</span>
+                      <span className="font-medium">{formatMoney(summary.costs.fixed.cursor)}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -1097,7 +1104,7 @@ export default function FinancePanel() {
           </div>
 
           <p className="text-xs text-gray-500 mt-4">
-            Premissas: IA musical {formatMoney(summary.costAssumptions.musicGeneration)} por música, vídeo com capa/letra {formatMoney(summary.costAssumptions.lyricVideo)}; letra IA {formatMoney(summary.costAssumptions.lyricGeneration)} cada, capa simples {formatMoney(summary.costAssumptions.simpleCover)} cada, capa premium {formatMoney(summary.costAssumptions.premiumCover)} cada (custo de benefício dos planos); Mercado Pago Pix {formatPercent(summary.costAssumptions.mercadoPagoPixRate * 100)} e cartão/outros {formatPercent(summary.costAssumptions.mercadoPagoCardRate * 100)}; IA criativa (OpenAI) usa o custo real em dólar convertido a US$ 1 = {formatMoney(summary.costAssumptions.openAiUsdToBrl)}. Custos fixos mensais: Supabase {formatMoney(summary.costAssumptions.supabaseMonthlyFixed)}, Vercel {formatMoney(summary.costAssumptions.vercelMonthlyFixed)}, Resend {formatMoney(summary.costAssumptions.resendMonthlyFixed)} (proporcionais aos dias do período). Anúncios Meta são puxados direto da conta.
+            Premissas: IA musical {formatMoney(summary.costAssumptions.musicGeneration)} por música, vídeo com capa/letra {formatMoney(summary.costAssumptions.lyricVideo)}; letra IA {formatMoney(summary.costAssumptions.lyricGeneration)} cada, capa simples {formatMoney(summary.costAssumptions.simpleCover)} cada, capa premium {formatMoney(summary.costAssumptions.premiumCover)} cada (custo de benefício dos planos); Mercado Pago Pix {formatPercent(summary.costAssumptions.mercadoPagoPixRate * 100)} e cartão/outros {formatPercent(summary.costAssumptions.mercadoPagoCardRate * 100)}; IA criativa (OpenAI) usa o custo real em dólar convertido a US$ 1 = {formatMoney(summary.costAssumptions.openAiUsdToBrl)}. Custos fixos mensais: Supabase {formatMoney(summary.costAssumptions.supabaseMonthlyFixed)}, Vercel {formatMoney(summary.costAssumptions.vercelMonthlyFixed)}, Resend {formatMoney(summary.costAssumptions.resendMonthlyFixed)}, Cursor {formatMoney(summary.costAssumptions.cursorMonthlyFixed)} (proporcionais aos dias do período). Anúncios Meta são puxados direto da conta.
           </p>
         </>
       ) : null}
