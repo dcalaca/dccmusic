@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { FiCheckCircle, FiXCircle, FiMail } from 'react-icons/fi'
+import { FiCheckCircle, FiXCircle, FiLoader, FiMail } from 'react-icons/fi'
 import { verifyComposerEmailToken } from '@/lib/composer-email-verification'
+import VerifiedComposerAutoLogin from './VerifiedComposerAutoLogin'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,7 +24,7 @@ export default async function VerifyComposerEmailPage({
     ? 'E-mail confirmado com sucesso'
     : 'Não foi possível confirmar seu e-mail'
   const message = success
-    ? 'Sua conta de compositor foi ativada. Agora você já pode fazer login e usar o DCC Music.'
+    ? 'Sua conta de compositor foi ativada. Vamos entrar automaticamente no seu painel.'
     : 'O link pode estar expirado, já ter sido usado ou estar incorreto. Solicite um novo link na tela de login.'
 
   return (
@@ -41,13 +42,23 @@ export default async function VerifyComposerEmailPage({
           )}
           <h1 className="mb-3 text-3xl font-black">{title}</h1>
           <p className="mb-6 text-gray-300">{message}</p>
-          <Link
-            href="/compositores/login"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white"
-          >
-            <FiMail />
-            Ir para login
-          </Link>
+          {success && 'login' in result && result.login ? (
+            <>
+              <VerifiedComposerAutoLogin login={result.login} />
+              <div className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white">
+                <FiLoader className="animate-spin" />
+                Entrando no painel...
+              </div>
+            </>
+          ) : (
+            <Link
+              href="/compositores/login"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white"
+            >
+              <FiMail />
+              Ir para login
+            </Link>
+          )}
         </div>
       </div>
     </div>

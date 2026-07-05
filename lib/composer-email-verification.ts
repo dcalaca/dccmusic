@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import jwt from 'jsonwebtoken'
 import { Resend } from 'resend'
 import { supabaseAdmin } from './supabase'
 import { sendAdminNewComposerEmail, sendComposerWelcomeEmail } from './dcc-emails'
@@ -7,6 +8,7 @@ import { sendTikTokCompleteRegistrationEvent } from './tiktok-events'
 
 const TOKEN_BYTES = 32
 const TOKEN_EXPIRES_MINUTES = 60 * 24
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 
 function getSiteUrl() {
   return (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
@@ -226,7 +228,7 @@ export async function verifyComposerEmailToken(token: string) {
 
   const { data: composer } = await supabaseAdmin
     .from('dccmusic_composers')
-    .select('id, name, email')
+    .select('id, name, slug, email, is_premium, subscription_expires_at')
     .eq('id', verification.composer_id)
     .maybeSingle()
 
@@ -266,5 +268,35 @@ export async function verifyComposerEmailToken(token: string) {
     console.error('[EMAIL VERIFY] Erro ao registrar cadastro confirmado para parceiro:', partnerError)
   })
 
-  return { ok: true, composerId: verification.composer_id }
+  if (!composer?.email) {
+    return { ok: true, composerId: verification.composer_id }
+  }
+
+  const loginToken = jwt.sign(
+    {
+      composerId: composer.id,
+      email: composer.email,
+      name: composer.name,
+      requiresPasswordChange: false,
+    },
+    JWT_SECRET,
+    { expiresIn: '30d' }
+  )
+
+  return {
+    ok: true,
+    composerId: verification.composer_id,
+    login: {
+      token: loginToken,
+      redirectTo: '/compositores/admin/studio-ia',
+      composer: {
+        id: composer.id,
+        name: composer.name,
+        slug: composer.slug,
+        email: composer.email,
+        isPremium: Boolean((composer as any).is_premium),
+        subscription_expires_at: (composer as any).subscription_expires_at || null,
+      },
+    },
+  }
 }

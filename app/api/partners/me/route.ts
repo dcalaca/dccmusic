@@ -3,6 +3,7 @@ import { getPartnerFromRequest, isPartnerSchemaMissing } from '@/lib/partners'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 function percent(part: number, total: number) {
   if (!total) return 0
@@ -58,6 +59,12 @@ function createDateBuckets(startDate: string, endDate: string) {
   return buckets
 }
 
+function isDateWithinRange(value: string | null | undefined, since: string, until: string) {
+  if (!value) return false
+  const time = new Date(value).getTime()
+  return time >= new Date(since).getTime() && time <= new Date(until).getTime()
+}
+
 export async function GET(request: NextRequest) {
   try {
     const partnerToken = getPartnerFromRequest(request)
@@ -80,6 +87,7 @@ export async function GET(request: NextRequest) {
       { data: sessions, error: sessionsError },
       { data: events, error: eventsError },
       { data: commissions, error: commissionsError },
+      { data: verifiedComposers, error: verifiedComposersError },
     ] = await Promise.all([
       supabaseAdmin
         .from('tracking_sessions')
@@ -92,18 +100,25 @@ export async function GET(request: NextRequest) {
         .select('event_type, metadata, user_id, created_at')
         .eq('partner_id', partner.id)
         .gte('created_at', since)
-        .lte('created_at', until),
+        .lte('created_at', until)
+        .order('created_at', { ascending: false }),
       supabaseAdmin
         .from('partner_commissions')
         .select('amount, commission_amount, status, created_at')
         .eq('partner_id', partner.id)
         .gte('created_at', since)
         .lte('created_at', until),
+      supabaseAdmin
+        .from('dccmusic_composers')
+        .select('id, email_verified, email_verified_at, partner_attributed_at, created_at')
+        .eq('partner_id', partner.id)
+        .eq('email_verified', true),
     ])
 
     if (sessionsError) throw sessionsError
     if (eventsError) throw eventsError
     if (commissionsError) throw commissionsError
+    if (verifiedComposersError) throw verifiedComposersError
 
     const allEvents = events || []
     const allSessions = sessions || []
@@ -111,22 +126,34 @@ export async function GET(request: NextRequest) {
     const clicks = allEvents.filter((event: any) => event.event_type === 'page_view').length
     const validSessions = allSessions.length
     const humans = allSessions.filter((session: any) => session.is_human || Number(session.human_score) >= 60).length
-    const confirmedSignupUserIds = new Set(
-      allEvents
-        .filter((event: any) => event.event_type === 'signup' && event.metadata?.confirmed === true && event.user_id)
-        .map((event: any) => event.user_id)
-    )
-    const signups = confirmedSignupUserIds.size
+    const signupDateByUserId = new Map<string, string>()
+
+    allEvents
+      .filter((event: any) => event.event_type === 'signup' && event.metadata?.confirmed === true && event.user_id)
+      .forEach((event: any) => {
+        signupDateByUserId.set(event.user_id, event.created_at)
+      })
+
+    for (const composer of verifiedComposers || []) {
+      const confirmedAt = (composer as any).email_verified_at ||
+        (composer as any).partner_attributed_at ||
+        (composer as any).created_at
+
+      if (isDateWithinRange(confirmedAt, since, until)) {
+        signupDateByUserId.set((composer as any).id, confirmedAt)
+      }
+    }
+
+    const signups = signupDateByUserId.size
     const purchases = allCommissions.length || allEvents.filter((event: any) => event.event_type === 'purchase').length
     const revenue = allCommissions.reduce((sum: number, row: any) => sum + (Number(row.amount) || 0), 0)
     const commission = allCommissions.reduce((sum: number, row: any) => sum + (Number(row.commission_amount) || 0), 0)
     const averageTicket = purchases ? revenue / purchases : 0
     const dailyBuckets = createDateBuckets(startDate, endDate)
 
-    allEvents
-      .filter((event: any) => event.event_type === 'signup' && event.metadata?.confirmed === true && event.user_id)
-      .forEach((event: any) => {
-        const key = formatDateKey(event.created_at)
+    Array.from(signupDateByUserId.values())
+      .forEach((createdAt) => {
+        const key = formatDateKey(createdAt)
         if (dailyBuckets[key]) dailyBuckets[key].signups += 1
       })
 
@@ -139,7 +166,7 @@ export async function GET(request: NextRequest) {
 
     const daily = Object.values(dailyBuckets)
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       isPartner: true,
       setupRequired: false,
       partner: {
@@ -173,6 +200,8 @@ export async function GET(request: NextRequest) {
       daily,
       recentEvents: allEvents.slice(0, 20),
     })
+    response.headers.set('Cache-Control', 'no-store, no-cache, max-age=0, must-revalidate')
+    return response
   } catch (error: any) {
     if (isPartnerSchemaMissing(error)) {
       return NextResponse.json({ isPartner: false, setupRequired: true })
