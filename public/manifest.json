@@ -1,0 +1,31 @@
+{
+  "name": "DCC Music - Hub Oficial do Artista",
+  "short_name": "DCC Music",
+  "description": "Hub oficial do DCC Music. Assista aos vídeos e ouça as músicas.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/favicon-dcc-fundopreto.png",
+      "sizes": "48x48",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-dcc-fundopreto.png",
+      "sizes": "96x96",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-dcc-fundopreto.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logopng.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
