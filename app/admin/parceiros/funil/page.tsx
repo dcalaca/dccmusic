@@ -13,8 +13,17 @@ type FunnelPartner = {
   clicks: number
   signups: number
   sales: number
+  topupSales: number
+  subscriptionSales: number
+  otherSales: number
   revenue: number
   commission: number
+  topupRevenue: number
+  subscriptionRevenue: number
+  otherRevenue: number
+  topupCommission: number
+  subscriptionCommission: number
+  otherCommission: number
   signupRate: number
   salesRate: number
 }
@@ -22,7 +31,22 @@ type FunnelPartner = {
 type FunnelResponse = {
   period: { range: string; startDate: string; endDate: string }
   partners: FunnelPartner[]
-  totals: { clicks: number; signups: number; sales: number; revenue: number; commission: number }
+  totals: {
+    clicks: number
+    signups: number
+    sales: number
+    topupSales: number
+    subscriptionSales: number
+    otherSales: number
+    revenue: number
+    commission: number
+    topupRevenue: number
+    subscriptionRevenue: number
+    otherRevenue: number
+    topupCommission: number
+    subscriptionCommission: number
+    otherCommission: number
+  }
   setupRequired?: boolean
 }
 
@@ -135,7 +159,22 @@ export default function AdminPartnersFunnelPage() {
     return [partner.displayName, partner.email || '', partner.partnerCode]
       .some((value) => value.toLowerCase().includes(needle))
   })
-  const totals = data?.totals || { clicks: 0, signups: 0, sales: 0, revenue: 0, commission: 0 }
+  const totals = data?.totals || {
+    clicks: 0,
+    signups: 0,
+    sales: 0,
+    topupSales: 0,
+    subscriptionSales: 0,
+    otherSales: 0,
+    revenue: 0,
+    commission: 0,
+    topupRevenue: 0,
+    subscriptionRevenue: 0,
+    otherRevenue: 0,
+    topupCommission: 0,
+    subscriptionCommission: 0,
+    otherCommission: 0,
+  }
   const signupRate = totals.clicks > 0 ? Math.round((totals.signups / totals.clicks) * 10000) / 100 : 0
   const salesRate = totals.signups > 0 ? Math.round((totals.sales / totals.signups) * 10000) / 100 : 0
 
@@ -261,6 +300,29 @@ export default function AdminPartnersFunnelPage() {
               <MetricCard icon={FiBarChart2} label="Comissões" value={formatMoney(totals.commission)} detail="Comissão estimada" />
             </div>
 
+            <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <MetricCard
+                icon={FiShoppingCart}
+                label="Avulsas / recargas"
+                value={formatNumber(totals.topupSales)}
+                detail={`Receita ${formatMoney(totals.topupRevenue)} · Comissão ${formatMoney(totals.topupCommission)}`}
+              />
+              <MetricCard
+                icon={FiShoppingCart}
+                label="Assinaturas / planos"
+                value={formatNumber(totals.subscriptionSales)}
+                detail={`Receita ${formatMoney(totals.subscriptionRevenue)} · Comissão ${formatMoney(totals.subscriptionCommission)}`}
+              />
+              {totals.otherSales > 0 && (
+                <MetricCard
+                  icon={FiShoppingCart}
+                  label="Outras compras"
+                  value={formatNumber(totals.otherSales)}
+                  detail={`Receita ${formatMoney(totals.otherRevenue)} · Comissão ${formatMoney(totals.otherCommission)}`}
+                />
+              )}
+            </div>
+
             <div className="rounded-3xl border border-gray-800 bg-gray-900/60 p-5">
           <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -279,13 +341,15 @@ export default function AdminPartnersFunnelPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-sm">
+            <table className="w-full min-w-[1100px] text-left text-sm">
               <thead className="border-b border-gray-800 text-xs uppercase text-gray-500">
                 <tr>
                   <th className="py-3 pr-4">Parceiro</th>
                   <th className="py-3 px-4 text-right">Clicks</th>
                   <th className="py-3 px-4 text-right">Cadastros</th>
                   <th className="py-3 px-4 text-right">Vendas</th>
+                  <th className="py-3 px-4 text-right">Avulsas</th>
+                  <th className="py-3 px-4 text-right">Planos</th>
                   <th className="py-3 px-4 text-right">Conv. cadastro</th>
                   <th className="py-3 px-4 text-right">Conv. venda</th>
                   <th className="py-3 px-4 text-right">Faturamento</th>
@@ -294,9 +358,9 @@ export default function AdminPartnersFunnelPage() {
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {loading ? (
-                  <tr><td colSpan={8} className="py-8 text-center text-gray-400">Carregando funil...</td></tr>
+                  <tr><td colSpan={10} className="py-8 text-center text-gray-400">Carregando funil...</td></tr>
                 ) : filteredPartners.length === 0 ? (
-                  <tr><td colSpan={8} className="py-8 text-center text-gray-400">Nenhum dado encontrado no período.</td></tr>
+                  <tr><td colSpan={10} className="py-8 text-center text-gray-400">Nenhum dado encontrado no período.</td></tr>
                 ) : filteredPartners.map((partner) => (
                   <tr key={partner.partnerId} className="hover:bg-white/[0.03]">
                     <td className="py-4 pr-4">
@@ -306,6 +370,14 @@ export default function AdminPartnersFunnelPage() {
                     <td className="py-4 px-4 text-right font-bold text-cyan-200">{formatNumber(partner.clicks)}</td>
                     <td className="py-4 px-4 text-right font-bold text-purple-200">{formatNumber(partner.signups)}</td>
                     <td className="py-4 px-4 text-right font-bold text-green-200">{formatNumber(partner.sales)}</td>
+                    <td className="py-4 px-4 text-right text-gray-200">
+                      <p className="font-bold">{formatNumber(partner.topupSales)}</p>
+                      <p className="text-[11px] text-gray-500">{formatMoney(partner.topupCommission)}</p>
+                    </td>
+                    <td className="py-4 px-4 text-right text-gray-200">
+                      <p className="font-bold">{formatNumber(partner.subscriptionSales)}</p>
+                      <p className="text-[11px] text-gray-500">{formatMoney(partner.subscriptionCommission)}</p>
+                    </td>
                     <td className="py-4 px-4 text-right text-gray-300">{partner.signupRate}%</td>
                     <td className="py-4 px-4 text-right text-gray-300">{partner.salesRate}%</td>
                     <td className="py-4 px-4 text-right text-gray-200">{formatMoney(partner.revenue)}</td>

@@ -56,6 +56,13 @@ function getDateRange(searchParams: URLSearchParams) {
   return { start: startOfDay(addDays(now, -6)), end: endOfDay(now), range: 'last7' }
 }
 
+function getSaleKind(productType: string) {
+  const normalized = String(productType || '').trim()
+  if (['studio_topup', 'music_topup', 'single_music'].includes(normalized)) return 'topup'
+  if (['composer_plan', 'plan', 'subscription', 'composer_subscription'].includes(normalized)) return 'subscription'
+  return 'other'
+}
+
 async function fetchPaged<T>(makeQuery: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>) {
   const pageSize = 1000
   const rows: T[] = []
@@ -113,7 +120,7 @@ export async function GET(request: NextRequest) {
       ),
       fetchPaged<any>((from, to) => supabaseAdmin
         .from('partner_commissions')
-        .select('partner_id, purchase_id, amount, commission_amount, status, created_at')
+        .select('partner_id, purchase_id, amount, commission_amount, status, metadata, created_at')
         .in('partner_id', partnerIds)
         .gte('created_at', since)
         .lte('created_at', until)
@@ -126,8 +133,17 @@ export async function GET(request: NextRequest) {
       clickSessions: new Set<string>(),
       signupUsers: new Set<string>(),
       sales: 0,
+      topupSales: 0,
+      subscriptionSales: 0,
+      otherSales: 0,
       revenue: 0,
       commission: 0,
+      topupRevenue: 0,
+      subscriptionRevenue: 0,
+      otherRevenue: 0,
+      topupCommission: 0,
+      subscriptionCommission: 0,
+      otherCommission: 0,
     }]))
 
     for (const event of events) {
@@ -146,9 +162,27 @@ export async function GET(request: NextRequest) {
     for (const commission of commissions) {
       const partnerMetrics = metrics.get(commission.partner_id)
       if (!partnerMetrics) continue
+      const saleKind = getSaleKind(commission.metadata?.product_type)
+      const amount = Number(commission.amount) || 0
+      const commissionAmount = Number(commission.commission_amount) || 0
+
       partnerMetrics.sales += 1
-      partnerMetrics.revenue += Number(commission.amount) || 0
-      partnerMetrics.commission += Number(commission.commission_amount) || 0
+      partnerMetrics.revenue += amount
+      partnerMetrics.commission += commissionAmount
+
+      if (saleKind === 'subscription') {
+        partnerMetrics.subscriptionSales += 1
+        partnerMetrics.subscriptionRevenue += amount
+        partnerMetrics.subscriptionCommission += commissionAmount
+      } else if (saleKind === 'topup') {
+        partnerMetrics.topupSales += 1
+        partnerMetrics.topupRevenue += amount
+        partnerMetrics.topupCommission += commissionAmount
+      } else {
+        partnerMetrics.otherSales += 1
+        partnerMetrics.otherRevenue += amount
+        partnerMetrics.otherCommission += commissionAmount
+      }
     }
 
     const rows = partnerIds.map((id) => {
@@ -167,8 +201,17 @@ export async function GET(request: NextRequest) {
         clicks,
         signups,
         sales,
+        topupSales: partnerMetrics.topupSales,
+        subscriptionSales: partnerMetrics.subscriptionSales,
+        otherSales: partnerMetrics.otherSales,
         revenue: Math.round(partnerMetrics.revenue * 100) / 100,
         commission: Math.round(partnerMetrics.commission * 100) / 100,
+        topupRevenue: Math.round(partnerMetrics.topupRevenue * 100) / 100,
+        subscriptionRevenue: Math.round(partnerMetrics.subscriptionRevenue * 100) / 100,
+        otherRevenue: Math.round(partnerMetrics.otherRevenue * 100) / 100,
+        topupCommission: Math.round(partnerMetrics.topupCommission * 100) / 100,
+        subscriptionCommission: Math.round(partnerMetrics.subscriptionCommission * 100) / 100,
+        otherCommission: Math.round(partnerMetrics.otherCommission * 100) / 100,
         signupRate: clicks > 0 ? Math.round((signups / clicks) * 10000) / 100 : 0,
         salesRate: signups > 0 ? Math.round((sales / signups) * 10000) / 100 : 0,
       }
@@ -178,9 +221,33 @@ export async function GET(request: NextRequest) {
       clicks: sum.clicks + row.clicks,
       signups: sum.signups + row.signups,
       sales: sum.sales + row.sales,
+      topupSales: sum.topupSales + row.topupSales,
+      subscriptionSales: sum.subscriptionSales + row.subscriptionSales,
+      otherSales: sum.otherSales + row.otherSales,
       revenue: sum.revenue + row.revenue,
       commission: sum.commission + row.commission,
-    }), { clicks: 0, signups: 0, sales: 0, revenue: 0, commission: 0 })
+      topupRevenue: sum.topupRevenue + row.topupRevenue,
+      subscriptionRevenue: sum.subscriptionRevenue + row.subscriptionRevenue,
+      otherRevenue: sum.otherRevenue + row.otherRevenue,
+      topupCommission: sum.topupCommission + row.topupCommission,
+      subscriptionCommission: sum.subscriptionCommission + row.subscriptionCommission,
+      otherCommission: sum.otherCommission + row.otherCommission,
+    }), {
+      clicks: 0,
+      signups: 0,
+      sales: 0,
+      topupSales: 0,
+      subscriptionSales: 0,
+      otherSales: 0,
+      revenue: 0,
+      commission: 0,
+      topupRevenue: 0,
+      subscriptionRevenue: 0,
+      otherRevenue: 0,
+      topupCommission: 0,
+      subscriptionCommission: 0,
+      otherCommission: 0,
+    })
 
     return NextResponse.json({
       period: { range, startDate: since, endDate: until },
@@ -189,6 +256,12 @@ export async function GET(request: NextRequest) {
         ...totals,
         revenue: Math.round(totals.revenue * 100) / 100,
         commission: Math.round(totals.commission * 100) / 100,
+        topupRevenue: Math.round(totals.topupRevenue * 100) / 100,
+        subscriptionRevenue: Math.round(totals.subscriptionRevenue * 100) / 100,
+        otherRevenue: Math.round(totals.otherRevenue * 100) / 100,
+        topupCommission: Math.round(totals.topupCommission * 100) / 100,
+        subscriptionCommission: Math.round(totals.subscriptionCommission * 100) / 100,
+        otherCommission: Math.round(totals.otherCommission * 100) / 100,
       },
     })
   } catch (error: any) {
