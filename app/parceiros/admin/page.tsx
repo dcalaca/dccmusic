@@ -43,6 +43,23 @@ type PartnerDashboard = {
     signupConversion: number
     purchaseConversion: number
   }
+  salesByType?: {
+    topups: {
+      quantity: number
+      revenue: number
+      commission: number
+    }
+    subscriptions: {
+      quantity: number
+      revenue: number
+      commission: number
+    }
+    other: {
+      quantity: number
+      revenue: number
+      commission: number
+    }
+  }
   period?: {
     startDate: string
     endDate: string
@@ -91,10 +108,12 @@ function shortDate(value: string) {
 function MetricCard({
   label,
   value,
+  detail,
   onExport,
 }: {
   label: string
   value: string
+  detail?: string
   onExport?: () => void
 }) {
   return (
@@ -113,6 +132,7 @@ function MetricCard({
         )}
       </div>
       <p className="mt-2 text-2xl font-black text-white">{value}</p>
+      {detail && <p className="mt-1 text-xs leading-relaxed text-gray-400">{detail}</p>}
     </div>
   )
 }
@@ -333,6 +353,7 @@ export default function PartnerDashboardPage() {
   }
 
   const metrics = data?.metrics
+  const salesByType = data?.salesByType
   const daily = data?.daily || []
   const funnelMax = Math.max(metrics?.clicks || 0, metrics?.validSessions || 0, metrics?.signups || 0, metrics?.purchases || 0)
 
@@ -447,6 +468,26 @@ export default function PartnerDashboardPage() {
           <MetricCard label="Receita gerada" value={money(metrics?.revenue || 0)} />
           <MetricCard label="Ticket médio" value={money(metrics?.averageTicket || 0)} />
           <MetricCard label="Conversão compra" value={`${metrics?.purchaseConversion || 0}%`} />
+        </div>
+
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <MetricCard
+            label="Avulsas / recargas"
+            value={number(salesByType?.topups.quantity || 0)}
+            detail={`Receita ${money(salesByType?.topups.revenue || 0)} · Comissão ${money(salesByType?.topups.commission || 0)}`}
+          />
+          <MetricCard
+            label="Assinaturas / planos"
+            value={number(salesByType?.subscriptions.quantity || 0)}
+            detail={`Receita ${money(salesByType?.subscriptions.revenue || 0)} · Comissão ${money(salesByType?.subscriptions.commission || 0)}`}
+          />
+          {(salesByType?.other.quantity || 0) > 0 && (
+            <MetricCard
+              label="Outras compras"
+              value={number(salesByType?.other.quantity || 0)}
+              detail={`Receita ${money(salesByType?.other.revenue || 0)} · Comissão ${money(salesByType?.other.commission || 0)}`}
+            />
+          )}
         </div>
 
         <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.045] p-5">

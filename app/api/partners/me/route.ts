@@ -65,6 +65,13 @@ function isDateWithinRange(value: string | null | undefined, since: string, unti
   return time >= new Date(since).getTime() && time <= new Date(until).getTime()
 }
 
+function getSaleKind(productType: string) {
+  const normalized = String(productType || '').trim()
+  if (['studio_topup', 'music_topup', 'single_music'].includes(normalized)) return 'topup'
+  if (['composer_plan', 'plan', 'subscription', 'composer_subscription'].includes(normalized)) return 'subscription'
+  return 'other'
+}
+
 export async function GET(request: NextRequest) {
   try {
     const partnerToken = getPartnerFromRequest(request)
@@ -104,7 +111,7 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false }),
       supabaseAdmin
         .from('partner_commissions')
-        .select('amount, commission_amount, status, created_at')
+        .select('amount, commission_amount, status, created_at, metadata')
         .eq('partner_id', partner.id)
         .gte('created_at', since)
         .lte('created_at', until),
@@ -149,6 +156,11 @@ export async function GET(request: NextRequest) {
     const revenue = allCommissions.reduce((sum: number, row: any) => sum + (Number(row.amount) || 0), 0)
     const commission = allCommissions.reduce((sum: number, row: any) => sum + (Number(row.commission_amount) || 0), 0)
     const averageTicket = purchases ? revenue / purchases : 0
+    const salesByType = {
+      topups: { quantity: 0, revenue: 0, commission: 0 },
+      subscriptions: { quantity: 0, revenue: 0, commission: 0 },
+      other: { quantity: 0, revenue: 0, commission: 0 },
+    }
     const dailyBuckets = createDateBuckets(startDate, endDate)
 
     Array.from(signupDateByUserId.values())
@@ -158,6 +170,17 @@ export async function GET(request: NextRequest) {
       })
 
     allCommissions.forEach((commissionRow: any) => {
+      const saleKind = getSaleKind(commissionRow.metadata?.product_type)
+      const bucket = saleKind === 'subscription'
+        ? salesByType.subscriptions
+        : saleKind === 'topup'
+          ? salesByType.topups
+          : salesByType.other
+
+      bucket.quantity += 1
+      bucket.revenue += Number(commissionRow.amount) || 0
+      bucket.commission += Number(commissionRow.commission_amount) || 0
+
       const key = formatDateKey(commissionRow.created_at)
       if (!dailyBuckets[key]) return
       dailyBuckets[key].salesQuantity += 1
@@ -197,6 +220,7 @@ export async function GET(request: NextRequest) {
         signupConversion: percent(signups, validSessions),
         purchaseConversion: percent(purchases, validSessions),
       },
+      salesByType,
       daily,
       recentEvents: allEvents.slice(0, 20),
     })
