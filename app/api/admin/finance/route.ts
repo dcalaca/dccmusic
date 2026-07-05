@@ -101,6 +101,17 @@ function getMetaAdAccountIds() {
   ))
 }
 
+function getMetaAdsBalanceAccountIds() {
+  const rawValue = process.env.META_ADS_BALANCE_ACCOUNT_ID || '120248421391550309'
+  return Array.from(new Set(
+    rawValue
+      .split(/[,\s;]+/)
+      .map(value => value.trim())
+      .filter(Boolean)
+      .map(normalizeMetaAdAccountId)
+  ))
+}
+
 function extractMetaRegistrations(actions: any[] | undefined) {
   if (!Array.isArray(actions)) return 0
 
@@ -145,7 +156,7 @@ function parseMetaMoney(value: unknown) {
 
 async function getMetaAdsBalanceSummary() {
   const accessToken = process.env.META_ACCESS_TOKEN
-  const adAccountIds = getMetaAdAccountIds()
+  const adAccountIds = getMetaAdsBalanceAccountIds()
 
   if (!accessToken || adAccountIds.length === 0) {
     return {
@@ -156,7 +167,7 @@ async function getMetaAdsBalanceSummary() {
       spendCap: null,
       availableBalance: null,
       adAccounts: [] as MetaAdsAccountBalance[],
-      error: 'META_ACCESS_TOKEN e META_AD_ACCOUNT_ID ou META_AD_ACCOUNT_IDS não configurados',
+      error: 'META_ACCESS_TOKEN e META_ADS_BALANCE_ACCOUNT_ID não configurados',
       checkedAt: new Date().toISOString(),
     }
   }
@@ -181,16 +192,18 @@ async function getMetaAdsBalanceSummary() {
 
       const spendCap = parseMetaMoney(payload?.spend_cap)
       const amountSpent = parseMetaMoney(payload?.amount_spent)
+      const metaBalance = parseMetaMoney(payload?.balance)
+      const remainingFromSpendCap = spendCap != null && spendCap > 0 && amountSpent != null
+        ? Math.max(0, spendCap - amountSpent)
+        : null
 
       accountBalances.push({
         adAccountId,
         currency: payload?.currency || 'BRL',
-        balanceDue: parseMetaMoney(payload?.balance),
+        balanceDue: metaBalance,
         amountSpent,
         spendCap,
-        availableBalance: spendCap != null && spendCap > 0 && amountSpent != null
-          ? Math.max(0, spendCap - amountSpent)
-          : null,
+        availableBalance: remainingFromSpendCap,
       })
     }
 
@@ -442,6 +455,85 @@ async function maybeSendOpenAiBudgetAlert(monthCost: Awaited<ReturnType<typeof g
     },
   }).catch((error) => {
     console.error('[Admin Finance] Erro ao enviar alerta de IA criativa:', error)
+  })
+}
+
+function getSaoPauloDayKey(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+}
+
+async function hasAlreadySentAlert(eventKey: string) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('dccmusic_email_events')
+      .select('id')
+      .eq('event_key', eventKey)
+      .maybeSingle()
+
+    if (error) return false
+    return Boolean(data?.id)
+  } catch {
+    return false
+  }
+}
+
+function formatMetaMoneyForAlert(value: number | null | undefined, currency = 'BRL') {
+  if (value == null) return '-'
+  return value.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency,
+  })
+}
+
+async function maybeSendMetaAdsLowBalanceAlert(balance: Awaited<ReturnType<typeof getMetaAdsBalanceSummary>>) {
+  const thresholdBrl = Number(process.env.META_ADS_LOW_BALANCE_ALERT_BRL || '30') || 30
+
+  if (!balance.configured || balance.error) return
+
+  const lowAccounts = balance.adAccounts.filter(account => (
+    account.availableBalance != null && account.availableBalance < thresholdBrl
+  ))
+
+  if (lowAccounts.length === 0) return
+
+  const eventKey = `meta-ads-low-balance/${getSaoPauloDayKey()}/${thresholdBrl}/${lowAccounts.map(account => account.adAccountId).join(',')}`
+  if (await hasAlreadySentAlert(eventKey)) return
+
+  await sendAdminStudioAlertEmail({
+    title: 'Alerta: saldo Meta Ads abaixo de R$ 30',
+    message: `O saldo disponível da Meta Ads ficou abaixo de ${formatMetaMoneyForAlert(thresholdBrl, 'BRL')}. Recarregue a conta para evitar pausa nos anúncios.`,
+    eventKey,
+    metadata: {
+      provider: 'meta_ads',
+      thresholdBrl,
+      checkedAt: balance.checkedAt,
+      accounts: lowAccounts.map(account => ({
+        adAccountId: account.adAccountId,
+        currency: account.currency,
+        availableBalance: account.availableBalance,
+        amountSpent: account.amountSpent,
+        spendCap: account.spendCap,
+      })),
+    },
+    detailsHtml: `
+      <ul>
+        ${lowAccounts.map(account => `
+          <li>
+            <strong>${account.adAccountId}</strong>:
+            saldo disponível ${formatMetaMoneyForAlert(account.availableBalance, account.currency)}
+            (gasto ${formatMetaMoneyForAlert(account.amountSpent, account.currency)}
+            de ${formatMetaMoneyForAlert(account.spendCap, account.currency)})
+          </li>
+        `).join('')}
+      </ul>
+    `,
+  }).catch((error) => {
+    console.error('[Admin Finance] Erro ao enviar alerta de saldo Meta Ads:', error)
   })
 }
 
@@ -740,6 +832,7 @@ export async function GET(request: NextRequest) {
     await Promise.all([
       maybeSendOpenAiBudgetAlert(openAiMonthCost),
       maybeSendSunoLowCreditAlert(sunoCreditBalance),
+      maybeSendMetaAdsLowBalanceAlert(metaAdsBalance),
     ])
 
     const topupTableMissing = isMissingTopupTableError(studioTopupsResult.error)
