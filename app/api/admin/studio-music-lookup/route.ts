@@ -9,7 +9,7 @@ function cleanCode(value: string | null) {
 }
 
 function studioAdminUrl(composerId: string, projectId: string) {
-  return `/admin/compositores/${composerId}/studio#project-${projectId}`
+  return `/admin/compositores/${composerId}/studio?project=${projectId}#project-${projectId}`
 }
 
 export async function GET(request: NextRequest) {

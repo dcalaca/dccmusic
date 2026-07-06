@@ -82,8 +82,10 @@ function extractIdea(description?: string | null) {
 
 export default async function AdminComposerStudioPage({
   params,
+  searchParams,
 }: {
   params: { id: string }
+  searchParams?: { project?: string }
 }) {
   await requireAuth()
 
@@ -96,10 +98,17 @@ export default async function AdminComposerStudioPage({
     )
   }
 
-  const { data: projects, error: projectsError } = await supabaseAdmin
+  const focusedProjectId = String(searchParams?.project || '').trim()
+  const projectsQuery = supabaseAdmin
     .from('studio_projects')
     .select('*')
     .eq('composer_id', params.id)
+
+  if (focusedProjectId) {
+    projectsQuery.eq('id', focusedProjectId)
+  }
+
+  const { data: projects, error: projectsError } = await projectsQuery
     .order('updated_at', { ascending: false })
 
   if (projectsError) {
@@ -427,9 +436,25 @@ export default async function AdminComposerStudioPage({
             )}
           </section>
 
+          {focusedProjectId && (
+            <div className="mb-6 rounded-2xl border border-primary-900/70 bg-primary-950/25 p-4">
+              <p className="text-sm font-bold text-primary-100">
+                Exibindo somente a música/projeto do código informado.
+              </p>
+              <p className="mt-1 break-all text-xs text-primary-200/80">
+                Código: {focusedProjectId}
+              </p>
+              <Link href={`/admin/compositores/${params.id}/studio`} className="mt-3 inline-flex text-sm font-bold text-primary-300 hover:text-primary-200">
+                Ver todos os projetos deste compositor
+              </Link>
+            </div>
+          )}
+
           {(projects || []).length === 0 ? (
             <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">
-              Este compositor ainda não criou projetos no Studio IA.
+              {focusedProjectId
+                ? 'Nenhum projeto encontrado para este código neste compositor.'
+                : 'Este compositor ainda não criou projetos no Studio IA.'}
             </div>
           ) : (
             <div className="space-y-6">
