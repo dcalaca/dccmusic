@@ -444,7 +444,7 @@ export default async function AdminComposerStudioPage({
                 const composerProjectUrl = `${getSiteUrl()}/compositores/admin/studio-ia/projetos/${project.id}`
 
                 return (
-                  <section key={project.id} className="overflow-hidden rounded-3xl border border-gray-800 bg-gray-950/70">
+                  <section id={`project-${project.id}`} key={project.id} className="scroll-mt-24 overflow-hidden rounded-3xl border border-gray-800 bg-gray-950/70">
                     <div className="grid gap-0 lg:grid-cols-[280px_1fr]">
                       <aside className="border-b border-gray-800 bg-black/40 p-5 lg:border-b-0 lg:border-r">
                         <div className="mb-4 aspect-square overflow-hidden rounded-2xl border border-gray-800 bg-gradient-to-br from-gray-900 to-purple-950">

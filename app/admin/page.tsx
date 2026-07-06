@@ -21,6 +21,7 @@ import {
   FiZap,
 } from 'react-icons/fi'
 import AdminOnlineCard from './AdminOnlineCard'
+import AdminMusicCodeLookup from './AdminMusicCodeLookup'
 
 const adminGroups = [
   {
@@ -247,6 +248,10 @@ export default async function AdminPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <AdminOnlineCard />
           </div>
+        </section>
+
+        <section className="mb-8">
+          <AdminMusicCodeLookup />
         </section>
 
         <div className="space-y-8">
