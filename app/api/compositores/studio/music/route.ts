@@ -26,7 +26,7 @@ const STUDIO_TITLE_MAX_LENGTH = 30
 const MUSIC_CREATION_UNAVAILABLE_MESSAGE = 'Sua letra foi salva, mas não conseguimos iniciar a criação da música agora. Tente novamente mais tarde.'
 const MAX_STUDIO_MUSIC_DURATION_INSTRUCTION = 'Each returned audio track must contain only one complete song version, with a hard maximum duration of 4 minutes and 30 seconds. End each audio after the final section. Do not restart the song inside the same audio, do not repeat the entire song inside the same audio, do not append another full version in the same file, and do not create extended outros, long solos, or repeated loops.'
 const TWO_VERSION_VARIATION_INSTRUCTION = 'If the provider returns two audio tracks, make them two clearly different alternative versions of the same song: different intro, arrangement, instrumental details, vocal interpretation, dynamics, or groove. Keep the same lyrics, language, genre, and emotional intention, but avoid making the two returned tracks identical.'
-const MAX_STUDIO_MUSIC_NEGATIVE_TAGS = 'long song, extended outro, long instrumental solo, repeated loop, duplicate song, identical duplicate, restart song, repeat entire song, multiple versions in one audio, over 4 minutes 30 seconds, 7 minute song, rushed vocals, mumbled vocals, unclear pronunciation, words too fast, robotic voice'
+const MAX_STUDIO_MUSIC_NEGATIVE_TAGS = 'long song, repeated full song, extended outro, long solo, duplicate version, unclear vocals, rushed vocals'
 
 const INSTRUMENT_TRANSLATIONS: Record<string, string> = {
   'acordeon': 'accordion',
@@ -182,34 +182,7 @@ function getVoiceNegativeTags(style?: string | null, description?: string | null
     return ''
   }
 
-  const descriptionText = String(description || '').toLowerCase()
-  const parts = [
-    'low quality',
-    'distorted vocals',
-    'weak rhymes',
-    'robotic voice',
-    MAX_STUDIO_MUSIC_NEGATIVE_TAGS,
-    ...getGenreNegativeTags(style),
-  ]
-
-  if (descriptionText.includes('voz grave')) {
-    parts.push('high pitched voice', 'thin voice', 'falsetto vocal', 'shrill vocals')
-  }
-
-  if (descriptionText.includes('voz masculina') && !descriptionText.includes('dueto masculino e feminino')) {
-    parts.push('female vocal')
-  }
-
-  if (descriptionText.includes('voz feminina') && !descriptionText.includes('dueto masculino e feminino')) {
-    parts.push('male vocal')
-  }
-
-  const forbiddenInstruments = getForbiddenInstruments(description)
-  for (const instrument of forbiddenInstruments) {
-    parts.push(instrument, `no ${instrument}`, `${instrument} sound`)
-  }
-
-  return parts.join(', ')
+  return MAX_STUDIO_MUSIC_NEGATIVE_TAGS
 }
 
 function buildSunoStyle(style: string | null, mood: string | null, description?: string | null) {
@@ -396,15 +369,11 @@ function getMurekaVoiceInstructions(description?: string | null) {
 function buildMurekaPrompt(style: string | null, mood: string | null, description?: string | null) {
   const forbiddenInstruments = getForbiddenInstruments(description)
   const desiredInstruments = getDesiredInstruments(description)
-  const genreNegativeTags = getGenreNegativeTags(style)
   const stylePrompt = stripForbiddenInstrumentsFromStyle(getBrazilianStylePrompt(style), forbiddenInstruments)
   const parts = [
     `Brazilian music style: ${stylePrompt}.`,
     mood ? `Must express this mood clearly: ${mood}.` : 'Use an emotional, commercial and engaging mood.',
     ...getMurekaVoiceInstructions(description),
-    genreNegativeTags.length > 0
-      ? `Keep the arrangement aligned with the requested genre, avoiding drift toward ${genreNegativeTags.join(', ')}.`
-      : null,
     desiredInstruments ? `Use these instruments requested by the user: ${desiredInstruments}.` : null,
     forbiddenInstruments.length > 0
       ? `Avoid these instruments requested by the user: ${forbiddenInstruments.join(', ')}.`
