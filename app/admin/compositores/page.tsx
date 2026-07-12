@@ -492,6 +492,18 @@ export default function AdminComposersPage() {
     })
   }
 
+  const formatDateTime = (date: Date | null | undefined) => {
+    if (!date) return 'N/A'
+    return new Date(date).toLocaleString('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+
   const formatMoney = (value: number | null | undefined) => {
     return Number(value || 0).toLocaleString('pt-BR', {
       style: 'currency',
@@ -540,7 +552,7 @@ export default function AdminComposersPage() {
         'Gasto com recargas avulsas': formatMoney(row.topupSpent),
         'Gasto com destaques': formatMoney(row.featuredSpent),
         'Quantidade de pagamentos': row.paymentCount,
-        'Data de cadastro': row.createdAt ? formatDate(new Date(row.createdAt)) : 'N/A',
+        'Data de cadastro': row.createdAt ? formatDateTime(new Date(row.createdAt)) : 'N/A',
       }))
 
       const worksheet = XLSX.utils.json_to_sheet(rows)
@@ -602,15 +614,20 @@ export default function AdminComposersPage() {
           ? new Date(composer.subscriptionExpiresAt) < new Date()
           : false
 
+        const hasEmail = Boolean(composer.email)
+        const emailConfirmed = hasEmail && composer.emailVerified
+
         return {
           Nome: composer.name,
           Email: composer.email || 'Sem email',
+          'E-mail confirmado': !hasEmail ? 'Sem e-mail' : emailConfirmed ? 'Sim' : 'Não',
+          'E-mail confirmado em': emailConfirmed ? formatDateTime(composer.emailVerifiedAt) : '',
           Slug: composer.slug,
           'Músicas cadastradas': composer.musicCount ?? 0,
           'Vídeos cadastrados': composer.videoCount ?? 0,
           'Letras Studio IA': composer.studioLyricCount ?? 0,
           'Músicas Studio IA': composer.studioMusicCount ?? 0,
-          'Data de cadastro': formatDate(composer.createdAt),
+          'Data de cadastro': formatDateTime(composer.createdAt),
           Visualizações: composer.totalViews ?? 0,
           Status: hasAccess && !isExpired ? 'Ativo' : 'Inativo',
           'Expira em': composer.subscriptionExpiresAt ? formatDate(composer.subscriptionExpiresAt) : 'N/A',
@@ -836,8 +853,8 @@ export default function AdminComposersPage() {
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap">
                           <div className="flex items-center text-sm text-gray-300">
-                            <FiCalendar className="w-4 h-4 mr-2 text-gray-400" />
-                            {formatDate(composer.createdAt)}
+                            <FiCalendar className="w-4 h-4 mr-2 shrink-0 text-gray-400" />
+                            {formatDateTime(composer.createdAt)}
                           </div>
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap">
