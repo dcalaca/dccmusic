@@ -21,19 +21,23 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'DCC Music - Hub Oficial do Artista | Músicas e Vídeos',
+    default: 'DCC Music - Studio IA, Partitura e Cifra | Músicas e Vídeos',
     template: '%s | DCC Music',
   },
-  description: 'Hub oficial do DCC Music. Assista aos vídeos e ouça as músicas. Explore os últimos lançamentos e descubra os trabalhos. Plataforma completa para compositores e fãs de música.',
+  description: 'Crie músicas com IA no Studio IA, gere partitura, cifra e MusicXML, ouça lançamentos e divulgue seu trabalho. Plataforma completa para compositores e fãs de música no Brasil.',
   keywords: [
     'DCC Music',
+    'Studio IA',
+    'música com inteligência artificial',
+    'partitura e cifra',
+    'transcrição musical',
+    'MusicXML',
+    'letra cifrada',
     'música brasileira',
     'vídeos musicais',
     'artista independente',
     'compositor',
-    'YouTube música',
-    'Spotify',
-    'Apple Music',
+    'criar música com IA',
     'plataforma musical',
     'música online',
     'clipes musicais',
@@ -56,8 +60,8 @@ export const metadata: Metadata = {
     locale: 'pt_BR',
     url: 'https://www.dccmusic.online',
     siteName: 'DCC Music',
-    title: 'DCC Music - Hub Oficial do Artista',
-    description: 'Hub oficial do DCC Music. Assista aos vídeos e ouça as músicas. Explore os últimos lançamentos.',
+    title: 'DCC Music - Studio IA, Partitura e Cifra',
+    description: 'Crie músicas com IA, gere partitura e cifra, ouça lançamentos e divulgue seu trabalho na plataforma DCC Music.',
     images: [
       {
         url: '/logopng.png',
@@ -69,8 +73,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'DCC Music - Hub Oficial do Artista',
-    description: 'Hub oficial do DCC Music. Assista aos vídeos e ouça as músicas.',
+    title: 'DCC Music - Studio IA, Partitura e Cifra',
+    description: 'Crie músicas com IA, gere partitura e cifra e explore lançamentos no DCC Music.',
     images: ['/logopng.png'],
   },
   robots: {
@@ -112,7 +116,7 @@ const organizationSchema = {
     height: 630,
   },
   image: 'https://www.dccmusic.online/logopng.png',
-  description: 'Hub oficial do DCC Music. Plataforma completa para descobrir músicas e vídeos de compositores talentosos.',
+  description: 'Plataforma DCC Music: Studio IA para criar músicas com inteligência artificial, Partitura e Cifra para gerar PDF, MusicXML e letra cifrada, além de catálogo de músicas e vídeos para compositores.',
   contactPoint: {
     '@type': 'ContactPoint',
     email: 'suporte@dccmusic.online',

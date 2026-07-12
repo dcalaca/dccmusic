@@ -1,4 +1,3 @@
-import { Resend } from 'resend'
 import { supabaseAdmin } from './supabase'
 
 type EmailResult = {
@@ -20,6 +19,7 @@ type DccEmailInput = {
   title: string
   preview?: string
   category: string
+  provider?: 'brevo'
   eventKey?: string
   contentHtml: string
   metadata?: Record<string, any>
@@ -30,14 +30,30 @@ function getSiteUrl() {
   return (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'https://www.dccmusic.online').replace(/\/$/, '')
 }
 
-function getResendClient() {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) return null
-  return new Resend(apiKey)
-}
-
 function normalizeEmailHeader(value?: string | null) {
   return String(value || '').trim() || undefined
+}
+
+function parseEmailHeader(value?: string | null) {
+  const rawValue = normalizeEmailHeader(value)
+  if (!rawValue) return null
+
+  const match = rawValue.match(/^(.*?)\s*<([^>]+)>$/)
+  if (match) {
+    const name = match[1].trim().replace(/^"|"$/g, '')
+    const email = match[2].trim()
+    return { email, name: name || undefined }
+  }
+
+  return { email: rawValue }
+}
+
+function getEmailProvider() {
+  return 'brevo'
+}
+
+function isBrevoEmailProvider() {
+  return getEmailProvider() === 'brevo'
 }
 
 function escapeHtml(value: any) {
@@ -107,35 +123,73 @@ async function recordEmailEvent(input: DccEmailInput, result: EmailResult) {
   }
 }
 
-async function sendDccEmail(input: DccEmailInput): Promise<EmailResult> {
-  const resend = getResendClient()
-  const from = normalizeEmailHeader(process.env.RESEND_FROM_EMAIL)
-  const replyTo = normalizeEmailHeader(process.env.RESEND_REPLY_TO_EMAIL)
-  const adminEmail = normalizeEmailHeader(process.env.ADMIN_EMAIL || process.env.DCC_ADMIN_EMAIL)
+async function sendBrevoEmail(input: DccEmailInput): Promise<EmailResult> {
+  const apiKey = normalizeEmailHeader(process.env.BREVO_API_KEY)
+  const sender = parseEmailHeader(
+    process.env.BREVO_FROM_EMAIL ||
+    process.env.SMTP_FROM_EMAIL
+  )
+  const replyTo = parseEmailHeader(
+    process.env.BREVO_REPLY_TO_EMAIL ||
+    process.env.SMTP_REPLY_TO_EMAIL
+  )
+  const adminEmail = parseEmailHeader(process.env.ADMIN_EMAIL || process.env.DCC_ADMIN_EMAIL)
+  const allowAdminBcc = process.env.ALLOW_BREVO_ADMIN_BCC === 'true'
 
-  if (!resend || !from) {
-    const result = { sent: false, reason: 'resend_not_configured' }
+  if (!apiKey || !sender?.email) {
+    const result = { sent: false, reason: 'brevo_not_configured' }
     await recordEmailEvent(input, result)
     return result
   }
 
-  const { data, error } = await resend.emails.send({
-    from,
-    to: input.to,
-    replyTo,
-    bcc: input.bccAdmin && adminEmail ? [adminEmail] : undefined,
-    subject: input.subject,
-    html: emailLayout(input),
-  })
-
-  if (error) {
-    console.error('[DCC EMAIL] Erro Resend:', error)
-    throw new Error(error.message || 'Erro ao enviar e-mail')
+  if (input.category === 'admin_email_campaign' && process.env.ALLOW_BACKUP_MARKETING_EMAILS !== 'true') {
+    const result = { sent: false, reason: 'marketing_disabled_on_backup_provider' }
+    await recordEmailEvent(input, result)
+    return result
   }
 
-  const result = { sent: true, id: data?.id || null }
+  const isMarketingEmail = input.category === 'admin_email_campaign'
+  const brevoCustomHeaders = isMarketingEmail
+    ? undefined
+    : {
+        'X-Mailin-Track': 'false',
+        'X-Mailin-Track-Clicks': 'false',
+        'X-Mailin-Track-Opens': 'false',
+      }
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'api-key': apiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender,
+      to: [{ email: input.to }],
+      replyTo: replyTo || undefined,
+      bcc: allowAdminBcc && input.bccAdmin && adminEmail?.email ? [adminEmail] : undefined,
+      subject: input.subject,
+      htmlContent: emailLayout(input),
+      tags: [input.category].filter(Boolean),
+      headers: brevoCustomHeaders,
+    }),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+
+  if (!response.ok) {
+    console.error('[DCC EMAIL] Erro Brevo:', payload)
+    throw new Error(payload?.message || 'Erro ao enviar e-mail pelo Brevo')
+  }
+
+  const result = { sent: true, id: payload?.messageId || null }
   await recordEmailEvent(input, result)
   return result
+}
+
+export async function sendDccEmail(input: DccEmailInput): Promise<EmailResult> {
+  return sendBrevoEmail(input)
 }
 
 export async function getComposerEmailIdentity(composerId: string) {
@@ -173,18 +227,30 @@ export async function sendComposerWelcomeEmail(input: ComposerEmailInput) {
 }
 
 export async function sendAdminNewComposerEmail(input: ComposerEmailInput) {
+  if (
+    isBrevoEmailProvider() &&
+    process.env.ENABLE_BREVO_ADMIN_NEW_COMPOSER_EMAILS !== 'true'
+  ) {
+    return { sent: false, reason: 'admin_new_composer_disabled_on_brevo' }
+  }
+
   const adminEmail = normalizeEmailHeader(process.env.ADMIN_EMAIL || process.env.DCC_ADMIN_EMAIL)
   if (!adminEmail) return { sent: false, reason: 'admin_email_missing' }
 
+  const composerName = String(input.name || 'Compositor').trim() || 'Compositor'
+  const subject = `🎵 ${composerName} acabou de entrar no DCC Music`
+
   return sendDccEmail({
     to: adminEmail,
-    subject: 'Novo compositor cadastrado',
-    title: 'Novo compositor cadastrado',
+    subject,
+    title: `Novo compositor: ${composerName}`,
+    preview: 'Um novo usuário acabou de criar uma conta no DCC Music.',
     category: 'admin_new_composer',
     eventKey: `admin-new-composer/${input.composerId}`,
     metadata: { composerId: input.composerId },
     contentHtml: `
-      <p><strong>Nome:</strong> ${escapeHtml(input.name)}</p>
+      <p>Um novo usuário acabou de criar uma conta no DCC Music e confirmou o e-mail.</p>
+      <p><strong>Nome:</strong> ${escapeHtml(composerName)}</p>
       <p><strong>E-mail:</strong> ${escapeHtml(input.email)}</p>
     `,
   })
@@ -373,6 +439,13 @@ export async function sendAdminPaymentNotificationEmail(input: {
   description: string
   amount: number
 }) {
+  if (
+    isBrevoEmailProvider() &&
+    process.env.ENABLE_BREVO_ADMIN_PAYMENT_EMAILS !== 'true'
+  ) {
+    return { sent: false, reason: 'admin_payment_disabled_on_brevo' }
+  }
+
   const adminEmail = normalizeEmailHeader(process.env.ADMIN_EMAIL || process.env.DCC_ADMIN_EMAIL)
   if (!adminEmail) return { sent: false, reason: 'admin_email_missing' }
 

@@ -94,7 +94,7 @@ const adminGroups = [
       {
         href: '/admin/financeiro',
         title: 'Financeiro',
-        description: 'Entrada, custos, lucro estimado, anúncios, Resend, Vercel e pagamentos',
+        description: 'Entrada, custos, lucro estimado, anúncios, Brevo, Vercel e pagamentos',
         icon: FiDollarSign,
         accent: 'green',
       },

@@ -26,6 +26,8 @@ const STUDIO_TITLE_MAX_LENGTH = 30
 const MUSIC_CREATION_UNAVAILABLE_MESSAGE = 'Sua letra foi salva, mas não conseguimos iniciar a criação da música agora. Tente novamente mais tarde.'
 const MAX_STUDIO_MUSIC_DURATION_INSTRUCTION = 'Each returned audio track must contain only one complete song version, with a hard maximum duration of 4 minutes and 30 seconds. End each audio after the final section. Do not restart the song inside the same audio, do not repeat the entire song inside the same audio, do not append another full version in the same file, and do not create extended outros, long solos, or repeated loops.'
 const TWO_VERSION_VARIATION_INSTRUCTION = 'If the provider returns two audio tracks, make them two clearly different alternative versions of the same song: different intro, arrangement, instrumental details, vocal interpretation, dynamics, or groove. Keep the same lyrics, language, genre, and emotional intention, but avoid making the two returned tracks identical.'
+const STUDIO_CREATIVE_VARIATION_INSTRUCTION = 'criar melodia inédita e abordagem diferente a cada geração, mantendo o gênero escolhido e variando introdução, levada, arranjo, interpretação vocal e progressão melódica'
+const MUREKA_CREATIVE_VARIATION_INSTRUCTION = 'Create an original melody and a fresh approach for each generation while keeping the chosen genre, varying intro, groove, arrangement, vocal interpretation and melodic progression.'
 const MAX_STUDIO_MUSIC_NEGATIVE_TAGS = 'long song, repeated full song, extended outro, long solo, duplicate version, unclear vocals, rushed vocals'
 
 const INSTRUMENT_TRANSLATIONS: Record<string, string> = {
@@ -185,6 +187,22 @@ function getVoiceNegativeTags(style?: string | null, description?: string | null
   return MAX_STUDIO_MUSIC_NEGATIVE_TAGS
 }
 
+function getInspirationInstruction(description?: string | null) {
+  const match = String(description || '').match(/Instrução obrigatória de inspiração:\s*([^\n]+)/i)
+  return match?.[1]?.trim() || ''
+}
+
+function getSunoCreativeDirection(description?: string | null) {
+  return getInspirationInstruction(description) || STUDIO_CREATIVE_VARIATION_INSTRUCTION
+}
+
+function getMurekaCreativeDirection(description?: string | null) {
+  const inspirationInstruction = getInspirationInstruction(description)
+  return inspirationInstruction
+    ? `Mandatory inspiration direction: ${inspirationInstruction}.`
+    : MUREKA_CREATIVE_VARIATION_INSTRUCTION
+}
+
 function buildSunoStyle(style: string | null, mood: string | null, description?: string | null) {
   const forbiddenInstruments = getForbiddenInstruments(description)
   const desiredInstruments = getDesiredInstruments(description)
@@ -194,6 +212,7 @@ function buildSunoStyle(style: string | null, mood: string | null, description?:
   const parts = [
     stylePrompt,
     hasMood ? `clima ${normalizedMood}` : null,
+    getSunoCreativeDirection(description),
     ...getVoicePrompt(description),
     desiredInstruments ? `instrumentos: ${desiredInstruments}` : null,
     'vocal em português do Brasil',
@@ -379,6 +398,7 @@ function buildMurekaPrompt(style: string | null, mood: string | null, descriptio
       ? `Avoid these instruments requested by the user: ${forbiddenInstruments.join(', ')}.`
       : null,
     'Use Brazilian Portuguese vocal phrasing and pronunciation.',
+    getMurekaCreativeDirection(description),
     'Create a polished full song arrangement, radio-ready, modern mix, professional Brazilian production.',
     MAX_STUDIO_MUSIC_DURATION_INSTRUCTION,
     'Avoid robotic vocals, distorted vocals, unclear pronunciation, spoken-only performance, weak melody, amateur arrangement.',
@@ -546,6 +566,10 @@ export async function POST(request: NextRequest) {
 
     let inspirationUploadUrl: string | null = null
     const inspirationInstruction = String(inspirationRequest?.request_payload?.inspirationInstruction || '').trim()
+    const requestedInspirationAudioWeight = Number(inspirationRequest?.request_payload?.audioWeight)
+    const inspirationAudioWeight = Number.isFinite(requestedInspirationAudioWeight)
+      ? Math.min(0.75, Math.max(0.3, requestedInspirationAudioWeight))
+      : 0.75
     if (inspirationRequest?.source_version_id) {
       const { data: sourceVersion, error: sourceVersionError } = await supabaseAdmin
         .from('studio_versions')
@@ -605,7 +629,7 @@ export async function POST(request: NextRequest) {
       ? {
           ...sunoPayload,
           uploadUrl: inspirationUploadUrl,
-          audioWeight: 0.75,
+          audioWeight: inspirationAudioWeight,
           styleWeight: Math.max(sunoStyleWeight, 0.55),
         }
       : sunoPayload

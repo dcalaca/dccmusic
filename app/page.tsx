@@ -7,7 +7,23 @@ import SiteStatsCompact from '@/components/SiteStatsCompact'
 import ComposerSignupCta from '@/components/ComposerSignupCta'
 import HeroImageCarousel from '@/components/HeroImageCarousel'
 import Link from 'next/link'
-import { FiPlayCircle, FiMusic, FiArrowRight } from 'react-icons/fi'
+import { FiPlayCircle, FiMusic, FiArrowRight, FiZap } from 'react-icons/fi'
+
+export const metadata = {
+  title: 'DCC Music - Músicas, Studio IA e Partitura com Cifra',
+  description:
+    'Ouça lançamentos, crie músicas com Studio IA, gere partitura PDF, MusicXML e letra cifrada. Plataforma completa para compositores e ouvintes.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'DCC Music - Músicas, Studio IA e Partitura com Cifra',
+    description:
+      'Catálogo musical, criação com IA e transcrição em partitura e cifra em um só lugar.',
+    url: 'https://www.dccmusic.online',
+    type: 'website',
+  },
+}
 
 export const dynamic = 'force-dynamic' // Tornar dinâmico para evitar erro durante build se tabelas não existirem
 export const revalidate = 60 // Revalidar a cada 60 segundos
@@ -229,20 +245,28 @@ export default async function Home() {
                 </p>
                 <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-7 sm:flex-row sm:flex-wrap">
                   <Link
-                    href="/videos"
-                    className="group inline-flex w-full max-w-xs items-center justify-center px-6 py-2.5 bg-primary-600 hover:bg-primary-500 text-white text-sm font-semibold rounded-lg transition neon-glow sm:w-auto"
+                    href="/studio-ia"
+                    className="group inline-flex w-full max-w-xs items-center justify-center rounded-lg bg-purple-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 sm:w-auto"
                   >
-                    <FiPlayCircle className="w-5 h-5 mr-2 shrink-0" />
+                    <FiZap className="mr-2 h-5 w-5 shrink-0" />
+                    Studio IA
+                    <FiArrowRight className="ml-2 h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                  <Link
+                    href="/videos"
+                    className="group inline-flex w-full max-w-xs items-center justify-center rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-500 sm:w-auto neon-glow"
+                  >
+                    <FiPlayCircle className="mr-2 h-5 w-5 shrink-0" />
                     Ver Vídeos
-                    <FiArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                    <FiArrowRight className="ml-2 h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                   <Link
                     href="/musicas"
-                    className="group inline-flex w-full max-w-xs items-center justify-center px-6 py-2.5 bg-black text-white text-sm font-semibold rounded-lg border-2 border-white hover:bg-gray-950 transition sm:w-auto"
+                    className="group inline-flex w-full max-w-xs items-center justify-center rounded-lg border-2 border-white bg-black px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-950 sm:w-auto"
                   >
-                    <FiMusic className="w-5 h-5 mr-2 shrink-0" />
+                    <FiMusic className="mr-2 h-5 w-5 shrink-0" />
                     Ouvir Músicas
-                    <FiArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-0.5 transition-transform shrink-0" />
+                    <FiArrowRight className="ml-2 h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 </div>
               </div>

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { FiArrowLeft, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiCode, FiCreditCard, FiDownload, FiExternalLink, FiEyeOff, FiHeart, FiLoader, FiMic, FiMusic, FiPause, FiPlay, FiSave, FiVideo, FiX, FiZap } from 'react-icons/fi'
+import { FiArrowLeft, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiCode, FiCreditCard, FiDownload, FiExternalLink, FiEyeOff, FiFileText, FiHeart, FiLoader, FiMic, FiMusic, FiPause, FiPlay, FiSave, FiVideo, FiX, FiZap } from 'react-icons/fi'
 import CopyButton from '@/components/CopyButton'
 
 const refineActions = [
@@ -33,10 +33,9 @@ const MUSIC_CREATION_UNAVAILABLE_MESSAGE = 'Sua letra foi salva, mas não conseg
 const STUDIO_MUSIC_CREDITS = 10
 
 const inspirationVariationOptions = [
-  { id: 'similar', label: 'Manter parecido' },
-  { id: 'faster', label: 'Um pouco mais rápido' },
-  { id: 'energetic', label: 'Mais animado' },
-  { id: 'slower_romantic', label: 'Mais lento/romântico' },
+  { id: 'similar', label: 'Parecida com a anterior' },
+  { id: 'same_style_new_melody', label: 'Mesmo estilo, mas melodia diferente' },
+  { id: 'creative', label: 'Mais criativa / fugir mais da anterior' },
 ]
 
 function canCreateFromStudioStatus(status: any) {
@@ -238,6 +237,54 @@ function StudioAudioPlayer({ src, label = 'Ouvir música' }: { src: string; labe
   )
 }
 
+function LearnYourMusicAd({
+  studioVersionId,
+  studioProjectId,
+}: {
+  studioVersionId?: string
+  studioProjectId?: string
+}) {
+  const items = ['Cifra', 'Partitura da melodia', 'MusicXML', 'Tom', 'BPM']
+  const transcriptionParams = new URLSearchParams()
+  if (studioVersionId) transcriptionParams.set('studioVersionId', studioVersionId)
+  if (studioProjectId) transcriptionParams.set('studioProjectId', studioProjectId)
+  const transcriptionHref = transcriptionParams.toString()
+    ? `/transcricao-musical?${transcriptionParams.toString()}`
+    : '/transcricao-musical'
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-2xl border border-amber-400/40 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.22),transparent_38%),linear-gradient(135deg,rgba(76,29,149,0.45),rgba(15,23,42,0.95),rgba(0,0,0,0.95))] p-4 shadow-xl shadow-amber-950/20">
+      <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-300/50 bg-amber-400/15 px-3 py-1 text-xs font-black uppercase tracking-wide text-amber-100">
+        <FiMusic /> Partitura e Cifra
+      </div>
+      <h2 className="text-xl font-black text-white">Aprenda a tocar sua música</h2>
+      <p className="mt-2 text-sm leading-relaxed text-gray-300">
+        Gere os arquivos para estudar, tocar, imprimir ou abrir em programas de partitura.
+      </p>
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        {items.map((item) => (
+          <div key={item} className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-sm font-bold text-gray-100">
+            <FiCheckCircle className="shrink-0 text-green-300" />
+            {item}
+          </div>
+        ))}
+      </div>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Preço</p>
+          <p className="text-2xl font-black text-amber-200">25 créditos</p>
+        </div>
+        <Link
+          href={transcriptionHref}
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 px-4 py-3 text-sm font-black text-black hover:from-amber-300 hover:to-yellow-400"
+        >
+          <FiFileText /> Gerar partitura e cifra
+        </Link>
+      </div>
+    </div>
+  )
+}
+
 function extractVoicePreferences(description?: string | null) {
   const match = String(description || '').match(/Preferência de voz:\s*(.+)/i)
   return match?.[1]?.trim() || ''
@@ -294,6 +341,7 @@ export default function StudioProjectDetailPage() {
   const [upgradeModalMessage, setUpgradeModalMessage] = useState('')
   const [showIncorporateCode, setShowIncorporateCode] = useState(false)
   const [showInspirationPicker, setShowInspirationPicker] = useState(false)
+  const [preselectedInspirationVersionId, setPreselectedInspirationVersionId] = useState('')
   const backgroundMessageRef = useRef<HTMLDivElement | null>(null)
   const inspirationPickerRef = useRef<HTMLDivElement | null>(null)
   const lastFocusedMessageRef = useRef('')
@@ -446,15 +494,19 @@ export default function StudioProjectDetailPage() {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao carregar projeto')
+      const projectVersions = Array.isArray(data.project.versions) ? data.project.versions : []
       const projectAudioUrl = data.project.version?.audioUrl || data.project.version?.streamAudioUrl
+      const hasReadyAudio = Boolean(projectAudioUrl || projectVersions.some((version: any) => version.audioUrl || version.streamAudioUrl))
       setProject(data.project)
       setLyric(data.project.lyric || '')
-      if (projectAudioUrl) {
+      if (hasReadyAudio) {
         setGenerationId(null)
         setGenerationBackgroundMode(false)
         setPreviewAudioUrl('')
         if (options?.notifyReady) {
           setMessage('Sua música ficou pronta. Atualizamos esta página automaticamente.')
+        } else if (message === MUSIC_GENERATION_BACKGROUND_MESSAGE) {
+          setMessage('')
         }
       } else if (data.activeGeneration?.id) {
         setGenerationId(data.activeGeneration.id)
@@ -690,7 +742,7 @@ export default function StudioProjectDetailPage() {
   }
 
   const reuseLyricInNewProject = async (sourceVersionId?: string) => {
-    setShowInspirationPicker(false)
+    closeInspirationPicker()
     const token = localStorage.getItem('composer_token')
     if (!token) {
       router.push('/compositores/login')
@@ -743,6 +795,27 @@ export default function StudioProjectDetailPage() {
       behavior: 'smooth',
     })
   }
+
+  const openInspirationPickerForVersion = (versionId: string) => {
+    setPreselectedInspirationVersionId(versionId)
+    setShowInspirationPicker(true)
+  }
+
+  const closeInspirationPicker = () => {
+    setShowInspirationPicker(false)
+    setPreselectedInspirationVersionId('')
+  }
+
+  useEffect(() => {
+    if (!showInspirationPicker || !preselectedInspirationVersionId) return
+
+    const frame = window.requestAnimationFrame(() => {
+      const target = document.getElementById(`inspiration-version-${preselectedInspirationVersionId}`)
+      target?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+    })
+
+    return () => window.cancelAnimationFrame(frame)
+  }, [showInspirationPicker, preselectedInspirationVersionId])
 
   const checkGeneration = async (id: string) => {
     const token = localStorage.getItem('composer_token')
@@ -1008,7 +1081,16 @@ export default function StudioProjectDetailPage() {
   const incorporateCode = project.publicSlug
     ? `<iframe src="${typeof window !== 'undefined' ? window.location.origin : 'https://www.dccmusic.online'}/embed/studio/${project.publicSlug}" width="100%" height="180" frameborder="0" allow="autoplay; encrypted-media" loading="lazy"></iframe>`
     : ''
-  const isMusicRequestPending = Boolean(generationId && generationBackgroundMode && !audioUrl)
+  const hasProjectReadyAudio = Boolean(audioUrl || projectVersions.some((version: any) => version.audioUrl || version.streamAudioUrl))
+  const isMusicRequestPending = Boolean(generationId && generationBackgroundMode && !hasProjectReadyAudio)
+  const visibleMessage = message === MUSIC_GENERATION_BACKGROUND_MESSAGE && !isMusicRequestPending
+    ? ''
+    : message
+  const currentStudioVersionId =
+    project.version?.id ||
+    projectVersions.find((version: any) => version.isCurrent)?.id ||
+    projectVersions[0]?.id ||
+    undefined
 
   return (
     <div className="min-h-screen w-full max-w-[100vw] overflow-x-hidden py-4 sm:py-7">
@@ -1052,7 +1134,7 @@ export default function StudioProjectDetailPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowInspirationPicker(false)}
+                    onClick={closeInspirationPicker}
                     className="absolute right-4 top-4 rounded-full border border-white/10 bg-black/35 p-2 text-gray-300 transition hover:text-white sm:static"
                     aria-label="Fechar"
                   >
@@ -1102,11 +1184,19 @@ export default function StudioProjectDetailPage() {
                       const versionAudioUrl = version.audioUrl || version.streamAudioUrl
                       const duration = formatAudioDuration(version.duration)
                       const versionNumber = projectVersions.length - index
+                      const isPreselected = preselectedInspirationVersionId === version.id
 
                       return (
-                        <article key={version.id} className="min-w-[82vw] snap-center rounded-3xl border border-purple-400/20 bg-black/35 p-4 shadow-xl shadow-black/30 sm:min-w-[26rem] lg:min-w-[30rem]">
+                        <article
+                          id={`inspiration-version-${version.id}`}
+                          key={version.id}
+                          className={`min-w-[82vw] snap-center rounded-3xl border p-4 shadow-xl shadow-black/30 sm:min-w-[26rem] lg:min-w-[30rem] ${isPreselected ? 'border-primary-300 bg-primary-950/20 ring-2 ring-primary-400/40' : 'border-purple-400/20 bg-black/35'}`}
+                        >
                           <div className="mb-3 flex items-start justify-between gap-3">
                             <div>
+                              {isPreselected && (
+                                <p className="mb-1 text-xs font-black uppercase tracking-wide text-primary-200">Versão escolhida</p>
+                              )}
                               <p className="text-xs font-black uppercase tracking-wide text-green-300">Música gerada #{versionNumber}</p>
                               <h3 className="mt-1 line-clamp-2 font-black text-white">
                                 {version.versionName || version.style || 'Versão gerada'}
@@ -1228,6 +1318,7 @@ export default function StudioProjectDetailPage() {
                   {audioUrl && !shouldShowVersionList && (
                     <div className="mt-4">
                       <StudioAudioPlayer src={audioUrl} label={project.title || 'Música gerada'} />
+                      <LearnYourMusicAd studioVersionId={currentStudioVersionId} studioProjectId={project.id} />
                     </div>
                   )}
 
@@ -1460,13 +1551,13 @@ export default function StudioProjectDetailPage() {
                   <p>{error}</p>
                 </div>
               )}
-              {message && (
+              {visibleMessage && (
                 <div
-                  ref={message === MUSIC_GENERATION_BACKGROUND_MESSAGE ? backgroundMessageRef : undefined}
-                  tabIndex={message === MUSIC_GENERATION_BACKGROUND_MESSAGE ? -1 : undefined}
+                  ref={visibleMessage === MUSIC_GENERATION_BACKGROUND_MESSAGE ? backgroundMessageRef : undefined}
+                  tabIndex={visibleMessage === MUSIC_GENERATION_BACKGROUND_MESSAGE ? -1 : undefined}
                   className="rounded-xl border border-green-800 bg-green-950/50 p-4 text-green-200 outline-none ring-green-500/40 focus:ring-2"
                 >
-                  {message}
+                  {visibleMessage}
                 </div>
               )}
 
@@ -1478,6 +1569,7 @@ export default function StudioProjectDetailPage() {
                     <p className="mt-1 text-sm text-gray-400">
                       Ouça as versões geradas abaixo. A versão atual está marcada, mas todas ficam disponíveis aqui.
                     </p>
+                    <LearnYourMusicAd studioVersionId={currentStudioVersionId} studioProjectId={project.id} />
                   </div>
                   <div className="grid gap-3">
                     {projectVersions.map((version: any, index: number) => {
@@ -1521,7 +1613,7 @@ export default function StudioProjectDetailPage() {
                           {versionAudioUrl && (
                             <button
                               type="button"
-                              onClick={() => setShowInspirationPicker(true)}
+                              onClick={() => openInspirationPickerForVersion(version.id)}
                               disabled={Boolean(processing) || !canReuseLyric}
                               className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-purple-500/50 bg-purple-950/30 px-4 py-3 text-sm font-bold text-purple-100 transition hover:border-purple-300 hover:bg-purple-900/40 disabled:opacity-60 sm:w-auto"
                             >

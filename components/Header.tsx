@@ -4,14 +4,15 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { FiMusic, FiPlayCircle, FiHome, FiShield, FiUsers, FiUser, FiLogOut, FiChevronDown, FiZap, FiPlusCircle, FiLock, FiCreditCard } from 'react-icons/fi'
+import { FiMusic, FiPlayCircle, FiHome, FiShield, FiUsers, FiUser, FiLogOut, FiChevronDown, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText } from 'react-icons/fi'
 
 const navItems = [
   { href: '/', label: 'Home', icon: FiHome },
   { href: '/studio-ia', label: 'Studio IA', icon: FiZap },
+  { href: '/transcricao-musical', label: 'Partitura e Cifra', mobileLabel: 'Partitura', icon: FiFileText },
   { href: '/videos', label: 'Vídeos', icon: FiPlayCircle },
   { href: '/musicas', label: 'Músicas', icon: FiMusic },
-  { href: '/compositores', label: 'Compositores Premium', icon: FiUsers },
+  { href: '/compositores', label: 'Compositores Premium', mobileLabel: 'Compositores', icon: FiUsers },
   { href: '/compositores/planos', label: 'Planos', icon: FiCreditCard },
 ]
 
@@ -175,7 +176,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-800 bg-black">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="container mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex min-h-16 flex-col gap-2 py-2 md:h-16 md:flex-row md:items-center md:justify-between md:py-0">
           <div className="flex w-full min-w-0 items-center justify-between md:flex-1 md:space-x-4">
             <Link href="/" className="flex shrink-0 items-center space-x-2">
@@ -216,7 +217,7 @@ export default function Header() {
           <nav className="hidden shrink-0 items-center space-x-2 md:flex">
             {/* Usuário comum só aparece se já estiver logado pelo fluxo de avaliação */}
             {mounted && !composer && isAuthenticated && user && (
-              <div className="relative">
+              <div className="relative z-[120]">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium transition-all"
@@ -226,7 +227,7 @@ export default function Header() {
                   <FiChevronDown className={`w-4 h-4 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
                 </button>
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-lg overflow-hidden z-50">
+                  <div className="absolute right-0 z-[130] mt-2 w-48 overflow-hidden rounded-lg border border-gray-700 bg-gray-900 shadow-2xl shadow-black/50">
                     <Link
                       href="/minha-conta"
                       onClick={() => setShowUserMenu(false)}
@@ -248,7 +249,7 @@ export default function Header() {
             )}
             
             {mounted && composer ? (
-              <div className="relative">
+              <div className="relative z-[120]">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex items-center space-x-2 rounded-lg bg-gradient-to-r from-primary-600 to-purple-600 px-3 py-2 font-medium text-white transition-all hover:from-primary-700 hover:to-purple-700"
@@ -265,7 +266,7 @@ export default function Header() {
                   <FiChevronDown className={`w-4 h-4 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
                 </button>
                 {showUserMenu && (
-                  <div className="absolute right-0 z-50 mt-2 w-60 overflow-hidden rounded-lg border border-gray-700 bg-gray-900 shadow-lg">
+                  <div className="absolute right-0 z-[130] mt-2 w-60 overflow-hidden rounded-lg border border-gray-700 bg-gray-900 shadow-2xl shadow-black/50">
                     <div className="border-b border-gray-700 px-4 py-3">
                       <div className="truncate text-sm font-bold">{composerDisplayName}</div>
                       <div className="truncate text-xs text-gray-400">{composer.email}</div>
@@ -335,7 +336,7 @@ export default function Header() {
                         className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                       >
                         <FiUser className="w-4 h-4" />
-                        <span>Meus dados</span>
+                        <span>Conta e extrato</span>
                       </Link>
                       <button
                         onClick={handleComposerLogout}
@@ -360,24 +361,25 @@ export default function Header() {
           </nav>
 
           {/* Mobile menu */}
-          <nav className="flex w-full items-center gap-2 md:hidden">
+          <nav className="flex w-full min-w-0 items-center gap-2 md:hidden">
             <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {navItems.map((item) => {
                 const Icon = item.icon
                 const isActive = pathname === item.href
+                const mobileLabel = 'mobileLabel' in item ? item.mobileLabel : item.label
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+                    className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-[11px] font-semibold transition-all sm:px-3 sm:text-xs ${
                       isActive
                         ? 'bg-primary-600 text-white neon-glow'
                         : 'text-gray-300 hover:text-white hover:bg-gray-800'
                     }`}
                     title={item.label}
                   >
-                    <Icon className="h-4 w-4" />
-                    <span>{item.label}</span>
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span className="whitespace-nowrap">{mobileLabel}</span>
                   </Link>
                 )
               })}
@@ -385,7 +387,7 @@ export default function Header() {
             
             {/* Mobile: usuário comum só aparece se já estiver logado pelo fluxo de avaliação */}
             {mounted && !composer && isAuthenticated && user && (
-              <div className="relative shrink-0">
+              <div className="relative z-[120] shrink-0">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="p-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-all"
@@ -394,9 +396,9 @@ export default function Header() {
                   <FiUser className="w-5 h-5" />
                 </button>
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-700 rounded-lg shadow-lg overflow-hidden z-50">
-                    <div className="px-4 py-2 border-b border-gray-700">
-                      <div className="font-medium text-sm">{user.name}</div>
+                  <div className="absolute right-0 z-[130] mt-2 w-48 overflow-hidden rounded-lg border border-gray-700 bg-gray-900 shadow-2xl shadow-black/50">
+                    <div className="border-b border-gray-700 px-4 py-2">
+                      <div className="text-sm font-medium">{user.name}</div>
                       <div className="text-xs text-gray-400">{user.email}</div>
                     </div>
                     <Link
@@ -420,7 +422,7 @@ export default function Header() {
             )}
             
             {mounted && composer ? (
-              <div className="relative shrink-0">
+              <div className="relative z-[120] shrink-0">
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex min-h-10 items-center justify-center gap-1 rounded-lg bg-gradient-to-r from-primary-600 to-purple-600 px-2 text-sm font-black text-white transition-all hover:from-primary-700 hover:to-purple-700"
@@ -430,7 +432,7 @@ export default function Header() {
                   {composerBalanceLabel && <span className="text-[10px] font-bold text-green-100">{composerStudioBalance}</span>}
                 </button>
                 {showUserMenu && (
-                  <div className="absolute right-0 z-50 mt-2 w-60 overflow-hidden rounded-lg border border-gray-700 bg-gray-900 shadow-lg">
+                  <div className="absolute right-0 z-[130] mt-2 w-60 overflow-hidden rounded-lg border border-gray-700 bg-gray-900 shadow-2xl shadow-black/50">
                     <div className="border-b border-gray-700 px-4 py-3">
                       <div className="truncate text-sm font-bold">{composerDisplayName}</div>
                       <div className="truncate text-xs text-gray-400">{composer.email}</div>
@@ -500,7 +502,7 @@ export default function Header() {
                         className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                       >
                         <FiUser className="w-4 h-4" />
-                        <span>Meus dados</span>
+                        <span>Conta e extrato</span>
                       </Link>
                       <button
                         onClick={handleComposerLogout}
@@ -529,7 +531,7 @@ export default function Header() {
       {/* Overlay para fechar menu ao clicar fora */}
       {showUserMenu && (
         <div
-          className="fixed inset-0 z-40"
+          className="fixed inset-0 z-[110]"
           onClick={() => setShowUserMenu(false)}
         />
       )}

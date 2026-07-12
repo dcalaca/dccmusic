@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { processDueEmailCampaigns } from '@/lib/admin-email-campaigns'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 300
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET
@@ -15,7 +16,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const results = await processDueEmailCampaigns({ limitPerCampaign: 100 })
+    const campaignId = request.nextUrl.searchParams.get('campaignId') || undefined
+
+    const results = await processDueEmailCampaigns({
+      limitPerCampaign: 40,
+      maxBatchesPerCampaign: 8,
+      campaignId,
+    })
 
     return NextResponse.json({
       success: true,

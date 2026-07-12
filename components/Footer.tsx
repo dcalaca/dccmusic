@@ -51,7 +51,7 @@ export default function Footer() {
                 className="h-10 w-auto mb-4"
               />
               <p className="text-gray-400 text-sm">
-                Hub oficial do DCC Music. Assista aos vídeos e ouça as músicas. Explore os últimos lançamentos.
+                Plataforma para ouvir músicas e vídeos, criar com Studio IA, gerar partitura e cifra e divulgar o trabalho de compositores.
               </p>
             </div>
 
@@ -66,6 +66,16 @@ export default function Footer() {
                 <li>
                   <Link href="/musicas" className="text-gray-400 hover:text-white transition-colors">
                     Músicas
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/studio-ia" className="text-gray-400 hover:text-white transition-colors">
+                    Studio IA
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/transcricao-musical" className="text-gray-400 hover:text-white transition-colors">
+                    Partitura e Cifra
                   </Link>
                 </li>
                 <li>

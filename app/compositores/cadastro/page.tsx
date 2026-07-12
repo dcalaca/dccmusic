@@ -83,7 +83,9 @@ export default function ComposerSignupPage() {
           value: 0.01,
         }, data?.metaRegistrationEventId ? { eventID: data.metaRegistrationEventId } : undefined)
       }
-      router.push(`/compositores/login?cadastro=sucesso&mensagem=${encodeURIComponent(successMessage)}`)
+      router.push(
+        `/compositores/login?cadastro=sucesso&email=${encodeURIComponent(formData.email)}&mensagem=${encodeURIComponent(successMessage)}`
+      )
     } catch (err: any) {
       setError(err.message || 'Erro ao cadastrar. Tente novamente.')
       setLoading(false)

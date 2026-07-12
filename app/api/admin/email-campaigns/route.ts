@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-helpers'
 import { supabaseAdmin } from '@/lib/supabase'
-import { calculateNextRunAt, getCampaignRecipients, sendEmailCampaign } from '@/lib/admin-email-campaigns'
+import { calculateNextRunAt, CAMPAIGN_BATCH_SIZE, CAMPAIGN_MAX_BATCHES_PER_CRON, continueEmailCampaign, getCampaignRecipients } from '@/lib/admin-email-campaigns'
 
 export const dynamic = 'force-dynamic'
 
@@ -237,12 +237,25 @@ export async function PATCH(request: NextRequest) {
     if (action === 'send') {
       const { error } = await supabaseAdmin
         .from('admin_email_campaigns')
-        .update({ status: 'scheduled', scheduled_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .update({
+          status: 'sending',
+          scheduled_at: new Date().toISOString(),
+          next_run_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', id)
 
       if (error) throw error
-      const result = await sendEmailCampaign(id, { limit: 50 })
-      return NextResponse.json({ result })
+
+      const result = await continueEmailCampaign(id, {
+        limitPerCampaign: CAMPAIGN_BATCH_SIZE,
+        maxBatches: CAMPAIGN_MAX_BATCHES_PER_CRON,
+      })
+
+      return NextResponse.json({
+        result,
+        autoContinue: result.remaining > 0,
+      })
     }
 
     if (action === 'pause') {

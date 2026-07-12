@@ -152,15 +152,20 @@ export default function SiteStatsCompact({
                 </div>
               </div>
 
-              <div className="flex min-w-0 items-center justify-between gap-4 rounded-2xl border border-purple-900/70 bg-gray-950 px-5 py-5 lg:flex-col lg:items-start lg:justify-center">
-                <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">Músicas IA salvas</p>
-                  <p className="mt-1 text-3xl font-black leading-tight text-white tabular-nums">
+              <div className="flex min-w-0 items-center justify-between gap-4 rounded-2xl border border-purple-900/70 bg-gradient-to-br from-gray-950 via-purple-950/35 to-gray-950 px-5 py-5 lg:flex-col lg:items-start lg:justify-center">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-purple-300">
+                    Studio IA
+                  </p>
+                  <p className="mt-1 text-3xl font-black leading-none text-white tabular-nums sm:text-4xl">
                     {formatIntegerPtBR(deliveredAiMusics)}
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">Total de versões geradas no Studio IA</p>
+                  <p className="mt-2 text-sm font-bold leading-snug text-purple-100">
+                    músicas criadas
+                  </p>
+                  <p className="mt-1 text-[11px] text-gray-500">Atualização em tempo real</p>
                 </div>
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-purple-950 text-purple-300" aria-hidden>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-purple-950 text-purple-300 ring-1 ring-purple-500/30" aria-hidden>
                   <FiZap className="h-5 w-5" strokeWidth={2} />
                 </div>
               </div>

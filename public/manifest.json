@@ -1,7 +1,7 @@
 {
-  "name": "DCC Music - Hub Oficial do Artista",
+  "name": "DCC Music - Studio IA e Partitura",
   "short_name": "DCC Music",
-  "description": "Hub oficial do DCC Music. Assista aos vídeos e ouça as músicas.",
+  "description": "Crie músicas com IA, gere partitura e cifra, ouça lançamentos e divulgue seu trabalho.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

@@ -14,7 +14,7 @@ function getSiteUrl() {
 }
 
 function getSecret() {
-  return process.env.EMAIL_OPTOUT_SECRET || process.env.NEXTAUTH_SECRET || process.env.RESEND_API_KEY || 'dccmusic-email-optout'
+  return process.env.EMAIL_OPTOUT_SECRET || process.env.NEXTAUTH_SECRET || process.env.BREVO_API_KEY || 'dccmusic-email-optout'
 }
 
 export function normalizeMarketingEmail(value: any) {

@@ -1140,7 +1140,7 @@ export async function GET(request: NextRequest) {
           checkedAt: new Date().toISOString(),
         },
         resend: {
-          configured: Boolean(process.env.RESEND_API_KEY),
+          configured: Boolean(process.env.BREVO_API_KEY),
           sentEmails,
           transactionalEmails: transactionalEmailRows.length,
           campaignEmails: campaignEmailRows.length,

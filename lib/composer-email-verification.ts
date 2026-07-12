@@ -1,8 +1,7 @@
 import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
-import { Resend } from 'resend'
 import { supabaseAdmin } from './supabase'
-import { sendAdminNewComposerEmail, sendComposerWelcomeEmail } from './dcc-emails'
+import { sendAdminNewComposerEmail, sendComposerWelcomeEmail, sendDccEmail } from './dcc-emails'
 import { recordConfirmedPartnerSignup } from './partners'
 import { sendTikTokCompleteRegistrationEvent } from './tiktok-events'
 
@@ -16,26 +15,6 @@ function getSiteUrl() {
 
 function hashToken(token: string) {
   return crypto.createHash('sha256').update(token).digest('hex')
-}
-
-function getResendClient() {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) return null
-  return new Resend(apiKey)
-}
-
-function normalizeEmailHeader(value: string | undefined) {
-  if (!value) return undefined
-  let normalized = value.trim()
-
-  if (
-    (normalized.startsWith('"') && normalized.endsWith('"')) ||
-    (normalized.startsWith("'") && normalized.endsWith("'"))
-  ) {
-    normalized = normalized.slice(1, -1).trim()
-  }
-
-  return normalized || undefined
 }
 
 function verificationEmailHtml(input: { name: string; verificationUrl: string }) {
@@ -122,37 +101,19 @@ export async function sendComposerVerificationEmail(input: {
   email: string
   name: string
 }) {
-  const resend = getResendClient()
-  const from = normalizeEmailHeader(process.env.RESEND_FROM_EMAIL)
-  const replyTo = normalizeEmailHeader(process.env.RESEND_REPLY_TO_EMAIL)
-
-  if (!resend || !from) {
-    console.warn('[EMAIL VERIFY] RESEND_API_KEY ou RESEND_FROM_EMAIL ausente. E-mail não enviado.')
-    return { sent: false, reason: 'missing_resend_config' }
-  }
-
   const verification = await createComposerEmailVerification(input)
 
-  const { data, error } = await resend.emails.send({
-    from,
-    to: [input.email],
+  return sendDccEmail({
+    to: input.email,
     subject: 'Confirme seu e-mail na DCC Music',
-    html: verificationEmailHtml({ name: input.name, verificationUrl: verification.verificationUrl }),
-    replyTo,
-    tags: [
-      { name: 'category', value: 'composer_email_verification' },
-      { name: 'composer_id', value: input.composerId },
-    ],
-  }, {
-    idempotencyKey: `composer-email-verification/${input.composerId}/${Date.now()}`,
+    title: 'Confirme seu e-mail',
+    preview: 'Confirme seu e-mail para ativar sua conta de compositor na DCC Music.',
+    category: 'composer_email_verification',
+    provider: 'brevo',
+    eventKey: `composer-email-verification/${input.composerId}/${Date.now()}`,
+    metadata: { composerId: input.composerId },
+    contentHtml: verificationEmailHtml({ name: input.name, verificationUrl: verification.verificationUrl }),
   })
-
-  if (error) {
-    console.error('[EMAIL VERIFY] Erro Resend:', error)
-    throw new Error(error.message || 'Erro ao enviar e-mail de confirmação')
-  }
-
-  return { sent: true, id: data?.id || null }
 }
 
 export async function sendComposerActivationReminderEmail(input: {
@@ -160,37 +121,19 @@ export async function sendComposerActivationReminderEmail(input: {
   email: string
   name: string
 }) {
-  const resend = getResendClient()
-  const from = normalizeEmailHeader(process.env.RESEND_FROM_EMAIL)
-  const replyTo = normalizeEmailHeader(process.env.RESEND_REPLY_TO_EMAIL)
-
-  if (!resend || !from) {
-    console.warn('[EMAIL VERIFY] RESEND_API_KEY ou RESEND_FROM_EMAIL ausente. Lembrete não enviado.')
-    return { sent: false, reason: 'missing_resend_config' }
-  }
-
   const verification = await createComposerEmailVerification(input)
 
-  const { data, error } = await resend.emails.send({
-    from,
-    to: [input.email],
+  return sendDccEmail({
+    to: input.email,
     subject: 'Ative sua conta e use sua música grátis',
-    html: activationReminderEmailHtml({ name: input.name, verificationUrl: verification.verificationUrl }),
-    replyTo,
-    tags: [
-      { name: 'category', value: 'composer_activation_reminder' },
-      { name: 'composer_id', value: input.composerId },
-    ],
-  }, {
-    idempotencyKey: `composer-activation-reminder/${input.composerId}/${Date.now()}`,
+    title: 'Ative sua conta na DCC Music',
+    preview: 'Ative sua conta para acessar o painel e usar sua música grátis no DCC Studio IA.',
+    category: 'composer_activation_reminder',
+    provider: 'brevo',
+    eventKey: `composer-activation-reminder/${input.composerId}/${Date.now()}`,
+    metadata: { composerId: input.composerId },
+    contentHtml: activationReminderEmailHtml({ name: input.name, verificationUrl: verification.verificationUrl }),
   })
-
-  if (error) {
-    console.error('[EMAIL VERIFY] Erro Resend lembrete:', error)
-    throw new Error(error.message || 'Erro ao enviar lembrete de ativação')
-  }
-
-  return { sent: true, id: data?.id || null }
 }
 
 export async function verifyComposerEmailToken(token: string) {

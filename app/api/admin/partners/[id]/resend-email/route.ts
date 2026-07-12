@@ -54,7 +54,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     if (!emailResult.sent) {
       return NextResponse.json(
-        { error: 'E-mail não enviado. Confira a configuração do Resend.' },
+        { error: 'E-mail não enviado. Confira a configuração do Brevo.' },
         { status: 500 }
       )
     }
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     if (isPartnerSchemaMissing(error)) {
       return NextResponse.json({ setupRequired: true, error: 'Rode o SQL do sistema de parceiros.' }, { status: 400 })
     }
-    console.error('[Admin Partners Resend Email] Erro:', error)
+    console.error('[Admin Partners Email] Erro:', error)
     return NextResponse.json({ error: error.message || 'Erro ao reenviar e-mail do parceiro' }, { status: 500 })
   }
 }

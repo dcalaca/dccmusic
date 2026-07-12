@@ -99,6 +99,7 @@ function creditActionLabel(action?: string | null) {
     custom_voice_creation: 'Criação de voz IA',
     premium_cover: 'Capa premium IA',
     studio_cover_art: 'Criação de capa IA',
+    music_transcription: 'Partitura e cifra',
     lyric_generation_free: 'Letra grátis',
   }
   return labels[action || ''] || action || 'Movimentação'

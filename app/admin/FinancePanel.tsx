@@ -777,7 +777,7 @@ export default function FinancePanel() {
                       <span className="font-medium">{formatMoney(summary.costs.fixed.vercel)}</span>
                     </div>
                     <div className="flex justify-between gap-4">
-                      <span className="text-gray-400">Resend (e-mails)</span>
+                      <span className="text-gray-400">Brevo (e-mails)</span>
                       <span className="font-medium">{formatMoney(summary.costs.fixed.resend)}</span>
                     </div>
                     <div className="flex justify-between gap-4">
@@ -953,7 +953,7 @@ export default function FinancePanel() {
           </div>
 
           <div className="bg-gray-950/50 border border-gray-800 rounded-xl p-4 mt-4">
-            <h3 className="font-semibold mb-3">E-mails e Resend</h3>
+            <h3 className="font-semibold mb-3">E-mails e Brevo</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm mb-4">
               <div className="border border-gray-800 rounded-lg p-3">
                 <p className="text-gray-500 text-xs">E-mails enviados</p>
@@ -1008,7 +1008,7 @@ export default function FinancePanel() {
                 <p className="text-white font-semibold">{formatMoney(summary.costs.fixed.vercel || 0)}</p>
               </div>
               <div className="border border-gray-800 rounded-lg p-3">
-                <p className="text-gray-300 font-medium">Resend (e-mails)</p>
+                <p className="text-gray-300 font-medium">Brevo (e-mails)</p>
                 <p className="text-gray-500 text-xs mt-1">Mensal</p>
                 <p className="text-white font-semibold">{formatMoney(summary.costAssumptions.resendMonthlyFixed || 0)}</p>
                 <p className="text-gray-500 text-xs mt-2">No período</p>
@@ -1104,7 +1104,7 @@ export default function FinancePanel() {
           </div>
 
           <p className="text-xs text-gray-500 mt-4">
-            Premissas: IA musical {formatMoney(summary.costAssumptions.musicGeneration)} por música, vídeo com capa/letra {formatMoney(summary.costAssumptions.lyricVideo)}; letra IA {formatMoney(summary.costAssumptions.lyricGeneration)} cada, capa simples {formatMoney(summary.costAssumptions.simpleCover)} cada, capa premium {formatMoney(summary.costAssumptions.premiumCover)} cada (custo de benefício dos planos); Mercado Pago Pix {formatPercent(summary.costAssumptions.mercadoPagoPixRate * 100)} e cartão/outros {formatPercent(summary.costAssumptions.mercadoPagoCardRate * 100)}; IA criativa (OpenAI) usa o custo real em dólar convertido a US$ 1 = {formatMoney(summary.costAssumptions.openAiUsdToBrl)}. Custos fixos mensais: Supabase {formatMoney(summary.costAssumptions.supabaseMonthlyFixed)}, Vercel {formatMoney(summary.costAssumptions.vercelMonthlyFixed)}, Resend {formatMoney(summary.costAssumptions.resendMonthlyFixed)}, Cursor {formatMoney(summary.costAssumptions.cursorMonthlyFixed)} (proporcionais aos dias do período). Anúncios Meta são puxados direto da conta.
+            Premissas: IA musical {formatMoney(summary.costAssumptions.musicGeneration)} por música, vídeo com capa/letra {formatMoney(summary.costAssumptions.lyricVideo)}; letra IA {formatMoney(summary.costAssumptions.lyricGeneration)} cada, capa simples {formatMoney(summary.costAssumptions.simpleCover)} cada, capa premium {formatMoney(summary.costAssumptions.premiumCover)} cada (custo de benefício dos planos); Mercado Pago Pix {formatPercent(summary.costAssumptions.mercadoPagoPixRate * 100)} e cartão/outros {formatPercent(summary.costAssumptions.mercadoPagoCardRate * 100)}; IA criativa (OpenAI) usa o custo real em dólar convertido a US$ 1 = {formatMoney(summary.costAssumptions.openAiUsdToBrl)}. Custos fixos mensais: Supabase {formatMoney(summary.costAssumptions.supabaseMonthlyFixed)}, Vercel {formatMoney(summary.costAssumptions.vercelMonthlyFixed)}, Brevo {formatMoney(summary.costAssumptions.resendMonthlyFixed)}, Cursor {formatMoney(summary.costAssumptions.cursorMonthlyFixed)} (proporcionais aos dias do período). Anúncios Meta são puxados direto da conta.
           </p>
         </>
       ) : null}

@@ -13,7 +13,7 @@
     },
     {
       "path": "/api/cron/email-campaigns",
-      "schedule": "0 12 * * *"
+      "schedule": "*/5 * * * *"
     },
     {
       "path": "/api/cron/suno-credit-alert",

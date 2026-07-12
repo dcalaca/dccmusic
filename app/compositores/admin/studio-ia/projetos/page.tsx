@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FiArrowLeft, FiChevronLeft, FiChevronRight, FiHeart, FiLoader, FiLogIn, FiMic, FiMoreVertical, FiMusic, FiPlus, FiTrash2, FiX, FiZap } from 'react-icons/fi'
+import { FiArrowLeft, FiChevronLeft, FiChevronRight, FiDownload, FiFileText, FiHeart, FiInfo, FiLoader, FiLogIn, FiMic, FiMoreVertical, FiMusic, FiPlus, FiTrash2, FiX, FiZap } from 'react-icons/fi'
 
 const filters = [
   { id: 'all', label: 'Todos' },
@@ -11,6 +11,8 @@ const filters = [
   { id: 'published', label: 'Publicados' },
   { id: 'favorites', label: 'Favoritos' },
 ]
+
+const TRANSCRIPTIONS_FILTER = 'partituras-cifras'
 
 const inspirationVariationOptions = [
   { id: 'similar', label: 'Manter parecido' },
@@ -27,11 +29,29 @@ function formatDuration(value?: number | string | null) {
   return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
+function formatDate(value: string | null) {
+  if (!value) return ''
+  return new Date(value).toLocaleDateString('pt-BR')
+}
+
+function safeFileName(value: string, extension: string) {
+  const base = String(value || 'partitura-e-cifra')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w.-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80) || 'partitura-e-cifra'
+
+  return `${base}.${extension}`
+}
+
 function StudioProjectsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentFilter = searchParams.get('filter') || 'all'
   const [projects, setProjects] = useState<any[]>([])
+  const [transcriptions, setTranscriptions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState('')
   const [deletingDrafts, setDeletingDrafts] = useState(false)
@@ -48,6 +68,7 @@ function StudioProjectsContent() {
   const showSessionExpired = () => {
     localStorage.removeItem('composer_token')
     setProjects([])
+    setTranscriptions([])
     setSessionExpired(true)
     setError('Sua sessão expirou ou você foi desconectado. Entre novamente para ver seus projetos.')
   }
@@ -63,6 +84,28 @@ function StudioProjectsContent() {
     setLoading(true)
     setError('')
     setSessionExpired(false)
+
+    if (currentFilter === TRANSCRIPTIONS_FILTER) {
+      fetch('/api/compositores/music-transcription', {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      })
+        .then(async (response) => {
+          const data = await response.json()
+          if (response.status === 401) {
+            showSessionExpired()
+            return
+          }
+          if (!response.ok) throw new Error(data.error || 'Erro ao carregar partituras e cifras')
+          setProjects([])
+          setTranscriptions(data.transcriptions || [])
+        })
+        .catch((err) => setError(err.message || 'Erro ao carregar partituras e cifras'))
+        .finally(() => setLoading(false))
+      return
+    }
+
+    setTranscriptions([])
     fetch(`/api/compositores/studio/projects?filter=${currentFilter}`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
@@ -219,6 +262,40 @@ function StudioProjectsContent() {
     }
   }
 
+  const downloadTranscriptionFile = async (transcription: any, kind: 'pdf' | 'musicxml' | 'zip' | 'preview-pdf') => {
+    const token = localStorage.getItem('composer_token')
+    if (!token) {
+      showSessionExpired()
+      return
+    }
+
+    try {
+      setError('')
+      const endpoint = kind === 'preview-pdf'
+        ? `/api/compositores/music-transcription/preview-pdf?id=${encodeURIComponent(transcription.id)}`
+        : `/api/compositores/music-transcription/file?id=${encodeURIComponent(transcription.id)}&kind=${kind}`
+      const response = await fetch(endpoint, { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' })
+      const blob = await response.blob()
+
+      if (!response.ok) {
+        const message = await blob.text().catch(() => '')
+        throw new Error(message || 'Erro ao baixar arquivo.')
+      }
+
+      const extension = kind === 'musicxml' ? 'musicxml' : kind === 'zip' ? 'zip' : 'pdf'
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement('a')
+      anchor.href = url
+      anchor.download = safeFileName(kind === 'preview-pdf' ? `${transcription.title}-letra-cifra` : transcription.title, extension)
+      document.body.appendChild(anchor)
+      anchor.click()
+      anchor.remove()
+      URL.revokeObjectURL(url)
+    } catch (err: any) {
+      setError(err.message || 'Erro ao baixar arquivo.')
+    }
+  }
+
   return (
     <div className="min-h-screen py-6 sm:py-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -227,7 +304,7 @@ function StudioProjectsContent() {
             <Link href="/compositores/admin/studio-ia" className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300">
               <FiArrowLeft /> Voltar
             </Link>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <Link href="/compositores/admin/minhas-vozes" className="inline-flex items-center gap-2 rounded-xl border border-purple-700 bg-purple-950/40 px-3 py-2.5 text-sm font-semibold text-purple-100 hover:bg-purple-900/50 sm:px-4 sm:py-3 sm:text-base">
                 <FiMic /> Vozes
               </Link>
@@ -394,11 +471,25 @@ function StudioProjectsContent() {
                   className="flex items-center gap-2 rounded-xl border border-purple-800/70 bg-purple-950/25 px-4 py-3 text-sm font-bold text-purple-100 transition hover:border-purple-400 hover:bg-purple-900/40"
                 >
                   <FiMic />
-                  Minhas vozes
+                  <span>Minhas vozes</span>
+                  <span className="group relative ml-auto inline-flex">
+                    <FiInfo className="h-4 w-4 text-purple-200" />
+                    <span className="pointer-events-none absolute bottom-full right-0 z-30 mb-2 hidden w-56 rounded-xl border border-purple-700/60 bg-gray-950 px-3 py-2 text-xs font-medium leading-relaxed text-purple-100 shadow-xl shadow-black/40 group-hover:block">
+                      Ouça e gerencie as vozes que você cadastrou.
+                    </span>
+                  </span>
                 </Link>
-                <p className="mt-2 px-1 text-xs leading-relaxed text-gray-500">
-                  Ouça e gerencie as vozes que você cadastrou.
-                </p>
+                <Link
+                  href={`/compositores/admin/studio-ia/projetos?filter=${TRANSCRIPTIONS_FILTER}`}
+                  className={`mt-3 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold transition ${
+                    currentFilter === TRANSCRIPTIONS_FILTER
+                      ? 'border-amber-400 bg-amber-500/20 text-amber-100'
+                      : 'border-amber-800/70 bg-amber-950/20 text-amber-100 hover:border-amber-400 hover:bg-amber-900/30'
+                  }`}
+                >
+                  <FiFileText />
+                  Partituras e Cifras
+                </Link>
               </div>
               <Link
                 href="/compositores/admin/minhas-vozes"
@@ -406,6 +497,17 @@ function StudioProjectsContent() {
               >
                 <FiMic />
                 Minhas vozes
+              </Link>
+              <Link
+                href={`/compositores/admin/studio-ia/projetos?filter=${TRANSCRIPTIONS_FILTER}`}
+                className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold transition lg:hidden ${
+                  currentFilter === TRANSCRIPTIONS_FILTER
+                    ? 'border-amber-400 bg-amber-500/20 text-amber-100'
+                    : 'border-amber-800/70 bg-amber-950/20 text-amber-100 hover:border-amber-400'
+                }`}
+              >
+                <FiFileText />
+                Partituras e Cifras
               </Link>
             </aside>
 
@@ -447,8 +549,73 @@ function StudioProjectsContent() {
 
               {loading ? (
                 <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">
-                  Carregando projetos...
+                  {currentFilter === TRANSCRIPTIONS_FILTER ? 'Carregando partituras e cifras...' : 'Carregando projetos...'}
                 </div>
+              ) : currentFilter === TRANSCRIPTIONS_FILTER ? (
+                transcriptions.length === 0 ? (
+                  <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center">
+                    <p className="mb-4 text-gray-400">Nenhuma partitura ou cifra salva ainda.</p>
+                    <Link href="/transcricao-musical" className="inline-flex rounded-xl bg-primary-600 px-5 py-3 font-semibold">
+                      Criar partitura e cifra
+                    </Link>
+                  </div>
+                ) : (
+                  <div className={viewMode === 'small' ? 'grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 xl:grid-cols-5' : 'grid gap-5 sm:grid-cols-2 xl:grid-cols-3'}>
+                    {transcriptions.map((item) => (
+                      <div key={item.id} className="group overflow-hidden rounded-2xl border border-gray-800 bg-gray-950/70 transition hover:border-amber-500">
+                        <div className={`relative flex items-center justify-center bg-gradient-to-br from-amber-950 via-purple-950 to-black ${viewMode === 'small' ? 'aspect-[4/3]' : 'aspect-square'}`}>
+                          <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-amber-300/30 bg-amber-400/10 text-amber-100">
+                            <FiFileText className="h-8 w-8" />
+                          </div>
+                          <span className="absolute bottom-3 left-3 rounded-full bg-black/80 px-3 py-1 text-xs font-bold text-amber-100">
+                            Partitura e cifra
+                          </span>
+                        </div>
+                        <div className={viewMode === 'small' ? 'p-3' : 'p-4'}>
+                          <div className="mb-2 flex items-center justify-between gap-2">
+                            <h3 className={`truncate font-bold group-hover:text-amber-200 ${viewMode === 'small' ? 'text-sm' : ''}`}>{item.title}</h3>
+                            <span className="rounded-full bg-gray-800 px-2 py-1 text-[10px] uppercase text-gray-300">
+                              salva
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500">{formatDate(item.completedAt || item.createdAt)}</p>
+                          <div className="mt-3 grid gap-2">
+                            <button
+                              type="button"
+                              onClick={() => downloadTranscriptionFile(item, 'pdf')}
+                              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-3 py-2 text-xs font-bold text-white hover:bg-primary-500"
+                            >
+                              <FiDownload /> Partitura PDF
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => downloadTranscriptionFile(item, 'preview-pdf')}
+                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-700 px-3 py-2 text-xs font-bold text-gray-100 hover:border-amber-400"
+                            >
+                              <FiDownload /> Letra cifrada PDF
+                            </button>
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => downloadTranscriptionFile(item, 'musicxml')}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-700 px-3 py-2 text-xs font-bold text-gray-100 hover:border-amber-400"
+                              >
+                                MusicXML
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => downloadTranscriptionFile(item, 'zip')}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-700 px-3 py-2 text-xs font-bold text-gray-100 hover:border-amber-400"
+                              >
+                                ZIP
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
               ) : projects.length === 0 ? (
                 <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center">
                   <p className="text-gray-400 mb-4">Nenhum projeto nesta categoria.</p>

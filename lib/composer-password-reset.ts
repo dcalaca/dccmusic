@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 import bcrypt from 'bcryptjs'
-import { Resend } from 'resend'
 import { supabaseAdmin } from './supabase'
+import { sendDccEmail } from './dcc-emails'
 
 const TOKEN_BYTES = 32
 const TOKEN_EXPIRES_MINUTES = 60
@@ -12,26 +12,6 @@ function getSiteUrl() {
 
 function hashToken(token: string) {
   return crypto.createHash('sha256').update(token).digest('hex')
-}
-
-function getResendClient() {
-  const apiKey = process.env.RESEND_API_KEY
-  if (!apiKey) return null
-  return new Resend(apiKey)
-}
-
-function normalizeEmailHeader(value: string | undefined) {
-  if (!value) return undefined
-  let normalized = value.trim()
-
-  if (
-    (normalized.startsWith('"') && normalized.endsWith('"')) ||
-    (normalized.startsWith("'") && normalized.endsWith("'"))
-  ) {
-    normalized = normalized.slice(1, -1).trim()
-  }
-
-  return normalized || undefined
 }
 
 function escapeHtml(value: string) {
@@ -114,40 +94,22 @@ export async function sendComposerPasswordResetEmail(email: string) {
   if (error) throw error
   if (!composer) return { sent: false, reason: 'composer_not_found' }
 
-  const resend = getResendClient()
-  const from = normalizeEmailHeader(process.env.RESEND_FROM_EMAIL)
-  const replyTo = normalizeEmailHeader(process.env.RESEND_REPLY_TO_EMAIL)
-
-  if (!resend || !from) {
-    console.warn('[PASSWORD RESET] RESEND_API_KEY ou RESEND_FROM_EMAIL ausente. E-mail não enviado.')
-    return { sent: false, reason: 'missing_resend_config' }
-  }
-
   const reset = await createComposerPasswordReset({
     composerId: composer.id,
     email: normalizedEmail,
   })
 
-  const { data, error: resendError } = await resend.emails.send({
-    from,
-    to: [normalizedEmail],
+  return sendDccEmail({
+    to: normalizedEmail,
     subject: 'Crie uma nova senha na DCC Music',
-    html: passwordResetEmailHtml({ name: composer.name, resetUrl: reset.resetUrl }),
-    replyTo,
-    tags: [
-      { name: 'category', value: 'composer_password_reset' },
-      { name: 'composer_id', value: composer.id },
-    ],
-  }, {
-    idempotencyKey: `composer-password-reset/${composer.id}/${Date.now()}`,
+    title: 'Redefinir sua senha',
+    preview: 'Crie uma nova senha para acessar sua conta de compositor na DCC Music.',
+    category: 'composer_password_reset',
+    provider: 'brevo',
+    eventKey: `composer-password-reset/${composer.id}/${Date.now()}`,
+    metadata: { composerId: composer.id },
+    contentHtml: passwordResetEmailHtml({ name: composer.name, resetUrl: reset.resetUrl }),
   })
-
-  if (resendError) {
-    console.error('[PASSWORD RESET] Erro Resend:', resendError)
-    throw new Error(resendError.message || 'Erro ao enviar e-mail de redefinição de senha')
-  }
-
-  return { sent: true, id: data?.id || null }
 }
 
 export async function resetComposerPasswordWithToken(token: string, newPassword: string) {

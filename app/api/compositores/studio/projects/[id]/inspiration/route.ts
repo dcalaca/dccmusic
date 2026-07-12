@@ -6,22 +6,36 @@ import { formatMusicTitle } from '@/lib/normalize'
 
 export const dynamic = 'force-dynamic'
 
-const inspirationVariationInstructions: Record<string, { label: string; instruction: string }> = {
+const inspirationVariationInstructions: Record<string, { label: string; instruction: string; audioWeight: number }> = {
   similar: {
-    label: 'Manter parecido',
-    instruction: 'Use a música original como inspiração e mantenha andamento, energia, melodia e pegada bem parecidos.',
+    label: 'Parecida com a anterior',
+    instruction: 'Use a música original como inspiração e mantenha andamento, energia, melodia e pegada parecidos.',
+    audioWeight: 0.75,
+  },
+  same_style_new_melody: {
+    label: 'Mesmo estilo, mas melodia diferente',
+    instruction: 'Mantenha o mesmo estilo musical da original, mas crie uma melodia inédita, uma nova introdução, nova levada e nova progressão melódica. Não copie a melodia nem a pegada exata da música anterior.',
+    audioWeight: 0.45,
+  },
+  creative: {
+    label: 'Mais criativa / fugir mais da anterior',
+    instruction: 'Use a música original apenas como referência leve de qualidade e intenção. Mantenha o estilo do projeto, mas crie uma abordagem bem diferente, com nova melodia, nova introdução, nova levada, novo arranjo e interpretação vocal diferente.',
+    audioWeight: 0.3,
   },
   faster: {
     label: 'Um pouco mais rápido',
     instruction: 'Use a música original como inspiração, mas crie uma versão um pouco mais rápida, com andamento levemente acelerado, sem perder o estilo original.',
+    audioWeight: 0.65,
   },
   energetic: {
     label: 'Mais animado',
     instruction: 'Use a música original como inspiração, mas crie uma versão mais animada, com mais energia, mais pegada e clima mais empolgante.',
+    audioWeight: 0.65,
   },
   slower_romantic: {
     label: 'Mais lento/romântico',
     instruction: 'Use a música original como inspiração, mas crie uma versão mais lenta, romântica e emocional.',
+    audioWeight: 0.65,
   },
 }
 
@@ -115,6 +129,7 @@ export async function POST(
           variation,
           variationLabel: variationConfig.label,
           inspirationInstruction: variationConfig.instruction,
+          audioWeight: variationConfig.audioWeight,
         },
       })
 

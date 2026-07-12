@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { FiMusic, FiVideo, FiUsers, FiAward, FiHeart, FiCopy, FiCheck, FiZap, FiEdit3, FiShield, FiGlobe } from 'react-icons/fi'
+import { FiMusic, FiVideo, FiUsers, FiAward, FiHeart, FiCopy, FiCheck, FiZap, FiEdit3, FiShield, FiGlobe, FiFileText } from 'react-icons/fi'
 import Image from 'next/image'
 
 // Metadata removida porque agora é client component
@@ -12,6 +12,11 @@ const features = [
     icon: FiZap,
     title: 'DCC Studio IA',
     description: 'Crie letras, músicas completas, versões, capas e projetos organizados com apoio de inteligência artificial.',
+  },
+  {
+    icon: FiFileText,
+    title: 'Partitura e Cifra',
+    description: 'Transforme áudio em partitura PDF, MusicXML e letra cifrada. Ideal para estudar, tocar, imprimir e compartilhar.',
   },
   {
     icon: FiEdit3,
@@ -44,7 +49,7 @@ const aboutSchema = {
   '@context': 'https://schema.org',
   '@type': 'AboutPage',
   name: 'Sobre o DCC Music',
-  description: 'Conheça o DCC Music, uma plataforma para compositores criarem músicas com IA, organizarem projetos e divulgarem suas obras.',
+  description: 'Conheça o DCC Music: Studio IA para criar músicas com inteligência artificial, Partitura e Cifra para transcrição musical e ferramentas para compositores divulgarem suas obras.',
   publisher: {
     '@type': 'Organization',
     name: 'DCC Music',
@@ -95,7 +100,7 @@ export default function SobrePage() {
           </h1>
           <p className="text-gray-400 text-lg max-w-3xl mx-auto">
             A DCC Music ajuda compositores a transformar ideias em músicas completas,
-            organizar seus projetos e divulgar suas criações com mais profissionalismo.
+            gerar partitura e cifra, organizar projetos e divulgar suas criações com mais profissionalismo.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
@@ -104,6 +109,13 @@ export default function SobrePage() {
             >
               <FiZap />
               Conhecer o Studio IA
+            </Link>
+            <Link
+              href="/transcricao-musical"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-700 bg-cyan-950/40 px-6 py-3 font-bold text-cyan-100 hover:border-cyan-500"
+            >
+              <FiFileText />
+              Partitura e Cifra
             </Link>
             <Link
               href="/compositores"
@@ -179,6 +191,51 @@ export default function SobrePage() {
                   ['Gravar no site', 'Cante um trecho e use a gravação como referência.'],
                   ['Versões da música', 'Ouça as versões geradas e escolha a melhor.'],
                   ['Projetos salvos', 'Letra, áudio, capa e histórico ficam organizados.'],
+                ].map(([title, text]) => (
+                  <div key={title} className="rounded-2xl border border-gray-800 bg-black/45 p-4">
+                    <h3 className="font-bold text-white">{title}</h3>
+                    <p className="mt-1 text-sm text-gray-400">{text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-5xl mx-auto mb-16">
+          <div className="overflow-hidden rounded-3xl border border-cyan-700/50 bg-gradient-to-br from-cyan-950/50 via-black to-gray-950 p-8 shadow-2xl shadow-cyan-950/20">
+            <div className="grid gap-8 lg:grid-cols-[1fr_0.8fr] lg:items-center">
+              <div>
+                <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-950/50 px-4 py-2 text-sm text-cyan-100">
+                  <FiFileText />
+                  Transcrição musical
+                </span>
+                <h2 className="text-3xl font-black sm:text-4xl">
+                  Partitura e Cifra: do áudio ao material para tocar
+                </h2>
+                <p className="mt-4 leading-relaxed text-gray-300">
+                  Depois de criar ou enviar uma música, você pode gerar partitura em PDF,
+                  arquivo MusicXML e letra cifrada. Tudo fica salvo na sua conta, em Meus Projetos,
+                  no filtro Partituras e Cifras.
+                </p>
+                <p className="mt-3 leading-relaxed text-gray-300">
+                  O serviço custa R$ 6,90 por música (25 créditos) e pode ser usado com músicas
+                  do Studio IA ou com upload de áudio próprio.
+                </p>
+                <Link
+                  href="/transcricao-musical"
+                  className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-primary-600 px-5 py-3 font-bold text-white hover:from-cyan-500 hover:to-primary-500"
+                >
+                  Gerar partitura e cifra
+                  <FiFileText />
+                </Link>
+              </div>
+              <div className="grid gap-3">
+                {[
+                  ['Partitura PDF', 'Material pronto para imprimir e estudar.'],
+                  ['MusicXML', 'Abra em programas de notação musical.'],
+                  ['Letra cifrada', 'Cifras organizadas com tom e BPM quando disponíveis.'],
+                  ['Histórico salvo', 'Baixe novamente quando quiser, sem perder os arquivos.'],
                 ].map(([title, text]) => (
                   <div key={title} className="rounded-2xl border border-gray-800 bg-black/45 p-4">
                     <h3 className="font-bold text-white">{title}</h3>

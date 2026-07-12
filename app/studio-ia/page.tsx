@@ -4,6 +4,7 @@ import { FreeMusicPlanNotice, StudioCouponButton, StudioHeroActions, StudioPlanB
 import {
   FiCheck,
   FiCpu,
+  FiFileText,
   FiFolder,
   FiHeadphones,
   FiImage,
@@ -26,6 +27,7 @@ const features = [
   { icon: FiZap, title: 'Publicação no DCC Music', text: 'Publique a música no perfil e compartilhe publicamente.' },
   { icon: FiHeadphones, title: 'Player profissional', text: 'Player bonito, preview e experiência premium.' },
   { icon: FiShare2, title: 'Compartilhamento fácil', text: 'Link público e player embedável para divulgar fora da plataforma.' },
+  { icon: FiFileText, title: 'Partitura e Cifra', text: 'Gere PDF, MusicXML e letra cifrada das músicas criadas no Studio IA.' },
   { icon: FiStar, title: 'Estética premium', text: 'Visual moderno, artístico e feito para compositores.' },
 ]
 
@@ -79,8 +81,26 @@ async function getStudioPlans() {
 }
 
 export const metadata = {
-  title: 'DCC Studio IA | DCC Music',
-  description: 'Crie letras, músicas completas e capas profissionais com Inteligência Artificial.',
+  title: 'DCC Studio IA - Crie Músicas com Inteligência Artificial',
+  description:
+    'Crie letras, músicas completas, capas e versões com IA. Organize projetos, publique no DCC Music e gere partitura e cifra das suas criações.',
+  keywords: [
+    'Studio IA',
+    'música com inteligência artificial',
+    'criar música com IA',
+    'letra com IA',
+    'DCC Music',
+    'compositor',
+  ],
+  alternates: {
+    canonical: '/studio-ia',
+  },
+  openGraph: {
+    title: 'DCC Studio IA | DCC Music',
+    description: 'Crie letras, músicas completas e capas profissionais com Inteligência Artificial.',
+    url: 'https://www.dccmusic.online/studio-ia',
+    type: 'website',
+  },
 }
 
 export default async function StudioIALandingPage() {

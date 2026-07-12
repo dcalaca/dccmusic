@@ -71,6 +71,15 @@ const campaignIdeas = [
     ctaLabel: 'Ver novidades',
     ctaUrl: 'https://www.dccmusic.online/compositores/admin/studio-ia',
   },
+  {
+    label: 'Partitura e Cifra',
+    name: 'Novidade Partitura e Cifra',
+    subject: 'Sua música agora vira cifra e partitura no DCC Music',
+    preview: 'Transforme suas faixas do Studio IA em material para tocar e estudar.',
+    body: 'Tem novidade no DCC Music.\n\nAgora você pode transformar suas músicas em Partitura e Cifra: partitura em PDF, MusicXML e letra cifrada para violão.\n\nFunciona com músicas que você já criou no Studio IA ou com um áudio que você enviar. Custa R$ 6,90 (25 créditos) por transcrição.\n\nClique no botão abaixo para acessar já na sua conta — não precisa lembrar a senha.\n\nDica: escolha uma música recente do Studio IA e teste em poucos minutos.',
+    ctaLabel: 'Gerar partitura e cifra',
+    ctaUrl: 'https://www.dccmusic.online/transcricao-musical',
+  },
 ]
 
 const audienceLabels: Record<string, string> = {
@@ -123,26 +132,37 @@ export default function EmailCampaignsAdmin() {
 
   const previewLines = useMemo(() => body.split('\n').filter(Boolean).slice(0, 4), [body])
 
-  const loadCampaigns = async () => {
+  const loadCampaigns = async (options?: { silent?: boolean }) => {
     try {
-      setLoading(true)
+      if (!options?.silent) setLoading(true)
       setError('')
       const response = await fetch('/api/admin/email-campaigns', { cache: 'no-store' })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao carregar campanhas')
-      setCampaigns(data.campaigns || [])
+      const nextCampaigns = data.campaigns || []
+      setCampaigns(nextCampaigns)
       setAudienceCounts(data.audienceCounts || { all: 0, composers: 0, site_users: 0 })
       setSetupRequired(Boolean(data.setupRequired))
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar campanhas')
     } finally {
-      setLoading(false)
+      if (!options?.silent) setLoading(false)
     }
   }
 
   useEffect(() => {
     loadCampaigns()
   }, [])
+
+  useEffect(() => {
+    if (!campaigns.some((campaign) => campaign.status === 'sending')) return
+
+    const interval = window.setInterval(() => {
+      void loadCampaigns({ silent: true })
+    }, 30000)
+
+    return () => window.clearInterval(interval)
+  }, [campaigns])
 
   const applyIdea = (idea: typeof campaignIdeas[number]) => {
     setName(idea.name)
@@ -208,8 +228,8 @@ export default function EmailCampaignsAdmin() {
     const sentSoFar = campaign.deliveries?.sent || campaign.sent_count || 0
     const confirmMessage = action === 'send'
       ? sentSoFar > 0
-        ? `Enviar o próximo lote da campanha "${campaign.name}"? Quem já recebeu não recebe de novo.`
-        : `Enviar agora a campanha "${campaign.name}" para ${audienceLabels[campaign.audience]}?`
+        ? `Retomar o envio automático da campanha "${campaign.name}"? Quem já recebeu não recebe de novo.`
+        : `Iniciar o envio da campanha "${campaign.name}" para ${audienceLabels[campaign.audience]}? O sistema continuará sozinho em lotes até terminar.`
       : `Pausar os próximos envios da campanha "${campaign.name}"?`
 
     if (!confirm(confirmMessage)) return
@@ -228,7 +248,12 @@ export default function EmailCampaignsAdmin() {
       if (!response.ok) throw new Error(data.error || 'Erro ao processar campanha')
 
       if (action === 'send') {
-        setSuccess(`Lote processado: ${data.result.sent} enviado(s), ${data.result.failed} falha(s), ${data.result.remaining} restante(s).`)
+        const remaining = data.result.remaining || 0
+        setSuccess(
+          remaining > 0
+            ? `Envio iniciado: ${data.result.sent} enviado(s) neste lote, ${data.result.failed} falha(s). Restam ${remaining}. O sistema continuará sozinho a cada poucos minutos.`
+            : `Campanha concluída: ${data.result.sent} enviado(s), ${data.result.failed} falha(s).`
+        )
       } else {
         setSuccess('Campanha pausada. Nenhum próximo lote será enviado até você retomar manualmente.')
       }
@@ -251,7 +276,7 @@ export default function EmailCampaignsAdmin() {
             <h1 className="text-3xl font-black text-white">Enviar e programar e-mails</h1>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-400">
               Crie campanhas para compositores, usuários do site ou toda a base. Use rascunho para revisar antes de enviar.
-              Quem pedir descadastro fica fora dos próximos envios.
+              Ao clicar em Enviar, o sistema manda em lotes automaticamente até terminar. Quem pedir descadastro fica fora dos próximos envios.
             </p>
           </div>
           <div className="grid gap-2 rounded-2xl border border-gray-800 bg-black/40 p-4 text-sm text-gray-300 sm:grid-cols-3 lg:min-w-[28rem]">
@@ -390,7 +415,7 @@ export default function EmailCampaignsAdmin() {
               const totalClicks = campaign.clicks?.total || 0
               const estimatedTotal = audienceCounts[campaign.audience] || 0
               const estimatedRemaining = Math.max(0, estimatedTotal - sentCount - skippedCount)
-              const sendButtonLabel = sentCount > 0 ? 'Enviar próximo lote' : 'Enviar agora'
+              const sendButtonLabel = sentCount > 0 ? 'Retomar envio' : 'Enviar para todos'
 
               return (
               <article key={campaign.id} className="rounded-2xl border border-gray-800 bg-black/35 p-4">
@@ -412,13 +437,18 @@ export default function EmailCampaignsAdmin() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    {campaign.status !== 'sent' && (
+                    {campaign.status !== 'sent' && campaign.status !== 'sending' && (
                       <button onClick={() => runAction(campaign, 'send')} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl bg-green-700 px-4 py-2 text-sm font-bold text-white hover:bg-green-600 disabled:opacity-60">
                         {processingId === campaign.id ? <FiLoader className="animate-spin" /> : <FiSend />}
                         {sendButtonLabel}
                       </button>
                     )}
-                    {campaign.status === 'scheduled' && (
+                    {campaign.status === 'sending' && (
+                      <span className="inline-flex items-center gap-2 rounded-xl border border-blue-800 bg-blue-950/30 px-4 py-2 text-sm font-bold text-blue-100">
+                        <FiLoader className="animate-spin" /> Enviando automaticamente...
+                      </span>
+                    )}
+                    {(campaign.status === 'scheduled' || campaign.status === 'sending') && (
                       <button onClick={() => runAction(campaign, 'pause')} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl border border-yellow-800 bg-yellow-950/30 px-4 py-2 text-sm font-bold text-yellow-100 hover:bg-yellow-900/40 disabled:opacity-60">
                         <FiPauseCircle /> Pausar próximos envios
                       </button>
@@ -435,7 +465,7 @@ export default function EmailCampaignsAdmin() {
       <div className="rounded-2xl border border-blue-800/50 bg-blue-950/20 p-5 text-sm leading-relaxed text-blue-100">
         <p className="font-bold">Ideias para envio automático todo dia 15:</p>
         <p className="mt-2">Lembrete de criar música nova no mês, cupom mensal, dicas de letra, novidades do Studio IA, reativação de usuários parados, ou aviso de promoção com prazo curto.</p>
-        <p className="mt-2 text-blue-200/80"><FiClock className="mr-1 inline" /> O cron confere campanhas agendadas todos os dias ao meio-dia.</p>
+        <p className="mt-2 text-blue-200/80"><FiClock className="mr-1 inline" /> Campanhas em envio continuam sozinhas em um único fluxo por vez. Se precisar parar, use Pausar.</p>
       </div>
     </section>
   )
