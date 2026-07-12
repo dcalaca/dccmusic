@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import * as composerAuth from '@/lib/composer-auth'
+import { validateSignupEmail } from '@/lib/email-validation'
 
 export async function POST(request: Request) {
   try {
@@ -20,14 +21,14 @@ export async function POST(request: Request) {
       )
     }
 
-    // Validar email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
+    const emailValidation = validateSignupEmail(email)
+    if (!emailValidation.valid) {
       return NextResponse.json(
-        { error: 'Email inválido' },
+        { error: emailValidation.error, suggestion: emailValidation.suggestion },
         { status: 400 }
       )
     }
+    const normalizedEmail = emailValidation.email
 
     // Validar senha (mínimo 6 caracteres)
     if (password.length < 6) {
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
 
     const result = await composerAuth.associateAccountToComposer(
       composerId,
-      email,
+      normalizedEmail,
       password,
       composerName
     )
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
         id: result.composer.id,
         name: result.composer.name,
         slug: result.composer.slug,
-        email: email,
+        email: normalizedEmail,
       },
       message,
     })

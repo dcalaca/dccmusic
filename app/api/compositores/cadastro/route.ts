@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as composerAuth from '@/lib/composer-auth'
 import { sendComposerVerificationEmail } from '@/lib/composer-email-verification'
 import { hasComposerAccountDeletionBlock } from '@/lib/dcc-emails'
+import { validateSignupEmail } from '@/lib/email-validation'
 import { PARTNER_SESSION_COOKIE, applyComposerPartnerAttribution } from '@/lib/partners'
 import { sendMetaCompleteRegistrationEvent } from '@/lib/meta-conversions'
 
@@ -17,16 +18,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validar email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
+    const emailValidation = validateSignupEmail(email)
+    if (!emailValidation.valid) {
       return NextResponse.json(
-        { error: 'Email inválido' },
+        { error: emailValidation.error, suggestion: emailValidation.suggestion },
         { status: 400 }
       )
     }
+    const normalizedEmail = emailValidation.email
 
-    const emailWasDeleted = await hasComposerAccountDeletionBlock(email)
+    const emailWasDeleted = await hasComposerAccountDeletionBlock(normalizedEmail)
     if (emailWasDeleted) {
       return NextResponse.json(
         {
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await composerAuth.createComposerAccount(email, password, composerName, forceCreate === true, accountName)
+    const result = await composerAuth.createComposerAccount(normalizedEmail, password, composerName, forceCreate === true, accountName)
 
     // Se precisa de escolha do usuário, retornar lista de compositores similares
     if ('requiresChoice' in result && result.requiresChoice) {
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
     try {
       await sendComposerVerificationEmail({
         composerId: result.composer.id,
-        email,
+        email: normalizedEmail,
         name: result.composer.name,
       })
     } catch (emailError) {
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
       request,
       eventId: metaRegistrationEventId,
       eventSourceUrl: request.headers.get('referer') || request.url,
-      email,
+      email: normalizedEmail,
       externalId: result.composer.id,
       contentName: 'Cadastro de compositor',
     }).catch((metaError) => {
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
         id: result.composer.id,
         name: result.composer.name,
         slug: result.composer.slug,
-        email: email,
+        email: normalizedEmail,
       },
       message,
     })

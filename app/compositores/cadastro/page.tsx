@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { FiArrowLeft, FiArrowRight, FiEye, FiEyeOff, FiLock, FiMail, FiUser } from 'react-icons/fi'
 import { getStoredPartnerAttribution } from '@/components/PartnerAttribution'
 import { pushGtmEvent } from '@/components/GtmEvents'
+import { validateSignupEmail } from '@/lib/email-validation'
 
 export default function ComposerSignupPage() {
   const router = useRouter()
@@ -19,16 +20,25 @@ export default function ComposerSignupPage() {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [emailSuggestion, setEmailSuggestion] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     setError('')
+    setEmailSuggestion('')
 
     if (step === 'account') {
       if (!formData.fullName.trim()) {
         setError('Informe seu nome.')
+        return
+      }
+
+      const emailValidation = validateSignupEmail(formData.email)
+      if (!emailValidation.valid) {
+        setError(emailValidation.error)
+        setEmailSuggestion(emailValidation.suggestion || '')
         return
       }
 
@@ -46,13 +56,20 @@ export default function ComposerSignupPage() {
       return
     }
 
+    const emailValidation = validateSignupEmail(formData.email)
+    if (!emailValidation.valid) {
+      setError(emailValidation.error)
+      setEmailSuggestion(emailValidation.suggestion || '')
+      return
+    }
+
     setLoading(true)
     try {
       const response = await fetch('/api/compositores/cadastro', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: formData.email,
+          email: emailValidation.email,
           password: formData.password,
           accountName: formData.fullName,
           composerName: formData.artistName,
@@ -63,6 +80,9 @@ export default function ComposerSignupPage() {
       const data = await response.json()
 
       if (!response.ok) {
+        if (data.suggestion) {
+          setEmailSuggestion(data.suggestion)
+        }
         throw new Error(data.error || 'Erro ao cadastrar')
       }
 
@@ -119,8 +139,21 @@ export default function ComposerSignupPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="bg-red-900/50 border border-red-800 text-red-300 px-4 py-3 rounded-lg text-sm">
-                  {error}
+                <div className="bg-red-900/50 border border-red-800 text-red-300 px-4 py-3 rounded-lg text-sm space-y-2">
+                  <p>{error}</p>
+                  {emailSuggestion && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, email: emailSuggestion })
+                        setError('')
+                        setEmailSuggestion('')
+                      }}
+                      className="rounded-lg border border-red-700 bg-red-950/60 px-3 py-2 text-left text-xs font-bold text-red-100 hover:bg-red-900/70"
+                    >
+                      Corrigir para {emailSuggestion}
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -149,7 +182,13 @@ export default function ComposerSignupPage() {
                       <input
                         type="email"
                         value={formData.email}
-                        onChange={(event) => setFormData({ ...formData, email: event.target.value })}
+                        onChange={(event) => {
+                          setFormData({ ...formData, email: event.target.value })
+                          if (error || emailSuggestion) {
+                            setError('')
+                            setEmailSuggestion('')
+                          }
+                        }}
                         required
                         className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
                         placeholder="seu@email.com"
