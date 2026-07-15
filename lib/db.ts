@@ -2873,6 +2873,168 @@ export async function getAllComposers(): Promise<Composer[]> {
   }
 }
 
+export type AdminComposerStatusFilter = 'all' | 'active' | 'inactive' | 'studio' | 'pending'
+
+export type AdminComposersSummary = {
+  total: number
+  active: number
+  inactive: number
+  pendingEmail: number
+  withStudio: number
+  studioLyrics: number
+  studioMusics: number
+}
+
+async function collectComposerIdsWithStudioActivity() {
+  const ids = new Set<string>()
+  const pageSize = 1000
+
+  for (const table of ['studio_lyrics', 'studio_generations'] as const) {
+    let from = 0
+
+    for (;;) {
+      let query = supabaseAdmin
+        .from(table)
+        .select('composer_id')
+        .range(from, from + pageSize - 1)
+
+      if (table === 'studio_generations') {
+        query = query.neq('status', 'failed')
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      if (!data?.length) break
+
+      data.forEach((row: any) => {
+        if (row.composer_id) ids.add(row.composer_id)
+      })
+
+      if (data.length < pageSize) break
+      from += pageSize
+    }
+  }
+
+  return Array.from(ids)
+}
+
+export async function getAdminComposersSummary(): Promise<AdminComposersSummary> {
+  const now = new Date().toISOString()
+
+  const [
+    totalResult,
+    activeResult,
+    pendingResult,
+    lyricsResult,
+    musicsResult,
+    studioComposerIds,
+  ] = await Promise.all([
+    supabaseAdmin.from('dccmusic_composers').select('*', { count: 'exact', head: true }),
+    supabaseAdmin
+      .from('dccmusic_composers')
+      .select('*', { count: 'exact', head: true })
+      .eq('has_active_subscription', true)
+      .eq('is_premium', true)
+      .or(`subscription_expires_at.is.null,subscription_expires_at.gt.${now}`),
+    supabaseAdmin
+      .from('dccmusic_composers')
+      .select('*', { count: 'exact', head: true })
+      .not('email', 'is', null)
+      .eq('email_verified', false),
+    supabaseAdmin.from('studio_lyrics').select('*', { count: 'exact', head: true }),
+    supabaseAdmin.from('studio_generations').select('*', { count: 'exact', head: true }).neq('status', 'failed'),
+    collectComposerIdsWithStudioActivity(),
+  ])
+
+  const total = totalResult.count || 0
+  const active = activeResult.count || 0
+
+  return {
+    total,
+    active,
+    inactive: Math.max(0, total - active),
+    pendingEmail: pendingResult.count || 0,
+    withStudio: studioComposerIds.length,
+    studioLyrics: lyricsResult.count || 0,
+    studioMusics: musicsResult.count || 0,
+  }
+}
+
+function applyAdminComposerStatusFilter(
+  query: any,
+  status: AdminComposerStatusFilter,
+  studioComposerIds?: string[]
+) {
+  const now = new Date().toISOString()
+
+  if (status === 'active') {
+    return query
+      .eq('has_active_subscription', true)
+      .eq('is_premium', true)
+      .or(`subscription_expires_at.is.null,subscription_expires_at.gt.${now}`)
+  }
+
+  if (status === 'inactive') {
+    return query.or(
+      `has_active_subscription.eq.false,is_premium.eq.false,and(subscription_expires_at.not.is.null,subscription_expires_at.lt.${now})`
+    )
+  }
+
+  if (status === 'pending') {
+    return query.not('email', 'is', null).eq('email_verified', false)
+  }
+
+  if (status === 'studio') {
+    const ids = studioComposerIds || []
+    if (ids.length === 0) {
+      return query.eq('id', '00000000-0000-0000-0000-000000000000')
+    }
+    return query.in('id', ids)
+  }
+
+  return query
+}
+
+export async function listAdminComposers(options: {
+  page?: number
+  limit?: number
+  search?: string
+  status?: AdminComposerStatusFilter
+}): Promise<{ items: Composer[]; total: number; page: number; limit: number }> {
+  const page = Math.max(1, Number(options.page) || 1)
+  const limit = Math.min(100, Math.max(1, Number(options.limit) || 100))
+  const search = String(options.search || '').trim()
+  const status = options.status || 'all'
+  const from = (page - 1) * limit
+  const to = from + limit - 1
+
+  const studioComposerIds = status === 'studio' ? await collectComposerIdsWithStudioActivity() : undefined
+
+  let query = supabaseAdmin
+    .from('dccmusic_composers')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+
+  if (search) {
+    const safeSearch = search.replace(/[%_,]/g, '')
+    const pattern = `%${safeSearch}%`
+    query = query.or(`name.ilike.${pattern},email.ilike.${pattern},slug.ilike.${pattern}`)
+  }
+
+  query = applyAdminComposerStatusFilter(query, status, studioComposerIds)
+  query = query.range(from, to)
+
+  const { data, error, count } = await query
+  if (error) throw error
+
+  return {
+    items: (data || []).map(mapComposer),
+    total: count || 0,
+    page,
+    limit,
+  }
+}
+
 // Buscar compositor por ID
 export async function getComposerById(id: string): Promise<Composer | null> {
   try {

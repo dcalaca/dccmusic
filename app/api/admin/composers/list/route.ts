@@ -115,14 +115,34 @@ export async function GET(request: Request) {
     const shouldExport = searchParams.get('export') === '1'
 
     if (!shouldExport) {
-      const composers = await db.getAllComposers()
-      const statsByComposer = await buildStatsForComposers(composers)
-      const composersWithStats = composers.map((composer) => ({
+      const page = Math.max(1, Number(searchParams.get('page') || 1))
+      const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || 100)))
+      const search = String(searchParams.get('search') || '').trim()
+      const status = (searchParams.get('status') || 'all') as db.AdminComposerStatusFilter
+      const allowedStatuses = new Set(['all', 'active', 'inactive', 'studio', 'pending'])
+      const safeStatus = allowedStatuses.has(status) ? status : 'all'
+
+      const [listed, summary] = await Promise.all([
+        db.listAdminComposers({ page, limit, search, status: safeStatus }),
+        db.getAdminComposersSummary(),
+      ])
+
+      const statsByComposer = await buildStatsForComposers(listed.items)
+      const composersWithStats = listed.items.map((composer) => ({
         ...composer,
         ...(statsByComposer.get(composer.id) || createEmptyStats()),
       }))
 
-      return NextResponse.json(composersWithStats)
+      const totalPages = Math.max(1, Math.ceil(listed.total / listed.limit))
+
+      return NextResponse.json({
+        items: composersWithStats,
+        total: listed.total,
+        page: listed.page,
+        limit: listed.limit,
+        totalPages,
+        summary,
+      })
     }
 
     const offset = Math.max(0, Number(searchParams.get('offset') || 0))

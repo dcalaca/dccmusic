@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { FiUser, FiMail, FiCalendar, FiCheckCircle, FiXCircle, FiRefreshCw, FiSearch, FiEdit2, FiMusic, FiVideo, FiEye, FiKey, FiFileText, FiDownload, FiTrash2, FiCreditCard, FiGift } from 'react-icons/fi'
 
@@ -49,12 +49,36 @@ interface SpendingRankingItem {
   paymentCount: number
 }
 
-const PAGE_SIZE = 40
+const PAGE_SIZE = 100
+
+type AdminComposersSummary = {
+  total: number
+  active: number
+  inactive: number
+  pendingEmail: number
+  withStudio: number
+  studioLyrics: number
+  studioMusics: number
+}
+
+const EMPTY_SUMMARY: AdminComposersSummary = {
+  total: 0,
+  active: 0,
+  inactive: 0,
+  pendingEmail: 0,
+  withStudio: 0,
+  studioLyrics: 0,
+  studioMusics: 0,
+}
 
 export default function AdminComposersPage() {
   const [composers, setComposers] = useState<Composer[]>([])
+  const [summary, setSummary] = useState<AdminComposersSummary>(EMPTY_SUMMARY)
+  const [listTotal, setListTotal] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'studio' | 'pending'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -81,29 +105,49 @@ export default function AdminComposersPage() {
   })
 
   useEffect(() => {
-    loadComposers()
-  }, [])
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearch(searchTerm.trim())
+    }, 300)
+
+    return () => window.clearTimeout(timeout)
+  }, [searchTerm])
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, statusFilter])
+  }, [debouncedSearch, statusFilter])
 
-  const loadComposers = async () => {
+  const loadComposers = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/admin/composers/list')
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        limit: String(PAGE_SIZE),
+        status: statusFilter,
+      })
+      if (debouncedSearch) {
+        params.set('search', debouncedSearch)
+      }
+
+      const response = await fetch(`/api/admin/composers/list?${params.toString()}`, { cache: 'no-store' })
       if (!response.ok) {
         throw new Error('Erro ao carregar compositores')
       }
       const data = await response.json()
-      setComposers(data)
+      setComposers(Array.isArray(data.items) ? data.items : [])
+      setListTotal(Number(data.total) || 0)
+      setTotalPages(Math.max(1, Number(data.totalPages) || 1))
+      setSummary(data.summary || EMPTY_SUMMARY)
     } catch (error) {
       console.error('Erro ao carregar compositores:', error)
       alert('Erro ao carregar compositores')
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, debouncedSearch, statusFilter])
+
+  useEffect(() => {
+    loadComposers()
+  }, [loadComposers])
 
   const handleGrantAccess = async (composerId: string, durationYears: number = 10) => {
     if (!confirm(`Liberar acesso de graça por ${durationYears} anos?`)) {
@@ -452,35 +496,10 @@ export default function AdminComposersPage() {
     return Boolean(composer.hasActiveSubscription && composer.isPremium && !isExpired)
   }
 
-  const filteredComposers = useMemo(() => {
-    const searchLower = searchTerm.trim().toLowerCase()
-    return composers.filter((composer) => {
-      const matchesSearch = !searchLower || (
-        composer.name.toLowerCase().includes(searchLower) ||
-        composer.email?.toLowerCase().includes(searchLower) ||
-        composer.slug.toLowerCase().includes(searchLower)
-      )
-      if (!matchesSearch) return false
-
-      if (statusFilter === 'active') return composerHasActiveAccess(composer)
-      if (statusFilter === 'inactive') return !composerHasActiveAccess(composer)
-      if (statusFilter === 'studio') return (composer.studioLyricCount || 0) > 0 || (composer.studioMusicCount || 0) > 0
-      if (statusFilter === 'pending') return Boolean(composer.email && !composer.emailVerified)
-      return true
-    })
-  }, [composers, searchTerm, statusFilter])
-
-  const totalPages = Math.max(1, Math.ceil(filteredComposers.length / PAGE_SIZE))
   const safeCurrentPage = Math.min(currentPage, totalPages)
-  const paginatedComposers = filteredComposers.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE)
 
-  const totals = useMemo(() => ({
-    active: composers.filter(composerHasActiveAccess).length,
-    inactive: composers.filter((composer) => !composerHasActiveAccess(composer)).length,
-    studioLyrics: composers.reduce((sum, composer) => sum + (composer.studioLyricCount || 0), 0),
-    studioMusics: composers.reduce((sum, composer) => sum + (composer.studioMusicCount || 0), 0),
-    pendingEmail: composers.filter((composer) => composer.email && !composer.emailVerified).length,
-  }), [composers])
+  const listRangeStart = listTotal === 0 ? 0 : ((safeCurrentPage - 1) * PAGE_SIZE) + 1
+  const listRangeEnd = listTotal === 0 ? 0 : Math.min(safeCurrentPage * PAGE_SIZE, listTotal)
 
   const formatDate = (date: Date | null | undefined) => {
     if (!date) return 'N/A'
@@ -566,7 +585,7 @@ export default function AdminComposersPage() {
   }
 
   const exportToXLSX = async () => {
-    if (filteredComposers.length === 0) {
+    if (summary.total === 0) {
       alert('Nenhum compositor para exportar')
       return
     }
@@ -682,32 +701,32 @@ export default function AdminComposersPage() {
         <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-6">
           <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-4">
             <p className="text-xs text-gray-500">Total</p>
-            <p className="mt-1 text-2xl font-black text-white">{composers.length}</p>
+            <p className="mt-1 text-2xl font-black text-white">{summary.total}</p>
             <p className="text-xs text-gray-500">compositores</p>
           </div>
           <div className="rounded-xl border border-green-800 bg-green-950/30 p-4">
             <p className="text-xs text-green-300/70">Ativos</p>
-            <p className="mt-1 text-2xl font-black text-green-300">{totals.active}</p>
+            <p className="mt-1 text-2xl font-black text-green-300">{summary.active}</p>
             <p className="text-xs text-green-300/60">com acesso</p>
           </div>
           <div className="rounded-xl border border-red-900 bg-red-950/20 p-4">
             <p className="text-xs text-red-300/70">Sem acesso</p>
-            <p className="mt-1 text-2xl font-black text-red-300">{totals.inactive}</p>
+            <p className="mt-1 text-2xl font-black text-red-300">{summary.inactive}</p>
             <p className="text-xs text-red-300/60">inativos</p>
           </div>
           <div className="rounded-xl border border-purple-800 bg-purple-950/30 p-4">
             <p className="text-xs text-purple-300/70">Letras IA</p>
-            <p className="mt-1 text-2xl font-black text-purple-200">{totals.studioLyrics}</p>
+            <p className="mt-1 text-2xl font-black text-purple-200">{summary.studioLyrics}</p>
             <p className="text-xs text-purple-300/60">no Studio</p>
           </div>
           <div className="rounded-xl border border-primary-800 bg-primary-950/30 p-4">
             <p className="text-xs text-primary-300/70">Músicas IA</p>
-            <p className="mt-1 text-2xl font-black text-primary-200">{totals.studioMusics}</p>
+            <p className="mt-1 text-2xl font-black text-primary-200">{summary.studioMusics}</p>
             <p className="text-xs text-primary-300/60">gerações</p>
           </div>
           <div className="rounded-xl border border-yellow-800 bg-yellow-950/20 p-4">
             <p className="text-xs text-yellow-300/70">E-mail pendente</p>
-            <p className="mt-1 text-2xl font-black text-yellow-200">{totals.pendingEmail}</p>
+            <p className="mt-1 text-2xl font-black text-yellow-200">{summary.pendingEmail}</p>
             <p className="text-xs text-yellow-300/60">cadastros</p>
           </div>
         </div>
@@ -746,11 +765,11 @@ export default function AdminComposersPage() {
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {[
-              { key: 'all', label: 'Todos', count: composers.length },
-              { key: 'active', label: 'Ativos', count: totals.active },
-              { key: 'inactive', label: 'Inativos', count: totals.inactive },
-              { key: 'studio', label: 'Com Studio IA', count: composers.filter((composer) => (composer.studioLyricCount || 0) > 0 || (composer.studioMusicCount || 0) > 0).length },
-              { key: 'pending', label: 'E-mail pendente', count: totals.pendingEmail },
+              { key: 'all', label: 'Todos', count: summary.total },
+              { key: 'active', label: 'Ativos', count: summary.active },
+              { key: 'inactive', label: 'Inativos', count: summary.inactive },
+              { key: 'studio', label: 'Com Studio IA', count: summary.withStudio },
+              { key: 'pending', label: 'E-mail pendente', count: summary.pendingEmail },
             ].map((filter) => (
               <button
                 key={filter.key}
@@ -766,7 +785,7 @@ export default function AdminComposersPage() {
               </button>
             ))}
             <span className="ml-auto text-xs text-gray-500">
-              Exibindo {paginatedComposers.length} de {filteredComposers.length}
+              Exibindo {listRangeStart}-{listRangeEnd} de {listTotal}
             </span>
           </div>
         </div>
@@ -807,14 +826,14 @@ export default function AdminComposersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
-                {filteredComposers.length === 0 ? (
+                {listTotal === 0 ? (
                   <tr>
                     <td colSpan={9} className="px-6 py-8 text-center text-gray-400">
-                      {searchTerm ? 'Nenhum compositor encontrado' : 'Nenhum compositor cadastrado'}
+                      {debouncedSearch || statusFilter !== 'all' ? 'Nenhum compositor encontrado' : 'Nenhum compositor cadastrado'}
                     </td>
                   </tr>
                 ) : (
-                  paginatedComposers.map((composer) => {
+                  composers.map((composer) => {
                     const hasAccess = composer.hasActiveSubscription && composer.isPremium
                     const isExpired = composer.subscriptionExpiresAt
                       ? new Date(composer.subscriptionExpiresAt) < new Date()
@@ -920,44 +939,48 @@ export default function AdminComposersPage() {
           </div>
         </div>
 
-        {filteredComposers.length > 0 && (
+        {listTotal > 0 && (
           <div className="mt-4 flex flex-col gap-3 rounded-xl border border-gray-800 bg-gray-900/50 p-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-gray-400">
               Página <span className="font-bold text-white">{safeCurrentPage}</span> de <span className="font-bold text-white">{totalPages}</span>
-              {' '}· mostrando {((safeCurrentPage - 1) * PAGE_SIZE) + 1}-{Math.min(safeCurrentPage * PAGE_SIZE, filteredComposers.length)} de {filteredComposers.length}
+              {' '}· mostrando {listRangeStart}-{listRangeEnd} de {listTotal}
             </p>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => setCurrentPage(1)}
                 disabled={safeCurrentPage <= 1}
-                className="rounded-lg border border-gray-700 px-3 py-2 text-xs font-bold text-gray-200 hover:border-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-gray-700 px-3 py-2 text-sm font-bold text-gray-200 hover:border-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Primeira página"
               >
-                Primeira
+                &lt;=
               </button>
               <button
                 type="button"
                 onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                 disabled={safeCurrentPage <= 1}
-                className="rounded-lg border border-gray-700 px-3 py-2 text-xs font-bold text-gray-200 hover:border-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-gray-700 px-3 py-2 text-sm font-bold text-gray-200 hover:border-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Página anterior"
               >
-                Anterior
+                &lt;
               </button>
               <button
                 type="button"
                 onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                 disabled={safeCurrentPage >= totalPages}
-                className="rounded-lg border border-gray-700 px-3 py-2 text-xs font-bold text-gray-200 hover:border-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-gray-700 px-3 py-2 text-sm font-bold text-gray-200 hover:border-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Próxima página"
               >
-                Próxima
+                &gt;
               </button>
               <button
                 type="button"
                 onClick={() => setCurrentPage(totalPages)}
                 disabled={safeCurrentPage >= totalPages}
-                className="rounded-lg border border-gray-700 px-3 py-2 text-xs font-bold text-gray-200 hover:border-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-gray-700 px-3 py-2 text-sm font-bold text-gray-200 hover:border-primary-400 disabled:cursor-not-allowed disabled:opacity-40"
+                aria-label="Última página"
               >
-                Última
+                =&gt;
               </button>
             </div>
           </div>
