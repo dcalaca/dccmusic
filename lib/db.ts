@@ -2843,17 +2843,30 @@ export async function getPremiumComposers() {
 // Listar TODOS os compositores (para admin)
 export async function getAllComposers(): Promise<Composer[]> {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('dccmusic_composers')
-      .select('*')
-      .order('created_at', { ascending: false })
+    const pageSize = 1000
+    let from = 0
+    const allRows: any[] = []
 
-    if (error) {
-      console.error('Erro ao buscar compositores:', error)
-      throw error
+    for (;;) {
+      const { data, error } = await supabaseAdmin
+        .from('dccmusic_composers')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1)
+
+      if (error) {
+        console.error('Erro ao buscar compositores:', error)
+        throw error
+      }
+
+      const batch = data || []
+      allRows.push(...batch)
+
+      if (batch.length < pageSize) break
+      from += pageSize
     }
 
-    return (data || []).map(mapComposer)
+    return allRows.map(mapComposer)
   } catch (error) {
     console.error('Erro ao buscar compositores:', error)
     return []
