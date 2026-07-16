@@ -241,14 +241,29 @@ export async function GET(
       .eq('composer_id', composer.composerId)
       .order('created_at', { ascending: false })
 
-    const { data: videoRequest } = await supabaseAdmin
+    const { data: completedVideoRequest } = await supabaseAdmin
       .from('studio_video_requests')
       .select('*')
       .eq('project_id', project.id)
       .eq('composer_id', composer.composerId)
-      .order('created_at', { ascending: false })
+      .eq('status', 'completed')
+      .not('video_url', 'is', null)
+      .order('completed_at', { ascending: false })
       .limit(1)
       .maybeSingle()
+
+    const { data: latestVideoRequest } = completedVideoRequest
+      ? { data: null }
+      : await supabaseAdmin
+          .from('studio_video_requests')
+          .select('*')
+          .eq('project_id', project.id)
+          .eq('composer_id', composer.composerId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+    const videoRequest = completedVideoRequest || latestVideoRequest
 
     const { data: inspirationRequest } = await supabaseAdmin
       .from('studio_inspiration_requests')

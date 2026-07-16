@@ -49,6 +49,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const { data: completedRequest } = await supabaseAdmin
+      .from('studio_video_requests')
+      .select('*')
+      .eq('project_id', project.id)
+      .eq('composer_id', composer.composerId)
+      .eq('status', 'completed')
+      .not('video_url', 'is', null)
+      .order('completed_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (completedRequest) {
+      return NextResponse.json({
+        success: true,
+        message: 'Este vídeo com letra já estava pronto. Use o botão abaixo para assistir ou baixar.',
+        videoRequest: completedRequest,
+      })
+    }
+
     const { data: activeRequest } = await supabaseAdmin
       .from('studio_video_requests')
       .select('id, status')
@@ -93,10 +112,13 @@ export async function POST(request: NextRequest) {
       metadata,
     })
     const startedVideoRequest = await startStudioVideoGeneration(videoRequest.id)
+    const readyNow = startedVideoRequest?.status === 'completed'
 
     return NextResponse.json({
       success: true,
-      message: 'Vídeo com letra em produção.',
+      message: readyNow
+        ? 'Vídeo com letra recuperado com sucesso.'
+        : 'Vídeo com letra em produção.',
       videoRequest: startedVideoRequest,
     })
   } catch (error: any) {
