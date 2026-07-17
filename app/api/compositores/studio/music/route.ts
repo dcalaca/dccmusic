@@ -818,7 +818,7 @@ export async function POST(request: NextRequest) {
     }
     const requestPayload = failedAttempts.length > 0
       ? {
-          ...payload,
+          ...(typeof payload === 'object' && payload !== null ? payload : {}),
           providerAttemptLog,
         }
       : payload
