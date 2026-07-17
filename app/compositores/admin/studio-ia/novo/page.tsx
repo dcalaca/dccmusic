@@ -7,7 +7,8 @@ import { motion } from 'framer-motion'
 import { FiArrowLeft, FiChevronDown, FiCreditCard, FiFileText, FiLoader, FiMic, FiMusic, FiPenTool, FiSliders, FiX, FiZap } from 'react-icons/fi'
 
 const rootStudioStyles = ['Moda de Viola', 'Sertanejo Raiz']
-const fallbackStyles = ['Sertanejo', ...rootStudioStyles, 'Pagode', 'Arrocha', 'Pop', 'Livre']
+const studioExtraStyles = ['Trap']
+const fallbackStyles = ['Sertanejo', ...rootStudioStyles, ...studioExtraStyles, 'Pagode', 'Arrocha', 'Pop', 'Livre']
 const customStyleOption = 'Outro / escrever meu estilo'
 const titleMaxLength = 30
 const moods = ['Romântica', 'Sofrência', 'Chiclete', 'Engraçada', 'Reflexiva', 'Balada', 'Triste', 'Motivacional']
@@ -139,6 +140,7 @@ export default function NewStudioMusicPage() {
           const styleOptions = [
             ...genreNames.filter((name: string) => name !== customStyleOption),
             ...rootStudioStyles.filter((name) => !genreNames.some((genre: string) => genre.toLowerCase() === name.toLowerCase())),
+            ...studioExtraStyles.filter((name) => !genreNames.some((genre: string) => genre.toLowerCase() === name.toLowerCase())),
             customStyleOption,
           ]
           setStyles(styleOptions)

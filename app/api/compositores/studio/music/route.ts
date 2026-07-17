@@ -14,6 +14,7 @@ import {
 import { supabaseAdmin } from '@/lib/supabase'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { ensureMurekaVocalClone } from '@/lib/mureka-voice'
+import { getMurekaFirstStylePrompt, isMurekaFirstStyle } from '@/lib/studio-mureka-first-styles'
 import {
   getComposerEmailIdentity,
   sendAdminStudioAlertEmail,
@@ -385,6 +386,36 @@ function getMurekaVoiceInstructions(description?: string | null) {
   return instructions
 }
 
+function buildMurekaFirstStylePrompt(corePrompt: string, mood: string | null, description?: string | null) {
+  const forbiddenInstruments = getForbiddenInstruments(description)
+  const desiredInstruments = getDesiredInstruments(description)
+  const parts = [
+    corePrompt,
+    mood ? `Must express this mood clearly: ${mood}.` : 'Use an emotional, commercial and engaging mood.',
+    ...getMurekaVoiceInstructions(description),
+    desiredInstruments ? `Use these instruments requested by the user: ${desiredInstruments}.` : null,
+    forbiddenInstruments.length > 0
+      ? `Avoid these instruments requested by the user: ${forbiddenInstruments.join(', ')}.`
+      : null,
+    'Use Brazilian Portuguese vocal phrasing and pronunciation.',
+    getMurekaCreativeDirection(description),
+    'Create a polished full song arrangement, radio-ready, modern mix, professional Brazilian production.',
+    MAX_STUDIO_MUSIC_DURATION_INSTRUCTION,
+    'Avoid robotic vocals, distorted vocals, unclear pronunciation, spoken-only performance, weak melody, amateur arrangement.',
+    'The lyrics are in Brazilian Portuguese; preserve their emotional meaning and section structure.',
+  ].filter(Boolean)
+
+  return parts.join(', ').slice(0, 1024)
+}
+
+function buildMurekaPromptForStyle(style: string | null, mood: string | null, description?: string | null) {
+  const murekaFirstPrompt = getMurekaFirstStylePrompt(style)
+  if (murekaFirstPrompt) {
+    return buildMurekaFirstStylePrompt(murekaFirstPrompt, mood, description)
+  }
+  return buildMurekaPrompt(style, mood, description)
+}
+
 function buildMurekaPrompt(style: string | null, mood: string | null, description?: string | null) {
   const forbiddenInstruments = getForbiddenInstruments(description)
   const desiredInstruments = getDesiredInstruments(description)
@@ -641,8 +672,11 @@ export async function POST(request: NextRequest) {
       payload: any
       result: any
     } | null = null
+    const preferMureka = isMurekaFirstStyle(project.style) && !inspirationUploadUrl
 
-    if (sunoApiKey) {
+    const trySuno = async () => {
+      if (providerResult || !sunoApiKey) return
+
       try {
         const response = await fetch(sunoEndpoint, {
           method: 'POST',
@@ -664,20 +698,22 @@ export async function POST(request: NextRequest) {
           }
         } else {
           const errorSummary = summarizeSunoError(response, result)
-          console.error('[Studio IA] Erro no fornecedor principal:', result)
+          console.error('[Studio IA] Erro no fornecedor Suno:', result)
           failedAttempts.push({ provider: 'sunoapi', errorSummary })
         }
       } catch (error: any) {
         const errorSummary = {
-          message: error?.message || 'Falha de rede no fornecedor principal',
+          message: error?.message || 'Falha de rede no fornecedor Suno',
           raw: { name: error?.name, cause: error?.cause?.message || null },
         }
-        console.error('[Studio IA] Falha de rede no fornecedor principal:', error)
+        console.error('[Studio IA] Falha de rede no fornecedor Suno:', error)
         failedAttempts.push({ provider: 'sunoapi', errorSummary })
       }
     }
 
-    if (!providerResult && murekaApiKey && (!selectedVoice || !inspirationUploadUrl)) {
+    const tryMureka = async () => {
+      if (providerResult || !murekaApiKey || inspirationUploadUrl) return
+
       let murekaVocalClone: Awaited<ReturnType<typeof ensureMurekaVocalClone>> | null = null
 
       if (selectedVoice) {
@@ -688,7 +724,7 @@ export async function POST(request: NextRequest) {
             message: error?.message || 'Falha ao preparar voz no Mureka',
             raw: { name: error?.name, cause: error?.cause?.message || null },
           }
-          console.error('[Studio IA] Falha ao preparar voz no fornecedor reserva:', error)
+          console.error('[Studio IA] Falha ao preparar voz no Mureka:', error)
           failedAttempts.push({ provider: 'mureka-vocal-clone', errorSummary })
         }
       }
@@ -698,7 +734,7 @@ export async function POST(request: NextRequest) {
         lyrics: lyricContent.slice(0, 3000),
         model: 'auto',
         n: 2,
-        prompt: buildMurekaPrompt(project.style, project.mood, projectDescriptionForGeneration),
+        prompt: buildMurekaPromptForStyle(project.style, project.mood, projectDescriptionForGeneration),
         ...(murekaVocalClone?.vocalId ? { vocal_id: murekaVocalClone.vocalId } : {}),
         stream: true,
       } : null
@@ -726,17 +762,25 @@ export async function POST(request: NextRequest) {
           }
         } else {
           const errorSummary = summarizeMurekaError(response, result)
-          console.error('[Studio IA] Erro no fornecedor reserva:', result)
+          console.error('[Studio IA] Erro no fornecedor Mureka:', result)
           failedAttempts.push({ provider: 'mureka', errorSummary })
         }
       } catch (error: any) {
         const errorSummary = {
-          message: error?.message || 'Falha de rede no fornecedor reserva',
+          message: error?.message || 'Falha de rede no fornecedor Mureka',
           raw: { name: error?.name, cause: error?.cause?.message || null },
         }
-        console.error('[Studio IA] Falha de rede no fornecedor reserva:', error)
+        console.error('[Studio IA] Falha de rede no fornecedor Mureka:', error)
         failedAttempts.push({ provider: 'mureka', errorSummary })
       }
+    }
+
+    if (preferMureka) {
+      await tryMureka()
+      await trySuno()
+    } else {
+      await trySuno()
+      await tryMureka()
     }
 
     if (!providerResult) {
