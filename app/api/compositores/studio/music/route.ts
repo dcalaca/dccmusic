@@ -824,7 +824,7 @@ export async function POST(request: NextRequest) {
       : payload
     const responsePayload = failedAttempts.length > 0
       ? {
-          ...(result || {}),
+          ...(typeof result === 'object' && result !== null ? result : {}),
           providerAttemptLog,
         }
       : result
