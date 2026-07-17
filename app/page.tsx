@@ -36,6 +36,13 @@ const HERO_STUDIO_IMAGES = [
   '/ChatGPT Image 6 de jun. de 2026, 23_28_07-2560x1440.png',
 ].map((image) => encodeURI(image))
 
+const HERO_STUDIO_IMAGES_MOBILE = [
+  '/Mobile 1.png',
+  '/Mobile 2.png',
+  '/Mobile 3.png',
+  '/Mobile 4.png',
+].map((image) => encodeURI(image))
+
 type PublicAiMusicDay = {
   date: string
   label: string
@@ -229,7 +236,11 @@ export default async function Home() {
 
         {/* Hero: foto em tela cheia + copy centralizada por cima (sem colunas) */}
         <div className="relative min-h-[min(68vh,680px)] w-full bg-black">
-          <HeroImageCarousel images={HERO_STUDIO_IMAGES} intervalMs={3000} />
+          <HeroImageCarousel
+            images={HERO_STUDIO_IMAGES}
+            mobileImages={HERO_STUDIO_IMAGES_MOBILE}
+            intervalMs={3000}
+          />
           <div className="relative z-10 flex min-h-[min(68vh,680px)] flex-col">
             <div className="flex flex-1 flex-col items-center justify-center px-4 pt-7 pb-12 sm:px-6 sm:pt-9 sm:pb-14">
               <div className="w-full max-w-2xl text-center">
