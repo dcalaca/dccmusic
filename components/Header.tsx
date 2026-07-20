@@ -4,14 +4,13 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { FiMusic, FiPlayCircle, FiHome, FiShield, FiUsers, FiUser, FiLogOut, FiChevronDown, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText } from 'react-icons/fi'
+import { FiMusic, FiPlayCircle, FiHome, FiShield, FiUsers, FiUser, FiLogOut, FiChevronDown, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe } from 'react-icons/fi'
 
 const navItems = [
   { href: '/', label: 'Home', icon: FiHome },
   { href: '/studio-ia', label: 'Studio IA', icon: FiZap },
   { href: '/transcricao-musical', label: 'Partitura e Cifra', mobileLabel: 'Partitura', icon: FiFileText },
-  { href: '/videos', label: 'Vídeos', icon: FiPlayCircle },
-  { href: '/musicas', label: 'Músicas', icon: FiMusic },
+  { href: '/distribuicao-digital', label: 'Distribuição Digital', mobileLabel: 'Distribuição', icon: FiGlobe },
   { href: '/compositores', label: 'Compositores Premium', mobileLabel: 'Compositores', icon: FiUsers },
   { href: '/compositores/planos', label: 'Planos', icon: FiCreditCard },
 ]

@@ -79,6 +79,11 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/distribuicao-digital" className="text-gray-400 hover:text-white transition-colors">
+                    Distribuição Digital
+                  </Link>
+                </li>
+                <li>
                   <Link href="/compositores" className="text-gray-400 hover:text-white transition-colors">
                     Compositores
                   </Link>
