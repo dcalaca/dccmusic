@@ -151,17 +151,19 @@ export default function DistribuicaoDigitalPage() {
 
         <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-4xl text-center">
-            <div className="mb-5 inline-flex items-center gap-3 rounded-full border border-gray-700 bg-gray-950/80 px-4 py-2">
+            <div className="mb-4 flex justify-center">
               <Image
                 src="/Somvibe.png"
                 alt="SomVibe"
-                width={140}
-                height={36}
-                className="h-7 w-auto"
+                width={360}
+                height={92}
+                className="h-16 w-auto sm:h-20"
                 priority
               />
-              <span className="text-xs font-bold uppercase tracking-wide text-gray-400">Parceira DCC Music</span>
             </div>
+            <p className="mb-5 text-xs font-bold uppercase tracking-wide text-cyan-300/90">
+              Parceira DCC Music
+            </p>
 
             <h1 className="mb-4 text-3xl font-black leading-tight sm:text-5xl">
               <span className="gradient-text">Distribuição Digital</span>
