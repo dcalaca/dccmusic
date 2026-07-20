@@ -8,7 +8,7 @@ import {
   FiExternalLink,
   FiHeadphones,
   FiHeart,
-  FiMegaphone,
+  FiSpeaker,
   FiMusic,
   FiShield,
   FiZap,
@@ -73,7 +73,7 @@ const services = [
     text: 'Lance suas músicas de forma simples, prática e sem burocracia.',
   },
   {
-    icon: FiMegaphone,
+    icon: FiSpeaker,
     title: 'Marketing',
     text: 'Pré-save, smartlink e ferramentas para impulsionar lançamentos.',
   },
