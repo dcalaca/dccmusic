@@ -184,6 +184,13 @@ const adminGroups = [
         icon: FiFileText,
       },
       {
+        href: '/admin/tipos-pagamento',
+        title: 'Tipos de pagamento',
+        description: 'Pagamentos novos x recorrentes: valores e quantidades',
+        icon: FiDollarSign,
+        accent: 'green',
+      },
+      {
         href: '/admin/ads',
         title: 'Configuração Ads',
         description: 'Analisar Meta Ads, custo por cadastro e pausar anúncios ruins',

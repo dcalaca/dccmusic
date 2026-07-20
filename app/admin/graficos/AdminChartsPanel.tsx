@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FiCalendar, FiRefreshCw } from 'react-icons/fi'
 
 type ChartDay = {
@@ -75,10 +75,20 @@ function DailyStackedBarChart({
   data: ChartDay[]
   series: SeriesConfig[]
 }) {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+
   const maxValue = Math.max(1, ...data.map(day => (
     series.reduce((total, item) => total + getNumericValue(day, item.key), 0)
   )))
   const labelEvery = Math.max(1, Math.ceil(data.length / 12))
+  const selectedDay = selectedDate ? data.find(day => day.date === selectedDate) || null : null
+  const selectedTotal = selectedDay
+    ? series.reduce((sum, item) => sum + getNumericValue(selectedDay, item.key), 0)
+    : 0
+
+  useEffect(() => {
+    setSelectedDate(null)
+  }, [data])
 
   return (
     <div className="rounded-2xl border border-gray-800 bg-gray-950/60 p-5">
@@ -86,6 +96,7 @@ function DailyStackedBarChart({
         <div>
           <h3 className="font-bold text-white">{title}</h3>
           <p className="mt-1 text-xs text-gray-500">{description}</p>
+          <p className="mt-1 text-xs text-gray-600 sm:hidden">Toque em uma barra para ver a quantidade.</p>
         </div>
         <div className="flex flex-wrap gap-3 text-xs">
           {series.map(item => (
@@ -97,6 +108,19 @@ function DailyStackedBarChart({
         </div>
       </div>
 
+      {selectedDay && (
+        <div className="mb-4 rounded-xl border border-cyan-800/70 bg-cyan-950/30 px-4 py-3 text-sm text-cyan-50">
+          <p className="font-bold text-white">{selectedDay.label}: {formatNumber(selectedTotal)} total</p>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-cyan-100">
+            {series.map(item => (
+              <span key={String(item.key)}>
+                {item.label}: <strong className="text-white">{formatNumber(getNumericValue(selectedDay, item.key))}</strong>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto pb-2">
         <div className="flex h-80 min-w-[980px] items-end gap-2 border-b border-gray-800 px-3">
           {data.map((day, index) => {
@@ -105,12 +129,21 @@ function DailyStackedBarChart({
               `${day.label}: ${formatNumber(total)} total`,
               ...series.map(item => `${item.label}: ${formatNumber(getNumericValue(day, item.key))}`),
             ].join('\n')
+            const isSelected = selectedDate === day.date
 
             return (
               <div key={day.date} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
-                <div
-                  className="flex h-64 w-full max-w-10 flex-col justify-end overflow-hidden rounded-t-lg bg-gray-900/90 ring-1 ring-gray-800/80 transition-opacity hover:opacity-90"
+                <button
+                  type="button"
                   title={tooltip}
+                  aria-label={tooltip}
+                  aria-pressed={isSelected}
+                  onClick={() => setSelectedDate(prev => (prev === day.date ? null : day.date))}
+                  className={`flex h-64 w-full max-w-10 flex-col justify-end overflow-hidden rounded-t-lg bg-gray-900/90 ring-1 transition-all ${
+                    isSelected
+                      ? 'ring-2 ring-cyan-400 opacity-100'
+                      : 'ring-gray-800/80 hover:opacity-90'
+                  }`}
                 >
                   {series.map(item => {
                     const value = getNumericValue(day, item.key)
@@ -120,11 +153,11 @@ function DailyStackedBarChart({
                         key={String(item.key)}
                         className="w-full"
                         style={{ height: `${height}%`, backgroundColor: item.color }}
-                        aria-label={`${day.label} - ${item.label}: ${value}`}
+                        aria-hidden="true"
                       />
                     )
                   })}
-                </div>
+                </button>
                 <span className="h-3 text-[10px] text-gray-700">
                   {index % labelEvery === 0 || index === data.length - 1 ? day.label : ''}
                 </span>
