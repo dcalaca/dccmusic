@@ -155,9 +155,9 @@ export default function DistribuicaoDigitalPage() {
               <Image
                 src="/Somvibe.png"
                 alt="SomVibe"
-                width={360}
-                height={92}
-                className="h-16 w-auto sm:h-20"
+                width={720}
+                height={184}
+                className="h-32 w-auto sm:h-40"
                 priority
               />
             </div>
@@ -314,9 +314,9 @@ export default function DistribuicaoDigitalPage() {
               <Image
                 src="/Somvibe.png"
                 alt="SomVibe"
-                width={320}
-                height={82}
-                className="h-14 w-auto sm:h-16"
+                width={640}
+                height={164}
+                className="h-28 w-auto sm:h-32"
               />
             </div>
             <div className="overflow-hidden rounded-3xl border border-cyan-800/50 bg-gradient-to-br from-cyan-950/40 via-gray-950 to-black p-6 sm:p-10">
