@@ -307,32 +307,36 @@ export default function DistribuicaoDigitalPage() {
 
       <section className="py-10 sm:py-14">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-4xl overflow-hidden rounded-3xl border border-cyan-800/50 bg-gradient-to-br from-cyan-950/40 via-gray-950 to-black p-6 sm:p-10">
-            <div className="flex flex-col items-center gap-6 text-center lg:flex-row lg:text-left">
-              <div className="flex-1">
-                <Image
-                  src="/Somvibe.png"
-                  alt="SomVibe"
-                  width={180}
-                  height={46}
-                  className="mx-auto mb-4 h-9 w-auto lg:mx-0"
-                />
-                <h2 className="text-2xl font-black text-white sm:text-3xl">
-                  Pronto para colocar sua música nas plataformas?
-                </h2>
-                <p className="mt-3 text-sm leading-relaxed text-gray-300">
-                  Cadastre-se pela SomVibe com o link da DCC Music. O cadastro e o pagamento acontecem no site
-                  oficial deles; nós somos parceiros para facilitar sua distribuição digital.
-                </p>
-              </div>
-              <div className="w-full max-w-xs shrink-0">
-                <AffiliateButton className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-4 text-sm font-black text-white transition hover:bg-primary-700">
-                  Começar no SomVibe
-                  <FiExternalLink className="h-4 w-4" />
-                </AffiliateButton>
-                <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
-                  Ao clicar, você será direcionado para o site da SomVibe. Contato deles: suporte@somvibe.com
-                </p>
+          <div className="mx-auto max-w-4xl">
+            <div className="mb-6 flex justify-center">
+              <Image
+                src="/Somvibe.png"
+                alt="SomVibe"
+                width={320}
+                height={82}
+                className="h-14 w-auto sm:h-16"
+              />
+            </div>
+            <div className="overflow-hidden rounded-3xl border border-cyan-800/50 bg-gradient-to-br from-cyan-950/40 via-gray-950 to-black p-6 sm:p-10">
+              <div className="flex flex-col items-center gap-6 text-center lg:flex-row lg:text-left">
+                <div className="flex-1">
+                  <h2 className="text-2xl font-black text-white sm:text-3xl">
+                    Pronto para colocar sua música nas plataformas?
+                  </h2>
+                  <p className="mt-3 text-sm leading-relaxed text-gray-300">
+                    Cadastre-se pela SomVibe com o link da DCC Music. O cadastro e o pagamento acontecem no site
+                    oficial deles; nós somos parceiros para facilitar sua distribuição digital.
+                  </p>
+                </div>
+                <div className="w-full max-w-xs shrink-0">
+                  <AffiliateButton className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-4 text-sm font-black text-white transition hover:bg-primary-700">
+                    Começar no SomVibe
+                    <FiExternalLink className="h-4 w-4" />
+                  </AffiliateButton>
+                  <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
+                    Ao clicar, você será direcionado para o site da SomVibe. Contato deles: suporte@somvibe.com
+                  </p>
+                </div>
               </div>
             </div>
           </div>
