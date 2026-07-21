@@ -9,7 +9,13 @@ import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
 import { backupStudioVersionAudio, getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { getStudioGenerationProviderError, markExpiredVoiceFromGeneration } from '@/lib/studio-voice-expiration'
-import { translateStudioVoiceError } from '@/lib/studio-voice-errors'
+import {
+  getStudioMusicGenerationFailureMessage,
+  isStudioGenerationTimedOut,
+  markStudioGenerationAsCommunicationFailure,
+  releaseStudioProjectFromFailedGeneration,
+  STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR,
+} from '@/lib/studio-generation-timeout'
 
 export const dynamic = 'force-dynamic'
 
@@ -353,8 +359,11 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
 
     const needsPolling = generation.status !== 'completed' || !existingVersionBeforePoll?.audio_url
+    const hasAudioBeforePoll = Boolean(existingVersionBeforePoll?.audio_url || existingVersionBeforePoll?.stream_audio_url)
 
-    if (needsPolling && generation.provider === 'sunoapi' && generation.provider_task_id && process.env.SUNOAPI_KEY) {
+    if (!hasAudioBeforePoll && isStudioGenerationTimedOut(generation)) {
+      await markStudioGenerationAsCommunicationFailure(generation)
+    } else if (needsPolling && generation.provider === 'sunoapi' && generation.provider_task_id && process.env.SUNOAPI_KEY) {
       const response = await fetch(`https://api.sunoapi.org/api/v1/generate/record-info?taskId=${encodeURIComponent(generation.provider_task_id)}`, {
         headers: {
           Authorization: `Bearer ${process.env.SUNOAPI_KEY}`,
@@ -371,15 +380,17 @@ export async function GET(request: NextRequest) {
       } else if (status?.includes('FAILED') || status === 'SENSITIVE_WORD_ERROR') {
         await markExpiredVoiceFromGeneration(generation, result)
         const providerError = getStudioGenerationProviderError(result) || result?.msg || status
+        const friendlyError = getStudioMusicGenerationFailureMessage(providerError)
         await supabaseAdmin
           .from('studio_generations')
           .update({
             status: 'failed',
-            error_message: translateStudioVoiceError(providerError) || providerError,
+            error_message: friendlyError,
             response_payload: result,
             updated_at: new Date().toISOString(),
           })
           .eq('id', generation.id)
+        await releaseStudioProjectFromFailedGeneration(generation.project_id)
       } else if (result) {
         await supabaseAdmin
           .from('studio_generations')
@@ -408,11 +419,12 @@ export async function GET(request: NextRequest) {
           .from('studio_generations')
           .update({
             status: 'failed',
-            error_message: result?.failed_reason || result?.data?.failed_reason || status,
+            error_message: STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR,
             response_payload: result,
             updated_at: new Date().toISOString(),
           })
           .eq('id', generation.id)
+        await releaseStudioProjectFromFailedGeneration(generation.project_id)
       } else if (result) {
         await supabaseAdmin
           .from('studio_generations')

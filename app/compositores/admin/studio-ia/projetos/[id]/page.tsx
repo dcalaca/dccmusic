@@ -26,9 +26,11 @@ const musicGenerationMessages = [
   'Quase pronto, preparando o resultado...',
 ]
 
-const MUSIC_GENERATION_TIMEOUT_SECONDS = 15 * 60
+const MUSIC_GENERATION_TIMEOUT_SECONDS = 3 * 60
 const MUSIC_GENERATION_BACKGROUND_SECONDS = 20
 const MUSIC_GENERATION_BACKGROUND_MESSAGE = 'Recebemos sua solicitação. Assim que a música estiver pronta, te mandamos um e-mail. Você também pode aguardar por aqui mesmo. Sinto que está vindo um sucesso!'
+const MUSIC_GENERATION_COMMUNICATION_ERROR =
+  'Houve uma falha na comunicação para geração da sua música. Fica tranquilo: não foi descontado do seu saldo. Favor gerar a música novamente.'
 const MUSIC_CREATION_UNAVAILABLE_MESSAGE = 'Sua letra foi salva, mas não conseguimos iniciar a criação da música agora. Tente novamente mais tarde.'
 const STUDIO_MUSIC_CREDITS = 10
 
@@ -459,23 +461,33 @@ export default function StudioProjectDetailPage() {
     if (!generationId) return
 
     const interval = setInterval(() => {
-      setGenerationElapsedSeconds((currentSeconds) => {
-        const nextSeconds = currentSeconds + 1
-        if (nextSeconds >= MUSIC_GENERATION_TIMEOUT_SECONDS) {
-          setGenerationId(null)
-          setPreviewAudioUrl('')
-          setGenerationBackgroundMode(false)
-          setMessage('Está demorando mais que o normal, mas fique tranquilo: a música será criada. Você pode fechar esta tela ou tomar um cafezinho; em breve ela estará disponível em Meus Projetos.')
-        } else if (nextSeconds >= MUSIC_GENERATION_BACKGROUND_SECONDS) {
-          setGenerationBackgroundMode(true)
-          setMessage(MUSIC_GENERATION_BACKGROUND_MESSAGE)
-        }
-        return nextSeconds
-      })
+      setGenerationElapsedSeconds((currentSeconds) => currentSeconds + 1)
     }, 1000)
 
     return () => clearInterval(interval)
   }, [generationId])
+
+  useEffect(() => {
+    if (!generationId) return
+
+    if (generationElapsedSeconds >= MUSIC_GENERATION_TIMEOUT_SECONDS) {
+      const timedOutGenerationId = generationId
+      setGenerationId(null)
+      setPreviewAudioUrl('')
+      setGenerationBackgroundMode(false)
+      setMessage('')
+      void (async () => {
+        await checkGeneration(timedOutGenerationId)
+        setError((current) => current || MUSIC_GENERATION_COMMUNICATION_ERROR)
+      })()
+      return
+    }
+
+    if (generationElapsedSeconds >= MUSIC_GENERATION_BACKGROUND_SECONDS) {
+      setGenerationBackgroundMode(true)
+      setMessage(MUSIC_GENERATION_BACKGROUND_MESSAGE)
+    }
+  }, [generationId, generationElapsedSeconds])
 
   const loadProject = async (options?: { silent?: boolean; notifyReady?: boolean; skipGenerationCheck?: boolean; suppressError?: boolean }) => {
     const token = localStorage.getItem('composer_token')
@@ -509,16 +521,29 @@ export default function StudioProjectDetailPage() {
           setMessage('')
         }
       } else if (data.activeGeneration?.id) {
-        setGenerationId(data.activeGeneration.id)
         const createdAt = new Date(data.activeGeneration.createdAt).getTime()
         const elapsedSeconds = Math.max(0, Math.floor((Date.now() - createdAt) / 1000))
-        setGenerationElapsedSeconds(Math.min(elapsedSeconds, MUSIC_GENERATION_TIMEOUT_SECONDS - 60))
-        setGenerationBackgroundMode(elapsedSeconds >= MUSIC_GENERATION_BACKGROUND_SECONDS)
-        if (elapsedSeconds >= MUSIC_GENERATION_BACKGROUND_SECONDS) {
-          setMessage(MUSIC_GENERATION_BACKGROUND_MESSAGE)
-        }
-        if (!options?.skipGenerationCheck) {
-          checkGeneration(data.activeGeneration.id)
+
+        if (elapsedSeconds >= MUSIC_GENERATION_TIMEOUT_SECONDS) {
+          setGenerationId(null)
+          setPreviewAudioUrl('')
+          setGenerationBackgroundMode(false)
+          setMessage('')
+          if (!options?.skipGenerationCheck) {
+            await checkGeneration(data.activeGeneration.id)
+          } else {
+            setError(MUSIC_GENERATION_COMMUNICATION_ERROR)
+          }
+        } else {
+          setGenerationId(data.activeGeneration.id)
+          setGenerationElapsedSeconds(elapsedSeconds)
+          setGenerationBackgroundMode(elapsedSeconds >= MUSIC_GENERATION_BACKGROUND_SECONDS)
+          if (elapsedSeconds >= MUSIC_GENERATION_BACKGROUND_SECONDS) {
+            setMessage(MUSIC_GENERATION_BACKGROUND_MESSAGE)
+          }
+          if (!options?.skipGenerationCheck) {
+            checkGeneration(data.activeGeneration.id)
+          }
         }
       }
 
@@ -834,7 +859,10 @@ export default function StudioProjectDetailPage() {
     if (data.generation?.status === 'failed') {
       setGenerationId(null)
       setPreviewAudioUrl('')
-      setError(data.generation?.error_message || 'Não conseguimos confirmar essa geração agora. Se ela já foi criada, ela pode aparecer em Meus Projetos assim que a sincronização terminar.')
+      setGenerationBackgroundMode(false)
+      setMessage('')
+      setError(data.generation?.error_message || MUSIC_GENERATION_COMMUNICATION_ERROR)
+      await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
       return
     }
 

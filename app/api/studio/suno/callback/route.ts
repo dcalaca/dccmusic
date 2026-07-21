@@ -9,7 +9,10 @@ import {
 import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
 import { backupStudioVersionAudio } from '@/lib/studio-audio-backup'
 import { getStudioGenerationProviderError, markExpiredVoiceFromGeneration } from '@/lib/studio-voice-expiration'
-import { translateStudioVoiceError } from '@/lib/studio-voice-errors'
+import {
+  getStudioMusicGenerationFailureMessage,
+  releaseStudioProjectFromFailedGeneration,
+} from '@/lib/studio-generation-timeout'
 
 export const dynamic = 'force-dynamic'
 
@@ -171,16 +174,24 @@ export async function POST(request: Request) {
       await markExpiredVoiceFromGeneration(generation, body)
     }
 
+    const failureMessage = hasFailure
+      ? getStudioMusicGenerationFailureMessage(providerError)
+      : generation.error_message
+
     await supabaseAdmin
       .from('studio_generations')
       .update({
         callback_type: callbackType || null,
         status,
-        error_message: hasFailure ? (translateStudioVoiceError(providerError) || providerError || callbackStatus) : generation.error_message,
+        error_message: failureMessage,
         response_payload: body,
         updated_at: new Date().toISOString(),
       })
       .eq('id', generation.id)
+
+    if (hasFailure) {
+      await releaseStudioProjectFromFailedGeneration(generation.project_id)
+    }
 
     if (first && (callbackType === 'first' || callbackType === 'complete')) {
       const isComplete = callbackType === 'complete'

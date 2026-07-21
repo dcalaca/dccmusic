@@ -6,6 +6,12 @@ import {
 } from '@/lib/dcc-emails'
 import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
 import { backupStudioVersionAudio } from '@/lib/studio-audio-backup'
+import {
+  isStudioGenerationTimedOut,
+  markStudioGenerationAsCommunicationFailure,
+  releaseStudioProjectFromFailedGeneration,
+  STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR,
+} from '@/lib/studio-generation-timeout'
 
 export const dynamic = 'force-dynamic'
 
@@ -213,6 +219,20 @@ export async function GET(request: NextRequest) {
 
     for (const generation of generations || []) {
       try {
+        if (isStudioGenerationTimedOut(generation)) {
+          const { data: generationVersion } = await supabaseAdmin
+            .from('studio_versions')
+            .select('id, audio_url, stream_audio_url')
+            .eq('generation_id', generation.id)
+            .limit(1)
+            .maybeSingle()
+
+          if (!generationVersion?.audio_url && !generationVersion?.stream_audio_url) {
+            await markStudioGenerationAsCommunicationFailure(generation)
+            continue
+          }
+        }
+
         const response = await fetch(`https://api.mureka.ai/v1/song/query/${encodeURIComponent(generation.provider_task_id)}`, {
           headers: {
             Authorization: `Bearer ${process.env.MUREKA_API_KEY}`,
@@ -229,11 +249,12 @@ export async function GET(request: NextRequest) {
             .from('studio_generations')
             .update({
               status: 'failed',
-              error_message: result?.failed_reason || result?.data?.failed_reason || status,
+              error_message: STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR,
               response_payload: result,
               updated_at: new Date().toISOString(),
             })
             .eq('id', generation.id)
+          await releaseStudioProjectFromFailedGeneration(generation.project_id)
         } else if (result) {
           await supabaseAdmin
             .from('studio_generations')

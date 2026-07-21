@@ -10,6 +10,12 @@ import {
   getComposerEmailIdentity,
   sendStudioMusicReadyEmail,
 } from '@/lib/dcc-emails'
+import {
+  isStudioGenerationTimedOut,
+  markStudioGenerationAsCommunicationFailure,
+  releaseStudioProjectFromFailedGeneration,
+  STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR,
+} from '@/lib/studio-generation-timeout'
 
 export const dynamic = 'force-dynamic'
 const STUDIO_TITLE_MAX_LENGTH = 30
@@ -81,6 +87,11 @@ async function syncMurekaGenerationIfReady(project: any, composerId: string) {
 
   if (!generation?.provider_task_id) return
 
+  if (isStudioGenerationTimedOut(generation)) {
+    await markStudioGenerationAsCommunicationFailure(generation)
+    return
+  }
+
   const response = await fetch(`https://api.mureka.ai/v1/song/query/${encodeURIComponent(generation.provider_task_id)}`, {
     headers: {
       Authorization: `Bearer ${process.env.MUREKA_API_KEY}`,
@@ -96,11 +107,12 @@ async function syncMurekaGenerationIfReady(project: any, composerId: string) {
         .from('studio_generations')
         .update({
           status: 'failed',
-          error_message: result?.failed_reason || result?.data?.failed_reason || status,
+          error_message: STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR,
           response_payload: result,
           updated_at: new Date().toISOString(),
         })
         .eq('id', generation.id)
+      await releaseStudioProjectFromFailedGeneration(generation.project_id)
     } else if (result) {
       await supabaseAdmin
         .from('studio_generations')
@@ -284,15 +296,37 @@ export async function GET(
       : { data: null }
 
     const shouldSyncLatestGeneration = !version?.audio_url
-    const { data: activeGeneration } = await supabaseAdmin
+    let { data: activeGeneration } = await supabaseAdmin
       .from('studio_generations')
-      .select('id, status, created_at, updated_at')
+      .select('id, status, created_at, updated_at, project_id')
       .eq('project_id', project.id)
       .eq('composer_id', composer.composerId)
       .in('status', shouldSyncLatestGeneration ? ['pending', 'processing', 'first_ready', 'completed'] : ['pending', 'processing', 'first_ready'])
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
+
+    if (activeGeneration && isStudioGenerationTimedOut(activeGeneration)) {
+      const { data: generationVersion } = await supabaseAdmin
+        .from('studio_versions')
+        .select('id, audio_url, stream_audio_url')
+        .eq('generation_id', activeGeneration.id)
+        .limit(1)
+        .maybeSingle()
+
+      if (!generationVersion?.audio_url && !generationVersion?.stream_audio_url) {
+        await markStudioGenerationAsCommunicationFailure(activeGeneration)
+        activeGeneration = null
+        const { data: refreshedProject } = await supabaseAdmin
+          .from('studio_projects')
+          .select('status')
+          .eq('id', project.id)
+          .maybeSingle()
+        if (refreshedProject?.status) {
+          project.status = refreshedProject.status
+        }
+      }
+    }
 
     const versionAudio = version ? await getStudioVersionAudioUrls(version) : null
     const coverImageUrl = cover ? await getStudioCoverImageUrl(cover) : null
