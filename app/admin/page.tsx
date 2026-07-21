@@ -191,6 +191,13 @@ const adminGroups = [
         accent: 'green',
       },
       {
+        href: '/admin/compradores',
+        title: 'Compradores Mercado Pago',
+        description: 'Lista e CSV de compradores/recorrentes para campanhas no Meta',
+        icon: FiUsers,
+        accent: 'blue',
+      },
+      {
         href: '/admin/ads',
         title: 'Configuração Ads',
         description: 'Analisar Meta Ads, custo por cadastro e pausar anúncios ruins',
