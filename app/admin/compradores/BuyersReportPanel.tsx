@@ -43,6 +43,7 @@ type BuyersReport = {
   mercadoPago: {
     configured: boolean
     fetched: number
+    matchedLocal?: number
     pages: number
     error: string | null
   }
@@ -255,7 +256,7 @@ export default function BuyersReportPanel() {
             <SummaryCard
               label="Com telefone"
               value={formatNumber(report.totals.withPhone)}
-              hint={`MP retornou ${formatNumber(report.mercadoPago.fetched)} pagamentos`}
+              hint={`MP cruzou ${formatNumber(report.mercadoPago.matchedLocal || 0)} de ${formatNumber(report.totals.purchases)} compras`}
             />
           </div>
 

@@ -29,6 +29,7 @@ type BuyerRow = {
   lastName: string
   phone: string
   document: string
+  composerId: string
   purchaseCount: number
   totalAmount: number
   firstPurchaseAt: string | null
@@ -173,6 +174,14 @@ function isMissingTableError(error: any, tableName: string) {
   return Boolean(error && (message.includes(tableName.toLowerCase()) || message.includes('schema cache')))
 }
 
+function chunk<T>(items: T[], size: number) {
+  const chunks: T[][] = []
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size))
+  }
+  return chunks
+}
+
 async function fetchMercadoPagoPayments(startIso: string, endIso: string) {
   const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN?.trim()
   if (!accessToken) {
@@ -234,48 +243,17 @@ async function fetchMercadoPagoPayments(startIso: string, endIso: string) {
   }
 }
 
-function mapMpPayment(payment: any): PurchaseRow | null {
-  const status = String(payment?.status || '').toLowerCase()
-  if (status !== 'approved') return null
-
-  const email = extractEmail(payment)
-  const name = extractName(payment)
-  const { firstName, lastName } = splitName(name)
-  const amount = Number(payment?.transaction_amount || payment?.transaction_details?.total_paid_amount || 0) || 0
-  const paymentId = String(payment?.id || '')
-  if (!paymentId && !email) return null
-
-  return {
-    paymentId: paymentId || `mp-${email}-${payment?.date_approved || payment?.date_created || ''}`,
-    paidAt: payment?.date_approved || payment?.date_created || null,
-    amount,
-    status: status || 'approved',
-    paymentMethod: String(payment?.payment_method_id || payment?.payment_type_id || ''),
-    source: 'mercadopago',
-    email,
-    name,
-    firstName,
-    lastName,
-    phone: extractPhone(payment),
-    document: extractDocument(payment),
-    externalReference: String(payment?.external_reference || ''),
-    composerId: String(payment?.metadata?.composer_id || ''),
-  }
-}
-
 function mapLocalPayment(row: any, source: string, composersById: Map<string, any>): PurchaseRow | null {
   const payload = row.gateway_response || row.metadata?.mercadopago_payment || row.metadata || {}
   const composer = composersById.get(row.composer_id)
-  const email = extractEmail(payload) || normalizeEmail(composer?.email)
-  const name = extractName(payload, composer?.name || '')
+  if (!composer && !row.composer_id) return null
+
+  const email = normalizeEmail(composer?.email) || extractEmail(payload)
+  const name = String(composer?.name || '').trim() || extractName(payload)
   const { firstName, lastName } = splitName(name)
   const amount = Math.max(0, Number(row.amount) || 0)
-  const paymentId = String(
-    row.gateway_payment_id ||
-    payload?.id ||
-    row.payment_id ||
-    `${source}:${row.id}`
-  )
+  const gatewayId = String(row.gateway_payment_id || row.payment_id || payload?.id || '').trim()
+  const paymentId = gatewayId || `${source}:${row.id}`
 
   return {
     paymentId,
@@ -295,19 +273,20 @@ function mapLocalPayment(row: any, source: string, composersById: Map<string, an
   }
 }
 
-function mergePurchases(rows: PurchaseRow[]) {
-  const byId = new Map<string, PurchaseRow>()
+function dedupeLocalPurchases(rows: PurchaseRow[]) {
+  const byKey = new Map<string, PurchaseRow>()
 
   for (const row of rows) {
-    if (!row.paymentId && !row.email) continue
-    const key = row.paymentId || `${row.email}:${row.paidAt}:${row.amount}:${row.source}`
-    const current = byId.get(key)
+    // Prefer gateway id when present; otherwise keep unique local row id in paymentId.
+    const key = row.paymentId
+    const current = byKey.get(key)
     if (!current) {
-      byId.set(key, row)
+      byKey.set(key, row)
       continue
     }
 
-    byId.set(key, {
+    // Same gateway payment appearing in more than one local table: keep one, merge details.
+    byKey.set(key, {
       ...current,
       email: current.email || row.email,
       name: current.name || row.name,
@@ -320,24 +299,70 @@ function mergePurchases(rows: PurchaseRow[]) {
       externalReference: current.externalReference || row.externalReference,
       amount: current.amount || row.amount,
       paidAt: current.paidAt || row.paidAt,
+      source: current.source.includes(row.source) ? current.source : `${current.source}+${row.source}`,
     })
   }
 
-  return Array.from(byId.values()).sort((a, b) => {
+  return Array.from(byKey.values()).sort((a, b) => {
     const dateA = a.paidAt ? new Date(a.paidAt).getTime() : 0
     const dateB = b.paidAt ? new Date(b.paidAt).getTime() : 0
     return dateB - dateA
   })
 }
 
+function buildMpLookup(payments: any[]) {
+  const byId = new Map<string, any>()
+  for (const payment of payments) {
+    if (String(payment?.status || '').toLowerCase() !== 'approved') continue
+    const id = String(payment?.id || '').trim()
+    if (!id) continue
+    byId.set(id, payment)
+  }
+  return byId
+}
+
+function enrichWithMercadoPago(purchases: PurchaseRow[], mpById: Map<string, any>) {
+  return purchases.map(purchase => {
+    const payload = mpById.get(purchase.paymentId)
+    if (!payload) return purchase
+
+    const mpEmail = extractEmail(payload)
+    const mpName = extractName(payload)
+    const mpPhone = extractPhone(payload)
+    const mpDocument = extractDocument(payload)
+    const mpMethod = String(payload?.payment_method_id || payload?.payment_type_id || '')
+
+    // Keep DCC composer identity as primary; only fill gaps and phone from MP.
+    const name = purchase.name || mpName
+    const { firstName, lastName } = splitName(name)
+
+    return {
+      ...purchase,
+      email: purchase.email || mpEmail,
+      name,
+      firstName: purchase.firstName || firstName,
+      lastName: purchase.lastName || lastName,
+      phone: purchase.phone || mpPhone,
+      document: purchase.document || mpDocument,
+      paymentMethod: purchase.paymentMethod || mpMethod,
+    }
+  })
+}
+
+function buyerKey(purchase: PurchaseRow) {
+  // One composer = one buyer. Never pile anonymous MP noise into the same bucket.
+  if (purchase.composerId) return `composer:${purchase.composerId}`
+  if (purchase.email) return `email:${purchase.email}`
+  return `payment:${purchase.paymentId}`
+}
+
 function buildBuyers(purchases: PurchaseRow[]): BuyerRow[] {
   const map = new Map<string, BuyerRow & { methods: Set<string>; sourceSet: Set<string> }>()
 
   for (const purchase of purchases) {
-    const key = purchase.email || purchase.phone || purchase.composerId || purchase.paymentId
-    if (!key) continue
-
+    const key = buyerKey(purchase)
     const current = map.get(key)
+
     if (!current) {
       map.set(key, {
         email: purchase.email,
@@ -346,6 +371,7 @@ function buildBuyers(purchases: PurchaseRow[]): BuyerRow[] {
         lastName: purchase.lastName,
         phone: purchase.phone,
         document: purchase.document,
+        composerId: purchase.composerId,
         purchaseCount: 1,
         totalAmount: purchase.amount,
         firstPurchaseAt: purchase.paidAt,
@@ -369,6 +395,7 @@ function buildBuyers(purchases: PurchaseRow[]): BuyerRow[] {
     }
     if (!current.phone && purchase.phone) current.phone = purchase.phone
     if (!current.document && purchase.document) current.document = purchase.document
+    if (!current.composerId && purchase.composerId) current.composerId = purchase.composerId
     if (purchase.paymentMethod) current.methods.add(purchase.paymentMethod)
     if (purchase.source) current.sourceSet.add(purchase.source)
 
@@ -389,6 +416,7 @@ function buildBuyers(purchases: PurchaseRow[]): BuyerRow[] {
       lastName: buyer.lastName,
       phone: buyer.phone,
       document: buyer.document,
+      composerId: buyer.composerId,
       purchaseCount: buyer.purchaseCount,
       totalAmount: Number(buyer.totalAmount.toFixed(2)),
       firstPurchaseAt: buyer.firstPurchaseAt,
@@ -401,6 +429,22 @@ function buildBuyers(purchases: PurchaseRow[]): BuyerRow[] {
       if (b.purchaseCount !== a.purchaseCount) return b.purchaseCount - a.purchaseCount
       return b.totalAmount - a.totalAmount
     })
+}
+
+async function fetchComposersByIds(composerIds: string[]) {
+  const composersById = new Map<string, any>()
+  for (const ids of chunk(composerIds, 200)) {
+    const result = await supabaseAdmin
+      .from('dccmusic_composers')
+      .select('id, name, email')
+      .in('id', ids)
+
+    if (result.error) throw result.error
+    for (const row of result.data || []) {
+      composersById.set(row.id, row)
+    }
+  }
+  return composersById
 }
 
 export async function GET(request: NextRequest) {
@@ -469,85 +513,33 @@ export async function GET(request: NextRequest) {
       ...(videosResult.data || []).map((row: any) => row.composer_id),
     ].filter(Boolean)))
 
-    const composersResult = composerIds.length > 0
-      ? await supabaseAdmin.from('dccmusic_composers').select('id, name, email').in('id', composerIds)
-      : { data: [], error: null }
+    const composersById = await fetchComposersByIds(composerIds)
 
-    if (composersResult.error) {
-      return NextResponse.json(
-        { error: 'Erro ao buscar compositores', details: composersResult.error.message },
-        { status: 500 }
-      )
-    }
-
-    const composersById = new Map((composersResult.data || []).map((row: any) => [row.id, row]))
-
-    const localPurchases = [
+    // Source of truth: only DCC local paid records (not every payment in the MP account).
+    const localPurchases = dedupeLocalPurchases([
       ...(subscriptionsResult.data || []).map((row: any) => mapLocalPayment(row, 'subscription', composersById)),
       ...(featuredResult.data || []).map((row: any) => mapLocalPayment(row, 'featured', composersById)),
       ...((topupsMissing ? [] : topupsResult.data) || []).map((row: any) => mapLocalPayment(row, 'studio_topup', composersById)),
       ...(videosResult.data || []).map((row: any) => mapLocalPayment(row, 'video', composersById)),
-    ].filter(Boolean) as PurchaseRow[]
+    ].filter(Boolean) as PurchaseRow[])
 
-    const mpPurchases = (mpResult.payments || [])
-      .map(mapMpPayment)
-      .filter(Boolean) as PurchaseRow[]
-
-    // Enrich MP rows with composer email/name when only composer_id exists
-    for (const purchase of mpPurchases) {
-      if (purchase.composerId && composersById.has(purchase.composerId)) {
-        const composer = composersById.get(purchase.composerId)
-        if (!purchase.email) purchase.email = normalizeEmail(composer.email)
-        if (!purchase.name) {
-          purchase.name = String(composer.name || '')
-          const parts = splitName(purchase.name)
-          purchase.firstName = parts.firstName
-          purchase.lastName = parts.lastName
-        }
-      }
-    }
-
-    // Also try matching local composers by email for MP-only rows
-    const emails = Array.from(new Set(mpPurchases.map(row => row.email).filter(Boolean)))
-    if (emails.length > 0) {
-      const byEmailResult = await supabaseAdmin
-        .from('dccmusic_composers')
-        .select('id, name, email')
-        .in('email', emails)
-
-      if (!byEmailResult.error && byEmailResult.data) {
-        const composersByEmail = new Map(
-          byEmailResult.data.map((row: any) => [normalizeEmail(row.email), row])
-        )
-        for (const purchase of mpPurchases) {
-          const composer = composersByEmail.get(purchase.email)
-          if (!composer) continue
-          if (!purchase.name) {
-            purchase.name = String(composer.name || '')
-            const parts = splitName(purchase.name)
-            purchase.firstName = parts.firstName
-            purchase.lastName = parts.lastName
-          }
-          if (!purchase.composerId) purchase.composerId = composer.id
-        }
-      }
-    }
-
-    const purchases = mergePurchases([...mpPurchases, ...localPurchases])
-      .filter(row => row.status === 'approved' || row.status === 'accredited' || !row.status)
+    const mpById = buildMpLookup(mpResult.payments || [])
+    const purchases = enrichWithMercadoPago(localPurchases, mpById)
     const buyers = buildBuyers(purchases)
     const recurringBuyers = buyers.filter(buyer => buyer.isRecurring)
+    const matchedWithMp = purchases.filter(purchase => mpById.has(purchase.paymentId)).length
 
     if (format === 'csv') {
       if (scope === 'recurring' || scope === 'recorrentes') {
         const csv = toCsv(
-          ['email', 'phone', 'fn', 'ln', 'name', 'purchase_count', 'total_amount', 'first_purchase_at', 'last_purchase_at', 'document'],
+          ['email', 'phone', 'fn', 'ln', 'name', 'composer_id', 'purchase_count', 'total_amount', 'first_purchase_at', 'last_purchase_at', 'document'],
           recurringBuyers.map(buyer => ({
             email: buyer.email,
             phone: buyer.phone,
             fn: buyer.firstName,
             ln: buyer.lastName,
             name: buyer.name,
+            composer_id: buyer.composerId,
             purchase_count: buyer.purchaseCount,
             total_amount: buyer.totalAmount,
             first_purchase_at: buyer.firstPurchaseAt || '',
@@ -558,20 +550,21 @@ export async function GET(request: NextRequest) {
         return new NextResponse(csv, {
           headers: {
             'Content-Type': 'text/csv; charset=utf-8',
-            'Content-Disposition': `attachment; filename="compradores-recorrentes.csv"`,
+            'Content-Disposition': 'attachment; filename="compradores-recorrentes.csv"',
           },
         })
       }
 
       if (scope === 'buyers' || scope === 'compradores') {
         const csv = toCsv(
-          ['email', 'phone', 'fn', 'ln', 'name', 'purchase_count', 'total_amount', 'is_recurring', 'first_purchase_at', 'last_purchase_at', 'document', 'payment_methods', 'sources'],
+          ['email', 'phone', 'fn', 'ln', 'name', 'composer_id', 'purchase_count', 'total_amount', 'is_recurring', 'first_purchase_at', 'last_purchase_at', 'document', 'payment_methods', 'sources'],
           buyers.map(buyer => ({
             email: buyer.email,
             phone: buyer.phone,
             fn: buyer.firstName,
             ln: buyer.lastName,
             name: buyer.name,
+            composer_id: buyer.composerId,
             purchase_count: buyer.purchaseCount,
             total_amount: buyer.totalAmount,
             is_recurring: buyer.isRecurring ? 'sim' : 'nao',
@@ -585,13 +578,13 @@ export async function GET(request: NextRequest) {
         return new NextResponse(csv, {
           headers: {
             'Content-Type': 'text/csv; charset=utf-8',
-            'Content-Disposition': `attachment; filename="compradores.csv"`,
+            'Content-Disposition': 'attachment; filename="compradores.csv"',
           },
         })
       }
 
       const csv = toCsv(
-        ['payment_id', 'paid_at', 'amount', 'email', 'phone', 'fn', 'ln', 'name', 'document', 'payment_method', 'source', 'external_reference', 'status'],
+        ['payment_id', 'paid_at', 'amount', 'email', 'phone', 'fn', 'ln', 'name', 'composer_id', 'document', 'payment_method', 'source', 'external_reference', 'status'],
         purchases.map(purchase => ({
           payment_id: purchase.paymentId,
           paid_at: purchase.paidAt || '',
@@ -601,6 +594,7 @@ export async function GET(request: NextRequest) {
           fn: purchase.firstName,
           ln: purchase.lastName,
           name: purchase.name,
+          composer_id: purchase.composerId,
           document: purchase.document,
           payment_method: purchase.paymentMethod,
           source: purchase.source,
@@ -611,7 +605,7 @@ export async function GET(request: NextRequest) {
       return new NextResponse(csv, {
         headers: {
           'Content-Type': 'text/csv; charset=utf-8',
-          'Content-Disposition': `attachment; filename="compras.csv"`,
+          'Content-Disposition': 'attachment; filename="compras.csv"',
         },
       })
     }
@@ -624,13 +618,15 @@ export async function GET(request: NextRequest) {
       mercadoPago: {
         configured: mpResult.configured,
         fetched: mpResult.payments.length,
+        matchedLocal: matchedWithMp,
         pages: mpResult.pages,
         error: mpResult.error,
       },
       warnings: [
         ...(mpResult.error ? [`Mercado Pago: ${mpResult.error}`] : []),
         ...(topupsMissing ? ['Tabela de recargas Studio indisponível nesta base.'] : []),
-        'Telefone só aparece quando o Mercado Pago gravou esse dado no pagamento. Muitos checkouts não enviam telefone.',
+        'Agora contamos só compras do DCC (assinatura, recarga, destaque e vídeo). O Mercado Pago só entra para enriquecer telefone/dados.',
+        'Telefone só aparece quando o Mercado Pago gravou esse dado no pagamento.',
       ],
       totals: {
         purchases: purchases.length,
