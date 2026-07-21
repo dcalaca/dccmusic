@@ -7,7 +7,7 @@ import {
 } from '@/lib/studio-voice-errors'
 
 /** Tempo máximo que a UI/API esperam áudio antes de tratar como falha de comunicação. */
-export const STUDIO_MUSIC_GENERATION_TIMEOUT_MS = 3 * 60 * 1000
+export const STUDIO_MUSIC_GENERATION_TIMEOUT_MS = 10 * 60 * 1000
 export const STUDIO_MUSIC_GENERATION_TIMEOUT_SECONDS = Math.floor(STUDIO_MUSIC_GENERATION_TIMEOUT_MS / 1000)
 
 export const STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR =

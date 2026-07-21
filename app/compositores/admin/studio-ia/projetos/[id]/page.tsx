@@ -26,7 +26,7 @@ const musicGenerationMessages = [
   'Quase pronto, preparando o resultado...',
 ]
 
-const MUSIC_GENERATION_TIMEOUT_SECONDS = 3 * 60
+const MUSIC_GENERATION_TIMEOUT_SECONDS = 10 * 60
 const MUSIC_GENERATION_BACKGROUND_SECONDS = 20
 const MUSIC_GENERATION_BACKGROUND_MESSAGE = 'Recebemos sua solicitação. Assim que a música estiver pronta, te mandamos um e-mail. Você também pode aguardar por aqui mesmo. Sinto que está vindo um sucesso!'
 const MUSIC_GENERATION_COMMUNICATION_ERROR =
