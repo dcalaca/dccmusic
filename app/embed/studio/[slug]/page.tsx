@@ -2,8 +2,10 @@ import { notFound } from 'next/navigation'
 import { supabaseAdmin } from '@/lib/supabase'
 import StudioPreviewPlayer from '@/components/StudioPreviewPlayer'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
+import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 
 async function getEmbed(slug: string) {
   const { data: project } = await supabaseAdmin
@@ -21,7 +23,8 @@ async function getEmbed(slug: string) {
   ])
 
   if (!version) return null
-  return { project, version, cover }
+  const coverUrl = await getStudioCoverImageUrl(cover)
+  return { project, version, coverUrl }
 }
 
 export default async function StudioEmbedPage({ params }: { params: { slug: string } }) {
@@ -35,7 +38,7 @@ export default async function StudioEmbedPage({ params }: { params: { slug: stri
     <div className="m-0 bg-black text-white">
       <div className="flex gap-4 rounded-2xl border border-gray-800 bg-gray-950 p-4">
         <div className="h-28 w-28 flex-shrink-0 overflow-hidden rounded-xl bg-gray-900">
-          {data.cover?.image_url && <img src={data.cover.image_url} alt={data.project.title} className="h-full w-full object-cover" />}
+          {data.coverUrl && <img src={data.coverUrl} alt={data.project.title} className="h-full w-full object-cover" />}
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-lg font-bold">{data.project.title}</p>

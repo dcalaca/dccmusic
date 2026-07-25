@@ -4,8 +4,10 @@ import MusicList from '@/components/MusicList'
 import ViewToggle from '@/components/ViewToggle'
 import { Suspense } from 'react'
 import { supabaseAdmin } from '@/lib/supabase'
+import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 export const revalidate = 0
 
 interface MusicasPageProps {
@@ -17,20 +19,6 @@ interface MusicasPageProps {
     pagina?: string
     visualizacao?: string
   }
-}
-
-async function getStudioCoverUrl(cover: any) {
-  if (!cover) return null
-
-  if (cover.image_path) {
-    const { data } = await supabaseAdmin.storage
-      .from('studio-assets')
-      .createSignedUrl(cover.image_path, 60 * 60)
-
-    if (data?.signedUrl) return data.signedUrl
-  }
-
-  return cover.image_url || null
 }
 
 async function getPublishedStudioMusics() {
@@ -74,7 +62,7 @@ async function getPublishedStudioMusics() {
       appleMusicEmbed: null,
       tags: 'DCC Studio IA',
       description: project.description || [project.style, project.mood, 'DCC Studio IA'].filter(Boolean).join(' '),
-      coverUrl: await getStudioCoverUrl(currentCover),
+      coverUrl: await getStudioCoverImageUrl(currentCover),
       featured: false,
       viewCount: 0,
       sourceLabel: 'Studio IA',

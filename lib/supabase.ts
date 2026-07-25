@@ -8,7 +8,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const supabaseFetch: typeof fetch = (input, init) =>
+  fetch(input, { ...init, cache: 'no-store' })
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  global: { fetch: supabaseFetch },
+})
 
 /** Lê o claim `role` do JWT (anon | authenticated | service_role) sem validar assinatura */
 function jwtRoleFromSupabaseKey(key: string): string | null {
@@ -59,4 +64,6 @@ export const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
     autoRefreshToken: false,
     persistSession: false,
   },
+  // Evita o Data Cache do Next.js guardar signed URLs (expiram em poucas horas).
+  global: { fetch: supabaseFetch },
 })

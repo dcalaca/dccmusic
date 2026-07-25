@@ -10,6 +10,7 @@ import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 
 function extractVoicePreferences(description?: string | null) {
   const match = String(description || '').match(/Preferência de voz:\s*(.+)/i)

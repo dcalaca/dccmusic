@@ -5,8 +5,10 @@ import MusicCard from '@/components/MusicCard'
 import ComposerFiltersWrapper from '@/components/ComposerFiltersWrapper'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getComposerAvatarApiPath, PROFILE_PHOTO_MISSING } from '@/lib/composer-profile-photo'
+import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 
 interface ComposerPageProps {
   params: { slug: string }
@@ -49,20 +51,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export const revalidate = 0
-
-async function getStudioCoverUrl(cover: any) {
-  if (!cover) return null
-
-  if (cover.image_path) {
-    const { data } = await supabaseAdmin.storage
-      .from('studio-assets')
-      .createSignedUrl(cover.image_path, 60 * 60)
-
-    if (data?.signedUrl) return data.signedUrl
-  }
-
-  return cover.image_url || null
-}
 
 export default async function ComposerDetailPage({ params, searchParams = {} }: ComposerPageProps) {
   const composer = await db.getComposerBySlug(params.slug)
@@ -132,7 +120,7 @@ export default async function ComposerDetailPage({ params, searchParams = {} }: 
     return {
       ...project,
       cover: currentCover,
-      coverUrl: await getStudioCoverUrl(currentCover),
+      coverUrl: await getStudioCoverImageUrl(currentCover),
     }
   }))
 

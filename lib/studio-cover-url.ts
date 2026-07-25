@@ -1,15 +1,99 @@
+import { Buffer } from 'node:buffer'
 import { supabaseAdmin } from './supabase'
+
+const STUDIO_COVER_BUCKET = 'studio-assets'
+const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 // 24h
+
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const part = token.split('.')[1]
+    if (!part) return null
+    return JSON.parse(Buffer.from(part, 'base64url').toString('utf8'))
+  } catch {
+    return null
+  }
+}
+
+function isSupabaseSignedUrl(url: string) {
+  return url.includes('/storage/v1/object/sign/')
+}
+
+function isExpiredSupabaseSignedUrl(url: string) {
+  try {
+    if (!isSupabaseSignedUrl(url)) return false
+    const token = new URL(url).searchParams.get('token')
+    if (!token) return false
+    const payload = decodeJwtPayload(token)
+    const exp = Number(payload?.exp)
+    if (!Number.isFinite(exp)) return false
+    return Date.now() / 1000 >= exp - 60
+  } catch {
+    return false
+  }
+}
+
+/** Recupera o path do arquivo a partir de uma signed URL antiga do Supabase. */
+function extractPathFromSignedUrl(url: string): string | null {
+  try {
+    if (!isSupabaseSignedUrl(url)) return null
+
+    const token = new URL(url).searchParams.get('token')
+    if (token) {
+      const payload = decodeJwtPayload(token)
+      const signedPath = String(payload?.url || '')
+      if (signedPath.startsWith(`${STUDIO_COVER_BUCKET}/`)) {
+        return signedPath.slice(STUDIO_COVER_BUCKET.length + 1)
+      }
+      if (signedPath) return signedPath
+    }
+
+    const marker = `/object/sign/${STUDIO_COVER_BUCKET}/`
+    const index = url.indexOf(marker)
+    if (index >= 0) {
+      const pathWithQuery = url.slice(index + marker.length)
+      return decodeURIComponent(pathWithQuery.split('?')[0] || '') || null
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
+
+async function createStudioCoverSignedUrl(path: string) {
+  const { data, error } = await supabaseAdmin.storage
+    .from(STUDIO_COVER_BUCKET)
+    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS)
+
+  if (error || !data?.signedUrl) {
+    console.error('[studio-cover-url] falha ao assinar capa:', error?.message || error, path)
+    return null
+  }
+
+  return data.signedUrl
+}
 
 export async function getStudioCoverImageUrl(cover: any) {
   if (!cover) return null
 
-  if (cover.image_path) {
-    const { data, error } = await supabaseAdmin.storage
-      .from('studio-assets')
-      .createSignedUrl(cover.image_path, 60 * 60)
-
-    if (!error && data?.signedUrl) return data.signedUrl
+  const pathFromColumn = typeof cover.image_path === 'string' ? cover.image_path.trim() : ''
+  if (pathFromColumn) {
+    const signed = await createStudioCoverSignedUrl(pathFromColumn)
+    if (signed) return signed
   }
 
-  return cover.image_url || null
+  const fallbackUrl = typeof cover.image_url === 'string' ? cover.image_url.trim() : ''
+  if (!fallbackUrl) return null
+
+  // Signed URL antiga no banco: tenta recriar a partir do path embutido no token.
+  if (isSupabaseSignedUrl(fallbackUrl)) {
+    const pathFromUrl = extractPathFromSignedUrl(fallbackUrl)
+    if (pathFromUrl) {
+      const resigned = await createStudioCoverSignedUrl(pathFromUrl)
+      if (resigned) return resigned
+    }
+    if (isExpiredSupabaseSignedUrl(fallbackUrl)) return null
+  }
+
+  return fallbackUrl
 }

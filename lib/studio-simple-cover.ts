@@ -9,7 +9,7 @@ const SIMPLE_COVER_QUALITY = process.env.OPENAI_SIMPLE_COVER_QUALITY || 'low'
 async function createSignedUrl(path: string) {
   const { data } = await supabaseAdmin.storage
     .from('studio-assets')
-    .createSignedUrl(path, 60 * 60)
+    .createSignedUrl(path, 60 * 60 * 24)
   return data?.signedUrl || null
 }
 
@@ -72,15 +72,16 @@ export async function ensureSimpleStudioCover(input: {
 }) {
   const { data: currentCover } = await supabaseAdmin
     .from('studio_covers')
-    .select('id, image_url, is_premium, provider')
+    .select('id, image_url, image_path, is_premium, provider')
     .eq('project_id', input.projectId)
     .eq('composer_id', input.composerId)
     .eq('is_current', true)
     .maybeSingle()
 
+  const hasStoredCover = Boolean(currentCover?.image_path || currentCover?.image_url)
   if (currentCover?.is_premium) return currentCover
-  if (currentCover?.image_url && currentCover.provider === 'openai') return currentCover
-  if (currentCover?.image_url && !input.replaceCurrent) return currentCover
+  if (hasStoredCover && currentCover.provider === 'openai') return currentCover
+  if (hasStoredCover && !input.replaceCurrent) return currentCover
 
   const prompt = buildSimpleCoverPrompt(input)
   const imageBase64 = await generateSimpleCoverImage(prompt)

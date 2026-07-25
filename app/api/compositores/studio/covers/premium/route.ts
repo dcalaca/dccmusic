@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic'
 async function createSignedUrl(path: string) {
   const { data } = await supabaseAdmin.storage
     .from('studio-assets')
-    .createSignedUrl(path, 60 * 60)
+    .createSignedUrl(path, 60 * 60 * 24)
   return data?.signedUrl || null
 }
 
