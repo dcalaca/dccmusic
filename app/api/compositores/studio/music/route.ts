@@ -31,7 +31,7 @@ const STUDIO_CREATIVE_VARIATION_INSTRUCTION = 'criar melodia inédita e abordage
 const MUREKA_CREATIVE_VARIATION_INSTRUCTION = 'Create an original melody and a fresh approach for each generation while keeping the chosen genre, varying intro, groove, arrangement, vocal interpretation and melodic progression.'
 const MAX_STUDIO_MUSIC_NEGATIVE_TAGS = 'long song, repeated full song, extended outro, long solo, duplicate version, unclear vocals, rushed vocals'
 const MUREKA_LYRICS_MAX_CHARS = 3000
-const LONG_LYRIC_PREFER_MUREKA_CHARS = Number(process.env.STUDIO_LONG_LYRIC_PREFER_MUREKA_CHARS || '2200') || 2200
+const LONG_LYRIC_PREFER_MUREKA_CHARS = Number(process.env.STUDIO_LONG_LYRIC_PREFER_MUREKA_CHARS || '1500') || 1500
 
 const INSTRUMENT_TRANSLATIONS: Record<string, string> = {
   'acordeon': 'accordion',
