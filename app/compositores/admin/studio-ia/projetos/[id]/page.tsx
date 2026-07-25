@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { FiArrowLeft, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiCode, FiCreditCard, FiDownload, FiExternalLink, FiEyeOff, FiFileText, FiHeart, FiLoader, FiMic, FiMusic, FiPause, FiPlay, FiSave, FiVideo, FiX, FiZap } from 'react-icons/fi'
+import { FiArrowLeft, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiCloud, FiCode, FiCreditCard, FiDownload, FiExternalLink, FiEyeOff, FiFileText, FiHeart, FiLoader, FiLock, FiMic, FiMusic, FiPause, FiPlay, FiSave, FiShield, FiVideo, FiX, FiZap } from 'react-icons/fi'
 import CopyButton from '@/components/CopyButton'
 
 const refineActions = [
@@ -1763,6 +1763,56 @@ export default function StudioProjectDetailPage() {
                     Publique a música para liberar o link público e a opção de colocar em outro site.
                   </p>
                 )}
+              </section>
+
+              <section className="rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-3 sm:rounded-[1.75rem] sm:p-4">
+                <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-0">
+                  {[
+                    {
+                      title: 'Gerado com IA',
+                      subtitle: 'Tecnologia avançada',
+                      Icon: FiZap,
+                      color: 'text-orange-400',
+                      glow: 'bg-orange-500/15 shadow-[0_0_24px_rgba(251,146,60,0.35)]',
+                    },
+                    {
+                      title: 'Seus direitos',
+                      subtitle: '100% garantidos',
+                      Icon: FiShield,
+                      color: 'text-emerald-400',
+                      glow: 'bg-emerald-500/15 shadow-[0_0_24px_rgba(52,211,153,0.35)]',
+                    },
+                    {
+                      title: 'Alta qualidade',
+                      subtitle: 'Áudio profissional',
+                      Icon: FiCloud,
+                      color: 'text-sky-400',
+                      glow: 'bg-sky-500/15 shadow-[0_0_24px_rgba(56,189,248,0.35)]',
+                    },
+                    {
+                      title: 'Seus projetos',
+                      subtitle: 'Sempre salvos',
+                      Icon: FiLock,
+                      color: 'text-amber-300',
+                      glow: 'bg-amber-400/15 shadow-[0_0_24px_rgba(251,191,36,0.35)]',
+                    },
+                  ].map((item, index) => (
+                    <div
+                      key={item.title}
+                      className={`flex items-center gap-3 rounded-2xl px-3 py-3 lg:rounded-none lg:px-4 ${
+                        index < 3 ? 'lg:border-r lg:border-white/10' : ''
+                      }`}
+                    >
+                      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${item.glow}`}>
+                        <item.Icon className={`h-5 w-5 ${item.color}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-black text-white">{item.title}</p>
+                        <p className="truncate text-xs text-gray-400">{item.subtitle}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </section>
             </main>
           </div>
