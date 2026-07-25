@@ -433,13 +433,13 @@ export default function NewStudioMusicPage() {
                       Conte sua ideia em poucas palavras e a IA cria uma letra completa, pronta para cantar.
                     </p>
                     <div className="mt-5 flex flex-wrap gap-2">
-                      {[
-                        ['Letra profissional', FiFileText],
-                        ['Pronta para cantar', FiMusic],
-                        ['Em segundos', FiClock],
-                      ].map(([label, Icon]) => (
+                      {([
+                        { label: 'Letra profissional', Icon: FiFileText },
+                        { label: 'Pronta para cantar', Icon: FiMusic },
+                        { label: 'Em segundos', Icon: FiClock },
+                      ] as const).map(({ label, Icon }) => (
                         <div
-                          key={String(label)}
+                          key={label}
                           className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/25 px-3 py-1.5 text-xs font-semibold text-gray-200"
                         >
                           <Icon className="h-3.5 w-3.5 text-primary-300" />
