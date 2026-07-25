@@ -30,6 +30,8 @@ const TWO_VERSION_VARIATION_INSTRUCTION = 'If the provider returns two audio tra
 const STUDIO_CREATIVE_VARIATION_INSTRUCTION = 'criar melodia inédita e abordagem diferente a cada geração, mantendo o gênero escolhido e variando introdução, levada, arranjo, interpretação vocal e progressão melódica'
 const MUREKA_CREATIVE_VARIATION_INSTRUCTION = 'Create an original melody and a fresh approach for each generation while keeping the chosen genre, varying intro, groove, arrangement, vocal interpretation and melodic progression.'
 const MAX_STUDIO_MUSIC_NEGATIVE_TAGS = 'long song, repeated full song, extended outro, long solo, duplicate version, unclear vocals, rushed vocals'
+const MUREKA_LYRICS_MAX_CHARS = 3000
+const LONG_LYRIC_PREFER_MUREKA_CHARS = Number(process.env.STUDIO_LONG_LYRIC_PREFER_MUREKA_CHARS || '2200') || 2200
 
 const INSTRUMENT_TRANSLATIONS: Record<string, string> = {
   'acordeon': 'accordion',
@@ -672,7 +674,19 @@ export async function POST(request: NextRequest) {
       payload: any
       result: any
     } | null = null
-    const preferMureka = isMurekaFirstStyle(project.style) && !inspirationUploadUrl
+    const lyricCharCount = lyricContent.length
+    const isMurekaFirstByStyle = isMurekaFirstStyle(project.style)
+    const isLongLyricForMureka =
+      lyricCharCount >= LONG_LYRIC_PREFER_MUREKA_CHARS &&
+      lyricCharCount <= MUREKA_LYRICS_MAX_CHARS
+    const preferMurekaReason = inspirationUploadUrl
+      ? 'none'
+      : isMurekaFirstByStyle
+        ? 'mureka_first_style'
+        : isLongLyricForMureka
+          ? 'long_lyric'
+          : 'none'
+    const preferMureka = preferMurekaReason !== 'none'
 
     const trySuno = async () => {
       if (providerResult || !sunoApiKey) return
@@ -731,7 +745,7 @@ export async function POST(request: NextRequest) {
 
       const canUseMureka = !selectedVoice || Boolean(murekaVocalClone?.vocalId)
       const murekaPayload = canUseMureka ? {
-        lyrics: lyricContent.slice(0, 3000),
+        lyrics: lyricContent.slice(0, MUREKA_LYRICS_MAX_CHARS),
         model: 'auto',
         n: 2,
         prompt: buildMurekaPromptForStyle(project.style, project.mood, projectDescriptionForGeneration),
@@ -812,17 +826,25 @@ export async function POST(request: NextRequest) {
     const { provider, taskId, payload, result } = providerResult
     const providerAttemptLog = {
       finalProvider: provider,
+      preferMureka,
+      preferMurekaReason,
+      lyricCharCount,
+      longLyricThreshold: LONG_LYRIC_PREFER_MUREKA_CHARS,
+      murekaLyricsMaxChars: MUREKA_LYRICS_MAX_CHARS,
       attempts: failedAttempts,
-      fallbackUsed: failedAttempts.length > 0 && provider !== 'sunoapi',
+      fallbackUsed: failedAttempts.length > 0 && (
+        preferMureka ? provider !== 'mureka' : provider !== 'sunoapi'
+      ),
       createdAt: new Date().toISOString(),
     }
-    const requestPayload = failedAttempts.length > 0
+    const shouldAttachProviderAttemptLog = preferMureka || failedAttempts.length > 0
+    const requestPayload = shouldAttachProviderAttemptLog
       ? {
           ...(typeof payload === 'object' && payload !== null ? payload : {}),
           providerAttemptLog,
         }
       : payload
-    const responsePayload = failedAttempts.length > 0
+    const responsePayload = shouldAttachProviderAttemptLog
       ? {
           ...(typeof result === 'object' && result !== null ? result : {}),
           providerAttemptLog,
