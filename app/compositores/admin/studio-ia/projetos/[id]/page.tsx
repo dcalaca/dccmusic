@@ -325,7 +325,6 @@ export default function StudioProjectDetailPage() {
   const projectId = String(params.id)
   const [project, setProject] = useState<any>(null)
   const [lyric, setLyric] = useState('')
-  const [improveStructureForAi, setImproveStructureForAi] = useState(true)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState('')
   const [generationId, setGenerationId] = useState<string | null>(null)
@@ -731,7 +730,6 @@ export default function StudioProjectDetailPage() {
           lyric,
           voiceProfileId: selectedVoiceId || null,
           extraInstructions: extraInstructions.trim() || null,
-          improveStructureForAi,
         }),
       })
       const data = await response.json().catch(() => ({}))
@@ -744,9 +742,7 @@ export default function StudioProjectDetailPage() {
       setGenerationId(data.generationId)
       setGenerationBackgroundMode(false)
       setGenerationElapsedSeconds(0)
-      setMessage(data.lyricNormalized
-        ? 'Estrutura da letra ajustada para a IA. Criando música...'
-        : '')
+      setMessage('')
       checkGeneration(data.generationId)
     } catch (err: any) {
       const recoveredProject = await loadProject({
@@ -1465,47 +1461,39 @@ export default function StudioProjectDetailPage() {
                         Escolha uma ação abaixo. Você pode salvar a letra antes de criar ou publicar.
                       </p>
                     </div>
-                    {!audioUrl && (
+                    {!audioUrl && voices.length > 0 && (
                       <div className="rounded-2xl border border-purple-300/15 bg-black/25 p-3">
                         <label className="flex items-center gap-2 text-sm font-bold text-purple-100" htmlFor="project-voice-profile">
                           <FiMic /> Usar minha voz cadastrada
                         </label>
-                        {voices.length > 0 ? (
-                          <>
-                            <div id="project-voice-profile" className="mt-3 grid gap-2">
-                              <button
-                                type="button"
-                                onClick={() => handleVoiceSelection('')}
-                                className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm transition ${!selectedVoiceId ? 'border-primary-400 bg-primary-950/50 text-white' : 'border-purple-800/70 bg-gray-950 text-purple-100 hover:border-purple-500'}`}
-                              >
-                                Não usar voz cadastrada
-                              </button>
-                              {voices.map((voice) => (
-                                <button
-                                  key={voice.id}
-                                  type="button"
-                                  onClick={() => handleVoiceSelection(voice.id)}
-                                  className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm transition ${selectedVoiceId === voice.id ? 'border-primary-400 bg-primary-950/50 text-white' : 'border-purple-800/70 bg-gray-950 text-purple-100 hover:border-purple-500'}`}
-                                >
-                                  {voice.displayName}
-                                </button>
-                              ))}
-                            </div>
-                            <p className="mt-2 text-xs text-purple-100/80">
-                              Toque em uma opção acima. Se escolher uma voz, ela será usada na criação da música.
-                            </p>
-                          </>
-                        ) : (
-                          <p className="mt-2 text-xs text-purple-100/80">
-                            Você ainda não tem uma voz pronta. Para usar voz própria, cadastre e aguarde ela aparecer como pronta em Minhas vozes.
-                          </p>
-                        )}
+                        <div id="project-voice-profile" className="mt-3 grid gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleVoiceSelection('')}
+                            className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm transition ${!selectedVoiceId ? 'border-primary-400 bg-primary-950/50 text-white' : 'border-purple-800/70 bg-gray-950 text-purple-100 hover:border-purple-500'}`}
+                          >
+                            Não usar voz cadastrada
+                          </button>
+                          {voices.map((voice) => (
+                            <button
+                              key={voice.id}
+                              type="button"
+                              onClick={() => handleVoiceSelection(voice.id)}
+                              className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm transition ${selectedVoiceId === voice.id ? 'border-primary-400 bg-primary-950/50 text-white' : 'border-purple-800/70 bg-gray-950 text-purple-100 hover:border-purple-500'}`}
+                            >
+                              {voice.displayName}
+                            </button>
+                          ))}
+                        </div>
+                        <p className="mt-2 text-xs text-purple-100/80">
+                          Toque em uma opção acima. Se escolher uma voz, ela será usada na criação da música.
+                        </p>
                       </div>
                     )}
                     {!audioUrl && selectedVoiceId && voices.length === 0 && (
                       <div className="rounded-2xl border border-purple-800/60 bg-purple-950/20 p-4">
                         <p className="flex items-center gap-2 text-sm font-bold text-purple-100">
-                          <FiMic /> Voz escolhida: {voices.find((voice) => voice.id === selectedVoiceId)?.displayName || 'voz cadastrada'}
+                          <FiMic /> Voz escolhida: voz cadastrada
                         </p>
                         <p className="mt-2 text-xs text-purple-100/80">
                           Essa voz foi escolhida na etapa anterior e será usada ao criar a música.
@@ -1513,25 +1501,9 @@ export default function StudioProjectDetailPage() {
                       </div>
                     )}
                     {!audioUrl && (
-                      <>
-                        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-purple-300/15 bg-black/25 px-3 py-3 text-sm text-purple-50">
-                          <input
-                            type="checkbox"
-                            checked={improveStructureForAi}
-                            onChange={(event) => setImproveStructureForAi(event.target.checked)}
-                            className="mt-1 h-4 w-4 rounded border-purple-400/50 bg-gray-950 text-primary-500 focus:ring-primary-500"
-                          />
-                          <span>
-                            <span className="font-bold text-white">Melhorar estrutura para IA (recomendado)</span>
-                            <span className="mt-1 block text-xs leading-relaxed text-purple-100/75">
-                              Só reorganiza as quebras de linha para a IA cantar melhor. Não muda nenhuma palavra da sua letra. Vale para Suno e Mureka.
-                            </span>
-                          </span>
-                        </label>
-                        <button onClick={createMusic} disabled={Boolean(processing) || !canCreateMusic} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 px-4 py-3.5 font-black text-white shadow-lg shadow-purple-950/40 transition hover:from-primary-400 hover:via-purple-400 hover:to-fuchsia-400 disabled:opacity-60">
-                          <FiMusic /> Criar música agora
-                        </button>
-                      </>
+                      <button onClick={createMusic} disabled={Boolean(processing) || !canCreateMusic} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 px-4 py-3.5 font-black text-white shadow-lg shadow-purple-950/40 transition hover:from-primary-400 hover:via-purple-400 hover:to-fuchsia-400 disabled:opacity-60">
+                        <FiMusic /> Criar música agora
+                      </button>
                     )}
                     <div className="flex items-center gap-2">
                       <button onClick={improveCover} disabled={Boolean(processing) || !canGeneratePremiumCover} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100 transition hover:border-purple-400/40 hover:bg-white/[0.09] disabled:opacity-60">
