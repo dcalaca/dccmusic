@@ -39,7 +39,7 @@ export const metadata: Metadata = {
   },
 }
 
-const SOMVIBE_AFFILIATE_URL = 'https://app.somvibe.com/invite/a/11197'
+const SOMVIBE_AFFILIATE_URL = 'https://app.somvibe.com/invite/d/11197'
 
 const platforms = ['Spotify', 'Apple Music', 'TikTok', 'YouTube', 'Amazon Music', 'Deezer']
 
@@ -96,6 +96,7 @@ const plans = [
     period: '/mês',
     highlight: 'Melhor custo',
     tone: 'border-primary-400/70 bg-gradient-to-br from-primary-950/60 via-gray-950 to-black',
+    url: 'https://app.somvibe.com/invite/a/11197',
   },
   {
     name: 'Semestral',
@@ -103,6 +104,7 @@ const plans = [
     period: '/mês',
     highlight: '',
     tone: 'border-gray-800 bg-gray-950/70',
+    url: 'https://app.somvibe.com/invite/b/11197',
   },
   {
     name: 'Trimestral',
@@ -110,6 +112,7 @@ const plans = [
     period: '/mês',
     highlight: '',
     tone: 'border-gray-800 bg-gray-950/70',
+    url: 'https://app.somvibe.com/invite/q/11197',
   },
 ]
 
@@ -126,13 +129,15 @@ const planFeatures = [
 function AffiliateButton({
   children,
   className = '',
+  href = SOMVIBE_AFFILIATE_URL,
 }: {
   children: ReactNode
   className?: string
+  href?: string
 }) {
   return (
     <a
-      href={SOMVIBE_AFFILIATE_URL}
+      href={href}
       target="_blank"
       rel="sponsored noopener noreferrer"
       className={className}
@@ -297,7 +302,10 @@ export default function DistribuicaoDigitalPage() {
                   ))}
                 </ul>
 
-                <AffiliateButton className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-black text-white transition hover:bg-primary-700">
+                <AffiliateButton
+                  href={plan.url}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-black text-white transition hover:bg-primary-700"
+                >
                   Assinar agora
                   <FiExternalLink className="h-4 w-4" />
                 </AffiliateButton>
