@@ -135,6 +135,8 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="dark">
       <head>
+        {/* Verificação de propriedade (sistema Carimbo) */}
+        <meta name="carimbo-verificacao" content="dc3620ace28fd5285c2a3fa2" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon-dcc-fundopreto.png" type="image/png" sizes="48x48" />
         <link rel="icon" href="/favicon-dcc-fundopreto.png" type="image/png" sizes="96x96" />
