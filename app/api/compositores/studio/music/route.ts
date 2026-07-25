@@ -21,6 +21,7 @@ import {
   sendLowStudioCreditsEmail,
 } from '@/lib/dcc-emails'
 import { getAppNumberSetting } from '@/lib/app-settings'
+import { normalizeStudioLyricStructure } from '@/lib/studio-lyric-normalizer'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -590,6 +591,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gere ou escreva uma letra antes de criar a música.' }, { status: 400 })
     }
 
+    const improveStructureForAi = body.improveStructureForAi !== false
+    const lyricNormalization = improveStructureForAi
+      ? normalizeStudioLyricStructure(lyricContent)
+      : {
+          lyric: lyricContent,
+          changed: false,
+          usedOriginal: true,
+          linesBefore: lyricContent.split(/\r?\n/).filter((line) => line.trim()).length,
+          linesAfter: lyricContent.split(/\r?\n/).filter((line) => line.trim()).length,
+        }
+    const lyricForGeneration = lyricNormalization.lyric
+
+    if (lyricNormalization.changed) {
+      await supabaseAdmin
+        .from('studio_lyrics')
+        .update({ is_current: false, updated_at: new Date().toISOString() })
+        .eq('project_id', project.id)
+        .eq('composer_id', composer.composerId)
+
+      const { error: normalizedLyricError } = await supabaseAdmin
+        .from('studio_lyrics')
+        .insert({
+          project_id: project.id,
+          composer_id: composer.composerId,
+          content: lyricForGeneration,
+          is_current: true,
+          prompt: {
+            source: 'structure_normalizer',
+            improveStructureForAi: true,
+            linesBefore: lyricNormalization.linesBefore,
+            linesAfter: lyricNormalization.linesAfter,
+          },
+        })
+
+      if (normalizedLyricError) throw normalizedLyricError
+    }
+
     const { data: inspirationRequest } = await supabaseAdmin
       .from('studio_inspiration_requests')
       .select('*')
@@ -640,7 +678,7 @@ export async function POST(request: NextRequest) {
     const sunoWeirdnessConstraint = getSunoWeirdnessConstraint(descriptionWithExtraInstructions)
 
     const sunoPayload: any = {
-      prompt: lyricContent.slice(0, 5000),
+      prompt: lyricForGeneration.slice(0, 5000),
       style: appendExtraInstructionsToStyle(baseSunoStyle, extraInstructionsForPrompt),
       title: project.title.slice(0, STUDIO_TITLE_MAX_LENGTH),
       customMode: true,
@@ -676,7 +714,7 @@ export async function POST(request: NextRequest) {
       payload: any
       result: any
     } | null = null
-    const lyricCharCount = lyricContent.length
+    const lyricCharCount = lyricForGeneration.length
     const longLyricPreferMurekaChars = await getAppNumberSetting(
       STUDIO_LONG_LYRIC_SETTING_KEY,
       LONG_LYRIC_PREFER_MUREKA_CHARS_DEFAULT
@@ -751,7 +789,7 @@ export async function POST(request: NextRequest) {
 
       const canUseMureka = !selectedVoice || Boolean(murekaVocalClone?.vocalId)
       const murekaPayload = canUseMureka ? {
-        lyrics: lyricContent.slice(0, MUREKA_LYRICS_MAX_CHARS),
+        lyrics: lyricForGeneration.slice(0, MUREKA_LYRICS_MAX_CHARS),
         model: 'auto',
         n: 2,
         prompt: buildMurekaPromptForStyle(project.style, project.mood, projectDescriptionForGeneration),
@@ -820,7 +858,7 @@ export async function POST(request: NextRequest) {
           composer,
           payload: sunoPayload,
           errorSummary: failedAttempts,
-          lyricContent,
+          lyricContent: lyricForGeneration,
         }),
       }).catch(() => null)
       return NextResponse.json(
@@ -837,13 +875,19 @@ export async function POST(request: NextRequest) {
       lyricCharCount,
       longLyricThreshold: longLyricPreferMurekaChars,
       murekaLyricsMaxChars: MUREKA_LYRICS_MAX_CHARS,
+      lyricNormalized: lyricNormalization.changed,
+      lyricNormalizationUsedOriginal: lyricNormalization.usedOriginal,
+      lyricLinesBefore: lyricNormalization.linesBefore,
+      lyricLinesAfter: lyricNormalization.linesAfter,
+      improveStructureForAi,
       attempts: failedAttempts,
       fallbackUsed: failedAttempts.length > 0 && (
         preferMureka ? provider !== 'mureka' : provider !== 'sunoapi'
       ),
       createdAt: new Date().toISOString(),
     }
-    const shouldAttachProviderAttemptLog = preferMureka || failedAttempts.length > 0
+    const shouldAttachProviderAttemptLog =
+      preferMureka || failedAttempts.length > 0 || lyricNormalization.changed || improveStructureForAi
     const requestPayload = shouldAttachProviderAttemptLog
       ? {
           ...(typeof payload === 'object' && payload !== null ? payload : {}),
@@ -914,7 +958,11 @@ export async function POST(request: NextRequest) {
       success: true,
       generationId: generation.id,
       taskId,
-      message: 'Geração iniciada. A música pode levar alguns minutos para finalizar.',
+      lyric: lyricForGeneration,
+      lyricNormalized: lyricNormalization.changed,
+      message: lyricNormalization.changed
+        ? 'Estrutura da letra ajustada para a IA. Geração iniciada.'
+        : 'Geração iniciada. A música pode levar alguns minutos para finalizar.',
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro criar música:', error)

@@ -325,6 +325,7 @@ export default function StudioProjectDetailPage() {
   const projectId = String(params.id)
   const [project, setProject] = useState<any>(null)
   const [lyric, setLyric] = useState('')
+  const [improveStructureForAi, setImproveStructureForAi] = useState(true)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState('')
   const [generationId, setGenerationId] = useState<string | null>(null)
@@ -730,16 +731,22 @@ export default function StudioProjectDetailPage() {
           lyric,
           voiceProfileId: selectedVoiceId || null,
           extraInstructions: extraInstructions.trim() || null,
+          improveStructureForAi,
         }),
       })
       const data = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(data.error || 'Erro ao criar música')
+      if (typeof data.lyric === 'string' && data.lyric.trim()) {
+        setLyric(data.lyric)
+      }
       window.dispatchEvent(new Event('studioBalanceChange'))
       await refreshStudioStatus(token)
       setGenerationId(data.generationId)
       setGenerationBackgroundMode(false)
       setGenerationElapsedSeconds(0)
-      setMessage('')
+      setMessage(data.lyricNormalized
+        ? 'Estrutura da letra ajustada para a IA. Criando música...'
+        : '')
       checkGeneration(data.generationId)
     } catch (err: any) {
       const recoveredProject = await loadProject({
@@ -1506,9 +1513,25 @@ export default function StudioProjectDetailPage() {
                       </div>
                     )}
                     {!audioUrl && (
-                      <button onClick={createMusic} disabled={Boolean(processing) || !canCreateMusic} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 px-4 py-3.5 font-black text-white shadow-lg shadow-purple-950/40 transition hover:from-primary-400 hover:via-purple-400 hover:to-fuchsia-400 disabled:opacity-60">
-                        <FiMusic /> Criar música agora
-                      </button>
+                      <>
+                        <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-purple-300/15 bg-black/25 px-3 py-3 text-sm text-purple-50">
+                          <input
+                            type="checkbox"
+                            checked={improveStructureForAi}
+                            onChange={(event) => setImproveStructureForAi(event.target.checked)}
+                            className="mt-1 h-4 w-4 rounded border-purple-400/50 bg-gray-950 text-primary-500 focus:ring-primary-500"
+                          />
+                          <span>
+                            <span className="font-bold text-white">Melhorar estrutura para IA (recomendado)</span>
+                            <span className="mt-1 block text-xs leading-relaxed text-purple-100/75">
+                              Só reorganiza as quebras de linha para a IA cantar melhor. Não muda nenhuma palavra da sua letra. Vale para Suno e Mureka.
+                            </span>
+                          </span>
+                        </label>
+                        <button onClick={createMusic} disabled={Boolean(processing) || !canCreateMusic} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 px-4 py-3.5 font-black text-white shadow-lg shadow-purple-950/40 transition hover:from-primary-400 hover:via-purple-400 hover:to-fuchsia-400 disabled:opacity-60">
+                          <FiMusic /> Criar música agora
+                        </button>
+                      </>
                     )}
                     <div className="flex items-center gap-2">
                       <button onClick={improveCover} disabled={Boolean(processing) || !canGeneratePremiumCover} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100 transition hover:border-purple-400/40 hover:bg-white/[0.09] disabled:opacity-60">
