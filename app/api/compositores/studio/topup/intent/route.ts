@@ -3,7 +3,7 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { getStudioTopupQuote } from '@/lib/studio-topups'
 import { studioMonthKey } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
-import { sendMetaInitiateCheckoutEvent } from '@/lib/meta-conversions'
+import { buildMetaCapiMetadata, sendMetaInitiateCheckoutEvent } from '@/lib/meta-conversions'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +37,11 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     const reference = `studio-topup:${composer.composerId}:${quote.musicQuantity}:${Date.now()}`
+    const metaCapi = buildMetaCapiMetadata(request, {
+      email: composerData?.email || null,
+      externalId: composer.composerId,
+      eventSourceUrl: request.headers.get('referer') || request.url,
+    })
     const { data: topup, error: topupError } = await supabaseAdmin
       .from('studio_credit_topups')
       .insert({
@@ -56,6 +61,7 @@ export async function POST(request: NextRequest) {
           tier_label: quote.tierLabel,
           composer_name: composerData?.name || null,
           checkout_type: 'payment_brick',
+          meta_capi: metaCapi,
         },
       })
       .select('*')

@@ -3,7 +3,11 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { startStudioVideoGeneration } from '@/lib/studio-video'
 import { creditStudioTopupOnce, revokeStudioTopupCreditOnce } from '@/lib/studio'
 import { paymentClient, verifyMercadoPagoWebhookSignature } from '@/lib/mercadopago'
-import { sendMetaPurchaseEvent } from '@/lib/meta-conversions'
+import {
+  mergeMetaBrowserContext,
+  readMetaBrowserContextFromMetadata,
+  sendMetaPurchaseEvent,
+} from '@/lib/meta-conversions'
 import { sendTikTokPurchaseEvent } from '@/lib/tiktok-events'
 import { recordPartnerPurchase } from '@/lib/partners'
 import * as db from '@/lib/db'
@@ -274,11 +278,19 @@ export async function POST(request: Request) {
 
           const composer = await getComposerEmailIdentity(creditedTopup.composer_id)
           if (composer) {
+            const browserContext = mergeMetaBrowserContext(
+              readMetaBrowserContextFromMetadata(creditedTopup.metadata),
+              readMetaBrowserContextFromMetadata(paymentData?.metadata)
+            )
             await Promise.allSettled([
               sendMetaPurchaseEvent({
                 request,
+                browserContext,
                 eventId: String(paymentId),
-                eventSourceUrl: process.env.NEXTAUTH_URL || 'https://www.dccmusic.online',
+                eventSourceUrl:
+                  browserContext.event_source_url ||
+                  process.env.NEXTAUTH_URL ||
+                  'https://www.dccmusic.online',
                 email: composer.email,
                 externalId: creditedTopup.composer_id,
                 value: Number(creditedTopup.amount) || 0,
@@ -490,11 +502,19 @@ export async function POST(request: Request) {
             amount,
             productType: 'composer_plan',
           })
+          const browserContext = mergeMetaBrowserContext(
+            readMetaBrowserContextFromMetadata(subscription?.metadata),
+            readMetaBrowserContextFromMetadata(paymentData?.metadata)
+          )
           await Promise.allSettled([
             sendMetaPurchaseEvent({
               request,
+              browserContext,
               eventId: String(paymentId),
-              eventSourceUrl: process.env.NEXTAUTH_URL || 'https://www.dccmusic.online',
+              eventSourceUrl:
+                browserContext.event_source_url ||
+                process.env.NEXTAUTH_URL ||
+                'https://www.dccmusic.online',
               email: composer.email,
               externalId: composer.id,
               value: amount,

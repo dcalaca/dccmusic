@@ -5,7 +5,13 @@ import { paymentClient } from '@/lib/mercadopago'
 import { getStudioTopupQuote } from '@/lib/studio-topups'
 import { creditStudioTopupOnce } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
-import { sendMetaPurchaseEvent } from '@/lib/meta-conversions'
+import {
+  buildMetaCapiMetadata,
+  mergeMetaBrowserContext,
+  readMetaBrowserContextFromMetadata,
+  sendMetaPurchaseEvent,
+  toMercadoPagoMetaCapiFields,
+} from '@/lib/meta-conversions'
 import { sendTikTokPurchaseEvent } from '@/lib/tiktok-events'
 import { recordPartnerPurchase } from '@/lib/partners'
 import {
@@ -33,11 +39,21 @@ async function sendApprovedTopupSideEffects(request: NextRequest, topup: any, pa
     productType: 'studio_topup',
   })
 
+  const browserContext = mergeMetaBrowserContext(
+    readMetaBrowserContextFromMetadata(topup.metadata),
+    buildMetaCapiMetadata(request, {
+      email: composerEmail.email,
+      externalId: topup.composer_id,
+      eventSourceUrl: request.headers.get('referer') || request.url,
+    })
+  )
+
   await Promise.allSettled([
     sendMetaPurchaseEvent({
       request,
+      browserContext,
       eventId: paymentId,
-      eventSourceUrl: request.headers.get('referer') || request.url,
+      eventSourceUrl: browserContext.event_source_url || request.headers.get('referer') || request.url,
       email: composerEmail.email,
       externalId: topup.composer_id,
       value: Number(topup.amount) || 0,
@@ -152,6 +168,16 @@ export async function POST(request: NextRequest) {
         credits: currentTopup.credits,
         music_quantity: currentTopup.music_quantity,
         unit_price: currentTopup.metadata?.unit_price,
+        ...toMercadoPagoMetaCapiFields(
+          mergeMetaBrowserContext(
+            readMetaBrowserContextFromMetadata(currentTopup.metadata),
+            buildMetaCapiMetadata(request, {
+              email: composerData?.email || null,
+              externalId: composer.composerId,
+              eventSourceUrl: request.headers.get('referer') || request.url,
+            })
+          )
+        ),
       },
       statement_descriptor: 'DCC Music',
     })

@@ -3,7 +3,12 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { paymentClient } from '@/lib/mercadopago'
 import { supabaseAdmin } from '@/lib/supabase'
 import { creditStudioTopupOnce, revokeStudioTopupCreditOnce } from '@/lib/studio'
-import { sendMetaPurchaseEvent } from '@/lib/meta-conversions'
+import {
+  buildMetaCapiMetadata,
+  mergeMetaBrowserContext,
+  readMetaBrowserContextFromMetadata,
+  sendMetaPurchaseEvent,
+} from '@/lib/meta-conversions'
 import { sendTikTokPurchaseEvent } from '@/lib/tiktok-events'
 import { recordPartnerPurchase } from '@/lib/partners'
 import {
@@ -128,11 +133,21 @@ export async function POST(request: NextRequest) {
         amount: Number(creditedTopup.amount) || 0,
         productType: 'studio_topup',
       })
+      const browserContext = mergeMetaBrowserContext(
+        readMetaBrowserContextFromMetadata(creditedTopup.metadata),
+        buildMetaCapiMetadata(request, {
+          email: composerEmail.email,
+          externalId: creditedTopup.composer_id,
+          eventSourceUrl: request.headers.get('referer') || request.url,
+        })
+      )
+
       await Promise.allSettled([
         sendMetaPurchaseEvent({
           request,
+          browserContext,
           eventId: paymentId,
-          eventSourceUrl: request.headers.get('referer') || request.url,
+          eventSourceUrl: browserContext.event_source_url || request.headers.get('referer') || request.url,
           email: composerEmail.email,
           externalId: creditedTopup.composer_id,
           value: Number(creditedTopup.amount) || 0,

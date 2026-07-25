@@ -4,7 +4,11 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { getSiteUrl, studioMonthKey } from '@/lib/studio'
 import { getStudioTopupQuote } from '@/lib/studio-topups'
 import { supabaseAdmin } from '@/lib/supabase'
-import { sendMetaInitiateCheckoutEvent } from '@/lib/meta-conversions'
+import {
+  buildMetaCapiMetadata,
+  sendMetaInitiateCheckoutEvent,
+  toMercadoPagoMetaCapiFields,
+} from '@/lib/meta-conversions'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,6 +42,11 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     const reference = `studio-topup:${composer.composerId}:${quote.musicQuantity}:${Date.now()}`
+    const metaCapi = buildMetaCapiMetadata(request, {
+      email: composerData?.email || null,
+      externalId: composer.composerId,
+      eventSourceUrl: request.headers.get('referer') || request.url,
+    })
     const { data: topup, error: topupError } = await supabaseAdmin
       .from('studio_credit_topups')
       .insert({
@@ -56,6 +65,7 @@ export async function POST(request: NextRequest) {
           unit_price: quote.unitPrice,
           tier_label: quote.tierLabel,
           composer_name: composerData?.name || null,
+          meta_capi: metaCapi,
         },
       })
       .select('*')
@@ -96,6 +106,7 @@ export async function POST(request: NextRequest) {
           credits: quote.credits,
           music_quantity: quote.musicQuantity,
           unit_price: quote.unitPrice,
+          ...toMercadoPagoMetaCapiFields(metaCapi),
         },
         payment_methods: {
           excluded_payment_types: [],

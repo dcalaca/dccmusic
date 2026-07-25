@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server'
 import { preferenceClient, getReturnUrls } from '@/lib/mercadopago'
 import { supabaseAdmin } from '@/lib/supabase'
 import * as db from '@/lib/db'
-import { sendMetaInitiateCheckoutEvent } from '@/lib/meta-conversions'
+import {
+  buildMetaCapiMetadata,
+  sendMetaInitiateCheckoutEvent,
+  toMercadoPagoMetaCapiFields,
+} from '@/lib/meta-conversions'
 
 export async function POST(request: Request) {
   try {
@@ -305,6 +309,24 @@ export async function POST(request: Request) {
     // Criar preferência de pagamento no Mercado Pago
     const returnUrls = getReturnUrls(subscription.id)
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const metaCapi = buildMetaCapiMetadata(request, {
+      email: composerEmail,
+      externalId: composer.id,
+      eventSourceUrl: request.headers.get('referer') || request.url,
+    })
+
+    // Persiste atribuição do navegador na assinatura (coluna metadata jsonb, se existir).
+    try {
+      const { error: metaSaveError } = await supabaseAdmin
+        .from('dccmusic_subscriptions')
+        .update({ metadata: { ...(subscription.metadata || {}), meta_capi: metaCapi } })
+        .eq('id', subscription.id)
+      if (metaSaveError) {
+        console.warn('[PREFERENCIA] Não foi possível salvar meta_capi na assinatura:', metaSaveError.message)
+      }
+    } catch (metaSaveError: any) {
+      console.warn('[PREFERENCIA] Não foi possível salvar meta_capi na assinatura:', metaSaveError?.message || metaSaveError)
+    }
 
     console.log('[PREFERENCIA] Criando preferência no Mercado Pago...', {
       planId: plan.id,
@@ -359,6 +381,7 @@ export async function POST(request: Request) {
           plan_id: plan.id,
           plan_name: plan.name,
           subscription_id: subscription.id,
+          ...toMercadoPagoMetaCapiFields(metaCapi),
         },
         
         // Configurações de pagamento
