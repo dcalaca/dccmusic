@@ -39,6 +39,39 @@ function getInitials(name: string) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
 }
 
+function ComposerAvatar({
+  name,
+  photoUrl,
+  priority = false,
+}: {
+  name: string
+  photoUrl?: string | null
+  priority?: boolean
+}) {
+  const [failed, setFailed] = useState(false)
+  const initials = getInitials(name)
+  const showPhoto = Boolean(photoUrl) && !failed
+
+  return (
+    <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary-600 to-purple-600 text-sm font-black text-white ring-2 ring-white/10">
+      <span aria-hidden={showPhoto}>{initials}</span>
+      {showPhoto ? (
+        <img
+          src={photoUrl!}
+          alt={`Foto de ${name}`}
+          width={56}
+          height={56}
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
+          fetchPriority={priority ? 'high' : 'low'}
+          onError={() => setFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : null}
+    </div>
+  )
+}
+
 export default function ComposersDirectory({ composers }: { composers: DirectoryComposer[] }) {
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortOption>('most')
@@ -138,7 +171,7 @@ export default function ComposersDirectory({ composers }: { composers: Directory
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {pageItems.map((composer) => {
+          {pageItems.map((composer, itemIndex) => {
             const rankIndex = rankedIds.indexOf(composer.id)
             const isTop = rankIndex >= 0
             const isFirst = rankIndex === 0
@@ -158,17 +191,11 @@ export default function ComposersDirectory({ composers }: { composers: Directory
                 </div>
 
                 <div className="flex items-start gap-3 pr-6">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary-600 to-purple-600 text-sm font-black text-white ring-2 ring-white/10">
-                    {composer.profilePhotoUrl ? (
-                      <img
-                        src={composer.profilePhotoUrl}
-                        alt={`Foto de ${composer.name}`}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      getInitials(composer.name)
-                    )}
-                  </div>
+                  <ComposerAvatar
+                    name={composer.name}
+                    photoUrl={composer.profilePhotoUrl}
+                    priority={itemIndex < 4}
+                  />
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">

@@ -4,7 +4,7 @@ import VideoCard from '@/components/VideoCard'
 import MusicCard from '@/components/MusicCard'
 import ComposerFiltersWrapper from '@/components/ComposerFiltersWrapper'
 import { supabaseAdmin } from '@/lib/supabase'
-import { getComposerProfilePhotoUrl } from '@/lib/composer-profile-photo'
+import { getComposerAvatarApiPath, PROFILE_PHOTO_MISSING } from '@/lib/composer-profile-photo'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,7 +40,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       url: `https://www.dccmusic.online/compositores/${params.slug}`,
       title: composer.name,
       description,
-      images: composer.profilePhotoUrl ? [composer.profilePhotoUrl] : undefined,
+      images:
+        composer.profilePhotoPath === PROFILE_PHOTO_MISSING
+          ? undefined
+          : [`https://www.dccmusic.online/api/compositores/avatar/${composer.id}`],
     },
   }
 }
@@ -95,7 +98,7 @@ export default async function ComposerDetailPage({ params, searchParams = {} }: 
 
   // Buscar plano ativo do compositor para verificar vantagens
   const activePlan = await db.getComposerActivePlan(composer.id)
-  const profilePhotoUrl = await getComposerProfilePhotoUrl(composer.id)
+  const profilePhotoUrl = getComposerAvatarApiPath(composer.id)
   const hasGoldBadge = activePlan?.hasGoldBadge || false
   const hasPremiumLayout = activePlan?.hasPremiumLayout || false
 

@@ -11,7 +11,7 @@ import { getFreeMusicUsage, getStudioAccess, getStudioCreditUsage, STUDIO_MUSIC_
 import { registerComposerAccountDeletionBlock, sendComposerAccountDeletedEmail } from '@/lib/dcc-emails'
 import { getComposerStatement } from '@/lib/composer-statement'
 import { getStudioCampaignState } from '@/lib/studio-campaigns'
-import { getComposerProfilePhotoUrl } from '@/lib/composer-profile-photo'
+import { getComposerAvatarApiPath } from '@/lib/composer-profile-photo'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
 
     const { plan, hasAccess, limits } = await getStudioAccess(composerId)
-    const [usage, freeMusicUsage, studioLyricCount, studioMusicCount, musicCount, videoCount, embeddedMusicCount, statement, profilePhotoUrl] = await Promise.all([
+    const [usage, freeMusicUsage, studioLyricCount, studioMusicCount, musicCount, videoCount, embeddedMusicCount, statement] = await Promise.all([
       getStudioCreditUsage(composerId, limits),
       getFreeMusicUsage(composerId),
       getComposerStudioLyricCount(composerId),
@@ -98,8 +98,8 @@ export async function GET(request: NextRequest) {
       getComposerVideoCount(composerId),
       getEmbeddedMusicCount(composerId),
       getComposerStatement(composerId),
-      getComposerProfilePhotoUrl(composerId),
     ])
+    const profilePhotoUrl = getComposerAvatarApiPath(composerId)
 
     const subscriptionPlan = Array.isArray((subscription as any)?.plan)
       ? (subscription as any).plan[0]

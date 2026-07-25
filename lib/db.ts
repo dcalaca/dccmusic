@@ -1,5 +1,9 @@
 import { supabaseAdmin } from './supabase'
-import { getComposerProfilePhotoUrl } from './composer-profile-photo'
+import {
+  getComposerAvatarApiPath,
+  getComposerProfilePhotoUrls,
+  PROFILE_PHOTO_MISSING,
+} from './composer-profile-photo'
 import { formatDisplayName, formatMusicTitle } from './normalize'
 import { classifyClick } from './bot-detector'
 
@@ -132,6 +136,7 @@ export interface Composer {
   subscriptionExpiresAt?: Date | null
   isPremium?: boolean
   publishedMusicCount?: number
+  profilePhotoPath?: string | null
   profilePhotoUrl?: string | null
   createdAt: Date
   updatedAt: Date
@@ -2051,6 +2056,9 @@ export async function countMusics(filters?: {
 // QUERIES - Composers
 // ============================================
 export function mapComposer(data: any): Composer {
+  const profilePhotoPath =
+    data.profile_photo_path === undefined ? undefined : data.profile_photo_path || null
+
   return {
     id: data.id,
     name: formatDisplayName(data.name),
@@ -2061,6 +2069,10 @@ export function mapComposer(data: any): Composer {
     hasActiveSubscription: data.has_active_subscription || false,
     subscriptionExpiresAt: data.subscription_expires_at ? new Date(data.subscription_expires_at) : null,
     isPremium: data.is_premium || false,
+    profilePhotoPath,
+    // URL estável da API (com cache no navegador). "none" = já confirmado sem foto.
+    profilePhotoUrl:
+      profilePhotoPath === PROFILE_PHOTO_MISSING ? null : getComposerAvatarApiPath(data.id),
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),
   }
@@ -2823,11 +2835,21 @@ export async function getPremiumComposers() {
       studioCounts.set(project.composer_id, (studioCounts.get(project.composer_id) || 0) + 1)
     }
 
-    const composersWithCounts = await Promise.all(composers.map(async (composer) => ({
-        ...composer,
-        publishedMusicCount: (musicCounts.get(composer.id)?.size || 0) + (studioCounts.get(composer.id) || 0),
-        profilePhotoUrl: await getComposerProfilePhotoUrl(composer.id),
-      })))
+    // Fotos via /api/compositores/avatar/[id] (paralelo no browser + cache).
+    // Aquecer cache em background não bloqueia a listagem.
+    void getComposerProfilePhotoUrls(composerIds).catch((error) => {
+      console.warn('[PREMIUM COMPOSERS] Falha ao aquecer cache de fotos:', error)
+    })
+
+    const composersWithCounts = composers.map((composer) => ({
+      ...composer,
+      publishedMusicCount:
+        (musicCounts.get(composer.id)?.size || 0) + (studioCounts.get(composer.id) || 0),
+      profilePhotoUrl:
+        composer.profilePhotoPath === PROFILE_PHOTO_MISSING
+          ? null
+          : getComposerAvatarApiPath(composer.id),
+    }))
 
     return composersWithCounts.sort((a, b) => {
       const countDiff = (b.publishedMusicCount || 0) - (a.publishedMusicCount || 0)
