@@ -80,8 +80,8 @@ export async function ensureSimpleStudioCover(input: {
 
   const hasStoredCover = Boolean(currentCover?.image_path || currentCover?.image_url)
   if (currentCover?.is_premium) return currentCover
-  if (hasStoredCover && currentCover.provider === 'openai') return currentCover
-  if (hasStoredCover && !input.replaceCurrent) return currentCover
+  if (hasStoredCover && currentCover?.provider === 'openai') return currentCover
+  if (hasStoredCover && currentCover && !input.replaceCurrent) return currentCover
 
   const prompt = buildSimpleCoverPrompt(input)
   const imageBase64 = await generateSimpleCoverImage(prompt)
