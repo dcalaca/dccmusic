@@ -75,17 +75,52 @@ function formatDayLabel(dayKey: string) {
   }).format(date)
 }
 
+async function countPublicRowsByPaging(table: string) {
+  const pageSize = 1000
+  let total = 0
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabaseAdmin
+      .from(table)
+      .select('id')
+      .range(from, from + pageSize - 1)
+
+    if (error) throw error
+
+    const pageCount = data?.length || 0
+    total += pageCount
+    if (pageCount < pageSize) break
+  }
+
+  return total
+}
+
 async function countPublicRows(table: string) {
   try {
     const { count, error } = await supabaseAdmin
       .from(table)
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
 
     if (error) throw error
-    return count || 0
+
+    // O PostgREST/Supabase corta selects em 1000 linhas. Para não limitar
+    // compositores/usuários na home, confirma por paginação quando o count
+    // vem nulo, 1000 ou acima desse teto clássico.
+    if (typeof count === 'number' && count > 0 && count < 1000) {
+      return count
+    }
+
+    const pagedCount = await countPublicRowsByPaging(table)
+    if (typeof count === 'number' && count > pagedCount) return count
+    return pagedCount
   } catch (error) {
     console.error(`Erro ao contar ${table}:`, error)
-    return 0
+    try {
+      return await countPublicRowsByPaging(table)
+    } catch (pageError) {
+      console.error(`Erro ao contar ${table} por paginação:`, pageError)
+      return 0
+    }
   }
 }
 
@@ -105,20 +140,27 @@ async function getPublicAiMusicDays() {
   }
 
   try {
-    const { data, error } = await supabaseAdmin
-      .from('studio_generations')
-      .select('id, created_at, status')
-      .gte('created_at', startDate.toISOString())
-      .lt('created_at', endExclusive.toISOString())
+    const pageSize = 1000
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabaseAdmin
+        .from('studio_generations')
+        .select('id, created_at, status')
+        .gte('created_at', startDate.toISOString())
+        .lt('created_at', endExclusive.toISOString())
+        .range(from, from + pageSize - 1)
 
-    if (error) throw error
+      if (error) throw error
 
-    for (const row of data || []) {
-      if (row.status === 'failed') continue
-      const createdAt = row.created_at ? new Date(row.created_at) : null
-      if (!createdAt || Number.isNaN(createdAt.getTime())) continue
-      const bucket = buckets.get(formatDayKey(createdAt))
-      if (bucket) bucket.deliveredMusics += 2
+      const rows = data || []
+      for (const row of rows) {
+        if (row.status === 'failed') continue
+        const createdAt = row.created_at ? new Date(row.created_at) : null
+        if (!createdAt || Number.isNaN(createdAt.getTime())) continue
+        const bucket = buckets.get(formatDayKey(createdAt))
+        if (bucket) bucket.deliveredMusics += 2
+      }
+
+      if (rows.length < pageSize) break
     }
   } catch (error) {
     console.error('Erro ao buscar solicitações de músicas IA:', error)
