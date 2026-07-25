@@ -73,7 +73,7 @@ export default function Footer() {
 
             <div>
               <h4 className="font-semibold mb-4">Links Rápidos</h4>
-              <ul className="space-y-2 text-sm">
+              <ul className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 <li>
                   <Link href="/videos" className="text-gray-400 hover:text-white transition-colors">
                     Vídeos
