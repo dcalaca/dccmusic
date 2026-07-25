@@ -20,6 +20,7 @@ import {
   sendAdminStudioAlertEmail,
   sendLowStudioCreditsEmail,
 } from '@/lib/dcc-emails'
+import { getAppNumberSetting } from '@/lib/app-settings'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -31,7 +32,8 @@ const STUDIO_CREATIVE_VARIATION_INSTRUCTION = 'criar melodia inédita e abordage
 const MUREKA_CREATIVE_VARIATION_INSTRUCTION = 'Create an original melody and a fresh approach for each generation while keeping the chosen genre, varying intro, groove, arrangement, vocal interpretation and melodic progression.'
 const MAX_STUDIO_MUSIC_NEGATIVE_TAGS = 'long song, repeated full song, extended outro, long solo, duplicate version, unclear vocals, rushed vocals'
 const MUREKA_LYRICS_MAX_CHARS = 3000
-const LONG_LYRIC_PREFER_MUREKA_CHARS = Number(process.env.STUDIO_LONG_LYRIC_PREFER_MUREKA_CHARS || '1500') || 1500
+const LONG_LYRIC_PREFER_MUREKA_CHARS_DEFAULT = Number(process.env.STUDIO_LONG_LYRIC_PREFER_MUREKA_CHARS || '1500') || 1500
+const STUDIO_LONG_LYRIC_SETTING_KEY = 'studio.long_lyric_prefer_mureka_chars'
 
 const INSTRUMENT_TRANSLATIONS: Record<string, string> = {
   'acordeon': 'accordion',
@@ -675,9 +677,13 @@ export async function POST(request: NextRequest) {
       result: any
     } | null = null
     const lyricCharCount = lyricContent.length
+    const longLyricPreferMurekaChars = await getAppNumberSetting(
+      STUDIO_LONG_LYRIC_SETTING_KEY,
+      LONG_LYRIC_PREFER_MUREKA_CHARS_DEFAULT
+    )
     const isMurekaFirstByStyle = isMurekaFirstStyle(project.style)
     const isLongLyricForMureka =
-      lyricCharCount >= LONG_LYRIC_PREFER_MUREKA_CHARS &&
+      lyricCharCount >= longLyricPreferMurekaChars &&
       lyricCharCount <= MUREKA_LYRICS_MAX_CHARS
     const preferMurekaReason = inspirationUploadUrl
       ? 'none'
@@ -829,7 +835,7 @@ export async function POST(request: NextRequest) {
       preferMureka,
       preferMurekaReason,
       lyricCharCount,
-      longLyricThreshold: LONG_LYRIC_PREFER_MUREKA_CHARS,
+      longLyricThreshold: longLyricPreferMurekaChars,
       murekaLyricsMaxChars: MUREKA_LYRICS_MAX_CHARS,
       attempts: failedAttempts,
       fallbackUsed: failedAttempts.length > 0 && (

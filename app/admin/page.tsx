@@ -125,6 +125,13 @@ const adminGroups = [
     description: 'Planos, cupons e configurações do Studio IA.',
     items: [
       {
+        href: '/admin/configuracoes',
+        title: 'Configurações',
+        description: 'Ajustar limiar de letra longa, provedores e outros parâmetros do sistema',
+        icon: FiSettings,
+        accent: 'purple',
+      },
+      {
         href: '/admin/studio-planos',
         title: 'Planos Studio IA',
         description: 'Administrar planos separados do DCC Studio IA',
