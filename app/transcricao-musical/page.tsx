@@ -4,6 +4,7 @@ import { FormEvent, Suspense, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiDownload, FiFileText, FiLoader, FiMusic, FiUpload } from 'react-icons/fi'
+import { readClientApiError } from '@/lib/music-transcription-errors'
 
 type Source = {
   id: string
@@ -180,14 +181,14 @@ function TranscricaoMusicalContent() {
         },
         body: JSON.stringify({ studioVersionId: selectedSourceId }),
       })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao gerar partitura e cifra.')
+      const data = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(readClientApiError(data, 'Erro ao gerar partitura e cifra.'))
 
       setSelectedTranscription(data.transcription)
       setSuccess(data.cached ? 'Partitura e cifra já estavam salvas. Nenhum crédito foi descontado.' : `Partitura e cifra geradas. Debitamos ${COST} créditos do seu saldo DCC.`)
       await loadData()
     } catch (err: any) {
-      setError(err.message || 'Erro ao gerar partitura e cifra.')
+      setError(readClientApiError(err, 'Erro ao gerar partitura e cifra.'))
     } finally {
       setProcessing(false)
     }
@@ -219,14 +220,14 @@ function TranscricaoMusicalContent() {
         headers: { Authorization: `Bearer ${composerToken}` },
         body: formData,
       })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao gerar partitura e cifra.')
+      const data = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(readClientApiError(data, 'Erro ao gerar partitura e cifra.'))
 
       setSelectedTranscription(data.transcription)
       setSuccess(data.cached ? 'Partitura e cifra já estavam salvas. Nenhum crédito foi descontado.' : `Partitura e cifra geradas. Debitamos ${COST} créditos do seu saldo DCC.`)
       await loadData()
     } catch (err: any) {
-      setError(err.message || 'Erro ao gerar partitura e cifra.')
+      setError(readClientApiError(err, 'Erro ao gerar partitura e cifra.'))
     } finally {
       setProcessing(false)
     }
@@ -242,8 +243,14 @@ function TranscricaoMusicalContent() {
       const response = await fetch(endpoint, { headers: authHeaders(), cache: 'no-store' })
       const blob = await response.blob()
       if (!response.ok) {
-        const message = await blob.text().catch(() => '')
-        throw new Error(message || 'Erro ao baixar arquivo.')
+        const text = await blob.text().catch(() => '')
+        let parsed: any = null
+        try {
+          parsed = text ? JSON.parse(text) : null
+        } catch {
+          parsed = null
+        }
+        throw new Error(readClientApiError(parsed || { error: text }, 'Erro ao baixar arquivo.'))
       }
 
       const extension = kind === 'musicxml' ? 'musicxml' : kind === 'zip' ? 'zip' : 'pdf'

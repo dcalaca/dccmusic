@@ -7,6 +7,13 @@ import { getComposerStatement } from '@/lib/composer-statement'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { saveMurekaTranscriptionZip, readTranscriptionTextFile } from '@/lib/music-transcription-storage'
 import { buildMusicXmlChordPreview } from '@/lib/musicxml-chord-preview'
+import {
+  extractProviderErrorText,
+  TRANSCRIPTION_ALREADY_PROCESSING_MESSAGE,
+  TRANSCRIPTION_CATALOG_MATCH_MESSAGE,
+  TRANSCRIPTION_DUPLICATE_MESSAGE,
+  translateMusicTranscriptionError,
+} from '@/lib/music-transcription-errors'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,7 +114,12 @@ async function uploadManualAudioToMureka(file: File, arrayBuffer: ArrayBuffer) {
   const uploadAudioId = extractMurekaUploadAudioId(payload)
 
   if (!response.ok || !uploadAudioId) {
-    throw new Error(payload?.error?.message || payload?.message || 'Não consegui subir o áudio para transcrição.')
+    throw new Error(
+      translateMusicTranscriptionError(
+        extractProviderErrorText(payload),
+        'Não consegui subir o áudio para transcrição.'
+      )
+    )
   }
 
   return { uploadAudioId, uploadPayload: payload }
@@ -129,7 +141,12 @@ async function requestMurekaTranscription(input: { type: 'upload_audio_id' | 'ur
   const zipUrl = result?.zip_url || payload?.zip_url || null
 
   if (!response.ok) {
-    throw new Error(payload?.error?.message || payload?.message || result?.message || 'A transcrição não foi aceita pelo fornecedor.')
+    throw new Error(
+      translateMusicTranscriptionError(
+        extractProviderErrorText(payload) || extractProviderErrorText(result) || result?.message,
+        'A transcrição não foi aceita pelo fornecedor.'
+      )
+    )
   }
 
   if (!zipUrl) {
@@ -188,8 +205,41 @@ async function createProcessingRecord(input: {
 
   if (!error) return data
   if (error.code === '23505') {
-    const existing = await getExistingCompleted(input.composerId, input.sourceType, input.sourceHash)
-    if (existing) return existing
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from('music_transcriptions')
+      .select('*')
+      .eq('composer_id', input.composerId)
+      .eq('source_type', input.sourceType)
+      .eq('source_hash', input.sourceHash)
+      .maybeSingle()
+
+    if (existingError) throw existingError
+    if (existing?.status === 'completed') return existing
+    if (existing?.status === 'processing') {
+      throw new Error(TRANSCRIPTION_ALREADY_PROCESSING_MESSAGE)
+    }
+
+    if (existing?.status === 'failed') {
+      const { data: reset, error: resetError } = await supabaseAdmin
+        .from('music_transcriptions')
+        .update({
+          status: 'processing',
+          title: input.title,
+          studio_project_id: input.studioProjectId || null,
+          studio_version_id: input.studioVersionId || null,
+          credits_charged: 0,
+          error_message: null,
+          metadata: input.metadata || {},
+          updated_at: new Date().toISOString(),
+          completed_at: null,
+        })
+        .eq('id', existing.id)
+        .select('*')
+        .single()
+
+      if (resetError) throw resetError
+      return reset
+    }
   }
   throw error
 }
@@ -431,9 +481,15 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     if (processingRecord?.id) await failRecord(processingRecord.id, error)
     console.error('[Music Transcription] Erro gerar transcrição:', error)
+    const message = translateMusicTranscriptionError(error?.message || error, 'Erro ao gerar partitura e cifra.')
+    const isUserError =
+      message === TRANSCRIPTION_ALREADY_PROCESSING_MESSAGE ||
+      message === TRANSCRIPTION_CATALOG_MATCH_MESSAGE ||
+      message === TRANSCRIPTION_DUPLICATE_MESSAGE ||
+      message.includes('Saldo insuficiente')
     return NextResponse.json(
-      { error: error.message || 'Erro ao gerar transcrição.' },
-      { status: 500 }
+      { error: message },
+      { status: isUserError ? 400 : 500 }
     )
   }
 }

@@ -278,8 +278,19 @@ function StudioProjectsContent() {
       const blob = await response.blob()
 
       if (!response.ok) {
-        const message = await blob.text().catch(() => '')
-        throw new Error(message || 'Erro ao baixar arquivo.')
+        const text = await blob.text().catch(() => '')
+        let parsed: any = null
+        try {
+          parsed = text ? JSON.parse(text) : null
+        } catch {
+          parsed = null
+        }
+        const message =
+          (typeof parsed?.error === 'string' && parsed.error) ||
+          (typeof parsed?.message === 'string' && parsed.message) ||
+          (text && !text.trim().startsWith('{') ? text : '') ||
+          'Erro ao baixar arquivo.'
+        throw new Error(message)
       }
 
       const extension = kind === 'musicxml' ? 'musicxml' : kind === 'zip' ? 'zip' : 'pdf'
