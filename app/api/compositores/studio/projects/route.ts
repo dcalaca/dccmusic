@@ -13,6 +13,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { formatMusicTitle } from '@/lib/normalize'
+import { normalizeStudioLyricStructure } from '@/lib/studio-lyric-normalizer'
 
 export const dynamic = 'force-dynamic'
 const STUDIO_TITLE_MAX_LENGTH = 30
@@ -172,13 +173,32 @@ export async function POST(request: NextRequest) {
     if (error) throw error
 
     if (typeof body.lyric === 'string' && body.lyric.trim()) {
+      const rawLyric = body.lyric.trim()
+      const improveStructureForAi = body.improveStructureForAi !== false
+      const lyricNormalization = improveStructureForAi
+        ? normalizeStudioLyricStructure(rawLyric)
+        : {
+            lyric: rawLyric,
+            changed: false,
+            usedOriginal: true,
+            linesBefore: rawLyric.split(/\r?\n/).filter((line: string) => line.trim()).length,
+            linesAfter: rawLyric.split(/\r?\n/).filter((line: string) => line.trim()).length,
+          }
+
       const { error: lyricError } = await supabaseAdmin
         .from('studio_lyrics')
         .insert({
           project_id: data.id,
           composer_id: composer.composerId,
-          content: body.lyric,
+          content: lyricNormalization.lyric,
           is_current: true,
+          prompt: {
+            source: 'own_lyric',
+            improveStructureForAi,
+            lyricNormalized: lyricNormalization.changed,
+            linesBefore: lyricNormalization.linesBefore,
+            linesAfter: lyricNormalization.linesAfter,
+          },
         })
 
       if (lyricError) throw lyricError

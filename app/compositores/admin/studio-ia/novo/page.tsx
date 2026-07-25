@@ -500,7 +500,7 @@ export default function NewStudioMusicPage() {
                 />
                 {hasOwnLyric && (
                   <p className="mt-2 text-xs font-semibold text-green-300">
-                    Neste modo, vamos salvar sua letra direto no projeto sem usar IA para gerar letra.
+                    Neste modo, salvamos sua letra no projeto sem gerar letra com IA. Ao criar o projeto, o sistema só reorganiza as quebras de linha para a IA cantar melhor — sem mudar nenhuma palavra.
                   </p>
                 )}
               </section>
