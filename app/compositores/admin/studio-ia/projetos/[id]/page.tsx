@@ -1766,7 +1766,7 @@ export default function StudioProjectDetailPage() {
               </section>
 
               <section className="rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-3 sm:rounded-[1.75rem] sm:p-4">
-                <div className="grid grid-cols-2 gap-2 lg:grid-cols-4 lg:gap-0">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 xl:gap-0">
                   {[
                     {
                       title: 'Gerado com IA',
@@ -1799,16 +1799,16 @@ export default function StudioProjectDetailPage() {
                   ].map((item, index) => (
                     <div
                       key={item.title}
-                      className={`flex items-center gap-3 rounded-2xl px-3 py-3 lg:rounded-none lg:px-4 ${
-                        index < 3 ? 'lg:border-r lg:border-white/10' : ''
+                      className={`flex items-center gap-3 rounded-2xl px-3 py-3 xl:rounded-none xl:px-3 ${
+                        index < 3 ? 'xl:border-r xl:border-white/10' : ''
                       }`}
                     >
                       <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${item.glow}`}>
                         <item.Icon className={`h-5 w-5 ${item.color}`} />
                       </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-black text-white">{item.title}</p>
-                        <p className="truncate text-xs text-gray-400">{item.subtitle}</p>
+                      <div>
+                        <p className="text-sm font-black leading-snug text-white">{item.title}</p>
+                        <p className="text-xs leading-snug text-gray-400">{item.subtitle}</p>
                       </div>
                     </div>
                   ))}
