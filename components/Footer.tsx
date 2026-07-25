@@ -53,6 +53,22 @@ export default function Footer() {
               <p className="text-gray-400 text-sm">
                 Plataforma para ouvir músicas e vídeos, criar com Studio IA, gerar partitura e cifra e divulgar o trabalho de compositores.
               </p>
+              <a
+                href="https://carimbo.tec.br/v/3b5746ccfca8bb56c26b056cebdf424e"
+                title="Ver o recibo público desta auditoria"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="mt-4 inline-block"
+              >
+                <img
+                  src="https://carimbo.tec.br/api/selo/3b5746ccfca8bb56c26b056cebdf424e.svg?template=compacto&tema=escuro"
+                  alt="Carimbo de qualidade técnica — clique para ler o recibo público da auditoria"
+                  width={240}
+                  height={66}
+                  style={{ border: 0 }}
+                />
+              </a>
             </div>
 
             <div>
