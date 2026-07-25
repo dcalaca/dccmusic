@@ -598,8 +598,8 @@ export async function POST(request: NextRequest) {
           lyric: lyricContent,
           changed: false,
           usedOriginal: true,
-          linesBefore: lyricContent.split(/\r?\n/).filter((line) => line.trim()).length,
-          linesAfter: lyricContent.split(/\r?\n/).filter((line) => line.trim()).length,
+          linesBefore: lyricContent.split(/\r?\n/).filter((line: string) => line.trim()).length,
+          linesAfter: lyricContent.split(/\r?\n/).filter((line: string) => line.trim()).length,
         }
     const lyricForGeneration = lyricNormalization.lyric
 
