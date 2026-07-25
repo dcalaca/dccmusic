@@ -9,6 +9,7 @@ import {
   sendMetaPurchaseEvent,
 } from '@/lib/meta-conversions'
 import { sendTikTokPurchaseEvent } from '@/lib/tiktok-events'
+import { sendStudioTopupPurchaseEvents } from '@/lib/studio-topup-meta'
 import { recordPartnerPurchase } from '@/lib/partners'
 import * as db from '@/lib/db'
 import {
@@ -268,49 +269,35 @@ export async function POST(request: Request) {
           }
         }
 
-        if (status === 'approved' && credited) {
-          await recordPartnerPurchase({
-            composerId: creditedTopup.composer_id,
-            purchaseId: String(paymentId),
-            amount: Number(creditedTopup.amount) || 0,
-            productType: 'studio_topup',
-          })
-
+        if (status === 'approved') {
           const composer = await getComposerEmailIdentity(creditedTopup.composer_id)
+
+          // Purchase Meta/TikTok mesmo se outro fluxo já tiver creditado (evita perder CAPI na corrida webhook vs página de sucesso).
           if (composer) {
-            const browserContext = mergeMetaBrowserContext(
-              readMetaBrowserContextFromMetadata(creditedTopup.metadata),
-              readMetaBrowserContextFromMetadata(paymentData?.metadata)
-            )
+            await sendStudioTopupPurchaseEvents({
+              request,
+              topup: creditedTopup,
+              paymentId: String(paymentId),
+              email: composer.email,
+              paymentMetadata: paymentData?.metadata,
+            })
+          } else {
+            console.error('[WEBHOOK] Recarga aprovada sem e-mail do compositor; Purchase Meta não enviado:', {
+              topupId: creditedTopup.id,
+              paymentId,
+              composerId: creditedTopup.composer_id,
+            })
+          }
+
+          if (credited && composer) {
+            await recordPartnerPurchase({
+              composerId: creditedTopup.composer_id,
+              purchaseId: String(paymentId),
+              amount: Number(creditedTopup.amount) || 0,
+              productType: 'studio_topup',
+            })
+
             await Promise.allSettled([
-              sendMetaPurchaseEvent({
-                request,
-                browserContext,
-                eventId: String(paymentId),
-                eventSourceUrl:
-                  browserContext.event_source_url ||
-                  process.env.NEXTAUTH_URL ||
-                  'https://www.dccmusic.online',
-                email: composer.email,
-                externalId: creditedTopup.composer_id,
-                value: Number(creditedTopup.amount) || 0,
-                currency: creditedTopup.currency || 'BRL',
-                contentName: 'Recarga Studio IA',
-                contentId: 'studio_topup',
-                quantity: Number(creditedTopup.music_quantity) || 1,
-              }),
-              sendTikTokPurchaseEvent({
-                request,
-                eventId: String(paymentId),
-                eventSourceUrl: process.env.NEXTAUTH_URL || 'https://www.dccmusic.online',
-                email: composer.email,
-                externalId: creditedTopup.composer_id,
-                value: Number(creditedTopup.amount) || 0,
-                currency: creditedTopup.currency || 'BRL',
-                contentName: 'Recarga Studio IA',
-                contentId: 'studio_topup',
-                quantity: Number(creditedTopup.music_quantity) || 1,
-              }),
               sendPaymentConfirmationEmail({
                 ...composer,
                 paymentId,

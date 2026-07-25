@@ -3,13 +3,7 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { paymentClient } from '@/lib/mercadopago'
 import { supabaseAdmin } from '@/lib/supabase'
 import { creditStudioTopupOnce, revokeStudioTopupCreditOnce } from '@/lib/studio'
-import {
-  buildMetaCapiMetadata,
-  mergeMetaBrowserContext,
-  readMetaBrowserContextFromMetadata,
-  sendMetaPurchaseEvent,
-} from '@/lib/meta-conversions'
-import { sendTikTokPurchaseEvent } from '@/lib/tiktok-events'
+import { sendStudioTopupPurchaseEvents } from '@/lib/studio-topup-meta'
 import { recordPartnerPurchase } from '@/lib/partners'
 import {
   getComposerEmailIdentity,
@@ -43,6 +37,19 @@ export async function POST(request: NextRequest) {
     if (!currentTopup) return NextResponse.json({ error: 'Recarga não encontrada' }, { status: 404 })
 
     if (currentTopup.status === 'paid') {
+      const paidPaymentId = String(paymentId || currentTopup.payment_id || '').trim()
+      const composerEmail = await getComposerEmailIdentity(currentTopup.composer_id)
+      if (composerEmail && paidPaymentId) {
+        // Se o webhook creditou antes, ainda assim reforça o Purchase (mesmo event_id = dedupe na Meta).
+        await sendStudioTopupPurchaseEvents({
+          request,
+          topup: currentTopup,
+          paymentId: paidPaymentId,
+          email: composerEmail.email,
+          eventSourceUrl: request.headers.get('referer') || request.url,
+        })
+      }
+
       return NextResponse.json({
         success: true,
         status: 'paid',
@@ -50,7 +57,7 @@ export async function POST(request: NextRequest) {
         credits: Number(currentTopup.credits) || 0,
         amount: Number(currentTopup.amount) || 0,
         currency: currentTopup.currency || 'BRL',
-        paymentId: paymentId || currentTopup.payment_id || null,
+        paymentId: paidPaymentId || null,
         topupId: currentTopup.id,
         musicQuantity: Number(currentTopup.music_quantity) || 0,
       })
@@ -126,6 +133,17 @@ export async function POST(request: NextRequest) {
     const creditedTopup = creditResult.topup
 
     const composerEmail = await getComposerEmailIdentity(creditedTopup.composer_id)
+    if (composerEmail) {
+      await sendStudioTopupPurchaseEvents({
+        request,
+        topup: creditedTopup,
+        paymentId,
+        email: composerEmail.email,
+        paymentMetadata: payment?.metadata,
+        eventSourceUrl: request.headers.get('referer') || request.url,
+      })
+    }
+
     if (composerEmail && creditResult.credited) {
       await recordPartnerPurchase({
         composerId: creditedTopup.composer_id,
@@ -133,41 +151,8 @@ export async function POST(request: NextRequest) {
         amount: Number(creditedTopup.amount) || 0,
         productType: 'studio_topup',
       })
-      const browserContext = mergeMetaBrowserContext(
-        readMetaBrowserContextFromMetadata(creditedTopup.metadata),
-        buildMetaCapiMetadata(request, {
-          email: composerEmail.email,
-          externalId: creditedTopup.composer_id,
-          eventSourceUrl: request.headers.get('referer') || request.url,
-        })
-      )
 
       await Promise.allSettled([
-        sendMetaPurchaseEvent({
-          request,
-          browserContext,
-          eventId: paymentId,
-          eventSourceUrl: browserContext.event_source_url || request.headers.get('referer') || request.url,
-          email: composerEmail.email,
-          externalId: creditedTopup.composer_id,
-          value: Number(creditedTopup.amount) || 0,
-          currency: creditedTopup.currency || 'BRL',
-          contentName: 'Recarga Studio IA',
-          contentId: 'studio_topup',
-          quantity: Number(creditedTopup.music_quantity) || 1,
-        }),
-        sendTikTokPurchaseEvent({
-          request,
-          eventId: paymentId,
-          eventSourceUrl: request.headers.get('referer') || request.url,
-          email: composerEmail.email,
-          externalId: creditedTopup.composer_id,
-          value: Number(creditedTopup.amount) || 0,
-          currency: creditedTopup.currency || 'BRL',
-          contentName: 'Recarga Studio IA',
-          contentId: 'studio_topup',
-          quantity: Number(creditedTopup.music_quantity) || 1,
-        }),
         sendPaymentConfirmationEmail({
           ...composerEmail,
           paymentId,

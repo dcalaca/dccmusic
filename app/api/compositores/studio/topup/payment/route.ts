@@ -9,10 +9,9 @@ import {
   buildMetaCapiMetadata,
   mergeMetaBrowserContext,
   readMetaBrowserContextFromMetadata,
-  sendMetaPurchaseEvent,
   toMercadoPagoMetaCapiFields,
 } from '@/lib/meta-conversions'
-import { sendTikTokPurchaseEvent } from '@/lib/tiktok-events'
+import { sendStudioTopupPurchaseEvents } from '@/lib/studio-topup-meta'
 import { recordPartnerPurchase } from '@/lib/partners'
 import {
   getComposerEmailIdentity,
@@ -39,40 +38,13 @@ async function sendApprovedTopupSideEffects(request: NextRequest, topup: any, pa
     productType: 'studio_topup',
   })
 
-  const browserContext = mergeMetaBrowserContext(
-    readMetaBrowserContextFromMetadata(topup.metadata),
-    buildMetaCapiMetadata(request, {
-      email: composerEmail.email,
-      externalId: topup.composer_id,
-      eventSourceUrl: request.headers.get('referer') || request.url,
-    })
-  )
-
   await Promise.allSettled([
-    sendMetaPurchaseEvent({
+    sendStudioTopupPurchaseEvents({
       request,
-      browserContext,
-      eventId: paymentId,
-      eventSourceUrl: browserContext.event_source_url || request.headers.get('referer') || request.url,
+      topup,
+      paymentId,
       email: composerEmail.email,
-      externalId: topup.composer_id,
-      value: Number(topup.amount) || 0,
-      currency: topup.currency || 'BRL',
-      contentName: 'Recarga Studio IA',
-      contentId: 'studio_topup',
-      quantity: Number(topup.music_quantity) || 1,
-    }),
-    sendTikTokPurchaseEvent({
-      request,
-      eventId: paymentId,
       eventSourceUrl: request.headers.get('referer') || request.url,
-      email: composerEmail.email,
-      externalId: topup.composer_id,
-      value: Number(topup.amount) || 0,
-      currency: topup.currency || 'BRL',
-      contentName: 'Recarga Studio IA',
-      contentId: 'studio_topup',
-      quantity: Number(topup.music_quantity) || 1,
     }),
     sendPaymentConfirmationEmail({
       ...composerEmail,
