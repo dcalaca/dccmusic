@@ -228,17 +228,43 @@ export async function getStudioVersionAudioUrls(version: any) {
     createStudioAudioSignedUrl(version?.stream_audio_path, version?.stream_audio_storage_provider || version?.audio_storage_provider),
   ])
 
-  // Se o backup interno foi feito com o stream parcial (callback "first"),
-  // preferimos o áudio completo do provedor para não cortar o final.
+  const providerFullUrl = version?.audio_url || null
+  const providerStreamUrl = version?.stream_audio_url || null
+  const providerHasDistinctFull = Boolean(
+    providerFullUrl && providerStreamUrl && providerFullUrl !== providerStreamUrl
+  )
   const internalAudioIsStreamOnly = isStreamBackupPath(version?.audio_path)
-  const fullAudioUrl = internalAudioIsStreamOnly
-    ? (version?.audio_url || audioSignedUrl || null)
-    : (audioSignedUrl || version?.audio_url || null)
+  // Backup antigo pode ter gravado stream com nome "-audio"; enquanto houver URL completa
+  // do provedor, preferimos ela para não cortar o final.
+  const preferProviderFull = internalAudioIsStreamOnly || providerHasDistinctFull
+
+  const fullAudioUrl = preferProviderFull
+    ? (providerFullUrl || audioSignedUrl || null)
+    : (audioSignedUrl || providerFullUrl || null)
 
   return {
-    audioUrl: fullAudioUrl || streamSignedUrl || version?.stream_audio_url || null,
-    streamAudioUrl: streamSignedUrl || fullAudioUrl || version?.stream_audio_url || version?.audio_url || null,
+    audioUrl: fullAudioUrl || streamSignedUrl || providerStreamUrl || null,
+    streamAudioUrl: streamSignedUrl || fullAudioUrl || providerStreamUrl || providerFullUrl || null,
   }
+}
+
+/** Rebaixa stream salvo como áudio final quando o MP3 completo já existir na versão. */
+export async function repairStudioVersionFullAudioBackup(version: any) {
+  if (!version?.id || !version?.composer_id) return { repaired: false, reason: 'missing_version' }
+  const fullAudioUrl = version.audio_url || null
+  const streamAudioUrl = version.stream_audio_url || null
+  if (!fullAudioUrl) return { repaired: false, reason: 'missing_full_url' }
+  if (streamAudioUrl && fullAudioUrl === streamAudioUrl) {
+    return { repaired: false, reason: 'no_distinct_full_url' }
+  }
+
+  return backupStudioVersionAudio({
+    versionId: version.id,
+    composerId: version.composer_id,
+    audioUrl: fullAudioUrl,
+    streamAudioUrl,
+    forceFullAudioUpgrade: true,
+  })
 }
 
 export async function backupStudioVersionAudio(input: {
@@ -246,6 +272,7 @@ export async function backupStudioVersionAudio(input: {
   composerId?: string | null
   audioUrl?: string | null
   streamAudioUrl?: string | null
+  forceFullAudioUpgrade?: boolean
 }) {
   if (!input.versionId || !input.composerId) return { backedUp: false, reason: 'missing_version' }
   const fullAudioUrl = input.audioUrl || null
@@ -266,6 +293,7 @@ export async function backupStudioVersionAudio(input: {
     const audioPathIsStreamOnly = isStreamBackupPath(version?.audio_path)
     const needsFullAudioBackup = Boolean(
       fullAudioUrl && (
+        input.forceFullAudioUpgrade ||
         !version?.audio_path ||
         audioPathIsStreamOnly ||
         (isR2Configured() && version?.audio_storage_provider !== 'r2')

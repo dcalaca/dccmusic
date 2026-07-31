@@ -3,7 +3,11 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { getCurrentProjectAssets, getProjectForComposer, mapStudioProject } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
 import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
-import { backupStudioVersionAudio, getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
+import {
+  backupStudioVersionAudio,
+  getStudioVersionAudioUrls,
+  repairStudioVersionFullAudioBackup,
+} from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { formatMusicTitle } from '@/lib/normalize'
 import {
@@ -328,9 +332,31 @@ export async function GET(
       }
     }
 
-    const versionAudio = version ? await getStudioVersionAudioUrls(version) : null
+    // Tenta corrigir backups antigos em que o stream parcial foi salvo como áudio final.
+    await Promise.allSettled(
+      (versions || [])
+        .filter((item: any) => item.audio_url && item.stream_audio_url && item.audio_url !== item.stream_audio_url)
+        .map((item: any) => repairStudioVersionFullAudioBackup({
+          ...item,
+          composer_id: item.composer_id || composer.composerId,
+        }))
+    )
+
+    const repairedVersions = versions?.length
+      ? (
+          await supabaseAdmin
+            .from('studio_versions')
+            .select('*')
+            .eq('project_id', project.id)
+            .eq('composer_id', composer.composerId)
+            .order('created_at', { ascending: false })
+        ).data || versions
+      : versions
+
+    const currentVersion = (repairedVersions || []).find((item: any) => item.is_current) || repairedVersions?.[0] || version
+    const versionAudio = currentVersion ? await getStudioVersionAudioUrls(currentVersion) : null
     const coverImageUrl = cover ? await getStudioCoverImageUrl(cover) : null
-    const versionsWithAudio = await Promise.all((versions || []).map(async (item: any) => {
+    const versionsWithAudio = await Promise.all((repairedVersions || []).map(async (item: any) => {
       const audio = await getStudioVersionAudioUrls(item)
       return {
         id: item.id,
@@ -349,13 +375,13 @@ export async function GET(
     return NextResponse.json({
       project: mapStudioProject(project, {
         lyric: lyric?.content || '',
-        version: version ? {
-          id: version.id,
+        version: currentVersion ? {
+          id: currentVersion.id,
           audioUrl: versionAudio?.audioUrl,
           streamAudioUrl: versionAudio?.streamAudioUrl,
-          duration: version.duration,
-          versionName: version.version_name,
-          style: version.style,
+          duration: currentVersion.duration,
+          versionName: currentVersion.version_name,
+          style: currentVersion.style,
         } : null,
         versions: versionsWithAudio,
         cover: cover ? {

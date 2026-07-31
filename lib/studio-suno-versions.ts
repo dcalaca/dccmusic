@@ -68,14 +68,19 @@ export async function saveSunoGenerationTracks(input: {
   const savedVersions: Array<{ id: string | null; track: any; audioUrl: string | null; streamAudioUrl: string | null }> = []
 
   for (const [index, track] of validTracks.entries()) {
-    const audioUrl = getTrackAudioUrl(track)
-    const streamAudioUrl = getTrackStreamAudioUrl(track)
+    const rawAudioUrl = getTrackAudioUrl(track)
+    const rawStreamAudioUrl = getTrackStreamAudioUrl(track)
+    // No callback "first", a Suno às vezes coloca o stream em audio_url.
+    // Só tratamos como áudio final quando for diferente do stream.
+    const streamAudioUrl = rawStreamAudioUrl || null
+    const audioUrl = rawAudioUrl && rawAudioUrl !== streamAudioUrl ? rawAudioUrl : null
+    const playableStreamUrl = streamAudioUrl || rawAudioUrl || null
     const isCurrent = index === validTracks.length - 1
     const existingVersion = findMatchingVersion(
       existingVersions || [],
       track,
-      audioUrl,
-      streamAudioUrl,
+      audioUrl || playableStreamUrl,
+      playableStreamUrl,
       index,
       claimedIds
     )
@@ -86,8 +91,9 @@ export async function saveSunoGenerationTracks(input: {
     const versionPayload = {
       version_name: validTracks.length > 1 ? `Música gerada #${index + 1}` : (track.tags || 'Versão IA'),
       style: track.tags || null,
-      audio_url: audioUrl,
-      stream_audio_url: streamAudioUrl,
+      // Mantém audio_url antigo se o complete ainda não trouxe MP3 distinto do stream.
+      audio_url: audioUrl || existingVersion?.audio_url || null,
+      stream_audio_url: playableStreamUrl || existingVersion?.stream_audio_url || null,
       duration: track.duration || null,
       model: track.model_name || null,
       provider_payload: track,
@@ -119,14 +125,21 @@ export async function saveSunoGenerationTracks(input: {
       await backupStudioVersionAudio({
         versionId: savedVersionId,
         composerId: input.generation.composer_id,
-        audioUrl,
-        streamAudioUrl,
+        audioUrl: audioUrl || (input.isComplete ? versionPayload.audio_url : null),
+        streamAudioUrl: playableStreamUrl,
+        // No complete, sempre tenta gravar o MP3 final (mesmo se um stream foi salvo antes como "-audio").
+        forceFullAudioUpgrade: input.isComplete && Boolean(audioUrl || versionPayload.audio_url),
       }).catch((backupError) => {
         console.error('[Studio IA] Erro no backup interno do áudio:', backupError)
       })
     }
 
-    savedVersions.push({ id: savedVersionId, track, audioUrl, streamAudioUrl })
+    savedVersions.push({
+      id: savedVersionId,
+      track,
+      audioUrl: audioUrl || versionPayload.audio_url || null,
+      streamAudioUrl: playableStreamUrl,
+    })
   }
 
   // No complete, remove versões órfãs da mesma geração (ex.: stream parcial do first sem match).
