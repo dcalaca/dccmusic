@@ -676,7 +676,7 @@ function StudioProjectsContent() {
                           {project.favorite && <FiHeart className="absolute right-3 top-3 h-5 w-5 fill-red-400 text-red-400" />}
                           {project.versionCount > 1 && (
                             <span className="absolute bottom-3 left-3 rounded-full bg-black/80 px-3 py-1 text-xs font-bold text-green-200">
-                              {project.versionCount} músicas
+                              {project.versionCount} versões
                             </span>
                           )}
                         </div>

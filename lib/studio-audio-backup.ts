@@ -218,15 +218,26 @@ export async function createStudioAudioSignedUrl(path?: string | null, provider?
   return data?.signedUrl || null
 }
 
+function isStreamBackupPath(path?: string | null) {
+  return Boolean(path && String(path).includes('-stream.'))
+}
+
 export async function getStudioVersionAudioUrls(version: any) {
   const [audioSignedUrl, streamSignedUrl] = await Promise.all([
     createStudioAudioSignedUrl(version?.audio_path, version?.audio_storage_provider),
     createStudioAudioSignedUrl(version?.stream_audio_path, version?.stream_audio_storage_provider || version?.audio_storage_provider),
   ])
 
+  // Se o backup interno foi feito com o stream parcial (callback "first"),
+  // preferimos o áudio completo do provedor para não cortar o final.
+  const internalAudioIsStreamOnly = isStreamBackupPath(version?.audio_path)
+  const fullAudioUrl = internalAudioIsStreamOnly
+    ? (version?.audio_url || audioSignedUrl || null)
+    : (audioSignedUrl || version?.audio_url || null)
+
   return {
-    audioUrl: audioSignedUrl || version?.audio_url || null,
-    streamAudioUrl: streamSignedUrl || audioSignedUrl || version?.stream_audio_url || version?.audio_url || null,
+    audioUrl: fullAudioUrl || streamSignedUrl || version?.stream_audio_url || null,
+    streamAudioUrl: streamSignedUrl || fullAudioUrl || version?.stream_audio_url || version?.audio_url || null,
   }
 }
 
@@ -237,8 +248,9 @@ export async function backupStudioVersionAudio(input: {
   streamAudioUrl?: string | null
 }) {
   if (!input.versionId || !input.composerId) return { backedUp: false, reason: 'missing_version' }
-  const sourceAudioUrl = input.audioUrl || input.streamAudioUrl
-  if (!sourceAudioUrl) return { backedUp: false, reason: 'missing_audio_url' }
+  const fullAudioUrl = input.audioUrl || null
+  const streamAudioUrl = input.streamAudioUrl || null
+  if (!fullAudioUrl && !streamAudioUrl) return { backedUp: false, reason: 'missing_audio_url' }
 
   try {
     const { data: version, error: versionError } = await supabaseAdmin
@@ -248,13 +260,31 @@ export async function backupStudioVersionAudio(input: {
       .maybeSingle()
 
     if (versionError) throw versionError
-    const streamUsesSameSource = !input.streamAudioUrl || input.streamAudioUrl === sourceAudioUrl
-    const streamBackedUpOnTarget = streamUsesSameSource
-      || (version?.stream_audio_path && (version?.stream_audio_storage_provider || version?.audio_storage_provider) === 'r2')
-    const alreadyBackedUpOnTarget = isR2Configured()
-      ? version?.audio_path && version?.audio_storage_provider === 'r2' && streamBackedUpOnTarget
-      : version?.audio_path && (streamUsesSameSource || version?.stream_audio_path)
-    if (alreadyBackedUpOnTarget) {
+
+    // Nunca gravar o stream parcial como áudio final.
+    // No callback "first" só existe stream; no "complete" chega o MP3 completo.
+    const audioPathIsStreamOnly = isStreamBackupPath(version?.audio_path)
+    const needsFullAudioBackup = Boolean(
+      fullAudioUrl && (
+        !version?.audio_path ||
+        audioPathIsStreamOnly ||
+        (isR2Configured() && version?.audio_storage_provider !== 'r2')
+      )
+    )
+
+    const needsStreamBackup = Boolean(
+      streamAudioUrl &&
+      streamAudioUrl !== fullAudioUrl &&
+      !version?.stream_audio_path
+    )
+
+    const hasUsableFullAudio = Boolean(
+      version?.audio_path &&
+      !audioPathIsStreamOnly &&
+      (!isR2Configured() || version?.audio_storage_provider === 'r2')
+    )
+
+    if (!needsFullAudioBackup && !needsStreamBackup && (hasUsableFullAudio || (!fullAudioUrl && version?.stream_audio_path))) {
       if (version?.audio_backup_status !== 'backed_up') {
         await supabaseAdmin
           .from('studio_versions')
@@ -269,42 +299,58 @@ export async function backupStudioVersionAudio(input: {
       return { backedUp: true, reason: 'already_backed_up' }
     }
 
-    const audioAlreadyOnR2 = isR2Configured() && version?.audio_path && version?.audio_storage_provider === 'r2'
-    const audioBackup = audioAlreadyOnR2
-      ? { path: version.audio_path, provider: 'r2' }
-      : await uploadAudio({
-          composerId: input.composerId,
-          versionId: input.versionId,
-          sourceUrl: sourceAudioUrl,
-          kind: 'audio',
-        })
-
-    let streamAudioBackup = audioBackup
-    const distinctStreamUrl = input.streamAudioUrl && input.streamAudioUrl !== sourceAudioUrl
-      ? input.streamAudioUrl
+    let audioBackup: { path: string; provider: string } | null = hasUsableFullAudio && !needsFullAudioBackup
+      ? { path: version!.audio_path, provider: version!.audio_storage_provider || 'supabase' }
       : null
-    if (distinctStreamUrl) {
-      const streamAlreadyOnR2 = isR2Configured()
-        && version?.stream_audio_path
-        && (version?.stream_audio_storage_provider || version?.audio_storage_provider) === 'r2'
-      streamAudioBackup = streamAlreadyOnR2
-        ? { path: version.stream_audio_path, provider: 'r2' }
-        : await uploadAudio({
-            composerId: input.composerId,
-            versionId: input.versionId,
-            sourceUrl: distinctStreamUrl,
-            kind: 'stream',
-          })
+
+    if (needsFullAudioBackup && fullAudioUrl) {
+      audioBackup = await uploadAudio({
+        composerId: input.composerId,
+        versionId: input.versionId,
+        sourceUrl: fullAudioUrl,
+        kind: 'audio',
+      })
+    }
+
+    let streamAudioBackup: { path: string; provider: string } | null = version?.stream_audio_path
+      ? {
+          path: version.stream_audio_path,
+          provider: version.stream_audio_storage_provider || version.audio_storage_provider || 'supabase',
+        }
+      : null
+
+    if (!fullAudioUrl && streamAudioUrl && !streamAudioBackup) {
+      // Só stream disponível: guarda só como stream, sem promover a áudio final.
+      streamAudioBackup = await uploadAudio({
+        composerId: input.composerId,
+        versionId: input.versionId,
+        sourceUrl: streamAudioUrl,
+        kind: 'stream',
+      })
+    } else if (needsStreamBackup && streamAudioUrl) {
+      streamAudioBackup = await uploadAudio({
+        composerId: input.composerId,
+        versionId: input.versionId,
+        sourceUrl: streamAudioUrl,
+        kind: 'stream',
+      })
+    } else if (!streamAudioBackup && audioBackup) {
+      streamAudioBackup = audioBackup
+    }
+
+    if (!audioBackup && !streamAudioBackup) {
+      return { backedUp: false, reason: 'nothing_to_backup' }
     }
 
     const { data: updatedVersion, error: updateError } = await supabaseAdmin
       .from('studio_versions')
       .update({
-        audio_path: audioBackup.path,
-        stream_audio_path: streamAudioBackup.path,
-        audio_storage_provider: audioBackup.provider,
-        stream_audio_storage_provider: streamAudioBackup.provider,
-        audio_backup_status: 'backed_up',
+        audio_path: audioBackup?.path || version?.audio_path || null,
+        stream_audio_path: streamAudioBackup?.path || version?.stream_audio_path || audioBackup?.path || null,
+        audio_storage_provider: audioBackup?.provider || version?.audio_storage_provider || null,
+        stream_audio_storage_provider:
+          streamAudioBackup?.provider || version?.stream_audio_storage_provider || audioBackup?.provider || null,
+        audio_backup_status: audioBackup || streamAudioBackup ? 'backed_up' : version?.audio_backup_status || null,
         audio_backup_error: null,
         audio_backed_up_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -314,15 +360,15 @@ export async function backupStudioVersionAudio(input: {
       .maybeSingle()
 
     if (updateError) throw updateError
-    if (!updatedVersion?.audio_path || updatedVersion.audio_storage_provider !== audioBackup.provider) {
+    if (audioBackup && (!updatedVersion?.audio_path || updatedVersion.audio_storage_provider !== audioBackup.provider)) {
       throw new Error('Backup enviado, mas o Supabase não confirmou a gravação do caminho interno.')
     }
 
     return {
       backedUp: true,
-      provider: audioBackup.provider,
-      audioPath: audioBackup.path,
-      streamAudioPath: streamAudioBackup.path,
+      provider: audioBackup?.provider || streamAudioBackup?.provider,
+      audioPath: audioBackup?.path || null,
+      streamAudioPath: streamAudioBackup?.path || null,
     }
   } catch (error: any) {
     if (isBackupSchemaMissing(error)) return { backedUp: false, reason: 'setup_required' }
@@ -332,8 +378,6 @@ export async function backupStudioVersionAudio(input: {
       await supabaseAdmin
         .from('studio_versions')
         .update({
-          audio_path: null,
-          stream_audio_path: null,
           audio_backup_status: 'failed',
           audio_backup_error: String(error?.message || error).slice(0, 1000),
           updated_at: new Date().toISOString(),

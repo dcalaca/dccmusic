@@ -7,7 +7,7 @@ import {
   sendStudioMusicReadyEmail,
 } from '@/lib/dcc-emails'
 import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
-import { backupStudioVersionAudio } from '@/lib/studio-audio-backup'
+import { getTrackAudioUrl, getTrackStreamAudioUrl, saveSunoGenerationTracks } from '@/lib/studio-suno-versions'
 import { getStudioGenerationProviderError, markExpiredVoiceFromGeneration } from '@/lib/studio-voice-expiration'
 import {
   getStudioMusicGenerationFailureMessage,
@@ -36,98 +36,6 @@ function getCallbackTracks(body: any) {
   }
 
   return []
-}
-
-function getTrackAudioUrl(track: any) {
-  return track?.audio_url || track?.audioUrl || track?.source_audio_url || track?.sourceAudioUrl || track?.url || null
-}
-
-function getTrackStreamAudioUrl(track: any) {
-  return track?.stream_audio_url || track?.streamAudioUrl || track?.source_stream_audio_url || track?.sourceStreamAudioUrl || track?.stream_url || track?.streamUrl || null
-}
-
-async function backupVersionAudio(versionId: string | null | undefined, generation: any, audioUrl: string | null, streamAudioUrl: string | null) {
-  if (!versionId) return
-  await backupStudioVersionAudio({
-    versionId,
-    composerId: generation.composer_id,
-    audioUrl,
-    streamAudioUrl,
-  }).catch((backupError) => {
-    console.error('[Studio IA] Erro no backup interno do áudio:', backupError)
-  })
-}
-
-async function saveSunoTracks(input: {
-  generation: any
-  tracks: any[]
-  isComplete: boolean
-}) {
-  const validTracks = (input.tracks || []).filter((track) => (
-    getTrackAudioUrl(track) || getTrackStreamAudioUrl(track)
-  ))
-
-  if (validTracks.length === 0) return []
-
-  await supabaseAdmin
-    .from('studio_versions')
-    .update({ is_current: false, updated_at: new Date().toISOString() })
-    .eq('project_id', input.generation.project_id)
-
-  const { data: existingVersions } = await supabaseAdmin
-    .from('studio_versions')
-    .select('id, audio_url, stream_audio_url, provider_payload')
-    .eq('generation_id', input.generation.id)
-
-  const savedVersions: Array<{ id: string | null; track: any; audioUrl: string | null; streamAudioUrl: string | null }> = []
-
-  for (const [index, track] of validTracks.entries()) {
-    const audioUrl = getTrackAudioUrl(track)
-    const streamAudioUrl = getTrackStreamAudioUrl(track)
-    const isCurrent = index === validTracks.length - 1
-    const existingVersion = (existingVersions || []).find((version: any) => (
-      (track?.id && version.provider_payload?.id === track.id) ||
-      (audioUrl && version.audio_url === audioUrl) ||
-      (streamAudioUrl && version.stream_audio_url === streamAudioUrl)
-    ))
-
-    let savedVersionId = existingVersion?.id || null
-    const versionPayload = {
-      version_name: validTracks.length > 1 ? `Música gerada #${index + 1}` : (track.tags || 'Versão IA'),
-      style: track.tags || null,
-      audio_url: audioUrl,
-      stream_audio_url: streamAudioUrl,
-      duration: track.duration || null,
-      model: track.model_name || null,
-      provider_payload: track,
-      is_current: isCurrent,
-      updated_at: new Date().toISOString(),
-    }
-
-    if (existingVersion) {
-      await supabaseAdmin
-        .from('studio_versions')
-        .update(versionPayload)
-        .eq('id', existingVersion.id)
-    } else {
-      const { data: insertedVersion } = await supabaseAdmin
-        .from('studio_versions')
-        .insert({
-          project_id: input.generation.project_id,
-          composer_id: input.generation.composer_id,
-          generation_id: input.generation.id,
-          ...versionPayload,
-        })
-        .select('id')
-        .maybeSingle()
-      savedVersionId = insertedVersion?.id || savedVersionId
-    }
-
-    await backupVersionAudio(savedVersionId, input.generation, audioUrl, streamAudioUrl)
-    savedVersions.push({ id: savedVersionId, track, audioUrl, streamAudioUrl })
-  }
-
-  return savedVersions
 }
 
 export async function POST(request: Request) {
@@ -195,7 +103,7 @@ export async function POST(request: Request) {
 
     if (first && (callbackType === 'first' || callbackType === 'complete')) {
       const isComplete = callbackType === 'complete'
-      const savedVersions = await saveSunoTracks({ generation, tracks, isComplete })
+      const savedVersions = await saveSunoGenerationTracks({ generation, tracks, isComplete })
       const currentSavedVersion = savedVersions[savedVersions.length - 1]
       const currentTrack = currentSavedVersion?.track
 

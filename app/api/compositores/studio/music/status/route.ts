@@ -8,6 +8,11 @@ import {
 import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
 import { backupStudioVersionAudio, getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
+import {
+  getTrackAudioUrl,
+  getTrackStreamAudioUrl,
+  saveSunoGenerationTracks,
+} from '@/lib/studio-suno-versions'
 import { getStudioGenerationProviderError, markExpiredVoiceFromGeneration } from '@/lib/studio-voice-expiration'
 import {
   getStudioMusicGenerationFailureMessage,
@@ -41,14 +46,6 @@ function getSunoTracks(result: any) {
 function getMurekaChoices(result: any) {
   const choices = result?.choices || result?.data?.choices
   return Array.isArray(choices) ? choices : []
-}
-
-function getTrackAudioUrl(track: any) {
-  return track?.audio_url || track?.audioUrl || track?.source_audio_url || track?.sourceAudioUrl || track?.url || null
-}
-
-function getTrackStreamAudioUrl(track: any) {
-  return track?.stream_audio_url || track?.streamAudioUrl || track?.source_stream_audio_url || track?.sourceStreamAudioUrl || track?.stream_url || track?.streamUrl || null
 }
 
 function normalizeDurationSeconds(value: any) {
@@ -91,71 +88,13 @@ async function backupVersionAudio(versionId: string | null | undefined, generati
 }
 
 async function saveSunoTrack(generation: any, sunoData: any[], status: string) {
-  const validTracks = (sunoData || []).filter((track) => (
-    getTrackAudioUrl(track) || getTrackStreamAudioUrl(track)
-  ))
-  if (validTracks.length === 0) return
-
   const isComplete = status === 'SUCCESS'
-
-  await supabaseAdmin
-    .from('studio_versions')
-    .update({ is_current: false, updated_at: new Date().toISOString() })
-    .eq('project_id', generation.project_id)
-    .eq('composer_id', generation.composer_id)
-
-  const { data: existingVersion } = await supabaseAdmin
-    .from('studio_versions')
-    .select('id, audio_url, stream_audio_url, provider_payload')
-    .eq('generation_id', generation.id)
-
-  const savedVersions: Array<{ id: string | null; track: any }> = []
-
-  for (const [index, track] of validTracks.entries()) {
-    const audioUrl = getTrackAudioUrl(track)
-    const streamAudioUrl = getTrackStreamAudioUrl(track)
-    const isCurrent = index === validTracks.length - 1
-    const matchingVersion = (existingVersion || []).find((version: any) => (
-      (track?.id && version.provider_payload?.id === track.id) ||
-      (audioUrl && version.audio_url === audioUrl) ||
-      (streamAudioUrl && version.stream_audio_url === streamAudioUrl)
-    ))
-
-    let savedVersionId = matchingVersion?.id || null
-    const versionPayload = {
-      version_name: validTracks.length > 1 ? `Música gerada #${index + 1}` : (track.tags || 'Versão IA'),
-      style: track.tags || null,
-      audio_url: audioUrl,
-      stream_audio_url: streamAudioUrl,
-      duration: track.duration || null,
-      model: track.model_name || null,
-      provider_payload: track,
-      is_current: isCurrent,
-      updated_at: new Date().toISOString(),
-    }
-
-    if (matchingVersion) {
-      await supabaseAdmin
-        .from('studio_versions')
-        .update(versionPayload)
-        .eq('id', matchingVersion.id)
-    } else {
-      const { data: insertedVersion } = await supabaseAdmin
-        .from('studio_versions')
-        .insert({
-          project_id: generation.project_id,
-          composer_id: generation.composer_id,
-          generation_id: generation.id,
-          ...versionPayload,
-        })
-        .select('id')
-        .maybeSingle()
-      savedVersionId = insertedVersion?.id || savedVersionId
-    }
-
-    await backupVersionAudio(savedVersionId, generation, audioUrl, streamAudioUrl)
-    savedVersions.push({ id: savedVersionId, track })
-  }
+  const savedVersions = await saveSunoGenerationTracks({
+    generation,
+    tracks: sunoData,
+    isComplete,
+  })
+  if (savedVersions.length === 0) return
 
   const currentTrack = savedVersions[savedVersions.length - 1]?.track
 
