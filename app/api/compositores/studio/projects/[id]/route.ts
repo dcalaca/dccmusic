@@ -332,9 +332,35 @@ export async function GET(
       }
     }
 
+    // Remove 3ª+ faixa criada por corrida callback/polling na mesma geração.
+    const versionsByGeneration = new Map<string, any[]>()
+    for (const item of versions || []) {
+      if (!item.generation_id) continue
+      const list = versionsByGeneration.get(item.generation_id) || []
+      list.push(item)
+      versionsByGeneration.set(item.generation_id, list)
+    }
+    const duplicateIds: string[] = []
+    for (const list of versionsByGeneration.values()) {
+      if (list.length <= 2) continue
+      const sorted = [...list].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      duplicateIds.push(...sorted.slice(2).map((item) => item.id))
+    }
+    if (duplicateIds.length > 0) {
+      await supabaseAdmin
+        .from('studio_versions')
+        .delete()
+        .in('id', duplicateIds)
+        .eq('project_id', project.id)
+    }
+
     // Tenta corrigir backups antigos em que o stream parcial foi salvo como áudio final.
+    const versionsAfterDedupe = duplicateIds.length > 0
+      ? (versions || []).filter((item: any) => !duplicateIds.includes(item.id))
+      : (versions || [])
+
     await Promise.allSettled(
-      (versions || [])
+      versionsAfterDedupe
         .filter((item: any) => item.audio_url && item.stream_audio_url && item.audio_url !== item.stream_audio_url)
         .map((item: any) => repairStudioVersionFullAudioBackup({
           ...item,
@@ -342,7 +368,7 @@ export async function GET(
         }))
     )
 
-    const repairedVersions = versions?.length
+    const repairedVersions = versionsAfterDedupe.length
       ? (
           await supabaseAdmin
             .from('studio_versions')
@@ -350,8 +376,8 @@ export async function GET(
             .eq('project_id', project.id)
             .eq('composer_id', composer.composerId)
             .order('created_at', { ascending: false })
-        ).data || versions
-      : versions
+        ).data || versionsAfterDedupe
+      : versionsAfterDedupe
 
     const currentVersion = (repairedVersions || []).find((item: any) => item.is_current) || repairedVersions?.[0] || version
     const versionAudio = currentVersion ? await getStudioVersionAudioUrls(currentVersion) : null

@@ -1,6 +1,8 @@
 import { supabaseAdmin } from './supabase'
 import { backupStudioVersionAudio } from './studio-audio-backup'
 
+const MAX_TRACKS_PER_GENERATION = 2
+
 export function getTrackAudioUrl(track: any) {
   return track?.audio_url || track?.audioUrl || track?.source_audio_url || track?.sourceAudioUrl || track?.url || null
 }
@@ -17,26 +19,28 @@ function findMatchingVersion(
   index: number,
   claimedIds: Set<string>
 ) {
-  const byId = (existingVersions || []).find((version: any) => (
-    !claimedIds.has(version.id) &&
-    track?.id &&
-    version.provider_payload?.id === track.id
+  const available = (existingVersions || []).filter((version: any) => !claimedIds.has(version.id))
+
+  const byId = available.find((version: any) => (
+    track?.id && version.provider_payload?.id === track.id
   ))
   if (byId) return byId
 
-  const byAudio = (existingVersions || []).find((version: any) => (
-    !claimedIds.has(version.id) &&
-    ((audioUrl && version.audio_url === audioUrl) ||
-      (streamAudioUrl && version.stream_audio_url === streamAudioUrl) ||
-      (audioUrl && version.stream_audio_url === audioUrl) ||
-      (streamAudioUrl && version.audio_url === streamAudioUrl))
+  const byAudio = available.find((version: any) => (
+    (audioUrl && version.audio_url === audioUrl) ||
+    (streamAudioUrl && version.stream_audio_url === streamAudioUrl) ||
+    (audioUrl && version.stream_audio_url === audioUrl) ||
+    (streamAudioUrl && version.audio_url === streamAudioUrl)
   ))
   if (byAudio) return byAudio
 
-  // Fallback: mesma posição na geração (evita "3 músicas" quando o callback first
-  // salvou stream sem id estável e o complete chega com URLs novas).
-  const byIndex = (existingVersions || [])[index]
-  if (byIndex && !claimedIds.has(byIndex.id)) return byIndex
+  // Mesma posição na geração.
+  if (available[index]) return available[index]
+
+  // Se já existem faixas o suficiente, reutiliza qualquer sobra em vez de criar a 3ª.
+  if (existingVersions.length >= MAX_TRACKS_PER_GENERATION && available[0]) {
+    return available[0]
+  }
 
   return null
 }
@@ -46,9 +50,9 @@ export async function saveSunoGenerationTracks(input: {
   tracks: any[]
   isComplete: boolean
 }) {
-  const validTracks = (input.tracks || []).filter((track) => (
-    getTrackAudioUrl(track) || getTrackStreamAudioUrl(track)
-  ))
+  const validTracks = (input.tracks || [])
+    .filter((track) => getTrackAudioUrl(track) || getTrackStreamAudioUrl(track))
+    .slice(0, MAX_TRACKS_PER_GENERATION)
 
   if (validTracks.length === 0) return []
 
@@ -71,7 +75,6 @@ export async function saveSunoGenerationTracks(input: {
     const rawAudioUrl = getTrackAudioUrl(track)
     const rawStreamAudioUrl = getTrackStreamAudioUrl(track)
     // No callback "first", a Suno às vezes coloca o stream em audio_url.
-    // Só tratamos como áudio final quando for diferente do stream.
     const streamAudioUrl = rawStreamAudioUrl || null
     const audioUrl = rawAudioUrl && rawAudioUrl !== streamAudioUrl ? rawAudioUrl : null
     const playableStreamUrl = streamAudioUrl || rawAudioUrl || null
@@ -91,7 +94,6 @@ export async function saveSunoGenerationTracks(input: {
     const versionPayload = {
       version_name: validTracks.length > 1 ? `Música gerada #${index + 1}` : (track.tags || 'Versão IA'),
       style: track.tags || null,
-      // Mantém audio_url antigo se o complete ainda não trouxe MP3 distinto do stream.
       audio_url: audioUrl || existingVersion?.audio_url || null,
       stream_audio_url: playableStreamUrl || existingVersion?.stream_audio_url || null,
       duration: track.duration || null,
@@ -106,6 +108,17 @@ export async function saveSunoGenerationTracks(input: {
         .from('studio_versions')
         .update(versionPayload)
         .eq('id', existingVersion.id)
+    } else if ((existingVersions?.length || 0) >= MAX_TRACKS_PER_GENERATION) {
+      // Corrida callback + polling: nunca cria a 3ª faixa.
+      const fallback = (existingVersions || []).find((version: any) => !claimedIds.has(version.id))
+      if (fallback) {
+        savedVersionId = fallback.id
+        claimedIds.add(fallback.id)
+        await supabaseAdmin
+          .from('studio_versions')
+          .update(versionPayload)
+          .eq('id', fallback.id)
+      }
     } else {
       const { data: insertedVersion } = await supabaseAdmin
         .from('studio_versions')
@@ -127,7 +140,6 @@ export async function saveSunoGenerationTracks(input: {
         composerId: input.generation.composer_id,
         audioUrl: audioUrl || (input.isComplete ? versionPayload.audio_url : null),
         streamAudioUrl: playableStreamUrl,
-        // No complete, sempre tenta gravar o MP3 final (mesmo se um stream foi salvo antes como "-audio").
         forceFullAudioUpgrade: input.isComplete && Boolean(audioUrl || versionPayload.audio_url),
       }).catch((backupError) => {
         console.error('[Studio IA] Erro no backup interno do áudio:', backupError)
@@ -142,10 +154,16 @@ export async function saveSunoGenerationTracks(input: {
     })
   }
 
-  // No complete, remove versões órfãs da mesma geração (ex.: stream parcial do first sem match).
-  if (input.isComplete) {
-    const keepIds = savedVersions.map((item) => item.id).filter(Boolean) as string[]
-    const orphanIds = (existingVersions || [])
+  const keepIds = savedVersions.map((item) => item.id).filter(Boolean) as string[]
+
+  // Sempre limpa sobras da mesma geração (resolve corrida callback vs polling).
+  if (keepIds.length > 0) {
+    const { data: allForGeneration } = await supabaseAdmin
+      .from('studio_versions')
+      .select('id')
+      .eq('generation_id', input.generation.id)
+
+    const orphanIds = (allForGeneration || [])
       .map((version: any) => version.id)
       .filter((id: string) => id && !keepIds.includes(id))
 

@@ -1356,7 +1356,7 @@ export default function StudioProjectDetailPage() {
                   {projectVersions.length > 1 && (
                     <div className="mt-5 rounded-2xl border border-green-900/50 bg-green-950/15 p-4">
                       <p className="text-sm font-bold text-green-100">
-                        Este projeto tem {projectVersions.length} músicas geradas.
+                        Este projeto tem {projectVersions.length} versões geradas.
                       </p>
                       <p className="mt-1 text-xs text-gray-400">
                         As versões aparecem abaixo para você ouvir e escolher sem repetir a música aqui em cima.
