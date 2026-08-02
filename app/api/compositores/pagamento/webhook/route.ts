@@ -92,6 +92,57 @@ async function activateComposerPlanAccess(input: {
   if (composerError) throw composerError
 }
 
+async function revokeComposerPlanAccess(input: {
+  subscription: any
+  paymentId: string | number
+}) {
+  const { error: subscriptionError } = await supabaseAdmin
+    .from('dccmusic_subscriptions')
+    .update({
+      status: 'cancelled',
+      payment_id: input.paymentId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.subscription.id)
+
+  if (subscriptionError) throw subscriptionError
+
+  // Fallback explícito: o trigger do banco também sincroniza is_premium,
+  // mas garantimos a revogação mesmo se o trigger não existir em produção.
+  const nowIso = new Date().toISOString()
+  const { data: remainingActive } = await supabaseAdmin
+    .from('dccmusic_subscriptions')
+    .select('id, end_date')
+    .eq('composer_id', input.subscription.composer_id)
+    .eq('status', 'active')
+    .gt('end_date', nowIso)
+    .order('end_date', { ascending: false })
+    .limit(1)
+
+  const stillActive = remainingActive?.[0] || null
+
+  const { error: composerError } = await supabaseAdmin
+    .from('dccmusic_composers')
+    .update(
+      stillActive
+        ? {
+            is_premium: true,
+            has_active_subscription: true,
+            subscription_expires_at: stillActive.end_date,
+            updated_at: nowIso,
+          }
+        : {
+            is_premium: false,
+            has_active_subscription: false,
+            subscription_expires_at: null,
+            updated_at: nowIso,
+          }
+    )
+    .eq('id', input.subscription.composer_id)
+
+  if (composerError) throw composerError
+}
+
 async function getMercadoPagoPaymentDetails(paymentId: string | number): Promise<any> {
   // Segurança: SEMPRE confirmar o pagamento consultando a API do Mercado Pago.
   // Nunca confiar em dados de status/external_reference enviados no corpo da notificação,
@@ -348,20 +399,24 @@ export async function POST(request: Request) {
         'in_process': 'pending',
         'rejected': 'failed',
         'cancelled': 'failed',
-        'refunded': 'failed',
-        'charged_back': 'failed',
+        'refunded': 'refunded',
+        'charged_back': 'refunded',
       }
 
       const paymentStatus = paymentStatusMap[status] || 'pending'
+      const isPlanRefundOrCancel =
+        status === 'refunded' || status === 'charged_back' || status === 'cancelled'
 
       // Verificar se já existe pagamento com este ID (idempotência)
       const { data: existingPayment } = await supabaseAdmin
         .from('dccmusic_payments')
-        .select('id, status')
+        .select('id, status, paid_at')
         .eq('gateway_payment_id', paymentId)
         .maybeSingle()
 
       let paymentJustConfirmed = false
+      const wasPaidBefore =
+        existingPayment?.status === 'paid' || subscription.status === 'active'
 
       if (!existingPayment) {
         // Criar registro de pagamento apenas se não existir
@@ -411,12 +466,20 @@ export async function POST(request: Request) {
             .update({
               status: paymentStatus,
               gateway_response: paymentData,
-              paid_at: paymentStatus === 'paid' ? new Date().toISOString() : null,
+              // Mantém paid_at no estorno para histórico no extrato
+              paid_at:
+                paymentStatus === 'paid'
+                  ? new Date().toISOString()
+                  : paymentStatus === 'refunded'
+                    ? existingPayment.paid_at || null
+                    : null,
             })
             .eq('id', existingPayment.id)
 
           if (paymentUpdateError) {
             console.error('[WEBHOOK] Erro ao atualizar pagamento existente:', paymentUpdateError)
+          } else {
+            console.log('[WEBHOOK] Pagamento atualizado:', paymentId, paymentStatus)
           }
         }
       }
@@ -427,41 +490,64 @@ export async function POST(request: Request) {
         .eq('id', subscription.plan_id)
         .maybeSingle()
 
-      // Atualizar status da assinatura
-      let subscriptionStatus = subscription.status // Manter status atual se não mudar
-      
-      if (status === 'approved') {
-        subscriptionStatus = 'active'
-      } else if (status === 'rejected' || status === 'cancelled') {
-        subscriptionStatus = 'cancelled'
-      } else if (status === 'pending' || status === 'in_process') {
-        subscriptionStatus = 'pending'
-      }
-
-      // Atualizar apenas se o status mudou
-      if (subscriptionStatus !== subscription.status) {
-        const { error: updateError } = await supabaseAdmin
-          .from('dccmusic_subscriptions')
-          .update({
-            status: subscriptionStatus,
-            payment_id: paymentId,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', subscription.id)
-
-        if (updateError) {
-          console.error('[WEBHOOK] Erro ao atualizar assinatura:', updateError)
-        } else {
-          console.log('[WEBHOOK] Assinatura atualizada:', subscription.id, 'Status:', subscriptionStatus)
-        }
-      }
-
       if (status === 'approved') {
         await activateComposerPlanAccess({
           subscription,
           plan: planForAccess,
           paymentId,
         })
+      } else if (
+        isPlanRefundOrCancel &&
+        (wasPaidBefore || paymentStatus === 'refunded' || subscription.status === 'active')
+      ) {
+        try {
+          await revokeComposerPlanAccess({
+            subscription,
+            paymentId,
+          })
+          console.log(
+            '[WEBHOOK] Plano revogado por estorno/cancelamento:',
+            subscription.id,
+            status
+          )
+        } catch (revokeError) {
+          console.error('[WEBHOOK] Erro ao revogar plano após estorno/cancelamento:', revokeError)
+          return NextResponse.json({ error: 'Erro ao revogar plano' }, { status: 500 })
+        }
+      } else if (status === 'rejected' || status === 'cancelled') {
+        if (subscription.status !== 'cancelled') {
+          const { error: updateError } = await supabaseAdmin
+            .from('dccmusic_subscriptions')
+            .update({
+              status: 'cancelled',
+              payment_id: paymentId,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', subscription.id)
+
+          if (updateError) {
+            console.error('[WEBHOOK] Erro ao cancelar assinatura:', updateError)
+          } else {
+            console.log('[WEBHOOK] Assinatura cancelada:', subscription.id)
+          }
+        }
+      } else if (
+        (status === 'pending' || status === 'in_process') &&
+        subscription.status !== 'pending' &&
+        subscription.status !== 'active'
+      ) {
+        const { error: updateError } = await supabaseAdmin
+          .from('dccmusic_subscriptions')
+          .update({
+            status: 'pending',
+            payment_id: paymentId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', subscription.id)
+
+        if (updateError) {
+          console.error('[WEBHOOK] Erro ao atualizar assinatura pendente:', updateError)
+        }
       }
 
       // O trigger no banco também pode atualizar o campo is_premium do compositor,
