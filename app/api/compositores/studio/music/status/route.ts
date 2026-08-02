@@ -11,7 +11,7 @@ import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import {
   getTrackAudioUrl,
   getTrackStreamAudioUrl,
-  saveSunoGenerationTracks,
+  saveSunoGenerationTracksEnsuringTwo,
 } from '@/lib/studio-suno-versions'
 import { getStudioGenerationProviderError, markExpiredVoiceFromGeneration } from '@/lib/studio-voice-expiration'
 import {
@@ -88,15 +88,16 @@ async function backupVersionAudio(versionId: string | null | undefined, generati
 }
 
 async function saveSunoTrack(generation: any, sunoData: any[], status: string) {
-  const isComplete = status === 'SUCCESS'
-  const savedVersions = await saveSunoGenerationTracks({
+  const wantsComplete = status === 'SUCCESS'
+  const { savedVersions, hasExactTwo } = await saveSunoGenerationTracksEnsuringTwo({
     generation,
     tracks: sunoData,
-    isComplete,
+    isComplete: wantsComplete,
   })
   if (savedVersions.length === 0) return
 
   const currentTrack = savedVersions[savedVersions.length - 1]?.track
+  const fullyReady = wantsComplete && hasExactTwo
 
   if (currentTrack?.image_url || currentTrack?.imageUrl || currentTrack?.source_image_url) {
     await supabaseAdmin
@@ -122,18 +123,18 @@ async function saveSunoTrack(generation: any, sunoData: any[], status: string) {
       .from('studio_generations')
       .update({
         provider_audio_id: currentTrack?.id || null,
-        status: isComplete ? 'completed' : 'first_ready',
+        status: fullyReady ? 'completed' : 'first_ready',
         response_payload: { ...(generation.response_payload || {}), sunoData },
         updated_at: new Date().toISOString(),
       })
       .eq('id', generation.id),
     supabaseAdmin
       .from('studio_projects')
-      .update({ status: isComplete ? 'ready' : 'generating', updated_at: new Date().toISOString() })
+      .update({ status: fullyReady ? 'ready' : 'generating', updated_at: new Date().toISOString() })
       .eq('id', generation.project_id),
   ])
 
-  if (isComplete) {
+  if (fullyReady) {
     const { data: project } = await supabaseAdmin
       .from('studio_projects')
       .select('id, title, style, mood, description')
@@ -155,6 +156,11 @@ async function saveSunoTrack(generation: any, sunoData: any[], status: string) {
     }
 
     await notifyMusicReady(generation)
+  } else if (wantsComplete && !hasExactTwo) {
+    console.warn('[Studio IA] SUCCESS Suno sem 2 versões; mantendo generating', {
+      generationId: generation.id,
+      saved: savedVersions.length,
+    })
   }
 }
 
@@ -289,15 +295,22 @@ export async function GET(request: NextRequest) {
     if (error) throw error
     if (!generation) return NextResponse.json({ error: 'Geração não encontrada' }, { status: 404 })
 
-    const { data: existingVersionBeforePoll } = await supabaseAdmin
+    const { data: existingVersionsBeforePoll } = await supabaseAdmin
       .from('studio_versions')
       .select('id, audio_url, stream_audio_url')
       .eq('generation_id', generation.id)
-      .eq('is_current', true)
-      .limit(1)
-      .maybeSingle()
 
-    const needsPolling = generation.status !== 'completed' || !existingVersionBeforePoll?.audio_url
+    const existingVersionBeforePoll = (existingVersionsBeforePoll || []).find((version: any) => (
+      version.audio_url || version.stream_audio_url
+    )) || null
+    const sunoVersionCount = (existingVersionsBeforePoll || []).length
+    const needsTwoSunoTracks =
+      generation.provider === 'sunoapi' && sunoVersionCount < 2
+
+    const needsPolling =
+      generation.status !== 'completed' ||
+      !existingVersionBeforePoll?.audio_url ||
+      needsTwoSunoTracks
     const hasAudioBeforePoll = Boolean(existingVersionBeforePoll?.audio_url || existingVersionBeforePoll?.stream_audio_url)
 
     if (!hasAudioBeforePoll && isStudioGenerationTimedOut(generation)) {

@@ -7,7 +7,11 @@ import {
   sendStudioMusicReadyEmail,
 } from '@/lib/dcc-emails'
 import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
-import { getTrackAudioUrl, getTrackStreamAudioUrl, saveSunoGenerationTracks } from '@/lib/studio-suno-versions'
+import {
+  getTrackAudioUrl,
+  getTrackStreamAudioUrl,
+  saveSunoGenerationTracksEnsuringTwo,
+} from '@/lib/studio-suno-versions'
 import { getStudioGenerationProviderError, markExpiredVoiceFromGeneration } from '@/lib/studio-voice-expiration'
 import {
   getStudioMusicGenerationFailureMessage,
@@ -73,15 +77,6 @@ export async function POST(request: Request) {
     const callbackStatus = body?.data?.status || body?.status || null
     const providerError = getStudioGenerationProviderError(body)
     const hasFailure = Boolean(callbackStatus && (String(callbackStatus).includes('FAILED') || callbackStatus === 'SENSITIVE_WORD_ERROR'))
-    const status = hasAudio
-      ? callbackType === 'complete'
-        ? 'completed'
-        : callbackType === 'first'
-          ? 'first_ready'
-          : 'processing'
-      : hasFailure
-        ? 'failed'
-      : 'processing'
 
     if (hasFailure) {
       await markExpiredVoiceFromGeneration(generation, body)
@@ -90,6 +85,17 @@ export async function POST(request: Request) {
     const failureMessage = hasFailure
       ? getStudioMusicGenerationFailureMessage(providerError)
       : generation.error_message
+
+    // Status preliminar; complete só vira completed se tivermos exatamente 2 versões.
+    let status = hasAudio
+      ? callbackType === 'complete'
+        ? 'first_ready'
+        : callbackType === 'first'
+          ? 'first_ready'
+          : 'processing'
+      : hasFailure
+        ? 'failed'
+      : 'processing'
 
     await supabaseAdmin
       .from('studio_generations')
@@ -107,14 +113,21 @@ export async function POST(request: Request) {
     }
 
     if (first && (callbackType === 'first' || callbackType === 'complete')) {
-      const isComplete = callbackType === 'complete'
-      const savedVersions = await saveSunoGenerationTracks({ generation, tracks, isComplete })
+      const wantsComplete = callbackType === 'complete'
+      const { savedVersions, hasExactTwo } = await saveSunoGenerationTracksEnsuringTwo({
+        generation,
+        tracks,
+        isComplete: wantsComplete,
+      })
       const currentSavedVersion = savedVersions[savedVersions.length - 1]
       const currentTrack = currentSavedVersion?.track
 
       if (!currentSavedVersion) {
         return NextResponse.json({ received: true, processed: false, error: 'callback sem URL de áudio' })
       }
+
+      const fullyReady = wantsComplete && hasExactTwo
+      status = fullyReady ? 'completed' : hasFailure ? 'failed' : 'first_ready'
 
       if (currentTrack?.image_url || currentTrack?.imageUrl || currentTrack?.source_image_url) {
         await supabaseAdmin
@@ -135,20 +148,28 @@ export async function POST(request: Request) {
       }
 
       await supabaseAdmin
+        .from('studio_generations')
+        .update({
+          status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', generation.id)
+
+      await supabaseAdmin
         .from('studio_projects')
-        .update({ status: isComplete ? 'ready' : 'generating', updated_at: new Date().toISOString() })
+        .update({ status: fullyReady ? 'ready' : 'generating', updated_at: new Date().toISOString() })
         .eq('id', generation.project_id)
 
       await supabaseAdmin
         .from('studio_inspiration_requests')
         .update({
-          status: isComplete ? 'completed' : 'processing',
+          status: fullyReady ? 'completed' : 'processing',
           response_payload: body,
           updated_at: new Date().toISOString(),
         })
         .eq('provider_task_id', taskId)
 
-      if (isComplete) {
+      if (fullyReady) {
         const [{ data: project }, composer] = await Promise.all([
           supabaseAdmin
             .from('studio_projects')
@@ -181,6 +202,12 @@ export async function POST(request: Request) {
             console.error('[Studio IA] Erro ao enviar e-mail de música pronta:', emailError)
           })
         }
+      } else if (wantsComplete && !hasExactTwo) {
+        console.warn('[Studio IA] Complete Suno sem 2 versões; mantendo generating', {
+          generationId: generation.id,
+          taskId,
+          saved: savedVersions.length,
+        })
       }
     }
 
