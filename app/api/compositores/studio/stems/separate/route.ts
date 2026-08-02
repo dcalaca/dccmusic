@@ -162,7 +162,11 @@ export async function POST(request: NextRequest) {
     })
 
     try {
-      const mureka = await requestMurekaStemSeparation(prepared.publicAudioUrl)
+      const mureka = await requestMurekaStemSeparation({
+        url: prepared.publicAudioUrl,
+        uploadAudioId: prepared.uploadAudioId,
+        dataUrl: prepared.dataUrl,
+      })
       const stems = await stemsFromMurekaZip({
         composerId: composer.composerId,
         jobId: job.id,
@@ -170,7 +174,9 @@ export async function POST(request: NextRequest) {
       })
       await markJobReady(job.id, stems, 'mureka', {
         mureka: mureka.payload,
+        usedBody: mureka.usedBody,
         publicAudioUrl: prepared.publicAudioUrl,
+        uploadAudioId: prepared.uploadAudioId || null,
       })
 
       return NextResponse.json({
