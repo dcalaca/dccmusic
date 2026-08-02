@@ -121,17 +121,11 @@ export default function SiteStatsCompact({
           {aiMusicDays.length > 0 && (
             <div className="mt-5 grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
               <div className="min-w-0 overflow-hidden rounded-2xl border border-purple-900/70 bg-gradient-to-br from-purple-950/45 via-gray-950 to-black p-3 sm:p-5">
-                <div className="mb-4 flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h3 className="text-lg font-black text-white">Músicas IA entregues</h3>
-                    <p className="mt-1 text-xs text-gray-400 sm:text-sm">
-                      Últimos 14 dias
-                    </p>
-                  </div>
-                  <div className="flex w-full min-w-0 items-center justify-between gap-2 rounded-xl border border-purple-700 bg-purple-950/60 px-3 py-2 sm:w-auto sm:justify-start sm:gap-3 sm:px-4">
-                    <p className="truncate text-[10px] font-bold uppercase tracking-wide text-purple-300/70 sm:text-[11px]">Músicas criadas</p>
-                    <p className="whitespace-nowrap text-lg font-black leading-none text-purple-100 sm:text-2xl">+ de 1.000</p>
-                  </div>
+                <div className="mb-4 min-w-0">
+                  <h3 className="text-lg font-black text-white">Músicas IA entregues</h3>
+                  <p className="mt-1 text-xs text-gray-400 sm:text-sm">
+                    Últimos 14 dias
+                  </p>
                 </div>
 
                 <div className="flex h-36 min-w-0 items-end gap-1 border-b border-gray-800 px-0.5 pb-2 sm:h-44 sm:gap-2 sm:px-1">
