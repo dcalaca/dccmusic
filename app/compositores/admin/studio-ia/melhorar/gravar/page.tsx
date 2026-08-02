@@ -160,7 +160,12 @@ export default function RecordMusicPage() {
       const data = await readApiResponse(response)
       if (!response.ok) throw new Error(data.error || 'Não consegui entender o áudio.')
       setLyric(data.text || '')
-      setMessage('Letra transcrita. Revise e corrija se precisar.')
+      window.dispatchEvent(new Event('studioBalanceChange'))
+      const charged = Number(data.creditsCharged) || 1
+      setMessage(
+        data.message ||
+          `Letra transcrita. Foram debitados ${charged} crédito. Revise e corrija se precisar.`
+      )
     } catch (err: any) {
       setError(err.message || 'Erro ao transcrever áudio.')
     } finally {

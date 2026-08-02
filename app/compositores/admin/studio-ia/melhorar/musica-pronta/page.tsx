@@ -125,7 +125,12 @@ export default function ImproveReadyMusicPage() {
       const data = await readApiResponse(response)
       if (!response.ok) throw new Error(data.error || 'Não consegui entender o áudio.')
       setLyric(data.text || '')
-      setMessage('Letra transcrita do áudio. Revise e corrija se precisar antes de melhorar.')
+      window.dispatchEvent(new Event('studioBalanceChange'))
+      const charged = Number(data.creditsCharged) || 1
+      setMessage(
+        data.message ||
+          `Letra transcrita. Foram debitados ${charged} crédito. Revise e corrija se precisar antes de melhorar.`
+      )
     } catch (err: any) {
       setError(err.message || 'Erro ao transcrever áudio.')
       setMessage('')
