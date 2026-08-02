@@ -12,43 +12,27 @@ export function createMockProject(projectId?: string): StudioProject {
   }
 }
 
+/** Preview visual do DAW até a separação real carregar. */
 export function createMockStems(): Stem[] {
-  return [
-    {
-      id: 'stem-vocal',
-      name: 'Vocal',
-      type: 'vocal',
-      volume: 80,
-      muted: false,
-      solo: false,
-      url: null,
-    },
-    {
-      id: 'stem-drums',
-      name: 'Drums',
-      type: 'drums',
-      volume: 75,
-      muted: false,
-      solo: false,
-      url: null,
-    },
-    {
-      id: 'stem-bass',
-      name: 'Bass',
-      type: 'bass',
-      volume: 70,
-      muted: false,
-      solo: false,
-      url: null,
-    },
-    {
-      id: 'stem-others',
-      name: 'Others',
-      type: 'others',
-      volume: 70,
-      muted: false,
-      solo: false,
-      url: null,
-    },
-  ]
+  const names = [
+    ['vocal', 'Vocals'],
+    ['backing_vocals', 'Backing Vocals'],
+    ['drums', 'Drums'],
+    ['bass', 'Bass'],
+    ['guitar', 'Guitar'],
+    ['keyboard', 'Keyboard'],
+    ['strings', 'Strings'],
+    ['others', 'Others'],
+  ] as const
+
+  return names.map(([type, name], index) => ({
+    id: `stem-${type}`,
+    name,
+    type,
+    volume: type === 'vocal' ? 80 : 70,
+    muted: false,
+    solo: false,
+    url: null,
+    offsetSec: index % 3 === 0 ? 0 : index % 3 === 1 ? 2 : 4,
+  }))
 }

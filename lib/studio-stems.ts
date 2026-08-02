@@ -20,7 +20,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 
 const execFileAsync = promisify(execFile)
 
-export type StemType = 'vocal' | 'drums' | 'bass' | 'others'
+export type StemType = string
 
 export type StoredStem = {
   id: string
@@ -55,17 +55,19 @@ function getMurekaApiKey() {
 
 function classifyStemName(rawName: string): StemType {
   const name = rawName.toLowerCase()
-  if (/(vocal|voice|sing|lead vocal|backing vocal)/.test(name)) return 'vocal'
-  if (/(drum|perc|hi-?hat|cymbal|808|kick|snare)/.test(name)) return 'drums'
+  if (/backing.?vocal|harmony/.test(name)) return 'backing_vocals'
+  if (/(lead.?vocal|vocal|voice|sing)/.test(name)) return 'vocal'
+  if (/(drum|kick|snare|hi-?hat|cymbal|808)/.test(name)) return 'drums'
+  if (/percussion|perc\b/.test(name)) return 'percussion'
   if (/(bass|contrabaixo)/.test(name)) return 'bass'
+  if (/guitar|guitarr/.test(name)) return 'guitar'
+  if (/keyboard|piano|keys|rhodes/.test(name)) return 'keyboard'
+  if (/string|violin|cello|viola/.test(name)) return 'strings'
+  if (/brass|trumpet|trombone|horn/.test(name)) return 'brass'
+  if (/woodwind|sax|flute|clarinet|oboe/.test(name)) return 'woodwinds'
+  if (/synth|pad|lead/.test(name)) return 'synth'
+  if (/\bfx\b|effect/.test(name)) return 'fx'
   return 'others'
-}
-
-function stemDisplayName(type: StemType) {
-  if (type === 'vocal') return 'Vocal'
-  if (type === 'drums') return 'Drums'
-  if (type === 'bass') return 'Bass'
-  return 'Others'
 }
 
 async function downloadBuffer(url: string) {
@@ -196,82 +198,65 @@ export async function chargeStemExport(input: {
   return transaction
 }
 
+function prettyStemName(rawName: string) {
+  const cleaned = String(rawName || '')
+    .replace(/\.[a-z0-9]{2,5}$/i, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!cleaned) return 'Stem'
+  return cleaned.replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
 async function backupStemFromUrl(input: {
   composerId: string
   jobId: string
+  name: string
   type: StemType
   sourceUrl: string
 }) {
   const downloaded = await downloadBuffer(input.sourceUrl)
+  const safeSlug = input.type.replace(/[^a-z0-9]+/gi, '-').toLowerCase() || 'stem'
   const uploaded = await uploadStudioAudioBuffer({
     composerId: input.composerId,
     folder: 'stems',
-    fileName: `${input.jobId}-${input.type}-${randomUUID()}.mp3`,
+    fileName: `${input.jobId}-${safeSlug}-${randomUUID()}.mp3`,
     buffer: downloaded.buffer,
     contentType: downloaded.contentType.includes('wav') ? 'audio/wav' : 'audio/mpeg',
   })
 
   return {
-    id: `${input.type}-${randomUUID().slice(0, 8)}`,
+    id: `${safeSlug}-${randomUUID().slice(0, 8)}`,
     type: input.type,
-    name: stemDisplayName(input.type),
+    name: prettyStemName(input.name),
     path: uploaded.path,
     storage_provider: uploaded.provider,
     source_url: input.sourceUrl,
-    volume: input.type === 'vocal' ? 80 : 70,
+    volume: /vocal/i.test(input.type) ? 80 : 70,
   } satisfies StoredStem
 }
 
-/** Agrupa URLs do provedor nas 4 faixas do MVP (Vocal/Drums/Bass/Others). */
+/** Persiste cada stem retornado pelo provedor (não colapsa em 4 faixas). */
 export async function persistMappedStems(input: {
   composerId: string
   jobId: string
   entries: Array<{ name: string; url: string }>
 }) {
-  const buckets: Record<StemType, string[]> = {
-    vocal: [],
-    drums: [],
-    bass: [],
-    others: [],
-  }
+  const stems: StoredStem[] = []
 
   for (const entry of input.entries) {
     if (!entry.url) continue
-    buckets[classifyStemName(entry.name)].push(entry.url)
-  }
-
-  // Garante as 4 faixas: se um bucket ficou vazio, usa a primeira URL disponível como placeholder silencioso? 
-  // Melhor: só persiste buckets com URL; UI completa com stubs sem áudio se faltar.
-  const types: StemType[] = ['vocal', 'drums', 'bass', 'others']
-  const stems: StoredStem[] = []
-
-  for (const type of types) {
-    const url = buckets[type][0] || null
-    if (!url) {
-      stems.push({
-        id: `${type}-empty`,
-        type,
-        name: stemDisplayName(type),
-        path: '',
-        storage_provider: 'r2',
-        source_url: null,
-        volume: type === 'vocal' ? 80 : 70,
-      })
-      continue
-    }
+    const type = classifyStemName(entry.name)
     stems.push(await backupStemFromUrl({
       composerId: input.composerId,
       jobId: input.jobId,
+      name: entry.name,
       type,
-      sourceUrl: url,
+      sourceUrl: entry.url,
     }))
   }
 
-  // Se Others tem várias fontes e a primeira já foi salva, ok para MVP.
-  // Se vocal/drums/bass vazios mas others tem tudo, ainda mostramos faixas vazias.
-
-  const playable = stems.filter((stem) => stem.path)
-  if (playable.length === 0) {
+  if (stems.length === 0) {
     throw new Error('Nenhum stem válido retornado pelo provedor.')
   }
 
@@ -543,39 +528,16 @@ export async function stemsFromMurekaZip(input: {
     throw new Error('ZIP da Mureka sem faixas de áudio.')
   }
 
-  // Reusa classificação; para paths locais já no bucket, montamos StoredStem direto.
-  const buckets: Record<StemType, typeof uploadedEntries> = {
-    vocal: [],
-    drums: [],
-    bass: [],
-    others: [],
-  }
-  for (const entry of uploadedEntries) {
-    buckets[classifyStemName(entry.name)].push(entry)
-  }
-
-  const types: StemType[] = ['vocal', 'drums', 'bass', 'others']
-  return types.map((type) => {
-    const hit = buckets[type][0]
-    if (!hit) {
-      return {
-        id: `${type}-empty`,
-        type,
-        name: stemDisplayName(type),
-        path: '',
-        storage_provider: 'r2' as const,
-        source_url: null,
-        volume: type === 'vocal' ? 80 : 70,
-      } satisfies StoredStem
-    }
+  return uploadedEntries.map((entry) => {
+    const type = classifyStemName(entry.name)
     return {
       id: `${type}-${randomUUID().slice(0, 8)}`,
       type,
-      name: stemDisplayName(type),
-      path: hit.path,
-      storage_provider: hit.provider,
+      name: prettyStemName(entry.name),
+      path: entry.path,
+      storage_provider: entry.provider,
       source_url: input.zipUrl,
-      volume: type === 'vocal' ? 80 : 70,
+      volume: /vocal/i.test(type) ? 80 : 70,
     } satisfies StoredStem
   })
 }

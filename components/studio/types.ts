@@ -1,4 +1,5 @@
-export type StemType = 'vocal' | 'drums' | 'bass' | 'others'
+/** Categoria livre (vocal, drums, guitar, keyboard, etc.) */
+export type StemType = string
 
 export type Stem = {
   id: string
@@ -9,6 +10,8 @@ export type Stem = {
   solo: boolean
   /** URL do áudio do stem — null até a API real existir */
   url: string | null
+  /** Offset visual na timeline (segundos) — edição futura */
+  offsetSec?: number
 }
 
 export type StudioProject = {
