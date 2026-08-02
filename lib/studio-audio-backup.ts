@@ -4,7 +4,8 @@ import { randomUUID } from 'crypto'
 import { supabaseAdmin } from './supabase'
 
 const STUDIO_AUDIO_BUCKET = 'studio-assets'
-const MAX_AUDIO_BYTES = 80 * 1024 * 1024
+export const MAX_STUDIO_INPUT_AUDIO_BYTES = 80 * 1024 * 1024
+const MAX_AUDIO_BYTES = MAX_STUDIO_INPUT_AUDIO_BYTES
 const R2_BUCKET = process.env.CLOUDFLARE_R2_BUCKET || process.env.R2_BUCKET_NAME || 'dccmusic-studio-assets'
 const R2_PUBLIC_URL = (process.env.CLOUDFLARE_R2_PUBLIC_URL || process.env.R2_PUBLIC_URL || '').replace(/\/$/, '')
 
@@ -80,23 +81,85 @@ function extensionFromUploadedAudio(contentType: string, fileName?: string | nul
   return match?.[1]?.toLowerCase() || 'mp3'
 }
 
+function validateStudioInputAudioMetadata(contentType: string, sizeBytes: number) {
+  if (!contentType.startsWith('audio/')) {
+    throw new Error('Envie um arquivo de áudio.')
+  }
+  if (!Number.isFinite(sizeBytes) || sizeBytes <= 0) {
+    throw new Error('Arquivo de áudio inválido.')
+  }
+  if (sizeBytes > MAX_AUDIO_BYTES) {
+    throw new Error('O áudio precisa ter no máximo 80 MB.')
+  }
+}
+
+/** Upload direto ao R2 (evita limite ~4.5MB da Vercel no body da API). */
+export async function createStudioInputDirectUpload(input: {
+  composerId: string
+  contentType: string
+  sizeBytes: number
+  kind?: 'enhance-source' | 'transcribe'
+  fileName?: string | null
+}) {
+  validateStudioInputAudioMetadata(input.contentType, input.sizeBytes)
+
+  const r2 = getR2Client()
+  if (!r2) {
+    throw new Error('Upload direto de áudio não configurado no servidor.')
+  }
+
+  const extension = extensionFromUploadedAudio(input.contentType, input.fileName)
+  const kind = input.kind || 'audio'
+  const path = `${input.composerId}/uploads/${studioMonthKey()}/${randomUUID()}-${kind}.${extension}`
+
+  const uploadUrl = await getSignedUrl(
+    r2,
+    new PutObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: path,
+      ContentType: input.contentType,
+    }),
+    { expiresIn: 60 * 10 }
+  )
+
+  return {
+    uploadUrl,
+    path,
+    provider: 'r2' as const,
+    contentType: input.contentType,
+    sizeBytes: input.sizeBytes,
+  }
+}
+
+export function validateStudioInputUploadedAsset(input: {
+  composerId: string
+  path: string
+  provider: string
+  contentType: string
+  sizeBytes: number
+}) {
+  validateStudioInputAudioMetadata(input.contentType, input.sizeBytes)
+
+  if (input.provider !== 'r2') {
+    throw new Error('Provedor de upload inválido.')
+  }
+
+  const expectedPrefix = `${input.composerId}/uploads/`
+  if (!input.path || !input.path.startsWith(expectedPrefix)) {
+    throw new Error('Caminho do áudio inválido.')
+  }
+}
+
 export async function uploadStudioInputAudio(input: {
   composerId: string
   file: File
   kind?: 'enhance-source'
 }) {
   const contentType = input.file.type || 'audio/mpeg'
-  if (!contentType.startsWith('audio/')) {
-    throw new Error('Envie um arquivo de áudio.')
-  }
-  if (input.file.size > MAX_AUDIO_BYTES) {
-    throw new Error('O áudio precisa ter no máximo 80 MB.')
-  }
+  validateStudioInputAudioMetadata(contentType, input.file.size)
 
   const arrayBuffer = await input.file.arrayBuffer()
-  if (arrayBuffer.byteLength > MAX_AUDIO_BYTES) {
-    throw new Error('O áudio precisa ter no máximo 80 MB.')
-  }
+  validateStudioInputAudioMetadata(contentType, arrayBuffer.byteLength)
 
   const extension = extensionFromUploadedAudio(contentType, input.file.name)
   const path = `${input.composerId}/uploads/${studioMonthKey()}/${randomUUID()}-${input.kind || 'audio'}.${extension}`

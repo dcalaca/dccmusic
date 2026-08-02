@@ -43,6 +43,45 @@ function getAudioDurationSeconds(file: File) {
   })
 }
 
+async function uploadAudioDirectToStorage(token: string, file: File, kind: 'enhance-source' | 'transcribe') {
+  const prepareResponse = await fetch('/api/compositores/studio/input-upload-url', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      contentType: file.type || 'audio/mpeg',
+      sizeBytes: file.size,
+      fileName: file.name,
+      kind,
+    }),
+  })
+  const prepareData = await readApiResponse(prepareResponse)
+  if (!prepareResponse.ok) {
+    throw new Error(prepareData.error || 'Não foi possível preparar o envio do áudio.')
+  }
+
+  const upload = prepareData.upload
+  const putResponse = await fetch(upload.uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': upload.contentType || file.type || 'audio/mpeg',
+    },
+    body: file,
+  })
+  if (!putResponse.ok) {
+    throw new Error('Falha ao enviar o áudio. Tente novamente.')
+  }
+
+  return {
+    audioPath: upload.path as string,
+    audioProvider: upload.provider as string,
+    audioContentType: upload.contentType as string,
+    audioSizeBytes: Number(upload.sizeBytes) || file.size,
+  }
+}
+
 export default function ImproveReadyMusicPage() {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
@@ -72,14 +111,16 @@ export default function ImproveReadyMusicPage() {
 
     setTranscribing(true)
     setError('')
-    setMessage('')
+    setMessage('Enviando áudio e entendendo a letra...')
     try {
-      const formData = new FormData()
-      formData.set('audio', audioFile)
+      const uploaded = await uploadAudioDirectToStorage(token, audioFile, 'transcribe')
       const response = await fetch('/api/compositores/studio/transcribe', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(uploaded),
       })
       const data = await readApiResponse(response)
       if (!response.ok) throw new Error(data.error || 'Não consegui entender o áudio.')
@@ -87,6 +128,7 @@ export default function ImproveReadyMusicPage() {
       setMessage('Letra transcrita do áudio. Revise e corrija se precisar antes de melhorar.')
     } catch (err: any) {
       setError(err.message || 'Erro ao transcrever áudio.')
+      setMessage('')
     } finally {
       setTranscribing(false)
     }
@@ -98,16 +140,14 @@ export default function ImproveReadyMusicPage() {
     if (!token) return
 
     const form = event.currentTarget
-    const formData = new FormData(form)
-    formData.set('improvement', selectedImprovement)
-    formData.set('lyric', lyric.trim())
+    const title = String(new FormData(form).get('title') || '').trim()
+    const style = String(new FormData(form).get('style') || '').trim()
 
-    const file = formData.get('audio')
-    if (!(file instanceof File) || file.size <= 0) {
+    if (!audioFile || audioFile.size <= 0) {
       setError('Escolha o áudio da música que deseja melhorar.')
       return
     }
-    const duration = await getAudioDurationSeconds(file)
+    const duration = await getAudioDurationSeconds(audioFile)
     if (duration && duration > MAX_AUDIO_DURATION_SECONDS) {
       setError('Esse áudio passou de 4 minutos e 30 segundos. Envie uma versão mais curta para a IA trabalhar melhor.')
       return
@@ -117,12 +157,22 @@ export default function ImproveReadyMusicPage() {
     setError('')
     setMessage(lyric.trim()
       ? 'Enviando música...'
-      : 'Entendendo a letra do áudio e iniciando a melhoria...')
+      : 'Enviando áudio, entendendo a letra e iniciando a melhoria...')
     try {
+      const uploaded = await uploadAudioDirectToStorage(token, audioFile, 'enhance-source')
       const response = await fetch('/api/compositores/studio/enhance', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title,
+          style,
+          improvement: selectedImprovement,
+          lyric: lyric.trim(),
+          ...uploaded,
+        }),
       })
       const data = await readApiResponse(response)
       if (!response.ok) throw new Error(data.error || 'Erro ao melhorar música')
@@ -138,6 +188,7 @@ export default function ImproveReadyMusicPage() {
       }, 900)
     } catch (err: any) {
       setError(err.message || 'Erro ao melhorar música')
+      setMessage('')
     } finally {
       setSubmitting(false)
     }
@@ -194,7 +245,9 @@ export default function ImproveReadyMusicPage() {
                 onChange={(event) => setAudioFile(event.target.files?.[0] || null)}
                 className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white"
               />
-              <span className="mt-2 block text-xs text-purple-100/80">Use áudio de até 4 minutos e 30 segundos. Pode ser demo, guia, voz e violão ou gravação do celular.</span>
+              <span className="mt-2 block text-xs text-purple-100/80">
+                Use áudio de até 4 minutos e 30 segundos (máx. 80 MB). Pode ser demo, guia, voz e violão ou gravação do celular.
+              </span>
             </label>
 
             <div className="mt-5">

@@ -11,9 +11,14 @@ import {
   STUDIO_MUSIC_CREDITS,
 } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
-import { createStudioAudioSignedUrl, uploadStudioInputAudio } from '@/lib/studio-audio-backup'
+import {
+  createStudioAudioSignedUrl,
+  downloadStudioAudioBuffer,
+  uploadStudioInputAudio,
+  validateStudioInputUploadedAsset,
+} from '@/lib/studio-audio-backup'
 import { formatMusicTitle } from '@/lib/normalize'
-import { transcribeStudioAudioFile } from '@/lib/studio-transcribe'
+import { transcribeStudioAudioBuffer, transcribeStudioAudioFile } from '@/lib/studio-transcribe'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -30,14 +35,14 @@ const improvementPrompts: Record<string, string> = {
   instruments: 'Melhore os instrumentos e o arranjo, deixando a produção mais cheia e profissional, sem mudar a essência da música.',
 }
 
-function getImprovementPrompt(value: FormDataEntryValue | null) {
+function getImprovementPrompt(value: any) {
   const key = String(value || 'similar')
   return improvementPrompts[key] || improvementPrompts.similar
 }
 
-function getStyle(formData: FormData) {
-  const style = String(formData.get('style') || '').trim()
-  const improvement = getImprovementPrompt(formData.get('improvement'))
+function getStyle(input: { style?: string | null; improvement?: string | null }) {
+  const style = String(input.style || '').trim()
+  const improvement = getImprovementPrompt(input.improvement)
   return [
     style || 'produção musical brasileira profissional',
     'melhor qualidade de áudio',
@@ -81,34 +86,85 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.SUNOAPI_KEY?.trim()
     if (!apiKey) return NextResponse.json({ error: 'Melhoria de música não configurada no servidor.' }, { status: 500 })
 
-    const formData = await request.formData()
-    const file = formData.get('audio')
-    if (!(file instanceof File) || file.size <= 0) {
+    const contentTypeHeader = request.headers.get('content-type') || ''
+    let rawTitle = 'Música melhorada'
+    let style = ''
+    let improvement = 'similar'
+    let lyric = ''
+    let uploaded: {
+      path: string
+      provider: 'r2' | 'supabase'
+      contentType: string
+      sizeBytes: number
+    } | null = null
+    let sourceFile: File | null = null
+
+    if (contentTypeHeader.includes('application/json')) {
+      const body = await request.json()
+      rawTitle = String(body?.title || '').trim().slice(0, MAX_TITLE_LENGTH) || 'Música melhorada'
+      style = String(body?.style || '').trim()
+      improvement = String(body?.improvement || 'similar')
+      lyric = String(body?.lyric || '').trim()
+
+      validateStudioInputUploadedAsset({
+        composerId: composer.composerId,
+        path: String(body?.audioPath || ''),
+        provider: String(body?.audioProvider || 'r2'),
+        contentType: String(body?.audioContentType || 'audio/mpeg'),
+        sizeBytes: Number(body?.audioSizeBytes) || 0,
+      })
+
+      uploaded = {
+        path: String(body.audioPath),
+        provider: 'r2',
+        contentType: String(body.audioContentType || 'audio/mpeg'),
+        sizeBytes: Number(body.audioSizeBytes) || 0,
+      }
+    } else {
+      const formData = await request.formData()
+      const file = formData.get('audio')
+      if (!(file instanceof File) || file.size <= 0) {
+        return NextResponse.json({ error: 'Envie o áudio da música que deseja melhorar.' }, { status: 400 })
+      }
+      sourceFile = file
+      rawTitle = String(formData.get('title') || '').trim().slice(0, MAX_TITLE_LENGTH) || 'Música melhorada'
+      style = String(formData.get('style') || '').trim()
+      improvement = String(formData.get('improvement') || 'similar')
+      lyric = String(formData.get('lyric') || '').trim()
+      uploaded = await uploadStudioInputAudio({
+        composerId: composer.composerId,
+        file,
+        kind: 'enhance-source',
+      })
+    }
+
+    if (!uploaded) {
       return NextResponse.json({ error: 'Envie o áudio da música que deseja melhorar.' }, { status: 400 })
     }
 
-    const rawTitle = String(formData.get('title') || '').trim().slice(0, MAX_TITLE_LENGTH) || 'Música melhorada'
     const title = formatMusicTitle(rawTitle)
-    let lyric = String(formData.get('lyric') || '').trim()
     let lyricSource: 'manual' | 'whisper' | 'none' = lyric ? 'manual' : 'none'
 
-    // Se o usuário não colou a letra (voz e violão, preguiça de digitar), transcreve o áudio.
     if (!lyric) {
       try {
-        lyric = await transcribeStudioAudioFile(file, file.name || 'enhance-source.mp3')
+        if (sourceFile) {
+          lyric = await transcribeStudioAudioFile(sourceFile, sourceFile.name || 'enhance-source.mp3')
+        } else {
+          const downloaded = await downloadStudioAudioBuffer(uploaded.path, uploaded.provider)
+          if (!downloaded) throw new Error('Áudio indisponível para transcrição.')
+          lyric = await transcribeStudioAudioBuffer({
+            buffer: downloaded.buffer,
+            fileName: uploaded.path.split('/').pop() || 'enhance-source.mp3',
+            contentType: downloaded.contentType || uploaded.contentType,
+          })
+        }
         lyricSource = 'whisper'
       } catch (transcriptionError: any) {
         console.error('[Studio IA] Transcrição automática no enhance falhou:', transcriptionError)
-        // Segue sem letra (modo customMode=false), mas avisa no retorno.
       }
     }
 
     const slug = await createUniqueProjectSlug(composer.composerId, title)
-    const uploaded = await uploadStudioInputAudio({
-      composerId: composer.composerId,
-      file,
-      kind: 'enhance-source',
-    })
     const uploadUrl = await createStudioAudioSignedUrl(uploaded.path, uploaded.provider)
     if (!uploadUrl) throw new Error('Não foi possível preparar o áudio enviado.')
 
@@ -118,13 +174,13 @@ export async function POST(request: NextRequest) {
         composer_id: composer.composerId,
         title,
         slug,
-        style: String(formData.get('style') || '').trim() || null,
+        style: style || null,
         mood: 'Melhoria de áudio',
         status: 'generating',
         description: [
           'Projeto criado pela função Melhorar minha música.',
           'A IA deve tentar manter melodia, letra e essência do áudio original.',
-          getImprovementPrompt(formData.get('improvement')),
+          getImprovementPrompt(improvement),
           lyricSource === 'whisper' ? 'Letra obtida por transcrição automática do áudio enviado.' : null,
         ].filter(Boolean).join('\n'),
       })
@@ -145,13 +201,13 @@ export async function POST(request: NextRequest) {
       if (lyricError) throw lyricError
     }
 
-    const improvementPrompt = getImprovementPrompt(formData.get('improvement'))
+    const improvementPrompt = getImprovementPrompt(improvement)
     const payload: any = lyric ? {
       uploadUrl,
       customMode: true,
       instrumental: false,
       prompt: lyric.slice(0, 5000),
-      style: getStyle(formData),
+      style: getStyle({ style, improvement }),
       title,
       model: 'V5_5',
       callBackUrl: getStudioCallbackUrl('/api/studio/suno/callback'),
