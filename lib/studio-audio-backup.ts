@@ -204,6 +204,50 @@ async function uploadAudio(input: {
   return { path, provider: 'supabase' }
 }
 
+function contentTypeFromAudioPath(path: string, fallback = 'audio/mpeg') {
+  const lower = path.toLowerCase()
+  if (lower.endsWith('.wav')) return 'audio/wav'
+  if (lower.endsWith('.ogg')) return 'audio/ogg'
+  if (lower.endsWith('.m4a') || lower.endsWith('.mp4')) return 'audio/mp4'
+  if (lower.endsWith('.webm')) return 'audio/webm'
+  if (lower.endsWith('.mp3')) return 'audio/mpeg'
+  return fallback
+}
+
+/** Baixa áudio do storage interno (R2/Supabase) no servidor — evita CORS no browser. */
+export async function downloadStudioAudioBuffer(path?: string | null, provider?: string | null) {
+  if (!path) return null
+  const storageProvider = provider || 'supabase'
+
+  if (storageProvider === 'r2') {
+    const r2 = getR2Client()
+    if (!r2) throw new Error('R2 não configurado.')
+
+    const result = await r2.send(
+      new GetObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: path,
+      })
+    )
+    if (!result.Body) throw new Error('Áudio vazio no R2.')
+    const bytes = await result.Body.transformToByteArray()
+    return {
+      buffer: Buffer.from(bytes),
+      contentType: result.ContentType || contentTypeFromAudioPath(path),
+    }
+  }
+
+  const { data, error } = await supabaseAdmin.storage.from(STUDIO_AUDIO_BUCKET).download(path)
+  if (error || !data) {
+    throw new Error(error?.message || 'Falha ao baixar áudio do Supabase.')
+  }
+  const arrayBuffer = await data.arrayBuffer()
+  return {
+    buffer: Buffer.from(arrayBuffer),
+    contentType: data.type || contentTypeFromAudioPath(path),
+  }
+}
+
 export async function createStudioAudioSignedUrl(path?: string | null, provider?: string | null) {
   if (!path) return null
   const storageProvider = provider || 'supabase'

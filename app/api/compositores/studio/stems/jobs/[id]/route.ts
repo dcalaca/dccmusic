@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
-import { resolveStemSignedUrls } from '@/lib/studio-stems'
 import { createStudioAudioSignedUrl } from '@/lib/studio-audio-backup'
 import { supabaseAdmin } from '@/lib/supabase'
 import {
@@ -28,7 +27,13 @@ export async function GET(request: NextRequest, context: RouteContext) {
     if (error) throw error
     if (!job) return NextResponse.json({ error: 'Job não encontrado.' }, { status: 404 })
 
-    const stems = await resolveStemSignedUrls(job.stems || [])
+    // URL same-origin (proxy) — fetch direto no R2 falha por CORS no browser
+    const stems = (Array.isArray(job.stems) ? job.stems : []).map((stem: any) => ({
+      ...stem,
+      url: stem?.path
+        ? `/api/compositores/studio/stems/file?jobId=${encodeURIComponent(job.id)}&stemId=${encodeURIComponent(stem.id)}`
+        : null,
+    }))
     const sourceAudioUrl = job.source_audio_path
       ? await createStudioAudioSignedUrl(job.source_audio_path, job.source_audio_storage_provider)
       : job.source_audio_url
@@ -48,7 +53,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
         createdAt: job.created_at,
         updatedAt: job.updated_at,
       },
-      stems: stems.map((stem) => ({
+      stems: stems.map((stem: any) => ({
         id: stem.id,
         type: stem.type,
         name: stem.name,

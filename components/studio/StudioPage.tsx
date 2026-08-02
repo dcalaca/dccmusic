@@ -62,7 +62,7 @@ function StudioShell({
   }
 
   return (
-    <PlaybackProvider>
+    <PlaybackProvider authToken={token}>
     <div className="-mx-0 flex h-[calc(100dvh-4.5rem)] min-h-[520px] flex-col overflow-hidden bg-[#0b0d10] text-white md:h-[calc(100dvh-5rem)]">
       <header className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-[#0b0d10] px-3 py-2.5 sm:px-4">
         <div className="min-w-0 flex-1">
@@ -240,6 +240,11 @@ function StudioApp({ projectId }: { projectId?: string }) {
         const result = await hydrateJob(activeJobId, token)
         if (cancelled) return
         if (result.ready) {
+          try {
+            sessionStorage.setItem('studio_mixer_job_id', activeJobId)
+          } catch {
+            // ignore
+          }
           setPhase('mixer')
           return
         }
@@ -262,6 +267,42 @@ function StudioApp({ projectId }: { projectId?: string }) {
       cancelled = true
     }
   }, [token, activeJobId, phase, hydrateJob])
+
+  // Reabre último job pronto (ex.: após atualizar a página / deploy do proxy de áudio)
+  useEffect(() => {
+    if (!token || phase !== 'picker' || activeJobId) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const saved = sessionStorage.getItem('studio_mixer_job_id')
+        if (!saved) return
+        setStatusMessage('Reabrindo sua última separação...')
+        setActiveJobId(saved)
+        setPhase('processing')
+        const result = await hydrateJob(saved, token)
+        if (cancelled) return
+        if (result.ready) {
+          setPhase('mixer')
+        } else {
+          setPhase('picker')
+          setActiveJobId(null)
+        }
+      } catch {
+        if (!cancelled) {
+          try {
+            sessionStorage.removeItem('studio_mixer_job_id')
+          } catch {
+            // ignore
+          }
+          setPhase('picker')
+          setActiveJobId(null)
+        }
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [token, phase, activeJobId, hydrateJob])
 
   // Se já houver job na URL futura — por enquanto projectId só pré-seleciona título mock até separar
   useEffect(() => {
@@ -331,6 +372,11 @@ function StudioApp({ projectId }: { projectId?: string }) {
     <StudioShell
       token={token}
       onReset={() => {
+        try {
+          sessionStorage.removeItem('studio_mixer_job_id')
+        } catch {
+          // ignore
+        }
         setPhase('picker')
         setActiveJobId(null)
         setError('')

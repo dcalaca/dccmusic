@@ -23,6 +23,8 @@ export function useStemEngine(input: {
   stems: Stem[]
   masterVolume: number
   trim: AudioTrim
+  /** Token do compositor — necessário para baixar stems via proxy same-origin */
+  authToken?: string | null
   onDuration?: (duration: number) => void
 }) {
   const contextRef = useRef<AudioContext | null>(null)
@@ -119,7 +121,11 @@ export function useStemEngine(input: {
     await Promise.all(
       playable.map(async (stem) => {
         try {
-          const response = await fetch(stem.url!)
+          const headers: HeadersInit = {}
+          if (input.authToken && stem.url?.startsWith('/')) {
+            headers.Authorization = `Bearer ${input.authToken}`
+          }
+          const response = await fetch(stem.url!, { headers, cache: 'no-store' })
           if (!response.ok) throw new Error(`HTTP ${response.status}`)
           const arrayBuffer = await response.arrayBuffer()
           const audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0))
@@ -148,7 +154,7 @@ export function useStemEngine(input: {
       error: nextBuffers.size === 0 ? 'Não foi possível carregar os stems para tocar.' : null,
     }))
     if (maxDuration > 0) input.onDuration?.(maxDuration)
-  }, [ensureContext, input])
+  }, [ensureContext, input.authToken, input.stems, input.onDuration])
 
   useEffect(() => {
     loadBuffers()
@@ -157,7 +163,7 @@ export function useStemEngine(input: {
       stopSources()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input.stems.map((stem) => `${stem.id}:${stem.url || ''}`).join('|')])
+  }, [input.authToken, input.stems.map((stem) => `${stem.id}:${stem.url || ''}`).join('|')])
 
   const tick = useCallback(() => {
     const ctx = contextRef.current

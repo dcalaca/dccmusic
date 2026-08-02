@@ -524,6 +524,50 @@ export async function requestMurekaStemSeparation(input: {
   throw new Error(lastError)
 }
 
+async function convertAudioBufferToMp3(buffer: Buffer, sourceExt: string) {
+  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dcc-stem-'))
+  const inPath = path.join(tmpDir, `in.${sourceExt.replace(/^\./, '') || 'wav'}`)
+  const outPath = path.join(tmpDir, 'out.mp3')
+  try {
+    await fs.writeFile(inPath, buffer)
+    const ffmpegPath = resolveFfmpegPath()
+    await execFileAsync(
+      ffmpegPath,
+      ['-i', inPath, '-vn', '-c:a', 'libmp3lame', '-q:a', '3', '-y', outPath],
+      { maxBuffer: 20 * 1024 * 1024 }
+    )
+    return await fs.readFile(outPath)
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => undefined)
+  }
+}
+
+/** Converte WAV (comum na Mureka) para MP3 leve — necessário para tocar no browser via proxy Vercel. */
+export async function ensureStemMp3Buffer(input: {
+  buffer: Buffer
+  fileName: string
+  contentType?: string | null
+}) {
+  const lower = input.fileName.toLowerCase()
+  const isWav =
+    lower.endsWith('.wav') ||
+    Boolean(input.contentType && /wav/i.test(input.contentType))
+  if (!isWav) {
+    return {
+      buffer: input.buffer,
+      fileName: input.fileName,
+      contentType: input.contentType || 'audio/mpeg',
+    }
+  }
+
+  const mp3 = await convertAudioBufferToMp3(input.buffer, 'wav')
+  return {
+    buffer: mp3,
+    fileName: input.fileName.replace(/\.wav$/i, '.mp3'),
+    contentType: 'audio/mpeg',
+  }
+}
+
 export async function stemsFromMurekaZip(input: {
   composerId: string
   jobId: string
@@ -536,16 +580,21 @@ export async function stemsFromMurekaZip(input: {
   for (const [fileName, file] of Object.entries(zip.files)) {
     if (file.dir) continue
     if (!/\.(mp3|wav|m4a|ogg)$/i.test(fileName)) continue
-    const buffer = Buffer.from(await file.async('nodebuffer'))
+    const raw = Buffer.from(await file.async('nodebuffer'))
     const base = path.basename(fileName)
+    const prepared = await ensureStemMp3Buffer({
+      buffer: raw,
+      fileName: base,
+      contentType: base.toLowerCase().endsWith('.wav') ? 'audio/wav' : 'audio/mpeg',
+    })
     const uploaded = await uploadStudioAudioBuffer({
       composerId: input.composerId,
       folder: 'stems',
-      fileName: `${input.jobId}-mureka-${randomUUID()}-${base}`,
-      buffer,
-      contentType: base.toLowerCase().endsWith('.wav') ? 'audio/wav' : 'audio/mpeg',
+      fileName: `${input.jobId}-mureka-${randomUUID()}-${prepared.fileName}`,
+      buffer: prepared.buffer,
+      contentType: prepared.contentType,
     })
-    uploadedEntries.push({ name: base, path: uploaded.path, provider: uploaded.provider })
+    uploadedEntries.push({ name: prepared.fileName, path: uploaded.path, provider: uploaded.provider })
   }
 
   if (uploadedEntries.length === 0) {
