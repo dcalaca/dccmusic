@@ -127,7 +127,7 @@ export default function StudioSourcePicker({
         </p>
         <h1 className="mt-1 text-2xl font-semibold text-white">Separar instrumentos</h1>
         <p className="mt-2 text-sm text-zinc-400">
-          Escolha uma música dos seus projetos ou envie um áudio. A separação usa IA (Suno, com fallback Mureka).
+          Escolha uma música dos seus projetos ou envie um áudio. A separação usa IA (Mureka).
         </p>
       </div>
 

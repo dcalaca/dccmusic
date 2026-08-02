@@ -15,7 +15,6 @@ import {
   prepareStemSeparationSource,
   refundStemSeparation,
   requestMurekaStemSeparation,
-  requestSunoStemSeparation,
   stemsFromMurekaZip,
 } from '@/lib/studio-stems'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -135,8 +134,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Guarda URL pública (tempfile Suno / CDN) para fallback Mureka e callback
-    sourceAudioUrl = prepared.publicAudioUrl || sourceAudioUrl
+    sourceAudioUrl = prepared.publicAudioUrl
 
     const { data: job, error: jobError } = await supabaseAdmin
       .from('studio_stem_jobs')
@@ -149,7 +147,7 @@ export async function POST(request: NextRequest) {
         source_audio_storage_provider: sourceAudioStorageProvider,
         source_title: sourceTitle,
         status: 'processing',
-        provider: 'suno',
+        provider: 'mureka',
       })
       .select('*')
       .maybeSingle()
@@ -164,116 +162,39 @@ export async function POST(request: NextRequest) {
     })
 
     try {
-      const suno = await requestSunoStemSeparation(
-        prepared.sunoNative
-          ? {
-              taskId: prepared.sunoNative.taskId,
-              audioId: prepared.sunoNative.audioId,
-            }
-          : {
-              audioUrl: prepared.publicAudioUrl,
-            }
-      )
-      await supabaseAdmin
-        .from('studio_stem_jobs')
-        .update({
-          provider: 'suno',
-          provider_task_id: suno.taskId,
-          provider_payload: {
-            ...suno.payload,
-            prepared: {
-              usedNativeIds: Boolean(prepared.sunoNative),
-              publicAudioUrl: prepared.publicAudioUrl,
-            },
-          },
-          source_audio_url: prepared.publicAudioUrl,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', job.id)
+      const mureka = await requestMurekaStemSeparation(prepared.publicAudioUrl)
+      const stems = await stemsFromMurekaZip({
+        composerId: composer.composerId,
+        jobId: job.id,
+        zipUrl: mureka.zipUrl,
+      })
+      await markJobReady(job.id, stems, 'mureka', {
+        mureka: mureka.payload,
+        publicAudioUrl: prepared.publicAudioUrl,
+      })
 
       return NextResponse.json({
         success: true,
         jobId: job.id,
-        status: 'processing',
-        provider: 'suno',
+        status: 'ready',
+        provider: 'mureka',
         creditsCharged: STUDIO_STEM_SEPARATION_CREDITS,
-        message: `Separação iniciada. Foram debitados ${STUDIO_STEM_SEPARATION_CREDITS} créditos.`,
+        message: `Separação concluída. Foram debitados ${STUDIO_STEM_SEPARATION_CREDITS} créditos.`,
       })
-    } catch (sunoError: any) {
-      // Se falhou com IDs nativos, tenta de novo com URL pública
-      if (prepared.sunoNative && prepared.publicAudioUrl) {
-        try {
-          const sunoRetry = await requestSunoStemSeparation({
-            audioUrl: prepared.publicAudioUrl,
-          })
-          await supabaseAdmin
-            .from('studio_stem_jobs')
-            .update({
-              provider: 'suno',
-              provider_task_id: sunoRetry.taskId,
-              provider_payload: {
-                ...sunoRetry.payload,
-                prepared: {
-                  usedNativeIds: false,
-                  retriedWithPublicUrl: true,
-                  publicAudioUrl: prepared.publicAudioUrl,
-                  firstError: sunoError?.message || null,
-                },
-              },
-              source_audio_url: prepared.publicAudioUrl,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', job.id)
-
-          return NextResponse.json({
-            success: true,
-            jobId: job.id,
-            status: 'processing',
-            provider: 'suno',
-            creditsCharged: STUDIO_STEM_SEPARATION_CREDITS,
-            message: `Separação iniciada. Foram debitados ${STUDIO_STEM_SEPARATION_CREDITS} créditos.`,
-          })
-        } catch {
-          // segue para Mureka
-        }
-      }
-
-      try {
-        const mureka = await requestMurekaStemSeparation(prepared.publicAudioUrl)
-        const stems = await stemsFromMurekaZip({
-          composerId: composer.composerId,
-          jobId: job.id,
-          zipUrl: mureka.zipUrl,
-        })
-        await markJobReady(job.id, stems, 'mureka', {
-          sunoError: sunoError?.message || 'Suno falhou no submit',
-          mureka: mureka.payload,
-          publicAudioUrl: prepared.publicAudioUrl,
-        })
-
-        return NextResponse.json({
-          success: true,
-          jobId: job.id,
-          status: 'ready',
-          provider: 'mureka',
-          creditsCharged: STUDIO_STEM_SEPARATION_CREDITS,
-          message: `Separação concluída via Mureka. Foram debitados ${STUDIO_STEM_SEPARATION_CREDITS} créditos.`,
-        })
-      } catch (murekaError: any) {
-        const message = murekaError?.message || sunoError?.message || 'Falha ao separar áudio.'
-        await markJobFailed(job.id, message)
-        await refundStemSeparation({
-          composerId: composer.composerId,
-          projectId,
-          jobId: job.id,
-          reason: message,
-        })
-        return NextResponse.json({
-          error: message,
-          refunded: true,
-          jobId: job.id,
-        }, { status: 502 })
-      }
+    } catch (murekaError: any) {
+      const message = murekaError?.message || 'Falha ao separar áudio com a Mureka.'
+      await markJobFailed(job.id, message)
+      await refundStemSeparation({
+        composerId: composer.composerId,
+        projectId,
+        jobId: job.id,
+        reason: message,
+      })
+      return NextResponse.json({
+        error: message,
+        refunded: true,
+        jobId: job.id,
+      }, { status: 502 })
     }
   } catch (error: any) {
     console.error('[Studio Stems] separate error:', error)

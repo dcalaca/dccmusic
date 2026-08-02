@@ -366,10 +366,8 @@ export async function uploadAudioBufferToSunoTemp(input: {
 }
 
 /**
- * Prepara uma fonte aceita pelos provedores:
- * 1) taskId+audioId da geração Suno (melhor)
- * 2) URL pública do provedor
- * 3) reupload do nosso áudio para tempfile da Suno
+ * Prepara URL do áudio para a Mureka (único provedor de separação).
+ * Prefere CDN pública; senão signed URL do nosso storage.
  */
 export async function prepareStemSeparationSource(input: {
   version?: any | null
@@ -377,61 +375,29 @@ export async function prepareStemSeparationSource(input: {
   sourceAudioPath?: string | null
   sourceAudioStorageProvider?: string | null
 }) {
-  let generation: any = null
-  if (input.version?.generation_id) {
-    const { data } = await supabaseAdmin
-      .from('studio_generations')
-      .select('id, provider, provider_task_id, provider_audio_id, response_payload')
-      .eq('id', input.version.generation_id)
-      .maybeSingle()
-    generation = data
-  }
-
-  const sunoTaskId = generation?.provider_task_id || null
-  const sunoAudioId = extractSunoAudioId(input.version, generation)
-  const sunoNative =
-    sunoTaskId && sunoAudioId
-      ? { taskId: String(sunoTaskId), audioId: String(sunoAudioId) }
-      : null
-
   const candidateUrls = [
     input.version?.audio_url,
     input.version?.stream_audio_url,
     input.sourceAudioUrl,
   ].filter((url): url is string => Boolean(url && String(url).startsWith('http')))
 
-  let publicAudioUrl = candidateUrls.find((url) => isPublicProviderAudioUrl(url)) || null
+  const signedLocal = input.sourceAudioPath
+    ? await createStudioAudioSignedUrl(input.sourceAudioPath, input.sourceAudioStorageProvider)
+    : null
+
+  const publicAudioUrl =
+    candidateUrls.find((url) => isPublicProviderAudioUrl(url)) ||
+    signedLocal ||
+    input.sourceAudioUrl ||
+    candidateUrls[0] ||
+    null
 
   if (!publicAudioUrl) {
-    const localUrl =
-      (input.sourceAudioPath
-        ? await createStudioAudioSignedUrl(input.sourceAudioPath, input.sourceAudioStorageProvider)
-        : null) ||
-      input.sourceAudioUrl ||
-      candidateUrls[0] ||
-      null
-
-    if (!localUrl) {
-      throw new Error('Não foi possível localizar o áudio para separar.')
-    }
-
-    const downloaded = await downloadBuffer(localUrl)
-    if (downloaded.buffer.byteLength > 20 * 1024 * 1024) {
-      throw new Error('O áudio precisa ter no máximo 20 MB para separar instrumentos.')
-    }
-
-    const uploaded = await uploadAudioBufferToSunoTemp({
-      buffer: downloaded.buffer,
-      fileName: `stem-${randomUUID()}.mp3`,
-      contentType: downloaded.contentType,
-    })
-    publicAudioUrl = uploaded.downloadUrl
+    throw new Error('Não foi possível localizar o áudio para separar.')
   }
 
   return {
-    sunoNative,
     publicAudioUrl,
-    generationId: generation?.id || null,
   }
 }
 
