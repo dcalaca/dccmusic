@@ -6,21 +6,11 @@ export const STUDIO_PLAN_SLUGS = ['studio-start', 'studio-pro', 'studio-elite', 
 export const STUDIO_MUSIC_CREDITS = 10
 export const STUDIO_VOICE_CREDITS = 2
 export const STUDIO_PREMIUM_COVER_CREDITS = 2
-export const STUDIO_STEM_SEPARATION_CREDITS = 10
-export const STUDIO_STEM_EXPORT_CREDITS = 1
 export const FREE_STUDIO_LYRIC_LIMIT = 3
 export const FREE_STUDIO_MUSIC_LIMIT = 1
 
 export function canCreateStudioMusicWithCredits(usage: { remaining: number }) {
   return usage.remaining >= STUDIO_MUSIC_CREDITS
-}
-
-export function canSeparateStudioStemsWithCredits(usage: { remaining: number }) {
-  return usage.remaining >= STUDIO_STEM_SEPARATION_CREDITS
-}
-
-export function canExportStudioStemMixWithCredits(usage: { remaining: number }) {
-  return usage.remaining >= STUDIO_STEM_EXPORT_CREDITS
 }
 
 function dedupePaidStudioTopups(topups: any[]) {
