@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FiLoader, FiMusic, FiUpload } from 'react-icons/fi'
+import { FiFolder, FiLoader, FiMusic, FiUpload } from 'react-icons/fi'
 import {
   STUDIO_STEM_SEPARATION_CREDITS,
 } from './pricing'
@@ -12,19 +12,46 @@ type ProjectOption = {
   versions: Array<{ id: string; audioUrl?: string | null; versionName?: string | null }>
 }
 
+type RecentJob = {
+  id: string
+  title: string
+  status: string
+  stemCount: number
+  createdAt: string
+  error?: string | null
+}
+
 type StudioSourcePickerProps = {
   token: string
   creditsRemaining: number | null
   onStarted: (jobId: string) => void
+  /** Reabre uma separação já salva (não cobra de novo). */
+  onOpenJob: (jobId: string) => void
+}
+
+function formatJobDate(value: string) {
+  try {
+    return new Date(value).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return value
+  }
 }
 
 export default function StudioSourcePicker({
   token,
   creditsRemaining,
   onStarted,
+  onOpenJob,
 }: StudioSourcePickerProps) {
   const [projects, setProjects] = useState<ProjectOption[]>([])
+  const [recentJobs, setRecentJobs] = useState<RecentJob[]>([])
   const [loadingProjects, setLoadingProjects] = useState(true)
+  const [loadingJobs, setLoadingJobs] = useState(true)
   const [selectedProjectId, setSelectedProjectId] = useState('')
   const [selectedVersionId, setSelectedVersionId] = useState('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
@@ -60,6 +87,27 @@ export default function StudioSourcePicker({
         if (!cancelled) setError(err.message || 'Erro ao carregar projetos')
       } finally {
         if (!cancelled) setLoadingProjects(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [token])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const response = await fetch('/api/compositores/studio/stems/jobs', {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Erro ao carregar separações')
+        if (!cancelled) setRecentJobs(data.jobs || [])
+      } catch (err: any) {
+        if (!cancelled) console.error('[Studio] list jobs', err)
+      } finally {
+        if (!cancelled) setLoadingJobs(false)
       }
     })()
     return () => {
@@ -143,8 +191,55 @@ export default function StudioSourcePicker({
 
       <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
         <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-200">
+          <FiFolder className="h-4 w-4 text-primary-400" />
+          Separações salvas
+        </div>
+        <p className="mb-3 text-xs text-zinc-500">
+          Suas separações ficam salvas. Clique para reabrir no mixer (sem cobrar de novo).
+        </p>
+        {loadingJobs ? (
+          <p className="flex items-center gap-2 text-sm text-zinc-500">
+            <FiLoader className="h-4 w-4 animate-spin" /> Carregando separações...
+          </p>
+        ) : recentJobs.length === 0 ? (
+          <p className="text-sm text-zinc-500">Nenhuma separação ainda. Faça a primeira abaixo.</p>
+        ) : (
+          <ul className="flex max-h-56 flex-col gap-2 overflow-y-auto">
+            {recentJobs.map((job) => {
+              const ready = job.status === 'ready'
+              const failed = job.status === 'failed'
+              return (
+                <li key={job.id}>
+                  <button
+                    type="button"
+                    disabled={!ready}
+                    onClick={() => onOpenJob(job.id)}
+                    className="flex w-full items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2.5 text-left transition hover:border-primary-500/50 hover:bg-zinc-900/80 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-white">{job.title}</p>
+                      <p className="text-[11px] text-zinc-500">
+                        {formatJobDate(job.createdAt)}
+                        {ready ? ` · ${job.stemCount} faixas` : ''}
+                        {failed ? ' · falhou' : ''}
+                        {job.status === 'processing' ? ' · processando...' : ''}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-xs font-semibold text-primary-300">
+                      {ready ? 'Abrir' : failed ? 'Falhou' : 'Aguarde'}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
+        <div className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-200">
           <FiMusic className="h-4 w-4 text-primary-400" />
-          Música do Studio IA
+          Nova: música do Studio IA
         </div>
         {loadingProjects ? (
           <p className="flex items-center gap-2 text-sm text-zinc-500">

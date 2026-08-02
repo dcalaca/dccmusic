@@ -363,6 +363,11 @@ function StudioApp({ projectId }: { projectId?: string }) {
             setActiveJobId(newJobId)
             setPhase('processing')
           }}
+          onOpenJob={(existingJobId) => {
+            setError('')
+            setActiveJobId(existingJobId)
+            setPhase('processing')
+          }}
         />
       </div>
     )
