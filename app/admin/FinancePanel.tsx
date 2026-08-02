@@ -456,6 +456,7 @@ export default function FinancePanel() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [expandedMetaGroups, setExpandedMetaGroups] = useState<Record<string, boolean>>({})
+  const [showEmailCategories, setShowEmailCategories] = useState(false)
   const [paymentsPage, setPaymentsPage] = useState(1)
 
   const PAYMENTS_PER_PAGE = 10
@@ -761,72 +762,45 @@ export default function FinancePanel() {
           <div className="space-y-4">
             <div>
               <h3 className="font-semibold mb-3">Onde gastou</h3>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-sm">
-                <div className="bg-gray-950/50 border border-gray-800 rounded-xl p-4">
-                  <div className="flex justify-between gap-4 border-b border-gray-800 pb-2 mb-3">
-                    <span className="font-semibold text-gray-200">Custo Fixo</span>
-                    <span className="font-semibold text-orange-300">{formatMoney(summary.costs.fixed.total)}</span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-400">Supabase (banco de dados)</span>
-                      <span className="font-medium">{formatMoney(summary.costs.fixed.supabase)}</span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-400">Vercel (hospedagem)</span>
-                      <span className="font-medium">{formatMoney(summary.costs.fixed.vercel)}</span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-400">Brevo (e-mails)</span>
-                      <span className="font-medium">{formatMoney(summary.costs.fixed.resend)}</span>
-                    </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-400">Cursor (programação)</span>
-                      <span className="font-medium">{formatMoney(summary.costs.fixed.cursor)}</span>
-                    </div>
-                  </div>
+              <div className="bg-gray-950/50 border border-gray-800 rounded-xl p-4 text-sm">
+                <div className="flex justify-between gap-4 border-b border-gray-800 pb-2 mb-3">
+                  <span className="font-semibold text-gray-200">Custo Variável</span>
+                  <span className="font-semibold text-orange-300">{formatMoney(summary.costs.variable.total)}</span>
                 </div>
-
-                <div className="bg-gray-950/50 border border-gray-800 rounded-xl p-4">
-                  <div className="flex justify-between gap-4 border-b border-gray-800 pb-2 mb-3">
-                    <span className="font-semibold text-gray-200">Custo Variável</span>
-                    <span className="font-semibold text-orange-300">{formatMoney(summary.costs.variable.total)}</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between gap-4">
+                    <span className="text-gray-400">Anúncios Meta ({summary.counts.metaAdCampaigns} anúncios)</span>
+                    <span className="font-medium">
+                      {formatAdMoney(summary.costs.variable.metaAds, summary.externalBalances?.metaAds?.currency || 'BRL')}
+                    </span>
                   </div>
-                  <div className="space-y-2">
+                  <div className="flex justify-between gap-4">
+                    <span className="text-gray-400">Taxas Mercado Pago ({summary.paymentDetails.length} pagamento(s))</span>
+                    <span className="font-medium">{formatMoney(summary.costs.variable.mercadoPagoFees)}</span>
+                  </div>
+                  <div className="rounded-lg border border-purple-900/40 bg-purple-950/10 p-3">
                     <div className="flex justify-between gap-4">
-                      <span className="text-gray-400">Anúncios Meta ({summary.counts.metaAdCampaigns} anúncios)</span>
-                      <span className="font-medium">
-                        {formatAdMoney(summary.costs.variable.metaAds, summary.externalBalances?.metaAds?.currency || 'BRL')}
-                      </span>
+                      <span className="text-gray-300">IA musical / Suno ({summary.counts.musicGenerations} músicas, {summary.counts.lyricVideos} vídeos)</span>
+                      <span className="font-medium">{formatMoney(summary.costs.variable.suno)}</span>
                     </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-400">Taxas Mercado Pago ({summary.paymentDetails.length} pagamento(s))</span>
-                      <span className="font-medium">{formatMoney(summary.costs.variable.mercadoPagoFees)}</span>
-                    </div>
-                    <div className="rounded-lg border border-purple-900/40 bg-purple-950/10 p-3">
+                    <div className="mt-2 space-y-1 border-t border-purple-900/40 pt-2 text-xs">
                       <div className="flex justify-between gap-4">
-                        <span className="text-gray-300">IA musical / Suno ({summary.counts.musicGenerations} músicas, {summary.counts.lyricVideos} vídeos)</span>
-                        <span className="font-medium">{formatMoney(summary.costs.variable.suno)}</span>
+                        <span className="text-gray-500">Músicas pagas ({summary.counts.paidMusicGenerations || 0})</span>
+                        <span className="font-medium text-gray-300">{formatMoney(summary.costs.sunoPaidMusic || 0)}</span>
                       </div>
-                      <div className="mt-2 space-y-1 border-t border-purple-900/40 pt-2 text-xs">
-                        <div className="flex justify-between gap-4">
-                          <span className="text-gray-500">Músicas pagas ({summary.counts.paidMusicGenerations || 0})</span>
-                          <span className="font-medium text-gray-300">{formatMoney(summary.costs.sunoPaidMusic || 0)}</span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-gray-500">Músicas grátis ({summary.counts.freeMusicGenerations || 0})</span>
-                          <span className="font-medium text-gray-300">{formatMoney(summary.costs.sunoFreeMusic || 0)}</span>
-                        </div>
-                        <div className="flex justify-between gap-4">
-                          <span className="text-gray-500">Vídeos com letra ({summary.counts.lyricVideos})</span>
-                          <span className="font-medium text-gray-300">{formatMoney(summary.costs.sunoLyricVideos || 0)}</span>
-                        </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-gray-500">Músicas grátis ({summary.counts.freeMusicGenerations || 0})</span>
+                        <span className="font-medium text-gray-300">{formatMoney(summary.costs.sunoFreeMusic || 0)}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-gray-500">Vídeos com letra ({summary.counts.lyricVideos})</span>
+                        <span className="font-medium text-gray-300">{formatMoney(summary.costs.sunoLyricVideos || 0)}</span>
                       </div>
                     </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-gray-400">IA criativa ({summary.counts.lyricGenerations} letras, {summary.counts.simpleCovers} capas simples, {summary.counts.premiumCovers} capas premium)</span>
-                      <span className="font-medium">{formatMoney(summary.costs.variable.openAi)}</span>
-                    </div>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-gray-400">IA criativa ({summary.counts.lyricGenerations} letras, {summary.counts.simpleCovers} capas simples, {summary.counts.premiumCovers} capas premium)</span>
+                    <span className="font-medium">{formatMoney(summary.costs.variable.openAi)}</span>
                   </div>
                 </div>
               </div>
@@ -968,18 +942,39 @@ export default function FinancePanel() {
               </div>
               <div className="border border-gray-800 rounded-lg p-3">
                 <p className="text-gray-500 text-xs">Plano fixo proporcional</p>
-                <p className="text-white font-semibold">{formatMoney(summary.externalBalances?.resend?.fixedCost || 0)}</p>
+                <p className="text-white font-semibold">
+                  {formatMoney(summary.externalBalances?.resend?.fixedCost || 0)}
+                  <span className="ml-1 text-sm font-normal text-gray-500">
+                    ({formatMoney(summary.costAssumptions.resendMonthlyFixed || 0)})
+                  </span>
+                </p>
               </div>
             </div>
 
             {summary.externalBalances?.resend?.categories?.length ? (
-              <div className="space-y-2 text-sm">
-                {summary.externalBalances.resend.categories.slice(0, 8).map(item => (
-                  <div key={item.category} className="flex justify-between gap-4 border border-gray-800 rounded-lg px-3 py-2">
-                    <span className="text-gray-400">{item.category}</span>
-                    <span className="font-medium">{formatNumber(item.count)}</span>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowEmailCategories((current) => !current)}
+                  className="w-full flex items-center justify-between gap-3 border border-gray-800 rounded-lg px-3 py-2 text-sm text-left hover:border-gray-700 hover:bg-gray-900/50 transition-colors"
+                >
+                  <span className="text-gray-300">
+                    Tipos de e-mail ({summary.externalBalances.resend.categories.length})
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {showEmailCategories ? 'Clique para recolher' : 'Clique para expandir'}
+                  </span>
+                </button>
+                {showEmailCategories && (
+                  <div className="mt-2 space-y-2 text-sm">
+                    {summary.externalBalances.resend.categories.map(item => (
+                      <div key={item.category} className="flex justify-between gap-4 border border-gray-800 rounded-lg px-3 py-2">
+                        <span className="text-gray-400">{item.category}</span>
+                        <span className="font-medium">{formatNumber(item.count)}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             ) : (
               <p className="text-sm text-gray-500">Nenhum e-mail registrado neste período.</p>
@@ -989,30 +984,45 @@ export default function FinancePanel() {
           <div className="bg-gray-950/50 border border-gray-800 rounded-xl p-4 mt-4">
             <h3 className="font-semibold mb-1">Custos fixos mensais (assinaturas)</h3>
             <p className="text-xs text-gray-500 mb-3">
-              Valores mensais em dólar convertidos para real (US$ 1 = {formatMoney(summary.costAssumptions.usdToBrl)}).
-              No cálculo do lucro entram proporcionais aos {summary.externalBalances?.supabase?.periodDayCount || summary.externalBalances?.vercel?.periodDayCount || '-'} dia(s) do período selecionado.
+              Valores do período (proporcional aos {summary.externalBalances?.supabase?.periodDayCount || summary.externalBalances?.vercel?.periodDayCount || '-'} dia(s) selecionados).
+              Entre parênteses: valor mensal cheio. Dólar convertido a US$ 1 = {formatMoney(summary.costAssumptions.usdToBrl)}.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 text-sm">
               <div className="border border-gray-800 rounded-lg p-3">
                 <p className="text-gray-300 font-medium">Supabase (banco)</p>
-                <p className="text-gray-500 text-xs mt-1">Mensal</p>
-                <p className="text-white font-semibold">{formatMoney(summary.costAssumptions.supabaseMonthlyFixed || 0)}</p>
-                <p className="text-gray-500 text-xs mt-2">No período</p>
-                <p className="text-white font-semibold">{formatMoney(summary.costs.fixed.supabase || 0)}</p>
+                <p className="text-white font-semibold mt-2">
+                  {formatMoney(summary.costs.fixed.supabase || 0)}
+                  <span className="ml-1 text-sm font-normal text-gray-500">
+                    ({formatMoney(summary.costAssumptions.supabaseMonthlyFixed || 0)})
+                  </span>
+                </p>
               </div>
               <div className="border border-gray-800 rounded-lg p-3">
                 <p className="text-gray-300 font-medium">Vercel (hospedagem)</p>
-                <p className="text-gray-500 text-xs mt-1">Mensal</p>
-                <p className="text-white font-semibold">{formatMoney(summary.costAssumptions.vercelMonthlyFixed || 0)}</p>
-                <p className="text-gray-500 text-xs mt-2">No período</p>
-                <p className="text-white font-semibold">{formatMoney(summary.costs.fixed.vercel || 0)}</p>
+                <p className="text-white font-semibold mt-2">
+                  {formatMoney(summary.costs.fixed.vercel || 0)}
+                  <span className="ml-1 text-sm font-normal text-gray-500">
+                    ({formatMoney(summary.costAssumptions.vercelMonthlyFixed || 0)})
+                  </span>
+                </p>
               </div>
               <div className="border border-gray-800 rounded-lg p-3">
                 <p className="text-gray-300 font-medium">Brevo (e-mails)</p>
-                <p className="text-gray-500 text-xs mt-1">Mensal</p>
-                <p className="text-white font-semibold">{formatMoney(summary.costAssumptions.resendMonthlyFixed || 0)}</p>
-                <p className="text-gray-500 text-xs mt-2">No período</p>
-                <p className="text-white font-semibold">{formatMoney(summary.costs.fixed.resend || 0)}</p>
+                <p className="text-white font-semibold mt-2">
+                  {formatMoney(summary.costs.fixed.resend || 0)}
+                  <span className="ml-1 text-sm font-normal text-gray-500">
+                    ({formatMoney(summary.costAssumptions.resendMonthlyFixed || 0)})
+                  </span>
+                </p>
+              </div>
+              <div className="border border-gray-800 rounded-lg p-3">
+                <p className="text-gray-300 font-medium">Cursor (programação)</p>
+                <p className="text-white font-semibold mt-2">
+                  {formatMoney(summary.costs.fixed.cursor || 0)}
+                  <span className="ml-1 text-sm font-normal text-gray-500">
+                    ({formatMoney(summary.costAssumptions.cursorMonthlyFixed || 0)})
+                  </span>
+                </p>
               </div>
             </div>
           </div>

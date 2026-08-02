@@ -1,9 +1,95 @@
 'use client'
 
-import { useEffect, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FiAlertTriangle, FiArrowLeft, FiCalendar, FiCamera, FiCheckCircle, FiCreditCard, FiLogOut, FiMail, FiMic, FiMusic, FiPlayCircle, FiTrash2, FiUpload, FiUser, FiX, FiZap } from 'react-icons/fi'
+import {
+  FiAlertTriangle,
+  FiArrowLeft,
+  FiCalendar,
+  FiCamera,
+  FiCheckCircle,
+  FiChevronLeft,
+  FiChevronRight,
+  FiChevronsLeft,
+  FiChevronsRight,
+  FiCreditCard,
+  FiLogOut,
+  FiMail,
+  FiMic,
+  FiMusic,
+  FiPlayCircle,
+  FiTrash2,
+  FiUpload,
+  FiUser,
+  FiX,
+  FiZap,
+} from 'react-icons/fi'
+
+type StatementPreset = 'yesterday' | 'today' | 'last30' | 'thisMonth' | 'lastMonth' | 'custom'
+
+const STATEMENT_PRESET_LABELS: Record<StatementPreset, string> = {
+  yesterday: 'Ontem',
+  today: 'Hoje',
+  last30: 'Últimos 30 dias',
+  thisMonth: 'Este mês',
+  lastMonth: 'Mês passado',
+  custom: 'Personalizado',
+}
+
+const STATEMENT_ITEMS_PER_PAGE = 5
+
+function dateToInput(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function addDays(date: Date, days: number) {
+  const next = new Date(date)
+  next.setDate(next.getDate() + days)
+  return next
+}
+
+function getStatementPresetRange(preset: StatementPreset) {
+  const now = new Date()
+
+  if (preset === 'yesterday') {
+    const yesterday = addDays(now, -1)
+    return { startDate: dateToInput(yesterday), endDate: dateToInput(yesterday) }
+  }
+
+  if (preset === 'today') {
+    return { startDate: dateToInput(now), endDate: dateToInput(now) }
+  }
+
+  if (preset === 'last30') {
+    return { startDate: dateToInput(addDays(now, -29)), endDate: dateToInput(now) }
+  }
+
+  if (preset === 'lastMonth') {
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const end = new Date(now.getFullYear(), now.getMonth(), 0)
+    return { startDate: dateToInput(start), endDate: dateToInput(end) }
+  }
+
+  const start = new Date(now.getFullYear(), now.getMonth(), 1)
+  return { startDate: dateToInput(start), endDate: dateToInput(now) }
+}
+
+function getSaoPauloDayKey(value?: string | null) {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return date.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+}
+
+function isDateInRange(value: string | null | undefined, startDate: string, endDate: string) {
+  const dayKey = getSaoPauloDayKey(value)
+  if (!dayKey) return false
+  return dayKey >= startDate && dayKey <= endDate
+}
 
 function formatDate(value?: string | null) {
   if (!value) return 'Não informado'
@@ -55,9 +141,112 @@ function StatCard({ icon: Icon, label, value, detail }: {
   )
 }
 
+function StatementPagination({
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  onChange,
+}: {
+  page: number
+  totalPages: number
+  totalItems: number
+  pageSize: number
+  onChange: (page: number) => void
+}) {
+  if (totalItems === 0) return null
+
+  const start = (page - 1) * pageSize + 1
+  const end = Math.min(page * pageSize, totalItems)
+
+  return (
+    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-xs text-gray-500">
+        {start}-{end} de {totalItems}
+      </p>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={() => onChange(1)}
+          disabled={page <= 1}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/30 text-gray-200 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Primeira página"
+        >
+          <FiChevronsLeft />
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(page - 1)}
+          disabled={page <= 1}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/30 text-gray-200 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Página anterior"
+        >
+          <FiChevronLeft />
+        </button>
+        <span className="min-w-[4.5rem] text-center text-xs font-bold text-gray-300">
+          {page}/{Math.max(totalPages, 1)}
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange(page + 1)}
+          disabled={page >= totalPages}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/30 text-gray-200 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Próxima página"
+        >
+          <FiChevronRight />
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(totalPages)}
+          disabled={page >= totalPages}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/30 text-gray-200 disabled:cursor-not-allowed disabled:opacity-40"
+          aria-label="Última página"
+        >
+          <FiChevronsRight />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function StatementSection({ statement }: { statement: any }) {
-  const payments = statement?.payments || []
-  const creditMovements = statement?.creditMovements || []
+  const [preset, setPreset] = useState<StatementPreset>('thisMonth')
+  const [range, setRange] = useState(() => getStatementPresetRange('thisMonth'))
+  const [paymentsPage, setPaymentsPage] = useState(1)
+  const [creditsPage, setCreditsPage] = useState(1)
+
+  const filteredPayments = useMemo(() => {
+    const payments = statement?.payments || []
+    return payments.filter((payment: any) => isDateInRange(payment.date, range.startDate, range.endDate))
+  }, [statement?.payments, range.endDate, range.startDate])
+
+  const filteredCreditMovements = useMemo(() => {
+    const creditMovements = statement?.creditMovements || []
+    return creditMovements.filter((movement: any) => isDateInRange(movement.date, range.startDate, range.endDate))
+  }, [statement?.creditMovements, range.endDate, range.startDate])
+
+  const paymentsTotalPages = Math.max(1, Math.ceil(filteredPayments.length / STATEMENT_ITEMS_PER_PAGE))
+  const creditsTotalPages = Math.max(1, Math.ceil(filteredCreditMovements.length / STATEMENT_ITEMS_PER_PAGE))
+  const currentPaymentsPage = Math.min(paymentsPage, paymentsTotalPages)
+  const currentCreditsPage = Math.min(creditsPage, creditsTotalPages)
+
+  const paginatedPayments = filteredPayments.slice(
+    (currentPaymentsPage - 1) * STATEMENT_ITEMS_PER_PAGE,
+    currentPaymentsPage * STATEMENT_ITEMS_PER_PAGE
+  )
+  const paginatedCredits = filteredCreditMovements.slice(
+    (currentCreditsPage - 1) * STATEMENT_ITEMS_PER_PAGE,
+    currentCreditsPage * STATEMENT_ITEMS_PER_PAGE
+  )
+
+  const applyPreset = (nextPreset: StatementPreset) => {
+    setPreset(nextPreset)
+    if (nextPreset !== 'custom') {
+      setRange(getStatementPresetRange(nextPreset))
+    }
+    setPaymentsPage(1)
+    setCreditsPage(1)
+  }
 
   return (
     <section className="mt-5 rounded-[1.75rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:p-5">
@@ -91,63 +280,152 @@ function StatementSection({ statement }: { statement: any }) {
         </div>
       </div>
 
+      <div className="mb-5 rounded-2xl border border-white/10 bg-black/25 p-3 sm:p-4">
+        <div className="mb-3 flex flex-wrap gap-2">
+          {(Object.keys(STATEMENT_PRESET_LABELS) as StatementPreset[]).map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => applyPreset(item)}
+              className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+                preset === item
+                  ? 'bg-primary-600 text-white'
+                  : 'border border-white/10 bg-white/[0.04] text-gray-300 hover:bg-white/[0.08]'
+              }`}
+            >
+              {STATEMENT_PRESET_LABELS[item]}
+            </button>
+          ))}
+        </div>
+
+        {preset === 'custom' && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="text-xs text-gray-400">
+              De
+              <input
+                type="date"
+                value={range.startDate}
+                onChange={(event) => {
+                  setRange((current) => ({ ...current, startDate: event.target.value }))
+                  setPaymentsPage(1)
+                  setCreditsPage(1)
+                }}
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+              />
+            </label>
+            <label className="text-xs text-gray-400">
+              Até
+              <input
+                type="date"
+                value={range.endDate}
+                onChange={(event) => {
+                  setRange((current) => ({ ...current, endDate: event.target.value }))
+                  setPaymentsPage(1)
+                  setCreditsPage(1)
+                }}
+                className="mt-1 w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2 text-sm text-white"
+              />
+            </label>
+          </div>
+        )}
+
+        {preset !== 'custom' && (
+          <p className="text-xs text-gray-500">
+            Período:{' '}
+            {new Date(`${range.startDate}T12:00:00`).toLocaleDateString('pt-BR')} até{' '}
+            {new Date(`${range.endDate}T12:00:00`).toLocaleDateString('pt-BR')}
+          </p>
+        )}
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
         <div>
           <h3 className="mb-3 font-black text-white">Pagamentos e recargas</h3>
-          {payments.length === 0 ? (
+          {filteredPayments.length === 0 ? (
             <p className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-gray-500">
-              Nenhum pagamento registrado ainda.
+              Nenhum pagamento neste período.
             </p>
           ) : (
-            <div className="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
-              {payments.slice(0, 12).map((payment: any) => (
-                <div key={`${payment.type}-${payment.id}`} className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="font-bold text-white">{payment.label}</p>
-                      <p className="mt-1 text-sm text-gray-400">{payment.description}</p>
-                      <p className="mt-1 text-xs text-gray-500">{formatDateTime(payment.date)}</p>
-                      {payment.paymentId && <p className="mt-1 break-all text-xs text-gray-500">{payment.paymentIdLabel || 'ID pagamento'}: {payment.paymentId}</p>}
-                    </div>
-                    <div className="text-left sm:text-right">
-                      <p className="font-black text-green-300">{formatMoney(payment.amount)}</p>
-                      <p className="mt-1 text-xs text-gray-400">{payment.statusLabel}</p>
+            <>
+              <div className="space-y-3">
+                {paginatedPayments.map((payment: any) => (
+                  <div key={`${payment.type}-${payment.id}`} className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                      <div>
+                        <p className="font-bold text-white">{payment.label}</p>
+                        <p className="mt-1 text-sm text-gray-400">{payment.description}</p>
+                        <p className="mt-1 text-xs text-gray-500">{formatDateTime(payment.date)}</p>
+                        {payment.paymentId && (
+                          <p className="mt-1 break-all text-xs text-gray-500">
+                            {payment.paymentIdLabel || 'ID pagamento'}: {payment.paymentId}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-left sm:text-right">
+                        <p className="font-black text-green-300">{formatMoney(payment.amount)}</p>
+                        <p className="mt-1 text-xs text-gray-400">{payment.statusLabel}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <StatementPagination
+                page={currentPaymentsPage}
+                totalPages={paymentsTotalPages}
+                totalItems={filteredPayments.length}
+                pageSize={STATEMENT_ITEMS_PER_PAGE}
+                onChange={setPaymentsPage}
+              />
+            </>
           )}
         </div>
 
         <div>
           <h3 className="mb-3 font-black text-white">Uso dos créditos</h3>
-          {creditMovements.length === 0 ? (
+          {filteredCreditMovements.length === 0 ? (
             <p className="rounded-2xl border border-white/10 bg-black/25 p-4 text-sm text-gray-500">
-              Nenhum uso de crédito registrado ainda.
+              Nenhum uso de crédito neste período.
             </p>
           ) : (
-            <div className="max-h-[28rem] space-y-3 overflow-y-auto pr-1">
-              {creditMovements.map((movement: any) => (
-                <div key={movement.id} className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-bold text-white">{movement.label}</p>
-                      <p className="mt-1 text-sm text-gray-400">{movement.description}</p>
-                      <p className="mt-1 text-xs text-gray-500">{formatDateTime(movement.date)}</p>
-                      {typeof movement.balanceAfter === 'number' && (
-                        <p className="mt-1 text-xs font-bold text-primary-200">
-                          Saldo após: {movement.balanceAfter}
-                        </p>
-                      )}
+            <>
+              <div className="space-y-3">
+                {paginatedCredits.map((movement: any) => (
+                  <div key={movement.id} className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-bold text-white">{movement.label}</p>
+                        <p className="mt-1 text-sm text-gray-400">{movement.description}</p>
+                        <p className="mt-1 text-xs text-gray-500">{formatDateTime(movement.date)}</p>
+                        {typeof movement.balanceAfter === 'number' && (
+                          <p className="mt-1 text-xs font-bold text-primary-200">
+                            Saldo após: {movement.balanceAfter}
+                          </p>
+                        )}
+                      </div>
+                      <p
+                        className={`shrink-0 font-black ${
+                          movement.direction === 'credit'
+                            ? 'text-green-300'
+                            : movement.direction === 'ignored'
+                              ? 'text-gray-400'
+                              : 'text-yellow-300'
+                        }`}
+                      >
+                        {movement.direction === 'credit' ? '+' : movement.direction === 'ignored' ? '' : '-'}
+                        {movement.amount}
+                      </p>
                     </div>
-                    <p className={`shrink-0 font-black ${movement.direction === 'credit' ? 'text-green-300' : movement.direction === 'ignored' ? 'text-gray-400' : 'text-yellow-300'}`}>
-                      {movement.direction === 'credit' ? '+' : movement.direction === 'ignored' ? '' : '-'}{movement.amount}
-                    </p>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <StatementPagination
+                page={currentCreditsPage}
+                totalPages={creditsTotalPages}
+                totalItems={filteredCreditMovements.length}
+                pageSize={STATEMENT_ITEMS_PER_PAGE}
+                onChange={setCreditsPage}
+              />
+            </>
           )}
         </div>
       </div>
