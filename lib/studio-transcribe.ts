@@ -1,3 +1,5 @@
+import { normalizeStudioLyricStructure } from '@/lib/studio-lyric-normalizer'
+
 const MAX_TRANSCRIPTION_AUDIO_BYTES = 25 * 1024 * 1024
 
 const YOUTUBE_SPAM_RE =
@@ -63,7 +65,56 @@ export async function transcribeStudioAudioFile(file: File | Blob, fileName = 'a
     throw new Error('Não consegui capturar a letra cantada nesse áudio. Tente um áudio mais limpo, só com a voz da música.')
   }
 
-  return text
+  return formatTranscribedLyric(text)
+}
+
+/** Organiza o texto cru do Whisper em versos/estrofes cantáveis. */
+export async function formatTranscribedLyric(rawText: string) {
+  const raw = String(rawText || '').trim()
+  if (!raw) return raw
+
+  const apiKey = process.env.OPENAI_API_KEY?.trim()
+  if (!apiKey) {
+    return normalizeStudioLyricStructure(raw).lyric
+  }
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: process.env.OPENAI_TEXT_MODEL || 'gpt-4o-mini',
+        temperature: 0.2,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Você formata letras de músicas brasileiras. Preserve as palavras originais. Não invente verso novo. Organize em linhas curtas cantáveis e estrofes com tags como [A], [B], [Refrão], [C] quando fizer sentido. Responda só com a letra formatada.',
+          },
+          {
+            role: 'user',
+            content: `Formate esta letra transcrita de áudio em estrofes bem legíveis:\n\n${raw.slice(0, 5000)}`,
+          },
+        ],
+      }),
+    })
+
+    const data = await response.json().catch(() => null)
+    const formatted = String(data?.choices?.[0]?.message?.content || '').trim()
+    if (!response.ok || !formatted) {
+      return normalizeStudioLyricStructure(raw).lyric
+    }
+    if (looksLikeTranscriptionSpam(formatted)) {
+      return normalizeStudioLyricStructure(raw).lyric
+    }
+
+    return normalizeStudioLyricStructure(formatted).lyric
+  } catch {
+    return normalizeStudioLyricStructure(raw).lyric
+  }
 }
 
 export async function transcribeStudioAudioBuffer(input: {
