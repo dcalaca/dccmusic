@@ -6,11 +6,21 @@ export const STUDIO_PLAN_SLUGS = ['studio-start', 'studio-pro', 'studio-elite', 
 export const STUDIO_MUSIC_CREDITS = 10
 export const STUDIO_VOICE_CREDITS = 2
 export const STUDIO_PREMIUM_COVER_CREDITS = 2
+export const STUDIO_STEM_SEPARATION_CREDITS = 10
+export const STUDIO_STEM_EXPORT_CREDITS = 1
 export const FREE_STUDIO_LYRIC_LIMIT = 3
 export const FREE_STUDIO_MUSIC_LIMIT = 1
 
 export function canCreateStudioMusicWithCredits(usage: { remaining: number }) {
   return usage.remaining >= STUDIO_MUSIC_CREDITS
+}
+
+export function canSeparateStudioStemsWithCredits(usage: { remaining: number }) {
+  return usage.remaining >= STUDIO_STEM_SEPARATION_CREDITS
+}
+
+export function canExportStudioStemMixWithCredits(usage: { remaining: number }) {
+  return usage.remaining >= STUDIO_STEM_EXPORT_CREDITS
 }
 
 function dedupePaidStudioTopups(topups: any[]) {
@@ -447,13 +457,17 @@ export async function getStudioCreditUsage(composerId: string, limits = getStudi
   const planMusicGenerationTransactions = musicGenerationTransactions.filter((transaction: any) => transaction.metadata?.topup !== true)
   const freeMusicGenerationTransactions = transactions.filter((transaction: any) => transaction.action === 'free_music_generation')
   const musicCreditTransactions = planMusicGenerationTransactions.reduce((sum: number, transaction: any) => sum + Math.max(0, Number(transaction.amount) || 0), 0)
+  const creditLikeActions = new Set([
+    'credit_topup',
+    'credit_topup_refund',
+    'manual_credit',
+    'stem_separation_refund',
+  ])
   const otherUsed = transactions
     .filter((transaction: any) => (
       transaction.action !== 'music_generation' &&
       transaction.action !== 'free_music_generation' &&
-      transaction.action !== 'credit_topup' &&
-      transaction.action !== 'credit_topup_refund' &&
-      transaction.action !== 'manual_credit'
+      !creditLikeActions.has(transaction.action)
     ))
     .reduce((sum: number, transaction: any) => sum + Math.max(0, Number(transaction.amount) || 0), 0)
   const trackedMusicGenerations = musicGenerationTransactions.length + freeMusicGenerationTransactions.length
@@ -485,9 +499,18 @@ export async function getStudioCreditUsage(composerId: string, limits = getStudi
       date: transaction.created_at || null,
     })),
     ...transactions
+      .filter((transaction: any) => transaction.action === 'stem_separation_refund')
+      .map((transaction: any) => ({
+        id: transaction.id,
+        amount: Number(transaction.amount) || 0,
+        direction: 'credit' as const,
+        date: transaction.created_at || null,
+      })),
+    ...transactions
       .filter((transaction: any) => (
         transaction.action !== 'credit_topup' &&
-        transaction.action !== 'manual_credit'
+        transaction.action !== 'manual_credit' &&
+        transaction.action !== 'stem_separation_refund'
       ))
       .map((transaction: any) => ({
         id: transaction.id,
@@ -586,7 +609,7 @@ export async function addStudioCreditTransaction(input: {
   description?: string
   metadata?: any
 }) {
-  const { error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin
     .from('studio_credit_transactions')
     .insert({
       composer_id: input.composerId,
@@ -597,8 +620,11 @@ export async function addStudioCreditTransaction(input: {
       description: input.description || null,
       metadata: input.metadata || null,
     })
+    .select('id')
+    .maybeSingle()
 
   if (error) throw error
+  return data
 }
 
 export async function chargeStudioVoiceCreationOnce(input: {

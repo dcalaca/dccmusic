@@ -101,28 +101,51 @@ export async function uploadStudioInputAudio(input: {
   const extension = extensionFromUploadedAudio(contentType, input.file.name)
   const path = `${input.composerId}/uploads/${studioMonthKey()}/${randomUUID()}-${input.kind || 'audio'}.${extension}`
   const buffer = Buffer.from(arrayBuffer)
+  return uploadStudioAudioBuffer({
+    composerId: input.composerId,
+    path,
+    buffer,
+    contentType,
+  })
+}
+
+export async function uploadStudioAudioBuffer(input: {
+  composerId: string
+  path?: string
+  folder?: 'stems' | 'uploads' | 'exports' | 'audio'
+  fileName?: string
+  buffer: Buffer
+  contentType?: string
+}) {
+  const contentType = input.contentType || 'audio/mpeg'
+  if (input.buffer.byteLength > MAX_AUDIO_BYTES) {
+    throw new Error('Áudio maior que o limite interno.')
+  }
+
+  const path = input.path ||
+    `${input.composerId}/${input.folder || 'uploads'}/${studioMonthKey()}/${input.fileName || `${randomUUID()}.mp3`}`
   const r2 = getR2Client()
 
   if (r2) {
     await r2.send(new PutObjectCommand({
       Bucket: R2_BUCKET,
       Key: path,
-      Body: buffer,
+      Body: input.buffer,
       ContentType: contentType,
     }))
 
-    return { path, provider: 'r2', contentType, sizeBytes: buffer.byteLength }
+    return { path, provider: 'r2' as const, contentType, sizeBytes: input.buffer.byteLength }
   }
 
   const { error } = await supabaseAdmin.storage
     .from(STUDIO_AUDIO_BUCKET)
-    .upload(path, buffer, {
+    .upload(path, input.buffer, {
       contentType,
       upsert: true,
     })
 
   if (error) throw error
-  return { path, provider: 'supabase', contentType, sizeBytes: buffer.byteLength }
+  return { path, provider: 'supabase' as const, contentType, sizeBytes: input.buffer.byteLength }
 }
 
 async function downloadAudio(sourceUrl: string) {
