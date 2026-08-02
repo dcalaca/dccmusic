@@ -6,13 +6,15 @@ import {
   sendStudioMusicReadyEmail,
 } from '@/lib/dcc-emails'
 import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
-import { backupStudioVersionAudio, getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
+import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import {
-  getTrackAudioUrl,
-  getTrackStreamAudioUrl,
   saveSunoGenerationTracksEnsuringTwo,
 } from '@/lib/studio-suno-versions'
+import {
+  extractMurekaChoicesFromPayload,
+  saveMurekaGenerationTracksEnsuringTwo,
+} from '@/lib/studio-mureka-versions'
 import { getStudioGenerationProviderError, markExpiredVoiceFromGeneration } from '@/lib/studio-voice-expiration'
 import {
   getStudioMusicGenerationFailureMessage,
@@ -43,17 +45,6 @@ function getSunoTracks(result: any) {
   return []
 }
 
-function getMurekaChoices(result: any) {
-  const choices = result?.choices || result?.data?.choices
-  return Array.isArray(choices) ? choices : []
-}
-
-function normalizeDurationSeconds(value: any) {
-  const duration = Number(value) || 0
-  if (!duration) return null
-  return duration > 1000 ? Math.round(duration / 1000) : Math.round(duration)
-}
-
 async function notifyMusicReady(generation: any) {
   const [{ data: project }, composer] = await Promise.all([
     supabaseAdmin
@@ -73,18 +64,6 @@ async function notifyMusicReady(generation: any) {
       console.error('[Studio IA] Erro ao enviar e-mail de música pronta:', emailError)
     })
   }
-}
-
-async function backupVersionAudio(versionId: string | null | undefined, generation: any, audioUrl: string | null, streamAudioUrl: string | null) {
-  if (!versionId) return
-  await backupStudioVersionAudio({
-    versionId,
-    composerId: generation.composer_id,
-    audioUrl,
-    streamAudioUrl,
-  }).catch((backupError) => {
-    console.error('[Studio IA] Erro no backup interno do áudio:', backupError)
-  })
 }
 
 async function saveSunoTrack(generation: any, sunoData: any[], status: string) {
@@ -165,92 +144,34 @@ async function saveSunoTrack(generation: any, sunoData: any[], status: string) {
 }
 
 async function saveMurekaTrack(generation: any, choices: any[], status: string) {
-  const validChoices = (choices || []).filter((choice) => (
-    choice?.url || choice?.audio_url || choice?.stream_url || choice?.streamAudioUrl
-  ))
-  if (validChoices.length === 0) return
-
-  const isComplete = status === 'succeeded'
-
-  await supabaseAdmin
-    .from('studio_versions')
-    .update({ is_current: false, updated_at: new Date().toISOString() })
-    .eq('project_id', generation.project_id)
-    .eq('composer_id', generation.composer_id)
-
-  const { data: existingVersions } = await supabaseAdmin
-    .from('studio_versions')
-    .select('id, audio_url, stream_audio_url, provider_payload')
-    .eq('generation_id', generation.id)
-
-  const savedVersions: Array<{ id: string | null; choice: any }> = []
-
-  for (const [index, choice] of validChoices.entries()) {
-    const audioUrl = choice.url || choice.audio_url || null
-    const streamAudioUrl = choice.stream_url || choice.streamAudioUrl || audioUrl
-    const isCurrent = index === validChoices.length - 1
-    const matchingVersion = (existingVersions || []).find((version: any) => (
-      (choice?.id && version.provider_payload?.id === choice.id) ||
-      (audioUrl && version.audio_url === audioUrl) ||
-      (streamAudioUrl && version.stream_audio_url === streamAudioUrl)
-    ))
-
-    const versionPayload = {
-      audio_url: audioUrl,
-      stream_audio_url: streamAudioUrl,
-      duration: normalizeDurationSeconds(choice.duration),
-      model: generation.response_payload?.model || generation.response_payload?.data?.model || null,
-      provider_payload: choice,
-      is_current: isCurrent,
-      updated_at: new Date().toISOString(),
-    }
-
-    let savedVersionId = matchingVersion?.id || null
-
-    if (!matchingVersion) {
-      const { data: insertedVersion } = await supabaseAdmin
-        .from('studio_versions')
-        .insert({
-          project_id: generation.project_id,
-          composer_id: generation.composer_id,
-          generation_id: generation.id,
-          version_name: validChoices.length > 1 ? `Música gerada #${index + 1}` : 'Versão IA',
-          style: generation.request_payload?.prompt || null,
-          ...versionPayload,
-        })
-        .select('id')
-        .maybeSingle()
-      savedVersionId = insertedVersion?.id || savedVersionId
-    } else {
-      await supabaseAdmin
-        .from('studio_versions')
-        .update(versionPayload)
-        .eq('id', matchingVersion.id)
-    }
-
-    await backupVersionAudio(savedVersionId, generation, audioUrl, streamAudioUrl)
-    savedVersions.push({ id: savedVersionId, choice })
-  }
+  const wantsComplete = status === 'succeeded'
+  const { savedVersions, hasExactTwo } = await saveMurekaGenerationTracksEnsuringTwo({
+    generation,
+    choices,
+    isComplete: wantsComplete,
+  })
+  if (savedVersions.length === 0) return
 
   const currentChoice = savedVersions[savedVersions.length - 1]?.choice
+  const fullyReady = wantsComplete && hasExactTwo
 
   await Promise.all([
     supabaseAdmin
       .from('studio_generations')
       .update({
         provider_audio_id: currentChoice?.id || null,
-        status: isComplete ? 'completed' : 'first_ready',
+        status: fullyReady ? 'completed' : 'first_ready',
         response_payload: { ...(generation.response_payload || {}), choices },
         updated_at: new Date().toISOString(),
       })
       .eq('id', generation.id),
     supabaseAdmin
       .from('studio_projects')
-      .update({ status: isComplete ? 'ready' : 'generating', updated_at: new Date().toISOString() })
+      .update({ status: fullyReady ? 'ready' : 'generating', updated_at: new Date().toISOString() })
       .eq('id', generation.project_id),
   ])
 
-  if (isComplete) {
+  if (fullyReady) {
     const { data: project } = await supabaseAdmin
       .from('studio_projects')
       .select('id, title, style, mood, description')
@@ -271,7 +192,14 @@ async function saveMurekaTrack(generation: any, choices: any[], status: string) 
       })
     }
 
-    await notifyMusicReady(generation)
+    if (generation.status !== 'completed') {
+      await notifyMusicReady(generation)
+    }
+  } else if (wantsComplete && !hasExactTwo) {
+    console.warn('[Studio IA] succeeded Mureka sem 2 versões; mantendo generating', {
+      generationId: generation.id,
+      saved: savedVersions.length,
+    })
   }
 }
 
@@ -303,14 +231,15 @@ export async function GET(request: NextRequest) {
     const existingVersionBeforePoll = (existingVersionsBeforePoll || []).find((version: any) => (
       version.audio_url || version.stream_audio_url
     )) || null
-    const sunoVersionCount = (existingVersionsBeforePoll || []).length
-    const needsTwoSunoTracks =
-      generation.provider === 'sunoapi' && sunoVersionCount < 2
+    const versionCountBeforePoll = (existingVersionsBeforePoll || []).length
+    const needsTwoProviderTracks =
+      (generation.provider === 'sunoapi' || generation.provider === 'mureka') &&
+      versionCountBeforePoll < 2
 
     const needsPolling =
       generation.status !== 'completed' ||
       !existingVersionBeforePoll?.audio_url ||
-      needsTwoSunoTracks
+      needsTwoProviderTracks
     const hasAudioBeforePoll = Boolean(existingVersionBeforePoll?.audio_url || existingVersionBeforePoll?.stream_audio_url)
 
     if (!hasAudioBeforePoll && isStudioGenerationTimedOut(generation)) {
@@ -362,7 +291,7 @@ export async function GET(request: NextRequest) {
 
       const status = result?.status || result?.data?.status
       providerStatus = status || null
-      const choices = getMurekaChoices(result)
+      const choices = extractMurekaChoicesFromPayload(result)
 
       if (Array.isArray(choices) && choices.length > 0 && (status === 'succeeded' || status === 'streaming')) {
         await saveMurekaTrack(generation, choices, status)
