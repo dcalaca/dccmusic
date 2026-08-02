@@ -213,10 +213,11 @@ export default function ImproveReadyMusicPage() {
               Envie uma música já gravada (voz e violão, demo, celular...). A IA tenta manter melodia, letra e essência, com produção mais profissional e duração máxima de 4:30.
             </p>
             <p className="mt-3 rounded-2xl border border-emerald-700/60 bg-emerald-950/20 p-3 text-sm text-emerald-100">
-              Sem letra digitada? Sem problema: ao melhorar, a IA <strong>transcreve a letra do áudio automaticamente</strong>. Você também pode clicar em “Entender letra” antes para revisar.
+              Sem letra digitada? Ao clicar em <strong>Melhorar</strong>, a IA transcreve a letra do áudio <strong>incluída nos 10 créditos</strong>.
+              Se quiser revisar antes, use “Entender letra” (custa <strong>1 crédito</strong>).
             </p>
             <p className="mt-3 rounded-2xl border border-yellow-700/60 bg-yellow-950/20 p-3 text-sm text-yellow-100">
-              Custo: 10 créditos quando a melhoria é iniciada.
+              Custo: 10 créditos na melhoria. “Entender letra” avulso: 1 crédito (só se você clicar nesse botão).
             </p>
           </section>
 
@@ -277,7 +278,7 @@ export default function ImproveReadyMusicPage() {
                   className="inline-flex items-center gap-2 rounded-xl border border-emerald-600/50 bg-emerald-950/40 px-3 py-2 text-xs font-bold text-emerald-100 transition hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {transcribing ? <FiLoader className="animate-spin" /> : <FiEdit3 />}
-                  {transcribing ? 'Entendendo letra...' : 'Entender letra do áudio'}
+                  {transcribing ? 'Entendendo letra...' : 'Entender letra (1 crédito)'}
                 </button>
               </div>
               <textarea

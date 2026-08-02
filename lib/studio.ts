@@ -6,11 +6,17 @@ export const STUDIO_PLAN_SLUGS = ['studio-start', 'studio-pro', 'studio-elite', 
 export const STUDIO_MUSIC_CREDITS = 10
 export const STUDIO_VOICE_CREDITS = 2
 export const STUDIO_PREMIUM_COVER_CREDITS = 2
+/** Transcrição avulsa de letra (Whisper). Evita abuso sem gerar música. */
+export const STUDIO_TRANSCRIBE_CREDITS = 1
 export const FREE_STUDIO_LYRIC_LIMIT = 3
 export const FREE_STUDIO_MUSIC_LIMIT = 1
 
 export function canCreateStudioMusicWithCredits(usage: { remaining: number }) {
   return usage.remaining >= STUDIO_MUSIC_CREDITS
+}
+
+export function canTranscribeStudioAudioWithCredits(usage: { remaining: number }) {
+  return usage.remaining >= STUDIO_TRANSCRIBE_CREDITS
 }
 
 function dedupePaidStudioTopups(topups: any[]) {

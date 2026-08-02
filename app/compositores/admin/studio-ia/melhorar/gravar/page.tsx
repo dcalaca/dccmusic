@@ -309,7 +309,7 @@ export default function RecordMusicPage() {
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
                       >
                         {busy === 'transcribing' ? <FiLoader className="animate-spin" /> : <FiEdit3 />}
-                        Entender letra
+                        Entender letra (1 crédito)
                       </button>
                       <button
                         type="button"
