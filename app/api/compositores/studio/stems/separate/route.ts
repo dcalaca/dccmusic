@@ -12,6 +12,7 @@ import {
   chargeStemSeparation,
   markJobFailed,
   markJobReady,
+  prepareStemSeparationSource,
   refundStemSeparation,
   requestMurekaStemSeparation,
   requestSunoStemSeparation,
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get('content-type') || ''
     let projectId: string | null = null
     let versionId: string | null = null
+    let version: any = null
     let sourceTitle: string | null = null
     let sourceAudioUrl: string | null = null
     let sourceAudioPath: string | null = null
@@ -98,7 +100,7 @@ export async function POST(request: NextRequest) {
 
       const { data: versions, error: versionError } = await versionQuery
       if (versionError) throw versionError
-      const version = versions?.[0]
+      version = versions?.[0]
       if (!version) {
         return NextResponse.json({ error: 'Este projeto ainda não tem áudio para separar.' }, { status: 400 })
       }
@@ -110,7 +112,7 @@ export async function POST(request: NextRequest) {
       sourceAudioStorageProvider = version.audio_storage_provider || version.stream_audio_storage_provider || null
     }
 
-    if (!sourceAudioUrl) {
+    if (!sourceAudioUrl && !sourceAudioPath) {
       return NextResponse.json({ error: 'Não foi possível obter a URL do áudio de origem.' }, { status: 400 })
     }
 
@@ -118,6 +120,23 @@ export async function POST(request: NextRequest) {
       const project = await getProjectForComposer(projectId, composer.composerId)
       if (!project) return NextResponse.json({ error: 'Projeto não encontrado.' }, { status: 404 })
     }
+
+    let prepared
+    try {
+      prepared = await prepareStemSeparationSource({
+        version,
+        sourceAudioUrl,
+        sourceAudioPath,
+        sourceAudioStorageProvider,
+      })
+    } catch (prepareError: any) {
+      return NextResponse.json({
+        error: prepareError?.message || 'Não foi possível preparar o áudio para separação.',
+      }, { status: 400 })
+    }
+
+    // Guarda URL pública (tempfile Suno / CDN) para fallback Mureka e callback
+    sourceAudioUrl = prepared.publicAudioUrl || sourceAudioUrl
 
     const { data: job, error: jobError } = await supabaseAdmin
       .from('studio_stem_jobs')
@@ -145,13 +164,29 @@ export async function POST(request: NextRequest) {
     })
 
     try {
-      const suno = await requestSunoStemSeparation(sourceAudioUrl)
+      const suno = await requestSunoStemSeparation(
+        prepared.sunoNative
+          ? {
+              taskId: prepared.sunoNative.taskId,
+              audioId: prepared.sunoNative.audioId,
+            }
+          : {
+              audioUrl: prepared.publicAudioUrl,
+            }
+      )
       await supabaseAdmin
         .from('studio_stem_jobs')
         .update({
           provider: 'suno',
           provider_task_id: suno.taskId,
-          provider_payload: suno.payload,
+          provider_payload: {
+            ...suno.payload,
+            prepared: {
+              usedNativeIds: Boolean(prepared.sunoNative),
+              publicAudioUrl: prepared.publicAudioUrl,
+            },
+          },
+          source_audio_url: prepared.publicAudioUrl,
           updated_at: new Date().toISOString(),
         })
         .eq('id', job.id)
@@ -165,8 +200,46 @@ export async function POST(request: NextRequest) {
         message: `Separação iniciada. Foram debitados ${STUDIO_STEM_SEPARATION_CREDITS} créditos.`,
       })
     } catch (sunoError: any) {
+      // Se falhou com IDs nativos, tenta de novo com URL pública
+      if (prepared.sunoNative && prepared.publicAudioUrl) {
+        try {
+          const sunoRetry = await requestSunoStemSeparation({
+            audioUrl: prepared.publicAudioUrl,
+          })
+          await supabaseAdmin
+            .from('studio_stem_jobs')
+            .update({
+              provider: 'suno',
+              provider_task_id: sunoRetry.taskId,
+              provider_payload: {
+                ...sunoRetry.payload,
+                prepared: {
+                  usedNativeIds: false,
+                  retriedWithPublicUrl: true,
+                  publicAudioUrl: prepared.publicAudioUrl,
+                  firstError: sunoError?.message || null,
+                },
+              },
+              source_audio_url: prepared.publicAudioUrl,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', job.id)
+
+          return NextResponse.json({
+            success: true,
+            jobId: job.id,
+            status: 'processing',
+            provider: 'suno',
+            creditsCharged: STUDIO_STEM_SEPARATION_CREDITS,
+            message: `Separação iniciada. Foram debitados ${STUDIO_STEM_SEPARATION_CREDITS} créditos.`,
+          })
+        } catch {
+          // segue para Mureka
+        }
+      }
+
       try {
-        const mureka = await requestMurekaStemSeparation(sourceAudioUrl)
+        const mureka = await requestMurekaStemSeparation(prepared.publicAudioUrl)
         const stems = await stemsFromMurekaZip({
           composerId: composer.composerId,
           jobId: job.id,
@@ -175,6 +248,7 @@ export async function POST(request: NextRequest) {
         await markJobReady(job.id, stems, 'mureka', {
           sunoError: sunoError?.message || 'Suno falhou no submit',
           mureka: mureka.payload,
+          publicAudioUrl: prepared.publicAudioUrl,
         })
 
         return NextResponse.json({

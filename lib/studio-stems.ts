@@ -301,9 +301,176 @@ function parseSunoStemEntries(info: any): Array<{ name: string; url: string }> {
   return entries
 }
 
-export async function requestSunoStemSeparation(audioUrl: string) {
+function isSignedOrPrivateStorageUrl(url: string) {
+  const value = String(url || '').toLowerCase()
+  return (
+    value.includes('x-amz-signature') ||
+    value.includes('x-amz-credential') ||
+    value.includes('x-amz-algorithm') ||
+    value.includes('token=') ||
+    value.includes('/object/sign/') ||
+    value.includes('supabase.co/storage') ||
+    value.includes('r2.cloudflarestorage.com')
+  )
+}
+
+function isPublicProviderAudioUrl(url: string) {
+  if (!/^https?:\/\//i.test(url)) return false
+  if (isSignedOrPrivateStorageUrl(url)) return false
+  return true
+}
+
+function extractSunoAudioId(version: any, generation?: any) {
+  return (
+    generation?.provider_audio_id ||
+    version?.provider_payload?.id ||
+    version?.provider_payload?.audio_id ||
+    version?.provider_payload?.audioId ||
+    null
+  )
+}
+
+export async function uploadAudioBufferToSunoTemp(input: {
+  buffer: Buffer
+  fileName?: string
+  contentType?: string
+}) {
   const apiKey = getSunoApiKey()
-  if (!apiKey) throw new Error('SUNO_API_KEY não configurada.')
+  if (!apiKey) throw new Error('SUNOAPI_KEY não configurada.')
+
+  const fileName = input.fileName || `stem-source-${randomUUID()}.mp3`
+  const contentType = input.contentType || 'audio/mpeg'
+  const endpoints = [
+    'https://api.sunoapi.org/api/file-stream-upload',
+    'https://sunoapiorg.redpandaai.co/api/file-stream-upload',
+  ]
+
+  let lastError = 'Falha ao enviar áudio temporário para a Suno.'
+  for (const endpoint of endpoints) {
+    const form = new FormData()
+    form.append(
+      'file',
+      new Blob([new Uint8Array(input.buffer)], { type: contentType }),
+      fileName
+    )
+    form.append('uploadPath', 'dcc-studio/stems')
+    form.append('fileName', fileName)
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: form,
+      cache: 'no-store',
+    })
+    const payload = await response.json().catch(() => ({}))
+    const downloadUrl =
+      payload?.data?.downloadUrl ||
+      payload?.data?.download_url ||
+      payload?.downloadUrl
+
+    if (response.ok && downloadUrl) {
+      return { downloadUrl: String(downloadUrl), payload }
+    }
+
+    lastError = payload?.msg || payload?.error || `Upload Suno falhou (${response.status})`
+  }
+
+  throw new Error(lastError)
+}
+
+/**
+ * Prepara uma fonte aceita pelos provedores:
+ * 1) taskId+audioId da geração Suno (melhor)
+ * 2) URL pública do provedor
+ * 3) reupload do nosso áudio para tempfile da Suno
+ */
+export async function prepareStemSeparationSource(input: {
+  version?: any | null
+  sourceAudioUrl?: string | null
+  sourceAudioPath?: string | null
+  sourceAudioStorageProvider?: string | null
+}) {
+  let generation: any = null
+  if (input.version?.generation_id) {
+    const { data } = await supabaseAdmin
+      .from('studio_generations')
+      .select('id, provider, provider_task_id, provider_audio_id, response_payload')
+      .eq('id', input.version.generation_id)
+      .maybeSingle()
+    generation = data
+  }
+
+  const sunoTaskId = generation?.provider_task_id || null
+  const sunoAudioId = extractSunoAudioId(input.version, generation)
+  const sunoNative =
+    sunoTaskId && sunoAudioId
+      ? { taskId: String(sunoTaskId), audioId: String(sunoAudioId) }
+      : null
+
+  const candidateUrls = [
+    input.version?.audio_url,
+    input.version?.stream_audio_url,
+    input.sourceAudioUrl,
+  ].filter((url): url is string => Boolean(url && String(url).startsWith('http')))
+
+  let publicAudioUrl = candidateUrls.find((url) => isPublicProviderAudioUrl(url)) || null
+
+  if (!publicAudioUrl) {
+    const localUrl =
+      (input.sourceAudioPath
+        ? await createStudioAudioSignedUrl(input.sourceAudioPath, input.sourceAudioStorageProvider)
+        : null) ||
+      input.sourceAudioUrl ||
+      candidateUrls[0] ||
+      null
+
+    if (!localUrl) {
+      throw new Error('Não foi possível localizar o áudio para separar.')
+    }
+
+    const downloaded = await downloadBuffer(localUrl)
+    if (downloaded.buffer.byteLength > 20 * 1024 * 1024) {
+      throw new Error('O áudio precisa ter no máximo 20 MB para separar instrumentos.')
+    }
+
+    const uploaded = await uploadAudioBufferToSunoTemp({
+      buffer: downloaded.buffer,
+      fileName: `stem-${randomUUID()}.mp3`,
+      contentType: downloaded.contentType,
+    })
+    publicAudioUrl = uploaded.downloadUrl
+  }
+
+  return {
+    sunoNative,
+    publicAudioUrl,
+    generationId: generation?.id || null,
+  }
+}
+
+export async function requestSunoStemSeparation(input: {
+  audioUrl?: string | null
+  taskId?: string | null
+  audioId?: string | null
+}) {
+  const apiKey = getSunoApiKey()
+  if (!apiKey) throw new Error('SUNOAPI_KEY não configurada.')
+
+  const body: Record<string, any> = {
+    type: 'split_stem',
+    callBackUrl: getStudioCallbackUrl('/api/studio/suno/stem-callback'),
+  }
+
+  if (input.taskId && input.audioId) {
+    body.taskId = input.taskId
+    body.audioId = input.audioId
+  } else if (input.audioUrl) {
+    body.audioUrl = input.audioUrl
+  } else {
+    throw new Error('Fonte de áudio inválida para a Suno.')
+  }
 
   const response = await fetch('https://api.sunoapi.org/api/v1/vocal-removal/generate', {
     method: 'POST',
@@ -311,15 +478,12 @@ export async function requestSunoStemSeparation(audioUrl: string) {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      audioUrl,
-      type: 'split_stem',
-      callBackUrl: getStudioCallbackUrl('/api/studio/suno/stem-callback'),
-    }),
+    body: JSON.stringify(body),
   })
 
   const payload = await response.json().catch(() => ({}))
-  if (!response.ok) {
+  // Alguns provedores retornam HTTP 200 com code != 200
+  if (!response.ok || (payload?.code != null && Number(payload.code) !== 200)) {
     throw new Error(payload?.msg || payload?.error || `Suno stem falhou (${response.status})`)
   }
 
