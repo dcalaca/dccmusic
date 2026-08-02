@@ -101,6 +101,7 @@ function creditActionLabel(action?: string | null) {
     studio_cover_art: 'Criação de capa IA',
     music_transcription: 'Partitura e cifra',
     lyric_generation_free: 'Letra grátis',
+    audio_lyric_transcription: 'Entender letra do áudio',
   }
   return labels[action || ''] || action || 'Movimentação'
 }

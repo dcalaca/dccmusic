@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       composerId: composer.composerId,
       action: 'audio_lyric_transcription',
       amount: STUDIO_TRANSCRIBE_CREDITS,
-      description: 'Transcrição de letra do áudio (Studio IA)',
+      description: 'Entender letra do áudio — 1 crédito',
       metadata: { feature: 'audio_lyric_transcription' },
     })
 
