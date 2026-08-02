@@ -156,8 +156,10 @@ export async function saveSunoGenerationTracks(input: {
 
   const keepIds = savedVersions.map((item) => item.id).filter(Boolean) as string[]
 
-  // Sempre limpa sobras da mesma geração (resolve corrida callback vs polling).
-  if (keepIds.length > 0) {
+  // Só limpa sobras no lote FINAL (complete/SUCCESS).
+  // Callbacks "first" / FIRST_SUCCESS costumam chegar com 1 faixa e, se apagarem
+  // órfãos aqui, removem a 2ª versão que o polling/complete já tinha salvo.
+  if (input.isComplete && keepIds.length > 0) {
     const { data: allForGeneration } = await supabaseAdmin
       .from('studio_versions')
       .select('id')

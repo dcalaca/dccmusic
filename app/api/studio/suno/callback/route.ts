@@ -63,6 +63,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, processed: false, error: 'geração não encontrada' })
     }
 
+    // Callback "first" atrasado depois do complete não deve reprocessar (pode deixar 1 versão).
+    if (generation.status === 'completed' && callbackType === 'first') {
+      return NextResponse.json({ received: true, processed: false, skipped: true, reason: 'already_completed' })
+    }
+
     const first = Array.isArray(tracks) ? tracks[0] : null
     const hasAudio = Boolean(first && (getTrackAudioUrl(first) || getTrackStreamAudioUrl(first)))
     const callbackStatus = body?.data?.status || body?.status || null
