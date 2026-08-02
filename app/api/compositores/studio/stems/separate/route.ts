@@ -134,7 +134,8 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    sourceAudioUrl = prepared.publicAudioUrl
+    // Guarda a URL original do job (CDN ou assinada); a Mureka recebe data URL/base64
+    const jobSourceAudioUrl = prepared.publicAudioUrl || sourceAudioUrl
 
     const { data: job, error: jobError } = await supabaseAdmin
       .from('studio_stem_jobs')
@@ -142,7 +143,7 @@ export async function POST(request: NextRequest) {
         composer_id: composer.composerId,
         project_id: projectId,
         source_version_id: versionId,
-        source_audio_url: sourceAudioUrl,
+        source_audio_url: jobSourceAudioUrl,
         source_audio_path: sourceAudioPath,
         source_audio_storage_provider: sourceAudioStorageProvider,
         source_title: sourceTitle,
@@ -164,8 +165,8 @@ export async function POST(request: NextRequest) {
     try {
       const mureka = await requestMurekaStemSeparation({
         url: prepared.publicAudioUrl,
-        uploadAudioId: prepared.uploadAudioId,
         dataUrl: prepared.dataUrl,
+        model: 'audio-separation-2',
       })
       const stems = await stemsFromMurekaZip({
         composerId: composer.composerId,
@@ -176,7 +177,6 @@ export async function POST(request: NextRequest) {
         mureka: mureka.payload,
         usedBody: mureka.usedBody,
         publicAudioUrl: prepared.publicAudioUrl,
-        uploadAudioId: prepared.uploadAudioId || null,
       })
 
       return NextResponse.json({

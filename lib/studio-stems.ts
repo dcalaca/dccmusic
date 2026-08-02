@@ -365,45 +365,6 @@ export async function uploadAudioBufferToSunoTemp(input: {
   throw new Error(lastError)
 }
 
-function extractMurekaUploadAudioId(payload: any) {
-  const candidates = [
-    payload?.upload_audio_id,
-    payload?.uploadAudioId,
-    payload?.id,
-    payload?.file_id,
-    payload?.data?.upload_audio_id,
-    payload?.data?.uploadAudioId,
-    payload?.data?.id,
-    payload?.data?.file_id,
-    payload?.result?.upload_audio_id,
-    payload?.result?.id,
-  ]
-  for (const value of candidates) {
-    if (typeof value === 'string' && value.trim()) return value.trim()
-    if (typeof value === 'number' && Number.isFinite(value)) return String(value)
-  }
-  return null
-}
-
-function extractMurekaUploadUrl(payload: any) {
-  const candidates = [
-    payload?.url,
-    payload?.download_url,
-    payload?.downloadUrl,
-    payload?.file_url,
-    payload?.audio_url,
-    payload?.data?.url,
-    payload?.data?.download_url,
-    payload?.data?.downloadUrl,
-    payload?.data?.file_url,
-    payload?.data?.audio_url,
-  ]
-  for (const value of candidates) {
-    if (typeof value === 'string' && value.startsWith('http')) return value
-  }
-  return null
-}
-
 function murekaErrorMessage(payload: any, fallback: string) {
   return (
     payload?.error?.message ||
@@ -416,48 +377,11 @@ function murekaErrorMessage(payload: any, fallback: string) {
   )
 }
 
-export async function uploadAudioBufferToMureka(input: {
-  buffer: Buffer
-  fileName?: string
-  contentType?: string
-}) {
-  const apiKey = getMurekaApiKey()
-  if (!apiKey) throw new Error('MUREKA_API_KEY não configurada.')
-
-  const fileName = input.fileName || `stem-source-${randomUUID()}.mp3`
-  const contentType = input.contentType || 'audio/mpeg'
-  const form = new FormData()
-  form.append('purpose', 'audio')
-  form.append(
-    'file',
-    new Blob([new Uint8Array(input.buffer)], { type: contentType }),
-    fileName
-  )
-
-  const response = await fetch('https://api.mureka.ai/v1/files/upload', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: form,
-    cache: 'no-store',
-  })
-  const payload = await response.json().catch(() => ({}))
-  const uploadAudioId = extractMurekaUploadAudioId(payload)
-  const uploadUrl = extractMurekaUploadUrl(payload)
-
-  if (!response.ok || (!uploadAudioId && !uploadUrl)) {
-    throw new Error(murekaErrorMessage(payload, 'Falha ao enviar áudio para a Mureka.'))
-  }
-
-  return { uploadAudioId, uploadUrl, payload }
-}
-
 /**
- * Prepara fonte aceita pela Mureka:
- * 1) URL pública do provedor (CDN)
- * 2) Upload do nosso áudio para a Mureka (upload_audio_id / url)
- * 3) Fallback data URL base64 (<= 10 MB)
+ * Prepara fonte aceita pela Mureka Stem API:
+ * - `url` HTTP pública (CDN) OU
+ * - `url` em base64 `data:audio/mp3;base64,...` (máx. 10 MB)
+ * Doc: POST /v1/song/stem
  */
 export async function prepareStemSeparationSource(input: {
   version?: any | null
@@ -486,7 +410,7 @@ export async function prepareStemSeparationSource(input: {
     throw new Error('Não foi possível localizar o áudio para separar.')
   }
 
-  // Se já é CDN pública estável, tenta direto
+  // CDN pública estável pode ir direto no campo `url`
   const preferredPublic = candidateUrls.find((url) => isPublicProviderAudioUrl(url)) || null
 
   const downloaded = await downloadBuffer(fetchUrl)
@@ -494,25 +418,11 @@ export async function prepareStemSeparationSource(input: {
     throw new Error('O áudio precisa ter no máximo 10 MB para separar instrumentos na Mureka.')
   }
 
-  let uploadAudioId: string | null = null
-  let uploadedUrl: string | null = null
-  try {
-    const uploaded = await uploadAudioBufferToMureka({
-      buffer: downloaded.buffer,
-      fileName: `stem-${randomUUID()}.mp3`,
-      contentType: downloaded.contentType,
-    })
-    uploadAudioId = uploaded.uploadAudioId
-    uploadedUrl = uploaded.uploadUrl
-  } catch (uploadError) {
-    console.error('[Studio Stems] upload Mureka falhou, tentando data URL:', uploadError)
-  }
-
-  const dataUrl = `data:${downloaded.contentType || 'audio/mpeg'};base64,${downloaded.buffer.toString('base64')}`
+  // Formato exatamente como no exemplo da Mureka
+  const dataUrl = `data:audio/mp3;base64,${downloaded.buffer.toString('base64')}`
 
   return {
-    publicAudioUrl: uploadedUrl || preferredPublic || fetchUrl,
-    uploadAudioId,
+    publicAudioUrl: preferredPublic,
     dataUrl,
   }
 }
@@ -561,25 +471,24 @@ export async function requestSunoStemSeparation(input: {
 
 export async function requestMurekaStemSeparation(input: {
   url?: string | null
-  uploadAudioId?: string | null
   dataUrl?: string | null
+  /** Doc: audio-separation-1 (5 stems), -2 (12 stems), -3 (vocal/accompaniment) */
+  model?: 'audio-separation-1' | 'audio-separation-2' | 'audio-separation-3'
 }) {
   const apiKey = getMurekaApiKey()
   if (!apiKey) throw new Error('MUREKA_API_KEY não configurada.')
 
-  const attempts: Array<Record<string, string>> = []
-  if (input.uploadAudioId) {
-    attempts.push({ upload_audio_id: input.uploadAudioId })
-  }
+  const model = input.model || 'audio-separation-2'
+  const attempts: string[] = []
+  // Preferência: CDN pública; senão base64 (aceito na doc)
   if (input.url && isPublicProviderAudioUrl(input.url)) {
-    attempts.push({ url: input.url })
+    attempts.push(input.url)
   }
   if (input.dataUrl) {
-    attempts.push({ url: input.dataUrl })
+    attempts.push(input.dataUrl)
   }
-  // Último recurso: URL original (mesmo assinada) — alguns ambientes aceitam
-  if (input.url && !attempts.some((item) => item.url === input.url)) {
-    attempts.push({ url: input.url })
+  if (input.url && !attempts.includes(input.url) && input.url.startsWith('data:')) {
+    attempts.push(input.url)
   }
 
   if (attempts.length === 0) {
@@ -587,7 +496,8 @@ export async function requestMurekaStemSeparation(input: {
   }
 
   let lastError = 'Mureka stem falhou.'
-  for (const body of attempts) {
+  for (const url of attempts) {
+    const body = { url, model }
     const response = await fetch('https://api.mureka.ai/v1/song/stem', {
       method: 'POST',
       headers: {
@@ -605,7 +515,7 @@ export async function requestMurekaStemSeparation(input: {
     }
 
     lastError = murekaErrorMessage(payload, `Mureka stem falhou (${response.status})`)
-    // Continua tentando outras formas se a URL for inválida
+    // Continua tentando data URL se a URL HTTP for rejeitada
     if (!/invalid|url|parameter/i.test(lastError) && response.status >= 500) {
       break
     }
@@ -710,8 +620,8 @@ export async function applySunoStemCallback(body: any) {
       })
       const mureka = await requestMurekaStemSeparation({
         url: prepared.publicAudioUrl,
-        uploadAudioId: prepared.uploadAudioId,
         dataUrl: prepared.dataUrl,
+        model: 'audio-separation-2',
       })
       const stems = await stemsFromMurekaZip({
         composerId: job.composer_id,
@@ -755,8 +665,8 @@ export async function applySunoStemCallback(body: any) {
       })
       const mureka = await requestMurekaStemSeparation({
         url: prepared.publicAudioUrl,
-        uploadAudioId: prepared.uploadAudioId,
         dataUrl: prepared.dataUrl,
+        model: 'audio-separation-2',
       })
       const stems = await stemsFromMurekaZip({
         composerId: job.composer_id,
