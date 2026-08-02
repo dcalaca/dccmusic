@@ -3,7 +3,7 @@
 import { FormEvent, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FiArrowLeft, FiLoader, FiMusic, FiUploadCloud, FiZap } from 'react-icons/fi'
+import { FiArrowLeft, FiEdit3, FiLoader, FiMusic, FiUploadCloud, FiZap } from 'react-icons/fi'
 
 const improvementOptions = [
   { id: 'similar', label: 'Manter o mais parecido possível', description: 'Tenta preservar letra, melodia, ritmo e essência.' },
@@ -46,21 +46,61 @@ function getAudioDurationSeconds(file: File) {
 export default function ImproveReadyMusicPage() {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
+  const [transcribing, setTranscribing] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [selectedImprovement, setSelectedImprovement] = useState('similar')
+  const [lyric, setLyric] = useState('')
+  const [audioFile, setAudioFile] = useState<File | null>(null)
 
-  const submit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const ensureToken = () => {
     const token = localStorage.getItem('composer_token')
     if (!token) {
       router.push('/compositores/login?redirect=/compositores/admin/studio-ia/melhorar/musica-pronta')
+      return null
+    }
+    return token
+  }
+
+  const transcribeAudio = async () => {
+    const token = ensureToken()
+    if (!token) return
+    if (!audioFile) {
+      setError('Escolha o áudio da música antes de pedir para entender a letra.')
       return
     }
+
+    setTranscribing(true)
+    setError('')
+    setMessage('')
+    try {
+      const formData = new FormData()
+      formData.set('audio', audioFile)
+      const response = await fetch('/api/compositores/studio/transcribe', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      })
+      const data = await readApiResponse(response)
+      if (!response.ok) throw new Error(data.error || 'Não consegui entender o áudio.')
+      setLyric(data.text || '')
+      setMessage('Letra transcrita do áudio. Revise e corrija se precisar antes de melhorar.')
+    } catch (err: any) {
+      setError(err.message || 'Erro ao transcrever áudio.')
+    } finally {
+      setTranscribing(false)
+    }
+  }
+
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const token = ensureToken()
+    if (!token) return
 
     const form = event.currentTarget
     const formData = new FormData(form)
     formData.set('improvement', selectedImprovement)
+    formData.set('lyric', lyric.trim())
 
     const file = formData.get('audio')
     if (!(file instanceof File) || file.size <= 0) {
@@ -75,7 +115,9 @@ export default function ImproveReadyMusicPage() {
 
     setSubmitting(true)
     setError('')
-    setMessage('')
+    setMessage(lyric.trim()
+      ? 'Enviando música...'
+      : 'Entendendo a letra do áudio e iniciando a melhoria...')
     try {
       const response = await fetch('/api/compositores/studio/enhance', {
         method: 'POST',
@@ -86,7 +128,11 @@ export default function ImproveReadyMusicPage() {
       if (!response.ok) throw new Error(data.error || 'Erro ao melhorar música')
 
       window.dispatchEvent(new Event('studioBalanceChange'))
-      setMessage('Melhoria iniciada. Vamos abrir o projeto para você acompanhar.')
+      setMessage(
+        data.lyricTranscribed
+          ? 'Letra transcrita do áudio e melhoria iniciada. Abrindo o projeto...'
+          : 'Melhoria iniciada. Vamos abrir o projeto para você acompanhar.'
+      )
       window.setTimeout(() => {
         router.push(`/compositores/admin/studio-ia/projetos/${data.projectId}`)
       }, 900)
@@ -113,7 +159,10 @@ export default function ImproveReadyMusicPage() {
               <span className="gradient-text">Enviar música pronta</span>
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
-              Envie uma música já gravada. A IA cria uma nova versão tentando manter melodia, letra e essência, com produção mais profissional e duração máxima de 4:30.
+              Envie uma música já gravada (voz e violão, demo, celular...). A IA tenta manter melodia, letra e essência, com produção mais profissional e duração máxima de 4:30.
+            </p>
+            <p className="mt-3 rounded-2xl border border-emerald-700/60 bg-emerald-950/20 p-3 text-sm text-emerald-100">
+              Sem letra digitada? Sem problema: ao melhorar, a IA <strong>transcreve a letra do áudio automaticamente</strong>. Você também pode clicar em “Entender letra” antes para revisar.
             </p>
             <p className="mt-3 rounded-2xl border border-yellow-700/60 bg-yellow-950/20 p-3 text-sm text-yellow-100">
               Custo: 10 créditos quando a melhoria é iniciada.
@@ -137,7 +186,14 @@ export default function ImproveReadyMusicPage() {
 
             <label className="mt-4 block rounded-2xl border border-purple-800/70 bg-purple-950/20 p-4">
               <span className="mb-2 flex items-center gap-2 text-sm font-bold text-purple-100"><FiUploadCloud /> Áudio da música</span>
-              <input name="audio" type="file" required accept="audio/*" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white" />
+              <input
+                name="audio"
+                type="file"
+                required
+                accept="audio/*"
+                onChange={(event) => setAudioFile(event.target.files?.[0] || null)}
+                className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white"
+              />
               <span className="mt-2 block text-xs text-purple-100/80">Use áudio de até 4 minutos e 30 segundos. Pode ser demo, guia, voz e violão ou gravação do celular.</span>
             </label>
 
@@ -158,12 +214,30 @@ export default function ImproveReadyMusicPage() {
               </div>
             </div>
 
-            <label className="mt-5 block">
-              <span className="mb-2 block text-sm font-bold text-gray-300">Letra da música, se tiver</span>
-              <textarea name="lyric" rows={8} placeholder="Cole a letra aqui se quiser ajudar a IA a manter a letra original." className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
-            </label>
+            <div className="mt-5">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm font-bold text-gray-300">Letra da música</span>
+                <button
+                  type="button"
+                  onClick={transcribeAudio}
+                  disabled={transcribing || submitting || !audioFile}
+                  className="inline-flex items-center gap-2 rounded-xl border border-emerald-600/50 bg-emerald-950/40 px-3 py-2 text-xs font-bold text-emerald-100 transition hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {transcribing ? <FiLoader className="animate-spin" /> : <FiEdit3 />}
+                  {transcribing ? 'Entendendo letra...' : 'Entender letra do áudio'}
+                </button>
+              </div>
+              <textarea
+                name="lyric"
+                value={lyric}
+                onChange={(event) => setLyric(event.target.value)}
+                rows={8}
+                placeholder="Opcional: cole a letra, ou deixe em branco que a IA transcreve do áudio ao melhorar. Também pode clicar em “Entender letra do áudio”."
+                className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500"
+              />
+            </div>
 
-            <button type="submit" disabled={submitting} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-4 font-black text-white transition hover:scale-[1.01] disabled:opacity-60">
+            <button type="submit" disabled={submitting || transcribing} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-4 font-black text-white transition hover:scale-[1.01] disabled:opacity-60">
               {submitting ? <FiLoader className="animate-spin" /> : <FiMusic />}
               {submitting ? 'Enviando música...' : 'Melhorar minha música'}
             </button>

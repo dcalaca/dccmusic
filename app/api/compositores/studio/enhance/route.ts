@@ -13,9 +13,11 @@ import {
 import { supabaseAdmin } from '@/lib/supabase'
 import { createStudioAudioSignedUrl, uploadStudioInputAudio } from '@/lib/studio-audio-backup'
 import { formatMusicTitle } from '@/lib/normalize'
+import { transcribeStudioAudioFile } from '@/lib/studio-transcribe'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const maxDuration = 120
 
 const MAX_TITLE_LENGTH = 30
 const MAX_STUDIO_MUSIC_DURATION_INSTRUCTION = 'duração máxima obrigatória de 4 minutos e 30 segundos, música objetiva, uma única versão completa em cada faixa, encerrar depois do final, sem recomeçar a música dentro do mesmo áudio, sem repetir a música inteira dentro do mesmo áudio, sem final longo, sem solo extenso, sem repetições para alongar'
@@ -87,7 +89,20 @@ export async function POST(request: NextRequest) {
 
     const rawTitle = String(formData.get('title') || '').trim().slice(0, MAX_TITLE_LENGTH) || 'Música melhorada'
     const title = formatMusicTitle(rawTitle)
-    const lyric = String(formData.get('lyric') || '').trim()
+    let lyric = String(formData.get('lyric') || '').trim()
+    let lyricSource: 'manual' | 'whisper' | 'none' = lyric ? 'manual' : 'none'
+
+    // Se o usuário não colou a letra (voz e violão, preguiça de digitar), transcreve o áudio.
+    if (!lyric) {
+      try {
+        lyric = await transcribeStudioAudioFile(file, file.name || 'enhance-source.mp3')
+        lyricSource = 'whisper'
+      } catch (transcriptionError: any) {
+        console.error('[Studio IA] Transcrição automática no enhance falhou:', transcriptionError)
+        // Segue sem letra (modo customMode=false), mas avisa no retorno.
+      }
+    }
+
     const slug = await createUniqueProjectSlug(composer.composerId, title)
     const uploaded = await uploadStudioInputAudio({
       composerId: composer.composerId,
@@ -110,7 +125,8 @@ export async function POST(request: NextRequest) {
           'Projeto criado pela função Melhorar minha música.',
           'A IA deve tentar manter melodia, letra e essência do áudio original.',
           getImprovementPrompt(formData.get('improvement')),
-        ].join('\n'),
+          lyricSource === 'whisper' ? 'Letra obtida por transcrição automática do áudio enviado.' : null,
+        ].filter(Boolean).join('\n'),
       })
       .select('*')
       .single()
@@ -192,6 +208,7 @@ export async function POST(request: NextRequest) {
             sizeBytes: uploaded.sizeBytes,
           },
           feature: 'enhance_music',
+          lyricSource,
         },
         response_payload: result,
       })
@@ -206,14 +223,17 @@ export async function POST(request: NextRequest) {
       action: isFreeGeneration ? 'free_music_generation' : 'music_generation',
       amount: isFreeGeneration ? 0 : STUDIO_MUSIC_CREDITS,
       description: isFreeGeneration ? 'Melhoria de música grátis no DCC Studio IA' : 'Melhoria de música no DCC Studio IA',
-      metadata: { taskId, free: isFreeGeneration, feature: 'enhance_music' },
+      metadata: { taskId, free: isFreeGeneration, feature: 'enhance_music', lyricSource },
     })
 
     return NextResponse.json({
       success: true,
       projectId: project.id,
       generationId: generation.id,
-      message: 'Melhoria iniciada. A nova versão pode levar alguns minutos para ficar pronta.',
+      lyricTranscribed: lyricSource === 'whisper',
+      message: lyricSource === 'whisper'
+        ? 'Letra transcrita do áudio e melhoria iniciada. Acompanhe no projeto.'
+        : 'Melhoria iniciada. A nova versão pode levar alguns minutos para ficar pronta.',
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro melhorar música:', error)
