@@ -253,29 +253,6 @@ export default async function Home() {
   return (
     <div className="min-h-screen">
       <section className="relative flex flex-col bg-black" aria-label="Destaque principal">
-        {/* Faixa compositor — fundo preto sólido */}
-        <div className="relative z-20 border-b border-purple-900 bg-black">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 max-w-6xl mx-auto">
-              <div className="flex items-center gap-2.5 text-left sm:gap-3">
-                <span className="text-xl sm:text-2xl leading-none" aria-hidden>
-                  🎤
-                </span>
-                <div>
-                  <p className="font-bold text-white text-sm sm:text-base leading-tight">
-                    É compositor? Publique suas músicas
-                  </p>
-                  <p className="text-xs text-gray-400 mt-0.5">Receba avaliações e alcance novos ouvintes</p>
-                </div>
-              </div>
-              <ComposerSignupCta
-                guestLabel="Cadastrar grátis"
-                className="inline-flex shrink-0 items-center justify-center rounded-lg bg-white px-5 py-2 text-sm font-bold text-violet-950 transition hover:bg-gray-100 w-full sm:w-auto"
-              />
-            </div>
-          </div>
-        </div>
-
         {/* Hero: foto em tela cheia + copy centralizada por cima (sem colunas) */}
         <div className="relative min-h-[min(68vh,680px)] w-full bg-black">
           <HeroImageCarousel
@@ -412,6 +389,29 @@ export default async function Home() {
         deliveredAiMusics={siteStats.deliveredAiMusics}
         aiMusicDays={siteStats.aiMusicDays}
       />
+
+      {/* CTA compositor — no final, para não competir com o Studio IA no topo */}
+      <section className="border-t border-purple-900 bg-black">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex items-center gap-2.5 text-left sm:gap-3">
+              <span className="text-xl leading-none sm:text-2xl" aria-hidden>
+                🎤
+              </span>
+              <div>
+                <p className="text-sm font-bold leading-tight text-white sm:text-base">
+                  É compositor? Publique suas músicas
+                </p>
+                <p className="mt-0.5 text-xs text-gray-400">Receba avaliações e alcance novos ouvintes</p>
+              </div>
+            </div>
+            <ComposerSignupCta
+              guestLabel="Cadastrar grátis"
+              className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-white px-5 py-2 text-sm font-bold text-violet-950 transition hover:bg-gray-100 sm:w-auto"
+            />
+          </div>
+        </div>
+      </section>
     </div>
   )
 }

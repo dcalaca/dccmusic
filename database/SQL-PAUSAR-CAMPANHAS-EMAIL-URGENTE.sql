@@ -14,3 +14,4 @@ select id, name, status, sent_count, failed_count, last_run_at, next_run_at
 from public.admin_email_campaigns
 order by updated_at desc
 limit 10;
+  
