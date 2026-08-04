@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiArrowRight, FiCheckCircle, FiClock, FiLoader } from 'react-icons/fi'
+import { trackGoogleAdsPurchaseConversion } from '@/components/GoogleAdsEvents'
 import { identifyTikTokCurrentComposer, trackTikTokEvent } from '@/components/TikTokEvents'
 
 function StudioTopupPendingContent() {
@@ -51,6 +52,14 @@ function StudioTopupPendingContent() {
       event_id: eventId,
       quantity: Number(data?.musicQuantity) || 1,
       value,
+    })
+
+    // Se o fluxo confirmar aqui e redirecionar, a Meta já foi marcada na sessão;
+    // o Google tem dedupe próprio e precisa disparar também neste ponto.
+    trackGoogleAdsPurchaseConversion({
+      transactionId: eventId,
+      value,
+      currency,
     })
   }
 

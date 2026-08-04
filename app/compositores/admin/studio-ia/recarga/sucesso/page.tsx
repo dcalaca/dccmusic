@@ -64,6 +64,7 @@ function StudioTopupSuccessContent() {
       })
     }
 
+    // Google Ads / GA4 (dedupe próprio — não depende da chave da Meta)
     trackGoogleAdsPurchaseConversion({
       transactionId: eventId,
       value,

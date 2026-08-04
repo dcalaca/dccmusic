@@ -12,43 +12,75 @@ function PaymentSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const subscriptionId = searchParams.get('subscription_id')
+  const paymentId =
+    searchParams.get('payment_id') ||
+    searchParams.get('collection_id') ||
+    searchParams.get('preference_id') ||
+    ''
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    const transactionId = paymentId || subscriptionId || 'composer_plan'
+
+    const trackPurchase = async (token: string | null) => {
+      let value: number | undefined
+      let currency = 'BRL'
+
+      if (token) {
+        try {
+          const response = await fetch('/api/compositores/me', {
+            headers: { Authorization: `Bearer ${token}` },
+          })
+          if (response.ok) {
+            const data = await response.json()
+            const price = Number(data?.plan?.price ?? data?.subscription?.plan?.price)
+            if (Number.isFinite(price) && price > 0) value = price
+            if (data?.subscription?.currency) currency = String(data.subscription.currency)
+          }
+        } catch {
+          // segue sem valor se a API falhar
+        }
+      }
+
       const gtag = (window as any).gtag
       if (typeof gtag === 'function') {
         gtag('event', 'compra_plano', {
           event_category: 'purchase',
           event_label: subscriptionId || 'composer_plan',
+          ...(typeof value === 'number' ? { value, currency } : {}),
         })
       }
+
       trackGoogleAdsPurchaseConversion({
-        transactionId: subscriptionId || 'composer_plan',
+        transactionId,
+        value,
+        currency,
       })
+
       pushGtmEvent('dcc_purchase', {
         product_id: 'composer_plan',
         product_name: 'Plano de compositor',
         product_type: 'subscription',
-        transaction_id: subscriptionId || 'composer_plan',
-        event_id: subscriptionId || 'composer_plan',
-        currency: 'BRL',
+        transaction_id: transactionId,
+        event_id: transactionId,
+        currency,
+        ...(typeof value === 'number' ? { value } : {}),
       })
     }
 
-    // Verificar se compositor está logado
     const token = localStorage.getItem('composer_token')
+    void trackPurchase(token)
+
     if (!token) {
       router.push('/compositores/login')
       return
     }
     identifyTikTokCurrentComposer()
 
-    // Aguardar um pouco para garantir que o webhook processou
     setTimeout(() => {
       setLoading(false)
     }, 2000)
-  }, [router])
+  }, [router, subscriptionId, paymentId])
 
   return (
     <div className="min-h-screen py-8 flex items-center justify-center">
