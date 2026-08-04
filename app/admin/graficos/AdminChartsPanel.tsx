@@ -231,9 +231,9 @@ export default function AdminChartsPanel() {
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-sm font-bold text-primary-300">Gráficos do admin</p>
-          <h1 className="mt-2 text-3xl font-black text-white">Produção, capas, vozes e cadastros</h1>
+          <h1 className="mt-2 text-3xl font-black text-white">Cadastros, letras, capas e vozes</h1>
           <p className="mt-2 text-sm text-gray-400">
-            Músicas contam solicitações concluídas, não as 2 versões geradas em cada pedido.
+            Datas no horário de Brasília. As músicas por fornecedor ficam no gráfico acima.
           </p>
         </div>
         <button
@@ -304,19 +304,21 @@ export default function AdminChartsPanel() {
             </div>
           )}
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            <TotalCard label="Músicas concluídas" value={summary.totals.musicRequestsCompleted} hint="Solicitações, sem duplicar versões" />
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <TotalCard label="Cadastros" value={summary.totals.totalRegistrations} hint="Compositores + usuários do site" />
             <TotalCard label="Letras feitas" value={summary.totals.lyricsCreated} hint="Registros em letras do Studio" />
             <TotalCard label="Capas feitas" value={summary.totals.coversDefault + summary.totals.coversPremium + summary.totals.coversCustom} hint="Padrão + premium + personalizada" />
             <TotalCard label="Vozes concluídas" value={summary.totals.voicesCompleted} hint="Status ready e disponível" />
-            <TotalCard label="Cadastros" value={summary.totals.totalRegistrations} hint="Compositores + usuários do site" />
           </div>
 
           <DailyStackedBarChart
-            title="Músicas concluídas por dia"
-            description="Cada barra é uma solicitação finalizada em studio_generations."
+            title="Cadastros por dia"
+            description="Mostra compositores e usuários comuns cadastrados no site."
             data={summary.days}
-            series={[{ key: 'musicRequestsCompleted', label: 'Solicitações concluídas', color: '#22c55e' }]}
+            series={[
+              { key: 'composerRegistrations', label: 'Compositores', color: '#a855f7' },
+              { key: 'siteUserRegistrations', label: 'Usuários do site', color: '#38bdf8' },
+            ]}
           />
 
           <DailyStackedBarChart
@@ -335,16 +337,6 @@ export default function AdminChartsPanel() {
             series={[
               { key: 'voicesUploaded', label: 'Subidas', color: '#f59e0b' },
               { key: 'voicesCompleted', label: 'Concluídas', color: '#22c55e' },
-            ]}
-          />
-
-          <DailyStackedBarChart
-            title="Cadastros por dia"
-            description="Mostra compositores e usuários comuns cadastrados no site."
-            data={summary.days}
-            series={[
-              { key: 'composerRegistrations', label: 'Compositores', color: '#a855f7' },
-              { key: 'siteUserRegistrations', label: 'Usuários do site', color: '#38bdf8' },
             ]}
           />
         </div>

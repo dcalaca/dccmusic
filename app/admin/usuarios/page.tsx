@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { FiUsers, FiMail, FiCalendar, FiCheckCircle, FiXCircle, FiSearch, FiStar, FiMessageCircle, FiKey } from 'react-icons/fi'
+import { useEffect, useMemo, useState } from 'react'
+import { FiUsers, FiMail, FiSearch, FiStar, FiMessageCircle, FiKey, FiChevronDown, FiChevronUp } from 'react-icons/fi'
 import { formatDate } from '@/lib/utils'
 
 interface SiteUser {
@@ -16,11 +16,15 @@ interface SiteUser {
   commentsCount: number
 }
 
+type SortKey = 'name' | 'email' | 'ratingsCount' | 'commentsCount' | 'createdAt' | 'isActive'
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<SiteUser[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [sortKey, setSortKey] = useState<SortKey>('createdAt')
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
   useEffect(() => {
     loadUsers()
@@ -119,11 +123,42 @@ export default function AdminUsersPage() {
     }
   }
 
-  // Filtrar usuários
-  const filteredUsers = users.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) {
+      setSortDir((current) => (current === 'asc' ? 'desc' : 'asc'))
+      return
+    }
+    setSortKey(key)
+    setSortDir(key === 'name' || key === 'email' ? 'asc' : 'desc')
+  }
+
+  const filteredUsers = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    const filtered = users.filter((user) =>
+      user.name.toLowerCase().includes(term) ||
+      user.email.toLowerCase().includes(term)
+    )
+
+    const sorted = [...filtered].sort((a, b) => {
+      let comparison = 0
+
+      if (sortKey === 'name' || sortKey === 'email') {
+        comparison = String(a[sortKey] || '').localeCompare(String(b[sortKey] || ''), 'pt-BR', {
+          sensitivity: 'base',
+        })
+      } else if (sortKey === 'createdAt') {
+        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      } else if (sortKey === 'isActive') {
+        comparison = Number(a.isActive) - Number(b.isActive)
+      } else {
+        comparison = Number(a[sortKey] || 0) - Number(b[sortKey] || 0)
+      }
+
+      return sortDir === 'asc' ? comparison : -comparison
+    })
+
+    return sorted
+  }, [users, searchTerm, sortKey, sortDir])
 
   // Estatísticas
   const stats = {
@@ -132,6 +167,28 @@ export default function AdminUsersPage() {
     inactive: users.filter(u => !u.isActive).length,
     totalRatings: users.reduce((sum, u) => sum + u.ratingsCount, 0),
     totalComments: users.reduce((sum, u) => sum + u.commentsCount, 0),
+  }
+
+  const SortHeader = ({
+    label,
+    column,
+  }: {
+    label: string
+    column: SortKey
+  }) => {
+    const active = sortKey === column
+    return (
+      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+        <button
+          type="button"
+          onClick={() => toggleSort(column)}
+          className={`inline-flex items-center gap-1 transition-colors hover:text-white ${active ? 'text-primary-300' : ''}`}
+        >
+          {label}
+          {active ? (sortDir === 'asc' ? <FiChevronUp className="h-3.5 w-3.5" /> : <FiChevronDown className="h-3.5 w-3.5" />) : null}
+        </button>
+      </th>
+    )
   }
 
   if (loading) {
@@ -216,24 +273,12 @@ export default function AdminUsersPage() {
                 <table className="w-full min-w-[800px]">
                   <thead className="bg-gray-800/50">
                     <tr>
-                      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Nome
-                      </th>
-                      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Email
-                      </th>
-                      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Avaliações
-                      </th>
-                      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Comentários
-                      </th>
-                      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Cadastrado em
-                      </th>
-                      <th className="px-4 lg:px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                        Status
-                      </th>
+                      <SortHeader label="Nome" column="name" />
+                      <SortHeader label="Email" column="email" />
+                      <SortHeader label="Avaliações" column="ratingsCount" />
+                      <SortHeader label="Comentários" column="commentsCount" />
+                      <SortHeader label="Cadastrado em" column="createdAt" />
+                      <SortHeader label="Status" column="isActive" />
                       <th className="px-4 lg:px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">
                         Ações
                       </th>

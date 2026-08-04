@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { FiUser, FiMail, FiCalendar, FiCheckCircle, FiXCircle, FiRefreshCw, FiSearch, FiEdit2, FiMusic, FiVideo, FiEye, FiKey, FiFileText, FiDownload, FiTrash2, FiCreditCard, FiGift } from 'react-icons/fi'
+import { FiUser, FiMail, FiCalendar, FiCheckCircle, FiXCircle, FiRefreshCw, FiSearch, FiEdit2, FiMusic, FiVideo, FiEye, FiKey, FiFileText, FiDownload, FiTrash2, FiCreditCard, FiGift, FiFilter } from 'react-icons/fi'
 
 interface Composer {
   id: string
@@ -78,7 +78,7 @@ export default function AdminComposersPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [appliedSearch, setAppliedSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'studio' | 'pending'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -105,16 +105,14 @@ export default function AdminComposersPage() {
   })
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      setDebouncedSearch(searchTerm.trim())
-    }, 300)
-
-    return () => window.clearTimeout(timeout)
-  }, [searchTerm])
-
-  useEffect(() => {
     setCurrentPage(1)
-  }, [debouncedSearch, statusFilter])
+  }, [appliedSearch, statusFilter])
+
+  const applySearchFilter = () => {
+    const nextSearch = searchTerm.trim()
+    setCurrentPage(1)
+    setAppliedSearch(nextSearch)
+  }
 
   const loadComposers = useCallback(async () => {
     try {
@@ -124,8 +122,8 @@ export default function AdminComposersPage() {
         limit: String(PAGE_SIZE),
         status: statusFilter,
       })
-      if (debouncedSearch) {
-        params.set('search', debouncedSearch)
+      if (appliedSearch) {
+        params.set('search', appliedSearch)
       }
 
       const response = await fetch(`/api/admin/composers/list?${params.toString()}`, { cache: 'no-store' })
@@ -143,7 +141,7 @@ export default function AdminComposersPage() {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, debouncedSearch, statusFilter])
+  }, [currentPage, appliedSearch, statusFilter])
 
   useEffect(() => {
     loadComposers()
@@ -617,7 +615,7 @@ export default function AdminComposersPage() {
         setExportProgress(`Gerando ${Math.min(exportComposers.length, total)}/${total}...`)
       }
 
-      const term = searchTerm.trim().toLowerCase()
+      const term = appliedSearch.trim().toLowerCase()
       const composersToExport = term
         ? exportComposers.filter((composer) => (
             composer.name.toLowerCase().includes(term) ||
@@ -741,9 +739,23 @@ export default function AdminComposersPage() {
               placeholder="Buscar por nome, email ou slug..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  applySearchFilter()
+                }
+              }}
               className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
             />
             </div>
+            <button
+              type="button"
+              onClick={applySearchFilter}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-primary-600 bg-primary-700 px-4 py-2 text-sm font-bold text-white hover:bg-primary-600"
+            >
+              <FiFilter className="w-4 h-4" />
+              Filtrar
+            </button>
             <button
               type="button"
               onClick={loadSpendingRanking}
@@ -829,7 +841,7 @@ export default function AdminComposersPage() {
                 {listTotal === 0 ? (
                   <tr>
                     <td colSpan={9} className="px-6 py-8 text-center text-gray-400">
-                      {debouncedSearch || statusFilter !== 'all' ? 'Nenhum compositor encontrado' : 'Nenhum compositor cadastrado'}
+                      {appliedSearch || statusFilter !== 'all' ? 'Nenhum compositor encontrado' : 'Nenhum compositor cadastrado'}
                     </td>
                   </tr>
                 ) : (

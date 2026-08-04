@@ -1,4 +1,8 @@
-create or replace function public.claim_studio_audio_backup_batch_v3(batch_limit integer default 3)
+-- Fila de backup de áudio do Studio IA
+-- v4: NÃO reserva audio_path antes do upload (path fantasma impedia retry).
+-- Também reprocessa failed/pending e processing travado.
+
+create or replace function public.claim_studio_audio_backup_batch_v3(batch_limit integer default 5)
 returns table (
   id uuid,
   composer_id uuid,
@@ -21,24 +25,39 @@ begin
     select sv.id
     from public.studio_versions sv
     where (sv.audio_url is not null or sv.stream_audio_url is not null)
-      and sv.audio_path is null
+      and coalesce(sv.audio_backup_status, 'pending') <> 'backed_up'
       and (
-        coalesce(sv.audio_backup_status, 'pending') not in ('processing', 'backed_up')
+        -- Ainda não confirmou backup real no R2
+        coalesce(sv.audio_storage_provider, '') is distinct from 'r2'
+        or sv.audio_path is null
+        or coalesce(sv.audio_backup_status, 'pending') in ('pending', 'failed')
+        or (
+          sv.audio_backup_status = 'processing'
+          and sv.updated_at < now() - interval '15 minutes'
+        )
+      )
+      and (
+        coalesce(sv.audio_backup_status, 'pending') not in ('processing')
         or (sv.audio_backup_status = 'processing' and sv.updated_at < now() - interval '15 minutes')
       )
-    order by sv.created_at asc
-    limit greatest(1, least(coalesce(batch_limit, 3), 3))
+    order by
+      case coalesce(sv.audio_backup_status, 'pending')
+        when 'pending' then 0
+        when 'failed' then 1
+        else 2
+      end,
+      sv.created_at asc
+    limit greatest(1, least(coalesce(batch_limit, 5), 10))
     for update skip locked
   ),
   marked as (
     update public.studio_versions sv
     set
-      audio_path = sv.composer_id::text || '/audio/' || to_char(now(), 'YYYY-MM') || '/' || sv.id::text || '-audio.mp3',
-      stream_audio_path = case
-        when sv.stream_audio_url is not null and sv.stream_audio_url is distinct from sv.audio_url
-          then sv.composer_id::text || '/audio/' || to_char(now(), 'YYYY-MM') || '/' || sv.id::text || '-stream.mp3'
-        else sv.composer_id::text || '/audio/' || to_char(now(), 'YYYY-MM') || '/' || sv.id::text || '-audio.mp3'
-      end,
+      -- Não grava path aqui. Path só depois do upload confirmar.
+      audio_path = null,
+      stream_audio_path = null,
+      audio_storage_provider = null,
+      stream_audio_storage_provider = null,
       audio_backup_status = 'processing',
       audio_backup_error = null,
       updated_at = now()

@@ -25,6 +25,80 @@ import AdminMusicCodeLookup from './AdminMusicCodeLookup'
 
 const adminGroups = [
   {
+    title: 'Controle Financeiro',
+    description: 'Receita, pagamentos, cupons e compradores.',
+    items: [
+      {
+        href: '/admin/financeiro',
+        title: 'Financeiro',
+        description: 'Entrada, custos, lucro estimado, anúncios, Brevo, Vercel e pagamentos',
+        icon: FiDollarSign,
+        accent: 'green',
+      },
+      {
+        href: '/admin/tipos-pagamento',
+        title: 'Tipos de pagamento',
+        description: 'Pagamentos novos x recorrentes: valores e quantidades',
+        icon: FiDollarSign,
+        accent: 'green',
+      },
+      {
+        href: '/admin/compradores',
+        title: 'Compradores Mercado Pago',
+        description: 'Lista e CSV de compradores/recorrentes para campanhas no Meta',
+        icon: FiUsers,
+        accent: 'blue',
+      },
+      {
+        href: '/admin/cupons',
+        title: 'Cupons Studio IA',
+        description: 'Criar cupons promocionais ou grátis de músicas para clientes',
+        icon: FiTag,
+        accent: 'purple',
+      },
+    ],
+  },
+  {
+    title: 'Vendas e Marketing',
+    description: 'Campanhas, parceiros, links e métricas de crescimento.',
+    items: [
+      {
+        href: '/admin/email-campanhas',
+        title: 'Campanhas de E-mail',
+        description: 'Enviar e agendar e-mails para compositores e usuários cadastrados',
+        icon: FiMail,
+        accent: 'fuchsia',
+      },
+      {
+        href: '/admin/parceiros',
+        title: 'Parceiros / Afiliados',
+        description: 'Criar parceiros, links e acompanhar conversões',
+        icon: FiTrendingUp,
+        accent: 'cyan',
+      },
+      {
+        href: '/admin/links',
+        title: 'Links Rastreáveis',
+        description: 'Criar e gerenciar links com rastreamento de cliques',
+        icon: FiLink,
+      },
+      {
+        href: '/admin/graficos',
+        title: 'Gráficos',
+        description: 'Acompanhar músicas, letras, capas, vozes e cadastros por dia',
+        icon: FiBarChart2,
+        accent: 'cyan',
+      },
+      {
+        href: '/admin/graficos-visualizacoes',
+        title: 'Gráficos de Visualizações',
+        description: 'Ranking por período das músicas mais ouvidas e vídeos mais vistos',
+        icon: FiBarChart2,
+        accent: 'cyan',
+      },
+    ],
+  },
+  {
     title: 'Conteúdo',
     description: 'Cadastro e organização do catálogo público.',
     items: [
@@ -88,61 +162,14 @@ const adminGroups = [
     ],
   },
   {
-    title: 'Vendas e Marketing',
-    description: 'Receita, divulgação, parceiros e campanhas.',
-    items: [
-      {
-        href: '/admin/financeiro',
-        title: 'Financeiro',
-        description: 'Entrada, custos, lucro estimado, anúncios, Brevo, Vercel e pagamentos',
-        icon: FiDollarSign,
-        accent: 'green',
-      },
-      {
-        href: '/admin/parceiros',
-        title: 'Parceiros / Afiliados',
-        description: 'Criar parceiros, links e acompanhar conversões',
-        icon: FiTrendingUp,
-        accent: 'cyan',
-      },
-      {
-        href: '/admin/email-campanhas',
-        title: 'Campanhas de E-mail',
-        description: 'Enviar e agendar e-mails para compositores e usuários cadastrados',
-        icon: FiMail,
-        accent: 'fuchsia',
-      },
-      {
-        href: '/admin/links',
-        title: 'Links Rastreáveis',
-        description: 'Criar e gerenciar links com rastreamento de cliques',
-        icon: FiLink,
-      },
-    ],
-  },
-  {
     title: 'Studio IA',
-    description: 'Planos, cupons e configurações do Studio IA.',
+    description: 'Planos e monitoramento do Studio IA.',
     items: [
-      {
-        href: '/admin/configuracoes',
-        title: 'Configurações',
-        description: 'Ajustar limiar de letra longa, provedores e outros parâmetros do sistema',
-        icon: FiSettings,
-        accent: 'purple',
-      },
       {
         href: '/admin/studio-planos',
         title: 'Planos Studio IA',
         description: 'Administrar planos separados do DCC Studio IA',
         icon: FiZap,
-        accent: 'purple',
-      },
-      {
-        href: '/admin/cupons',
-        title: 'Cupons Studio IA',
-        description: 'Criar cupons promocionais ou grátis de músicas para clientes',
-        icon: FiTag,
         accent: 'purple',
       },
       {
@@ -162,14 +189,14 @@ const adminGroups = [
   },
   {
     title: 'Relatórios e Configurações',
-    description: 'Métricas, anúncios e histórico de acessos.',
+    description: 'Métricas, anúncios, histórico e parâmetros do sistema.',
     items: [
       {
-        href: '/admin/graficos',
-        title: 'Gráficos',
-        description: 'Acompanhar músicas, letras, capas, vozes e cadastros por dia',
-        icon: FiBarChart2,
-        accent: 'cyan',
+        href: '/admin/configuracoes',
+        title: 'Configurações',
+        description: 'Ajustar limiar de letra longa, provedores e outros parâmetros do sistema',
+        icon: FiSettings,
+        accent: 'purple',
       },
       {
         href: '/admin/visualizacoes',
@@ -178,31 +205,10 @@ const adminGroups = [
         icon: FiEye,
       },
       {
-        href: '/admin/graficos-visualizacoes',
-        title: 'Gráficos de Visualizações',
-        description: 'Ranking por período das músicas mais ouvidas e vídeos mais vistos',
-        icon: FiBarChart2,
-        accent: 'cyan',
-      },
-      {
         href: '/admin/relatorios',
         title: 'Relatórios',
         description: 'Relatórios completos de cliques e análises',
         icon: FiFileText,
-      },
-      {
-        href: '/admin/tipos-pagamento',
-        title: 'Tipos de pagamento',
-        description: 'Pagamentos novos x recorrentes: valores e quantidades',
-        icon: FiDollarSign,
-        accent: 'green',
-      },
-      {
-        href: '/admin/compradores',
-        title: 'Compradores Mercado Pago',
-        description: 'Lista e CSV de compradores/recorrentes para campanhas no Meta',
-        icon: FiUsers,
-        accent: 'blue',
       },
       {
         href: '/admin/ads',
@@ -248,20 +254,11 @@ export default async function AdminPage() {
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h1 className="mb-2 text-4xl font-bold">
-              <span className="gradient-text">Painel Admin</span>
-            </h1>
-            <p className="text-gray-400">Gerencie o site por áreas, sem precisar procurar em uma lista gigante.</p>
-          </div>
-          <Link
-            href="/admin/interacoes"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-black text-white hover:bg-primary-700"
-          >
-            <FiMessageCircle />
-            Comentários e Notas
-          </Link>
+        <div className="mb-8">
+          <h1 className="mb-2 text-4xl font-bold">
+            <span className="gradient-text">Painel Admin</span>
+          </h1>
+          <p className="text-gray-400">Gerencie o site por áreas, sem precisar procurar em uma lista gigante.</p>
         </div>
 
         <section className="mb-8">

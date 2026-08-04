@@ -17,8 +17,8 @@ export default async function AdminGraficosPage() {
             <FiArrowLeft /> Voltar ao admin
           </Link>
           <div className="space-y-8">
-            <AdminChartsPanel />
             <ProviderReportPanel />
+            <AdminChartsPanel />
           </div>
         </div>
       </div>

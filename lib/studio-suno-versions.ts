@@ -3,12 +3,36 @@ import { backupStudioVersionAudio } from './studio-audio-backup'
 
 export const SUNO_TRACKS_PER_GENERATION = 2
 
+/** URL durável (CDN Suno). Evita tempfile.aiquickdraw, que expira rápido e quebra o backup. */
 export function getTrackAudioUrl(track: any) {
-  return track?.audio_url || track?.audioUrl || track?.source_audio_url || track?.sourceAudioUrl || track?.url || null
+  const trackId = String(track?.id || '').trim()
+  const cdnFromId = trackId ? `https://cdn1.suno.ai/${trackId}.mp3` : null
+  return (
+    track?.source_audio_url ||
+    track?.sourceAudioUrl ||
+    cdnFromId ||
+    track?.audio_url ||
+    track?.audioUrl ||
+    track?.url ||
+    null
+  )
 }
 
 export function getTrackStreamAudioUrl(track: any) {
-  return track?.stream_audio_url || track?.streamAudioUrl || track?.source_stream_audio_url || track?.sourceStreamAudioUrl || track?.stream_url || track?.streamUrl || null
+  const trackId = String(track?.id || '').trim()
+  const cdnFromId = trackId ? `https://cdn1.suno.ai/${trackId}.mp3` : null
+  return (
+    track?.source_stream_audio_url ||
+    track?.sourceStreamAudioUrl ||
+    track?.source_audio_url ||
+    track?.sourceAudioUrl ||
+    cdnFromId ||
+    track?.stream_audio_url ||
+    track?.streamAudioUrl ||
+    track?.stream_url ||
+    track?.streamUrl ||
+    null
+  )
 }
 
 export function extractSunoTracksFromPayload(result: any) {
