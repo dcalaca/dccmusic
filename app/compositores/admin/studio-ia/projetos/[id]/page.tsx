@@ -33,6 +33,8 @@ const MUSIC_GENERATION_COMMUNICATION_ERROR =
   'Houve uma falha na comunicação para geração da sua música. Fica tranquilo: não foi descontado do seu saldo. Favor gerar a música novamente.'
 const MUSIC_CREATION_UNAVAILABLE_MESSAGE = 'Sua letra foi salva, mas não conseguimos iniciar a criação da música agora. Tente novamente mais tarde.'
 const STUDIO_MUSIC_CREDITS = 10
+const PUBLISH_PLAN_REQUIRED_MESSAGE =
+  'A recarga e os créditos servem para criar músicas. Para publicar no DCC Music, é necessário ter um plano ativo (Studio IA ou Compositor Premium).'
 
 const inspirationVariationOptions = [
   { id: 'similar', label: 'Parecida com a anterior' },
@@ -341,6 +343,7 @@ export default function StudioProjectDetailPage() {
   const [selectedInspirationVariation, setSelectedInspirationVariation] = useState('similar')
   const [videoCheckoutLoading, setVideoCheckoutLoading] = useState(false)
   const [upgradeModalMessage, setUpgradeModalMessage] = useState('')
+  const [showPublishPlanModal, setShowPublishPlanModal] = useState(false)
   const [showIncorporateCode, setShowIncorporateCode] = useState(false)
   const [showInspirationPicker, setShowInspirationPicker] = useState(false)
   const [preselectedInspirationVersionId, setPreselectedInspirationVersionId] = useState('')
@@ -509,18 +512,14 @@ export default function StudioProjectDetailPage() {
       const projectVersions = Array.isArray(data.project.versions) ? data.project.versions : []
       const projectAudioUrl = data.project.version?.audioUrl || data.project.version?.streamAudioUrl
       const hasReadyAudio = Boolean(projectAudioUrl || projectVersions.some((version: any) => version.audioUrl || version.streamAudioUrl))
+      const activeGenerationRunning = Boolean(
+        data.activeGeneration?.id &&
+        ['pending', 'processing', 'first_ready'].includes(String(data.activeGeneration.status || ''))
+      )
       setProject(data.project)
       setLyric(data.project.lyric || '')
-      if (hasReadyAudio) {
-        setGenerationId(null)
-        setGenerationBackgroundMode(false)
-        setPreviewAudioUrl('')
-        if (options?.notifyReady) {
-          setMessage('Sua música ficou pronta. Atualizamos esta página automaticamente.')
-        } else if (message === MUSIC_GENERATION_BACKGROUND_MESSAGE) {
-          setMessage('')
-        }
-      } else if (data.activeGeneration?.id) {
+
+      if (activeGenerationRunning) {
         const createdAt = new Date(data.activeGeneration.createdAt).getTime()
         const elapsedSeconds = Math.max(0, Math.floor((Date.now() - createdAt) / 1000))
 
@@ -535,15 +534,27 @@ export default function StudioProjectDetailPage() {
             setError(MUSIC_GENERATION_COMMUNICATION_ERROR)
           }
         } else {
+          // Mantém a tela de produção mesmo se o projeto já tiver versões antigas.
           setGenerationId(data.activeGeneration.id)
           setGenerationElapsedSeconds(elapsedSeconds)
           setGenerationBackgroundMode(elapsedSeconds >= MUSIC_GENERATION_BACKGROUND_SECONDS)
           if (elapsedSeconds >= MUSIC_GENERATION_BACKGROUND_SECONDS) {
             setMessage(MUSIC_GENERATION_BACKGROUND_MESSAGE)
+          } else if (message === MUSIC_GENERATION_BACKGROUND_MESSAGE) {
+            setMessage('')
           }
           if (!options?.skipGenerationCheck) {
             checkGeneration(data.activeGeneration.id)
           }
+        }
+      } else if (hasReadyAudio) {
+        setGenerationId(null)
+        setGenerationBackgroundMode(false)
+        setPreviewAudioUrl('')
+        if (options?.notifyReady) {
+          setMessage('Sua música ficou pronta. Atualizamos esta página automaticamente.')
+        } else if (message === MUSIC_GENERATION_BACKGROUND_MESSAGE) {
+          setMessage('')
         }
       }
 
@@ -769,6 +780,76 @@ export default function StudioProjectDetailPage() {
     }
   }
 
+  const retryEnhanceFromOriginal = async () => {
+    const token = localStorage.getItem('composer_token')
+    if (!token) {
+      router.push('/compositores/login')
+      return
+    }
+
+    const latestStudioStatus = await refreshStudioStatus(token)
+    if (!latestStudioStatus?.canCreateMusic) {
+      const upgradeMessage = 'Você precisa de 10 créditos (ou sua música grátis) para gerar outra versão com o mesmo áudio.'
+      setError('')
+      setUpgradeModalMessage(upgradeMessage)
+      return
+    }
+
+    if (!lyric.trim()) {
+      setError('Salve a letra no projeto antes de gerar outra versão.')
+      return
+    }
+
+    setProcessing('Gerando outra versão com o áudio original...')
+    setError('')
+    setMessage('')
+
+    try {
+      await saveLyric()
+      setProcessing('Gerando outra versão com o áudio original...')
+      const response = await fetch(`/api/compositores/studio/projects/${projectId}/enhance`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          lyric,
+          extraInstructions: extraInstructions.trim() || null,
+        }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.error || 'Erro ao gerar outra versão')
+
+      window.dispatchEvent(new Event('studioBalanceChange'))
+      await refreshStudioStatus(token)
+      setGenerationId(data.generationId)
+      setGenerationBackgroundMode(false)
+      setGenerationElapsedSeconds(0)
+      setMessage('')
+      checkGeneration(data.generationId)
+    } catch (err: any) {
+      const recoveredProject = await loadProject({
+        silent: true,
+        notifyReady: true,
+        suppressError: true,
+      })
+      if (recoveredProject?.activeGeneration?.id) {
+        setError('')
+        setMessage(MUSIC_GENERATION_BACKGROUND_MESSAGE)
+        return
+      }
+
+      const errorMessage = err.message || 'Erro ao gerar outra versão'
+      setError(errorMessage)
+      if (errorMessage.toLowerCase().includes('música grátis') || errorMessage.toLowerCase().includes('créditos')) {
+        setUpgradeModalMessage(errorMessage)
+      }
+    } finally {
+      setProcessing('')
+    }
+  }
+
   const reuseLyricInNewProject = async (sourceVersionId?: string) => {
     closeInspirationPicker()
     const token = localStorage.getItem('composer_token')
@@ -945,11 +1026,17 @@ export default function StudioProjectDetailPage() {
 
   const publishProject = async () => {
     const token = localStorage.getItem('composer_token')
+    if (!token) {
+      router.push(`/compositores/login?redirect=${encodeURIComponent(`/compositores/admin/studio-ia/projetos/${projectId}`)}`)
+      return
+    }
+
     setError('')
     setMessage('')
 
-    if (!studioStatus?.canPublish) {
-      setError('Para publicar no DCC Music, é necessário ter plano Studio IA ou ser Compositor Premium ativo.')
+    const latestStudioStatus = await refreshStudioStatus(token)
+    if (!latestStudioStatus?.canPublish) {
+      setShowPublishPlanModal(true)
       return
     }
 
@@ -964,7 +1051,13 @@ export default function StudioProjectDetailPage() {
         body: JSON.stringify({ projectId }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao publicar')
+      if (!response.ok) {
+        if (response.status === 403) {
+          setShowPublishPlanModal(true)
+          return
+        }
+        throw new Error(data.error || 'Erro ao publicar')
+      }
       setProject((currentProject: any) => ({ ...currentProject, status: 'published', publicSlug: data.publicSlug }))
       setMessage('Música publicada no DCC Music.')
     } catch (err: any) {
@@ -1108,12 +1201,13 @@ export default function StudioProjectDetailPage() {
   const currentVideoStatus = currentVideoRequest ? videoRequestStatus[currentVideoRequest.status] || videoRequestStatus.requested : null
   const hasActiveVideoRequest = Boolean(currentVideoRequest && ['payment_pending', 'requested', 'in_production'].includes(currentVideoRequest.status))
   const inspiration = project.inspiration
+  const canRetryEnhance = Boolean(project.enhanceSource?.available)
   const voicePreferences = extractVoicePreferences(project.description)
   const incorporateCode = project.publicSlug
     ? `<iframe src="${typeof window !== 'undefined' ? window.location.origin : 'https://www.dccmusic.online'}/embed/studio/${project.publicSlug}" width="100%" height="180" frameborder="0" allow="autoplay; encrypted-media" loading="lazy"></iframe>`
     : ''
   const hasProjectReadyAudio = Boolean(audioUrl || projectVersions.some((version: any) => version.audioUrl || version.streamAudioUrl))
-  const isMusicRequestPending = Boolean(generationId && generationBackgroundMode && !hasProjectReadyAudio)
+  const isMusicRequestPending = Boolean(generationId && generationBackgroundMode)
   const visibleMessage = message === MUSIC_GENERATION_BACKGROUND_MESSAGE && !isMusicRequestPending
     ? ''
     : message
@@ -1146,6 +1240,10 @@ export default function StudioProjectDetailPage() {
               message={upgradeModalMessage}
               onClose={() => setUpgradeModalMessage('')}
             />
+          )}
+
+          {showPublishPlanModal && (
+            <PublishPlanModal onClose={() => setShowPublishPlanModal(false)} />
           )}
 
           {showInspirationPicker && (
@@ -1505,6 +1603,22 @@ export default function StudioProjectDetailPage() {
                         <FiMusic /> Criar música agora
                       </button>
                     )}
+                    {canRetryEnhance && (
+                      <div className="rounded-2xl border border-emerald-700/50 bg-emerald-950/20 p-4">
+                        <p className="text-sm font-bold text-emerald-100">Áudio original guardado</p>
+                        <p className="mt-1 text-xs leading-relaxed text-emerald-100/80">
+                          Você pode gerar outra versão usando o mesmo áudio enviado na melhoria, sem precisar subir o arquivo de novo. Custa 10 créditos (ou sua música grátis).
+                        </p>
+                        <button
+                          type="button"
+                          onClick={retryEnhanceFromOriginal}
+                          disabled={Boolean(processing) || !canCreateMusic || !lyric.trim()}
+                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/50 bg-emerald-900/40 px-4 py-3 text-sm font-black text-emerald-50 transition hover:border-emerald-300 hover:bg-emerald-800/50 disabled:opacity-60"
+                        >
+                          <FiZap /> Tentar outra versão com o mesmo áudio (10 créditos)
+                        </button>
+                      </div>
+                    )}
                     <div className="flex items-center gap-2">
                       <button onClick={improveCover} disabled={Boolean(processing) || !canGeneratePremiumCover} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100 transition hover:border-purple-400/40 hover:bg-white/[0.09] disabled:opacity-60">
                         {isGeneratingCover ? (
@@ -1540,13 +1654,44 @@ export default function StudioProjectDetailPage() {
                       </p>
                     )}
                     {project.status === 'published' ? (
-                      <button onClick={unpublishProject} disabled={Boolean(processing) || !canPublishOnDcc} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-yellow-500/40 bg-yellow-950/30 px-4 py-3 font-bold text-yellow-100 transition hover:bg-yellow-900/40 disabled:opacity-60">
+                      <button onClick={unpublishProject} disabled={Boolean(processing)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-yellow-500/40 bg-yellow-950/30 px-4 py-3 font-bold text-yellow-100 transition hover:bg-yellow-900/40 disabled:opacity-60">
                         <FiEyeOff /> Despublicar música
                       </button>
                     ) : (
-                      <button onClick={publishProject} disabled={Boolean(processing) || !canPublishOnDcc} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-green-700 px-4 py-3 font-bold text-white transition hover:bg-green-600 disabled:opacity-60">
-                        <FiZap /> Publicar música no DCC Music
-                      </button>
+                      <div className="group relative">
+                        <button
+                          type="button"
+                          onClick={publishProject}
+                          disabled={Boolean(processing) || !studioStatus}
+                          title={!canPublishOnDcc ? PUBLISH_PLAN_REQUIRED_MESSAGE : undefined}
+                          className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 font-bold text-white transition disabled:opacity-60 ${
+                            canPublishOnDcc
+                              ? 'bg-green-700 hover:bg-green-600'
+                              : 'bg-green-900/70 ring-1 ring-amber-400/40 hover:bg-green-800/80'
+                          }`}
+                        >
+                          {canPublishOnDcc ? <FiZap /> : <FiLock />}
+                          Publicar música no DCC Music
+                        </button>
+                        {!canPublishOnDcc && studioStatus && (
+                          <>
+                            <div className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 hidden w-full min-w-[16rem] rounded-xl border border-amber-500/50 bg-gray-950 px-4 py-3 text-xs leading-relaxed text-amber-50 shadow-xl shadow-black/40 group-hover:block sm:min-w-[18rem]">
+                              <p className="font-bold text-amber-200">Por que não consigo publicar?</p>
+                              <p className="mt-1.5">{PUBLISH_PLAN_REQUIRED_MESSAGE}</p>
+                            </div>
+                            <p className="mt-2 text-center text-xs leading-relaxed text-amber-200/90">
+                              Recarga cria música. Publicar exige plano ativo.{' '}
+                              <button
+                                type="button"
+                                onClick={() => setShowPublishPlanModal(true)}
+                                className="font-semibold underline underline-offset-2 hover:text-amber-100"
+                              >
+                                Entenda aqui
+                              </button>
+                            </p>
+                          </>
+                        )}
+                      </div>
                     )}
                     {project.status === 'published' && project.publicSlug && (
                       <Link href={`/studio/${project.publicSlug}`} target="_blank" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100">
@@ -2064,6 +2209,57 @@ function UpgradeModal({ message, onClose }: { message: string; onClose: () => vo
             className="rounded-xl border border-gray-700 px-5 py-3 font-bold text-gray-200 hover:bg-gray-900"
           >
             Agora não
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+function PublishPlanModal({ onClose }: { onClose: () => void }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 px-4 backdrop-blur"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 12 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="w-full max-w-md rounded-3xl border border-amber-500/50 bg-gradient-to-br from-gray-950 via-amber-950/40 to-black p-7 text-center shadow-2xl shadow-black/60"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/15 text-amber-200">
+          <FiLock className="h-7 w-7" />
+        </div>
+        <h2 className="text-2xl font-black text-white">Para publicar, precisa de plano ativo</h2>
+        <p className="mt-3 text-sm leading-relaxed text-amber-50/90">
+          {PUBLISH_PLAN_REQUIRED_MESSAGE}
+        </p>
+        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-gray-300">
+          <p><span className="font-semibold text-white">Recarga / créditos:</span> criar e gerar músicas</p>
+          <p className="mt-1"><span className="font-semibold text-white">Plano ativo:</span> publicar no DCC Music</p>
+        </div>
+        <div className="mt-6 grid gap-3">
+          <Link
+            href="/studio-ia#planos"
+            className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white hover:from-primary-500 hover:to-purple-500"
+          >
+            Ver planos do Studio IA
+          </Link>
+          <Link
+            href="/compositores/planos#compositor-premium"
+            className="inline-flex items-center justify-center rounded-xl border border-amber-500/50 px-5 py-3 font-bold text-amber-100 hover:bg-amber-950/40"
+          >
+            Ver Compositor Premium
+          </Link>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-gray-700 px-5 py-3 font-bold text-gray-200 hover:bg-gray-900"
+          >
+            Entendi
           </button>
         </div>
       </motion.div>

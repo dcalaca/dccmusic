@@ -18,7 +18,11 @@ export async function POST(request: NextRequest) {
 
     if (!hasStudioAccess && !hasAnyActivePlan) {
       return NextResponse.json(
-        { error: 'Para publicar no DCC Music, é necessário ter uma assinatura ativa.' },
+        {
+          error:
+            'A recarga e os créditos servem para criar músicas. Para publicar no DCC Music, é necessário ter um plano ativo (Studio IA ou Compositor Premium).',
+          code: 'PUBLISH_PLAN_REQUIRED',
+        },
         { status: 403 }
       )
     }
