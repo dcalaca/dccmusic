@@ -1658,13 +1658,13 @@ export default function StudioProjectDetailPage() {
                         <FiEyeOff /> Despublicar música
                       </button>
                     ) : (
-                      <div className="group relative">
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={publishProject}
                           disabled={Boolean(processing) || !studioStatus}
                           title={!canPublishOnDcc ? PUBLISH_PLAN_REQUIRED_MESSAGE : undefined}
-                          className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 font-bold text-white transition disabled:opacity-60 ${
+                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 font-bold text-white transition disabled:opacity-60 ${
                             canPublishOnDcc
                               ? 'bg-green-700 hover:bg-green-600'
                               : 'bg-green-900/70 ring-1 ring-amber-400/40 hover:bg-green-800/80'
@@ -1673,24 +1673,20 @@ export default function StudioProjectDetailPage() {
                           {canPublishOnDcc ? <FiZap /> : <FiLock />}
                           Publicar música no DCC Music
                         </button>
-                        {!canPublishOnDcc && studioStatus && (
-                          <>
-                            <div className="pointer-events-none absolute bottom-full left-0 z-20 mb-2 hidden w-full min-w-[16rem] rounded-xl border border-amber-500/50 bg-gray-950 px-4 py-3 text-xs leading-relaxed text-amber-50 shadow-xl shadow-black/40 group-hover:block sm:min-w-[18rem]">
-                              <p className="font-bold text-amber-200">Por que não consigo publicar?</p>
-                              <p className="mt-1.5">{PUBLISH_PLAN_REQUIRED_MESSAGE}</p>
-                            </div>
-                            <p className="mt-2 text-center text-xs leading-relaxed text-amber-200/90">
-                              Recarga cria música. Publicar exige plano ativo.{' '}
-                              <button
-                                type="button"
-                                onClick={() => setShowPublishPlanModal(true)}
-                                className="font-semibold underline underline-offset-2 hover:text-amber-100"
-                              >
-                                Entenda aqui
-                              </button>
-                            </p>
-                          </>
-                        )}
+                        <div className="group relative">
+                          <button
+                            type="button"
+                            aria-label="Informação sobre publicação"
+                            onClick={() => setShowPublishPlanModal(true)}
+                            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-gray-900 text-sm font-black text-gray-300 hover:border-amber-500 hover:text-white"
+                          >
+                            ?
+                          </button>
+                          <div className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden w-64 rounded-xl border border-amber-500/50 bg-gray-950 px-4 py-3 text-xs leading-relaxed text-amber-50 shadow-xl shadow-black/40 group-hover:block">
+                            <p className="font-bold text-amber-200">Sobre publicar</p>
+                            <p className="mt-1.5">{PUBLISH_PLAN_REQUIRED_MESSAGE}</p>
+                          </div>
+                        </div>
                       </div>
                     )}
                     {project.status === 'published' && project.publicSlug && (
