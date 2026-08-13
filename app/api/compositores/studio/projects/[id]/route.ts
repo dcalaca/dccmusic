@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { getCurrentProjectAssets, getProjectForComposer, mapStudioProject } from '@/lib/studio'
+import { mapStudioVideoRequest } from '@/lib/studio-video'
 import { supabaseAdmin } from '@/lib/supabase'
 import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
 import {
@@ -195,29 +196,19 @@ export async function GET(
       .eq('composer_id', composer.composerId)
       .order('created_at', { ascending: false })
 
-    const { data: completedVideoRequest } = await supabaseAdmin
+    const { data: videoRequests } = await supabaseAdmin
       .from('studio_video_requests')
       .select('*')
       .eq('project_id', project.id)
       .eq('composer_id', composer.composerId)
-      .eq('status', 'completed')
-      .not('video_url', 'is', null)
-      .order('completed_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .order('created_at', { ascending: false })
+      .limit(30)
 
-    const { data: latestVideoRequest } = completedVideoRequest
-      ? { data: null }
-      : await supabaseAdmin
-          .from('studio_video_requests')
-          .select('*')
-          .eq('project_id', project.id)
-          .eq('composer_id', composer.composerId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-
-    const videoRequest = completedVideoRequest || latestVideoRequest
+    const mappedVideoRequests = (videoRequests || [])
+      .map((item: any) => mapStudioVideoRequest(item))
+      .filter(Boolean)
+    const completedVideoRequest = mappedVideoRequests.find((item: any) => item.status === 'completed' && item.videoUrl) || null
+    const videoRequest = completedVideoRequest || mappedVideoRequests[0] || null
 
     const { data: inspirationRequest } = await supabaseAdmin
       .from('studio_inspiration_requests')
@@ -353,21 +344,8 @@ export async function GET(
           imageUrl: coverImageUrl,
           isPremium: cover.is_premium,
         } : null,
-        videoRequest: videoRequest ? {
-          id: videoRequest.id,
-          status: videoRequest.status,
-          amount: videoRequest.amount,
-          paymentGateway: videoRequest.payment_gateway,
-          paymentPreferenceId: videoRequest.payment_preference_id,
-          paymentId: videoRequest.payment_id,
-          providerTaskId: videoRequest.provider_task_id,
-          videoUrl: videoRequest.video_url,
-          errorMessage: videoRequest.error_message,
-          paidAt: videoRequest.paid_at,
-          completedAt: videoRequest.completed_at,
-          createdAt: videoRequest.created_at,
-          updatedAt: videoRequest.updated_at,
-        } : null,
+        videoRequest,
+        videoRequests: mappedVideoRequests,
         inspiration: inspirationRequest ? {
           id: inspirationRequest.id,
           status: inspirationRequest.status,

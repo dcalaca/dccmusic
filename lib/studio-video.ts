@@ -11,6 +11,34 @@ function getAudioId(version: any, generation: any) {
   )
 }
 
+export function getStudioVideoRequestVersionId(videoRequest: any): string | null {
+  const metadata = videoRequest?.metadata
+  if (!metadata || typeof metadata !== 'object') return null
+  const versionId = metadata.version_id || metadata.versionId || null
+  return versionId ? String(versionId) : null
+}
+
+export function mapStudioVideoRequest(videoRequest: any) {
+  if (!videoRequest) return null
+  return {
+    id: videoRequest.id,
+    status: videoRequest.status,
+    amount: videoRequest.amount,
+    paymentGateway: videoRequest.payment_gateway,
+    paymentPreferenceId: videoRequest.payment_preference_id,
+    paymentId: videoRequest.payment_id,
+    providerTaskId: videoRequest.provider_task_id,
+    videoUrl: videoRequest.video_url,
+    errorMessage: videoRequest.error_message,
+    paidAt: videoRequest.paid_at,
+    completedAt: videoRequest.completed_at,
+    createdAt: videoRequest.created_at,
+    updatedAt: videoRequest.updated_at,
+    versionId: getStudioVideoRequestVersionId(videoRequest),
+    versionName: videoRequest.metadata?.version_name || videoRequest.metadata?.versionName || null,
+  }
+}
+
 function getExistingVideoTaskId(result: any) {
   return result?.data?.taskId || result?.data?.task_id || null
 }
@@ -88,16 +116,23 @@ async function recoverExistingVideoRequest(videoRequest: any, existingTaskId: st
     }
   }
 
-  const { data: completedRequest } = await supabaseAdmin
+  const versionId = getStudioVideoRequestVersionId(videoRequest)
+  const { data: completedRequests } = await supabaseAdmin
     .from('studio_video_requests')
     .select('*')
     .eq('project_id', videoRequest.project_id)
     .eq('composer_id', videoRequest.composer_id)
     .eq('status', 'completed')
     .not('video_url', 'is', null)
+    .neq('id', videoRequest.id)
     .order('completed_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+    .limit(30)
+
+  const completedRequest = (completedRequests || []).find((item: any) => {
+    const itemVersionId = getStudioVideoRequestVersionId(item)
+    if (versionId) return itemVersionId === versionId
+    return !itemVersionId
+  })
 
   if (completedRequest?.video_url) {
     return markVideoRequestCompleted(videoRequest.id, {
@@ -124,7 +159,8 @@ export async function startStudioVideoGeneration(videoRequestId: string) {
     throw new Error('Geração de vídeo com letra não configurada no servidor.')
   }
 
-  const [{ data: project }, { data: composer }, { data: version }] = await Promise.all([
+  const requestedVersionId = getStudioVideoRequestVersionId(videoRequest)
+  const [{ data: project }, { data: composer }, { data: requestedVersion }, { data: currentVersion }] = await Promise.all([
     supabaseAdmin
       .from('studio_projects')
       .select('id, title')
@@ -135,6 +171,14 @@ export async function startStudioVideoGeneration(videoRequestId: string) {
       .select('name')
       .eq('id', videoRequest.composer_id)
       .maybeSingle(),
+    requestedVersionId
+      ? supabaseAdmin
+          .from('studio_versions')
+          .select('*')
+          .eq('project_id', videoRequest.project_id)
+          .eq('id', requestedVersionId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
     supabaseAdmin
       .from('studio_versions')
       .select('*')
@@ -144,6 +188,19 @@ export async function startStudioVideoGeneration(videoRequestId: string) {
       .limit(1)
       .maybeSingle(),
   ])
+  const version = requestedVersionId ? requestedVersion : currentVersion
+  if (requestedVersionId && !requestedVersion) {
+    const errorMessage = 'A versão escolhida para o vídeo não foi encontrada neste projeto.'
+    await supabaseAdmin
+      .from('studio_video_requests')
+      .update({
+        status: 'failed',
+        error_message: errorMessage,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', videoRequest.id)
+    throw new Error(errorMessage)
+  }
 
   const { data: generation } = await supabaseAdmin
     .from('studio_generations')
@@ -151,14 +208,16 @@ export async function startStudioVideoGeneration(videoRequestId: string) {
     .eq('id', version?.generation_id || '')
     .maybeSingle()
 
-  const fallbackGeneration = generation ? null : await supabaseAdmin
-    .from('studio_generations')
-    .select('*')
-    .eq('project_id', videoRequest.project_id)
-    .eq('composer_id', videoRequest.composer_id)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+  const fallbackGeneration = !generation && !requestedVersionId
+    ? await supabaseAdmin
+        .from('studio_generations')
+        .select('*')
+        .eq('project_id', videoRequest.project_id)
+        .eq('composer_id', videoRequest.composer_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    : null
 
   const generationToUse = generation || fallbackGeneration?.data
   const taskId = generationToUse?.provider_task_id

@@ -1,10 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { getCurrentProjectAssets, getProjectForComposer } from '@/lib/studio'
-import { startStudioVideoGeneration } from '@/lib/studio-video'
+import {
+  getStudioVideoRequestVersionId,
+  mapStudioVideoRequest,
+  startStudioVideoGeneration,
+} from '@/lib/studio-video'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
+
+function getVersionNumber(versions: any[], versionId: string) {
+  const sorted = [...versions].sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  )
+  const index = sorted.findIndex((item) => item.id === versionId)
+  return index >= 0 ? index + 1 : null
+}
 
 async function createVideoRequest(input: {
   composerId: string
@@ -41,46 +53,76 @@ export async function POST(request: NextRequest) {
     const project = await getProjectForComposer(body.projectId, composer.composerId)
     if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
 
-    const { version, cover } = await getCurrentProjectAssets(project.id)
-    if (!version?.audio_url && !version?.stream_audio_url) {
+    const { cover } = await getCurrentProjectAssets(project.id)
+    const { data: versions } = await supabaseAdmin
+      .from('studio_versions')
+      .select('*')
+      .eq('project_id', project.id)
+      .eq('composer_id', composer.composerId)
+      .order('created_at', { ascending: false })
+
+    const requestedVersionId = typeof body.versionId === 'string' ? body.versionId.trim() : ''
+    const currentVersion = (versions || []).find((item: any) => item.is_current) || versions?.[0] || null
+    const version = requestedVersionId
+      ? (versions || []).find((item: any) => item.id === requestedVersionId) || null
+      : currentVersion
+
+    if (!version) {
       return NextResponse.json(
-        { error: 'Finalize a música antes de gerar o vídeo com letra.' },
+        { error: requestedVersionId ? 'Versão não encontrada neste projeto.' : 'Finalize a música antes de gerar o vídeo com letra.' },
         { status: 400 }
       )
     }
 
-    const { data: completedRequest } = await supabaseAdmin
+    if (!version.audio_url && !version.stream_audio_url) {
+      return NextResponse.json(
+        { error: 'Essa versão ainda não tem áudio para gerar o vídeo com letra.' },
+        { status: 400 }
+      )
+    }
+
+    const { data: existingRequests } = await supabaseAdmin
       .from('studio_video_requests')
       .select('*')
       .eq('project_id', project.id)
       .eq('composer_id', composer.composerId)
-      .eq('status', 'completed')
-      .not('video_url', 'is', null)
-      .order('completed_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .order('created_at', { ascending: false })
+      .limit(30)
 
-    if (completedRequest) {
+    const completedForVersion = (existingRequests || []).find((item: any) => (
+      item.status === 'completed' &&
+      item.video_url &&
+      getStudioVideoRequestVersionId(item) === version.id
+    ))
+
+    if (completedForVersion) {
       return NextResponse.json({
         success: true,
-        message: 'Este vídeo com letra já estava pronto. Use o botão abaixo para assistir ou baixar.',
-        videoRequest: completedRequest,
+        message: 'Este vídeo com letra já estava pronto para esta versão. Use o botão abaixo para assistir ou baixar.',
+        videoRequest: mapStudioVideoRequest(completedForVersion),
       })
     }
 
-    const { data: activeRequest } = await supabaseAdmin
-      .from('studio_video_requests')
-      .select('id, status')
-      .eq('project_id', project.id)
-      .eq('composer_id', composer.composerId)
-      .in('status', ['payment_pending', 'requested', 'in_production'])
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+    const activeForVersion = (existingRequests || []).find((item: any) => (
+      ['payment_pending', 'requested', 'in_production'].includes(item.status) &&
+      getStudioVideoRequestVersionId(item) === version.id
+    ))
 
-    if (activeRequest) {
+    if (activeForVersion) {
       return NextResponse.json(
-        { error: 'Já existe um vídeo com letra em andamento para esta música.' },
+        { error: 'Já existe um vídeo com letra em andamento para esta versão.' },
+        { status: 409 }
+      )
+    }
+
+    const anotherVideoInProduction = (existingRequests || []).find((item: any) => (
+      ['payment_pending', 'requested', 'in_production'].includes(item.status) &&
+      getStudioVideoRequestVersionId(item) !== version.id
+    ))
+
+    if (anotherVideoInProduction) {
+      return NextResponse.json(
+        { error: 'Já existe um vídeo com letra em andamento. Aguarde finalizar para gerar o de outra versão.' },
         { status: 409 }
       )
     }
@@ -91,18 +133,22 @@ export async function POST(request: NextRequest) {
       .eq('id', composer.composerId)
       .maybeSingle()
 
+    const versionNumber = getVersionNumber(versions || [], version.id)
     const metadata = {
       type: 'studio_lyric_video',
       composer_id: composer.composerId,
       composer_name: composerData?.name || null,
       project_id: project.id,
       project_title: project.title,
+      version_id: version.id,
+      version_name: version.version_name || (versionNumber ? `Versão ${versionNumber}` : null),
+      version_number: versionNumber,
       music_audio_url: version.audio_url || version.stream_audio_url,
       cover_url: cover?.image_url || null,
       amount: 0,
     }
 
-    const reference = `studio-lyric-video:${project.id}:${Date.now()}`
+    const reference = `studio-lyric-video:${project.id}:${version.id}:${Date.now()}`
     const videoRequest = await createVideoRequest({
       composerId: composer.composerId,
       projectId: project.id,
@@ -119,7 +165,7 @@ export async function POST(request: NextRequest) {
       message: readyNow
         ? 'Vídeo com letra recuperado com sucesso.'
         : 'Vídeo com letra em produção.',
-      videoRequest: startedVideoRequest,
+      videoRequest: mapStudioVideoRequest(startedVideoRequest),
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro gerar vídeo com letra:', error)

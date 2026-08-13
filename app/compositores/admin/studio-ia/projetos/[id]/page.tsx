@@ -294,6 +294,31 @@ function extractVoicePreferences(description?: string | null) {
   return match?.[1]?.trim() || ''
 }
 
+function getStudioVersionNumber(versions: any[], versionId?: string | null) {
+  if (!versionId || !Array.isArray(versions) || versions.length === 0) return 0
+  const index = versions.findIndex((version) => version.id === versionId)
+  if (index < 0) return 0
+  return versions.length - index
+}
+
+function normalizeStudioVideoRequest(videoRequest: any) {
+  if (!videoRequest) return null
+  return {
+    id: videoRequest.id,
+    status: videoRequest.status,
+    amount: videoRequest.amount,
+    providerTaskId: videoRequest.providerTaskId || videoRequest.provider_task_id || null,
+    videoUrl: videoRequest.videoUrl || videoRequest.video_url || null,
+    errorMessage: videoRequest.errorMessage || videoRequest.error_message || null,
+    paidAt: videoRequest.paidAt || videoRequest.paid_at || null,
+    completedAt: videoRequest.completedAt || videoRequest.completed_at || null,
+    createdAt: videoRequest.createdAt || videoRequest.created_at || null,
+    updatedAt: videoRequest.updatedAt || videoRequest.updated_at || null,
+    versionId: videoRequest.versionId || videoRequest.metadata?.version_id || null,
+    versionName: videoRequest.versionName || videoRequest.metadata?.version_name || null,
+  }
+}
+
 const videoRequestStatus: Record<string, { label: string; description: string }> = {
   payment_pending: {
     label: 'Aguardando confirmação',
@@ -342,6 +367,7 @@ export default function StudioProjectDetailPage() {
   const [extraInstructions, setExtraInstructions] = useState('')
   const [selectedInspirationVariation, setSelectedInspirationVariation] = useState('similar')
   const [videoCheckoutLoading, setVideoCheckoutLoading] = useState(false)
+  const [selectedVideoVersionId, setSelectedVideoVersionId] = useState('')
   const [upgradeModalMessage, setUpgradeModalMessage] = useState('')
   const [showPublishPlanModal, setShowPublishPlanModal] = useState(false)
   const [showIncorporateCode, setShowIncorporateCode] = useState(false)
@@ -1122,10 +1148,38 @@ export default function StudioProjectDetailPage() {
     }
   }
 
+  useEffect(() => {
+    const requests = [
+      ...(Array.isArray(project?.videoRequests) ? project.videoRequests : []),
+      project?.videoRequest,
+    ].filter(Boolean)
+    const hasActive = requests.some((item: any) => ['payment_pending', 'requested', 'in_production'].includes(item.status))
+    if (!hasActive) return
+
+    const interval = window.setInterval(() => {
+      loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
+    }, 10000)
+
+    return () => window.clearInterval(interval)
+  }, [project?.videoRequest?.id, project?.videoRequest?.status, project?.videoRequests])
+
   const requestVideoClip = async () => {
     const token = localStorage.getItem('composer_token')
     if (!token) {
       router.push(`/compositores/login?redirect=${encodeURIComponent(`/compositores/admin/studio-ia/projetos/${projectId}`)}`)
+      return
+    }
+
+    const versions = Array.isArray(project?.versions) ? project.versions : []
+    const readyVersions = versions.filter((version: any) => version.audioUrl || version.streamAudioUrl)
+    const versionId = (
+      selectedVideoVersionId && readyVersions.some((version: any) => version.id === selectedVideoVersionId)
+        ? selectedVideoVersionId
+        : readyVersions.find((version: any) => version.isCurrent)?.id || readyVersions[0]?.id || project?.version?.id || ''
+    )
+
+    if (!versionId) {
+      setError('Escolha uma versão com áudio antes de gerar o vídeo com letra.')
       return
     }
 
@@ -1140,27 +1194,25 @@ export default function StudioProjectDetailPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ projectId }),
+        body: JSON.stringify({ projectId, versionId }),
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao gerar vídeo com letra')
 
-      if (data.videoRequest) {
-        setProject((currentProject: any) => currentProject ? ({
-          ...currentProject,
-          videoRequest: data.videoRequest ? {
-            id: data.videoRequest.id,
-            status: data.videoRequest.status,
-            amount: data.videoRequest.amount,
-            providerTaskId: data.videoRequest.provider_task_id,
-            videoUrl: data.videoRequest.video_url,
-            errorMessage: data.videoRequest.error_message,
-            paidAt: data.videoRequest.paid_at,
-            completedAt: data.videoRequest.completed_at,
-            createdAt: data.videoRequest.created_at,
-            updatedAt: data.videoRequest.updated_at,
-          } : currentProject.videoRequest,
-        }) : currentProject)
+      const mappedVideoRequest = normalizeStudioVideoRequest(data.videoRequest)
+      if (mappedVideoRequest) {
+        setProject((currentProject: any) => {
+          if (!currentProject) return currentProject
+          const currentRequests = Array.isArray(currentProject.videoRequests) ? currentProject.videoRequests : []
+          return {
+            ...currentProject,
+            videoRequest: mappedVideoRequest,
+            videoRequests: [
+              mappedVideoRequest,
+              ...currentRequests.filter((item: any) => item.id !== mappedVideoRequest.id),
+            ],
+          }
+        })
         setMessage(data.message || 'Vídeo com letra em produção.')
         setVideoCheckoutLoading(false)
         return
@@ -1197,9 +1249,31 @@ export default function StudioProjectDetailPage() {
   const canCreateMusic = canCreateFromStudioStatus(studioStatus)
   const canReuseLyric = canCreateFromStudioStatus(studioStatus)
   const canGeneratePremiumCover = Boolean(studioStatus) && premiumCoverLimit > 0 && premiumCoverGenerations < premiumCoverLimit
-  const currentVideoRequest = project.videoRequest
+  const videoReadyVersions = projectVersions.filter((version: any) => version.audioUrl || version.streamAudioUrl)
+  const resolvedVideoVersionId = (
+    selectedVideoVersionId && videoReadyVersions.some((version: any) => version.id === selectedVideoVersionId)
+      ? selectedVideoVersionId
+      : videoReadyVersions.find((version: any) => version.isCurrent)?.id || videoReadyVersions[0]?.id || project.version?.id || ''
+  )
+  const selectedVideoVersion = videoReadyVersions.find((version: any) => version.id === resolvedVideoVersionId) || null
+  const selectedVideoVersionNumber = getStudioVersionNumber(projectVersions, resolvedVideoVersionId)
+  const selectedVideoAudioUrl = selectedVideoVersion?.audioUrl || selectedVideoVersion?.streamAudioUrl || ''
+  const allVideoRequests = [
+    ...(Array.isArray(project.videoRequests) ? project.videoRequests : []),
+    project.videoRequest,
+  ]
+    .map((item: any) => normalizeStudioVideoRequest(item))
+    .filter(Boolean)
+    .filter((item: any, index: number, list: any[]) => list.findIndex((other) => other.id === item.id) === index)
+  const currentVideoRequest = allVideoRequests.find((item: any) => item.versionId === resolvedVideoVersionId)
+    || (selectedVideoVersion?.isCurrent
+      ? allVideoRequests.find((item: any) => !item.versionId)
+      : null)
+    || null
   const currentVideoStatus = currentVideoRequest ? videoRequestStatus[currentVideoRequest.status] || videoRequestStatus.requested : null
-  const hasActiveVideoRequest = Boolean(currentVideoRequest && ['payment_pending', 'requested', 'in_production'].includes(currentVideoRequest.status))
+  const hasActiveVideoRequest = allVideoRequests.some((item: any) => ['payment_pending', 'requested', 'in_production'].includes(item.status))
+  const selectedVideoIsActive = Boolean(currentVideoRequest && ['payment_pending', 'requested', 'in_production'].includes(currentVideoRequest.status))
+  const selectedVideoIsReady = Boolean(currentVideoRequest?.status === 'completed' && currentVideoRequest.videoUrl)
   const inspiration = project.inspiration
   const canRetryEnhance = Boolean(project.enhanceSource?.available)
   const voicePreferences = extractVoicePreferences(project.description)
@@ -1482,38 +1556,81 @@ export default function StudioProjectDetailPage() {
                     </div>
                   )}
 
-                  {audioUrl && (
+                  {hasProjectReadyAudio && (
                     <div className="mt-4 overflow-hidden rounded-2xl border border-fuchsia-400/30 bg-gradient-to-br from-fuchsia-950/25 via-purple-950/25 to-black p-4">
                       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-fuchsia-400/50 bg-fuchsia-500/20 px-3 py-1 text-xs font-bold text-fuchsia-100">
                         <FiVideo /> Vídeo com letra
                       </div>
                       <h2 className="text-lg font-black text-white">Criar vídeo com letra</h2>
                       <p className="mt-2 text-sm leading-relaxed text-gray-300">
-                        Gera um vídeo simples com capa, nome da música e letra acompanhando o áudio.
+                        Gera um vídeo simples com capa, nome da música e letra acompanhando o áudio. Cada versão pode ter 1 vídeo.
                       </p>
-                      <button
-                        type="button"
-                        onClick={requestVideoClip}
-                        disabled={videoCheckoutLoading || hasActiveVideoRequest}
-                        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-3 font-bold text-white hover:from-fuchsia-500 hover:to-purple-500 disabled:opacity-70"
-                      >
-                        {videoCheckoutLoading ? (
-                          <>
-                            <FiLoader className="animate-spin" /> Gerando vídeo...
-                          </>
-                        ) : hasActiveVideoRequest ? (
-                          <>
-                            <FiClock /> Vídeo já solicitado
-                          </>
-                        ) : (
-                          <>
-                            <FiVideo /> Gerar vídeo com letra
-                          </>
-                        )}
-                      </button>
-                      {hasActiveVideoRequest && (
+                      {videoReadyVersions.length > 1 && (
+                        <div className="mt-4">
+                          <p className="text-sm font-bold text-white">Qual versão você quer no vídeo?</p>
+                          <p className="mt-1 text-xs text-gray-400">
+                            Ouça e escolha. O botão gera só a versão marcada, e não dá para gerar de novo a mesma versão.
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {[...videoReadyVersions]
+                              .sort((a: any, b: any) => getStudioVersionNumber(projectVersions, a.id) - getStudioVersionNumber(projectVersions, b.id))
+                              .map((version: any) => {
+                              const versionNumber = getStudioVersionNumber(projectVersions, version.id)
+                              const isSelected = version.id === resolvedVideoVersionId
+                              return (
+                                <button
+                                  key={version.id}
+                                  type="button"
+                                  onClick={() => setSelectedVideoVersionId(version.id)}
+                                  className={`rounded-full border px-3 py-2 text-xs font-bold transition ${
+                                    isSelected
+                                      ? 'border-fuchsia-300 bg-fuchsia-600 text-white'
+                                      : 'border-fuchsia-800/70 bg-black/25 text-fuchsia-100 hover:border-fuchsia-500'
+                                  }`}
+                                >
+                                  Versão {versionNumber}
+                                  {version.isCurrent ? ' · atual' : ''}
+                                </button>
+                              )
+                            })}
+                          </div>
+                          {selectedVideoAudioUrl && (
+                            <div className="mt-3">
+                              <StudioAudioPlayer
+                                src={selectedVideoAudioUrl}
+                                label={selectedVideoVersionNumber ? `Versão ${selectedVideoVersionNumber}` : 'Versão escolhida'}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {!selectedVideoIsReady && (
+                        <button
+                          type="button"
+                          onClick={requestVideoClip}
+                          disabled={videoCheckoutLoading || hasActiveVideoRequest || !resolvedVideoVersionId}
+                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-3 font-bold text-white hover:from-fuchsia-500 hover:to-purple-500 disabled:opacity-70"
+                        >
+                          {videoCheckoutLoading ? (
+                            <>
+                              <FiLoader className="animate-spin" /> Gerando vídeo...
+                            </>
+                          ) : selectedVideoIsActive || hasActiveVideoRequest ? (
+                            <>
+                              <FiClock /> Vídeo já solicitado
+                            </>
+                          ) : (
+                            <>
+                              <FiVideo /> {selectedVideoVersionNumber ? `Gerar vídeo da Versão ${selectedVideoVersionNumber}` : 'Gerar vídeo com letra'}
+                            </>
+                          )}
+                        </button>
+                      )}
+                      {hasActiveVideoRequest && !selectedVideoIsReady && (
                         <p className="mt-2 text-center text-xs text-purple-100/80">
-                          Aguarde a finalização da solicitação atual antes de gerar outro vídeo.
+                          {selectedVideoIsActive
+                            ? 'Aguarde a finalização desta versão antes de gerar outro vídeo.'
+                            : 'Aguarde a finalização da solicitação atual antes de gerar o vídeo de outra versão.'}
                         </p>
                       )}
                     </div>
@@ -1524,7 +1641,7 @@ export default function StudioProjectDetailPage() {
                       <div className="mb-2 flex items-center justify-between gap-3">
                         <div className="inline-flex items-center gap-2 text-sm font-bold text-purple-100">
                           {currentVideoRequest.status === 'completed' ? <FiCheckCircle className="text-green-300" /> : <FiClock className="text-purple-300" />}
-                          Andamento do vídeo com letra
+                          Andamento do vídeo{selectedVideoVersionNumber ? ` da Versão ${selectedVideoVersionNumber}` : ' com letra'}
                         </div>
                         <span className="rounded-full border border-purple-500/50 bg-black/30 px-3 py-1 text-xs font-bold text-purple-100">
                           {currentVideoStatus.label}
