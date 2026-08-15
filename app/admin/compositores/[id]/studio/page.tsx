@@ -5,7 +5,7 @@ import * as db from '@/lib/db'
 import { getComposerStatement } from '@/lib/composer-statement'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { createStudioVoiceAssetUrl } from '@/lib/studio-voice-assets'
-import { FiArrowLeft, FiFileText, FiMusic, FiClock, FiImage, FiCreditCard, FiDollarSign, FiMic, FiVideo, FiExternalLink } from 'react-icons/fi'
+import { FiArrowLeft, FiFileText, FiMusic, FiClock, FiImage, FiCreditCard, FiDollarSign, FiMic, FiVideo, FiDownload } from 'react-icons/fi'
 import CopyButton from '@/components/CopyButton'
 
 export const dynamic = 'force-dynamic'
@@ -675,7 +675,7 @@ export default async function AdminComposerStudioPage({
                                             rel="noreferrer"
                                             className="inline-flex items-center gap-1 rounded-full bg-gray-800 px-3 py-1 text-xs font-bold text-amber-200 hover:bg-gray-700"
                                           >
-                                            <FiExternalLink /> Abrir em nova aba
+                                            <FiDownload /> Baixe seu vídeo
                                           </a>
                                         )}
                                       </div>

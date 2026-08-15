@@ -1693,7 +1693,7 @@ export default function StudioProjectDetailPage() {
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1 rounded-full bg-gray-800 px-3 py-1 text-xs font-bold text-fuchsia-100 hover:bg-gray-700"
                                   >
-                                    <FiExternalLink /> Abrir em nova aba
+                                    <FiDownload /> Baixe seu vídeo
                                   </a>
                                 )}
                               </div>
