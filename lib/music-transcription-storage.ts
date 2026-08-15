@@ -1,6 +1,7 @@
 import JSZip from 'jszip'
 import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
+import { overlayScoreTitleOnPdf } from '@/lib/pdf-score-title'
 
 const BUCKET_NAME = 'studio-assets'
 
@@ -94,9 +95,11 @@ export async function saveMurekaTranscriptionZip(input: {
     musicXmlEntry.async('nodebuffer'),
   ])
 
+  const correctedPdfBuffer = await overlayScoreTitleOnPdf(pdfBuffer, input.title)
+
   await Promise.all([
     uploadBuffer(zipPath, zipBuffer, 'application/zip'),
-    uploadBuffer(pdfPath, pdfBuffer, 'application/pdf'),
+    uploadBuffer(pdfPath, correctedPdfBuffer, 'application/pdf'),
     uploadBuffer(musicXmlPath, musicXmlBuffer, 'application/vnd.recordare.musicxml+xml'),
   ])
 

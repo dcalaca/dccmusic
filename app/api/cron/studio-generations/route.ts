@@ -38,6 +38,7 @@ async function notifyMusicReady(generation: any) {
     await sendStudioMusicReadyEmail({
       ...composer,
       projectId: project.id,
+      generationId: generation.id,
       projectTitle: project.title || 'Sua música',
     }).catch((emailError) => {
       console.error('[CRON STUDIO GENERATIONS] Erro ao enviar e-mail:', emailError)

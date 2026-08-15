@@ -5,7 +5,7 @@ import * as db from '@/lib/db'
 import { getComposerStatement } from '@/lib/composer-statement'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { createStudioVoiceAssetUrl } from '@/lib/studio-voice-assets'
-import { FiArrowLeft, FiFileText, FiMusic, FiClock, FiImage, FiCreditCard, FiDollarSign, FiMic } from 'react-icons/fi'
+import { FiArrowLeft, FiFileText, FiMusic, FiClock, FiImage, FiCreditCard, FiDollarSign, FiMic, FiVideo, FiExternalLink } from 'react-icons/fi'
 import CopyButton from '@/components/CopyButton'
 
 export const dynamic = 'force-dynamic'
@@ -56,6 +56,16 @@ const voiceStatusLabels: Record<string, string> = {
   ready: 'Pronta para usar',
   failed: 'Falhou',
   archived: 'Arquivada',
+}
+
+const videoStatusLabels: Record<string, string> = {
+  payment_pending: 'Aguardando pagamento',
+  requested: 'Solicitado',
+  in_production: 'Gerando vídeo',
+  processing: 'Processando',
+  completed: 'Pronto',
+  cancelled: 'Cancelado',
+  failed: 'Falhou',
 }
 
 function groupByProject(rows: any[] | null | undefined) {
@@ -123,7 +133,7 @@ export default async function AdminComposerStudioPage({
     .eq('composer_id', params.id)
     .order('created_at', { ascending: false })
 
-  const [lyricsResult, versionsResult, coversResult, generationsResult, voicesResult] = projectIds.length > 0
+  const [lyricsResult, versionsResult, coversResult, generationsResult, voicesResult, videosResult] = projectIds.length > 0
     ? await Promise.all([
         supabaseAdmin
           .from('studio_lyrics')
@@ -146,6 +156,11 @@ export default async function AdminComposerStudioPage({
           .in('project_id', projectIds)
           .order('created_at', { ascending: false }),
         voicesPromise,
+        supabaseAdmin
+          .from('studio_video_requests')
+          .select('*')
+          .in('project_id', projectIds)
+          .order('created_at', { ascending: false }),
       ])
     : [
         { data: [], error: null },
@@ -153,9 +168,10 @@ export default async function AdminComposerStudioPage({
         { data: [], error: null },
         { data: [], error: null },
         await voicesPromise,
+        { data: [], error: null },
       ]
 
-  const dataErrors = [lyricsResult.error, versionsResult.error, coversResult.error, generationsResult.error, voicesResult.error].filter(Boolean)
+  const dataErrors = [lyricsResult.error, versionsResult.error, coversResult.error, generationsResult.error, voicesResult.error, videosResult.error].filter(Boolean)
   if (dataErrors.length > 0) {
     throw new Error(dataErrors.map((error: any) => error.message).join(' | '))
   }
@@ -164,6 +180,7 @@ export default async function AdminComposerStudioPage({
   const versionsByProject = groupByProject(versionsResult.data)
   const coversByProject = groupByProject(coversResult.data)
   const generationsByProject = groupByProject(generationsResult.data)
+  const videosByProject = groupByProject(videosResult.data)
   const coverUrlById = new Map<string, string | null>()
   await Promise.all((coversResult.data || []).map(async (cover: any) => {
     coverUrlById.set(cover.id, await getStudioCoverImageUrl(cover))
@@ -463,6 +480,7 @@ export default async function AdminComposerStudioPage({
                 const versions = versionsByProject[project.id] || []
                 const covers = coversByProject[project.id] || []
                 const generations = generationsByProject[project.id] || []
+                const videos = videosByProject[project.id] || []
                 const currentCover = covers.find((cover: any) => cover.is_current) || covers[0]
                 const voicePreference = extractVoicePreference(project.description)
                 const idea = extractIdea(project.description)
@@ -596,6 +614,81 @@ export default async function AdminComposerStudioPage({
                                     {version.style && (
                                       <p className="mt-3 rounded-2xl border border-gray-800 bg-gray-950/70 px-3 py-2 text-xs text-gray-400">
                                         <strong className="text-gray-200">Estilo enviado:</strong> {version.style}
+                                      </p>
+                                    )}
+                                  </article>
+                                )
+                              })}
+                            </div>
+                          )}
+                        </div>
+
+                        <div>
+                          <h3 className="mb-3 flex items-center gap-2 text-lg font-bold">
+                            <FiVideo className="text-amber-300" /> Vídeos com letra
+                          </h3>
+                          {videos.length === 0 ? (
+                            <p className="rounded-2xl border border-gray-800 bg-black/30 p-4 text-sm text-gray-500">
+                              Nenhum vídeo gerado neste projeto.
+                            </p>
+                          ) : (
+                            <div className="space-y-5">
+                              {videos.map((video: any) => {
+                                const versionId = video.metadata?.version_id || video.metadata?.versionId || null
+                                const version = versions.find((item: any) => item.id === versionId)
+                                const versionNumber = versionId
+                                  ? versions.length - versions.findIndex((item: any) => item.id === versionId)
+                                  : null
+                                const versionLabel = video.metadata?.version_name
+                                  || version?.version_name
+                                  || (versionNumber && versionNumber > 0 ? `Versão ${versionNumber}` : 'Versão não identificada')
+                                const statusLabel = videoStatusLabels[video.status] || video.status || 'Desconhecido'
+                                const videoUrl = video.video_url || null
+
+                                return (
+                                  <article key={video.id} className="rounded-3xl border border-amber-900/40 bg-black/40 p-4 sm:p-5">
+                                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                      <div>
+                                        <p className="text-xs font-bold uppercase tracking-wide text-amber-300">
+                                          Vídeo para validação
+                                        </p>
+                                        <h4 className="mt-1 font-black text-white">{versionLabel}</h4>
+                                        <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
+                                          <span>{formatDate(video.completed_at || video.created_at)}</span>
+                                          <span>· {statusLabel}</span>
+                                        </div>
+                                      </div>
+                                      <div className="flex flex-wrap gap-2">
+                                        <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                                          video.status === 'completed'
+                                            ? 'bg-green-950 text-green-300'
+                                            : video.status === 'failed'
+                                              ? 'bg-red-950 text-red-300'
+                                              : 'bg-amber-950 text-amber-200'
+                                        }`}>
+                                          {statusLabel}
+                                        </span>
+                                        {videoUrl && (
+                                          <a
+                                            href={videoUrl}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="inline-flex items-center gap-1 rounded-full bg-gray-800 px-3 py-1 text-xs font-bold text-amber-200 hover:bg-gray-700"
+                                          >
+                                            <FiExternalLink /> Abrir em nova aba
+                                          </a>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {videoUrl ? (
+                                      <video
+                                        controls
+                                        src={videoUrl}
+                                        className="w-full rounded-2xl border border-gray-800 bg-black"
+                                      />
+                                    ) : (
+                                      <p className="text-sm text-gray-500">
+                                        {video.error_message || 'Este vídeo ainda não tem arquivo disponível.'}
                                       </p>
                                     )}
                                   </article>

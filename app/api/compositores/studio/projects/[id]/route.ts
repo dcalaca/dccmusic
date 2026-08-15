@@ -34,6 +34,7 @@ async function notifyMusicReady(input: {
   composerId: string
   projectId: string
   projectTitle: string
+  generationId?: string | null
 }) {
   const composer = await getComposerEmailIdentity(input.composerId)
   if (!composer) return
@@ -41,6 +42,7 @@ async function notifyMusicReady(input: {
   await sendStudioMusicReadyEmail({
     ...composer,
     projectId: input.projectId,
+    generationId: input.generationId || null,
     projectTitle: input.projectTitle || 'Sua música',
   }).catch((emailError) => {
     console.error('[Studio IA] Erro ao enviar e-mail de música pronta:', emailError)
@@ -170,6 +172,7 @@ async function syncMurekaGenerationIfReady(project: any, composerId: string) {
     await notifyMusicReady({
       composerId,
       projectId: project.id,
+      generationId: generation.id,
       projectTitle: project.title || 'Sua música',
     })
   }
