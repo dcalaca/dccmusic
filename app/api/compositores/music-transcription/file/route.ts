@@ -47,19 +47,19 @@ export async function GET(request: NextRequest) {
     const path = kind === 'musicxml' ? row.musicxml_path : kind === 'zip' ? row.zip_path : row.pdf_path
     if (!path) return NextResponse.json({ error: 'Arquivo não encontrado para esta transcrição.' }, { status: 404 })
 
-    let buffer = await readTranscriptionBinaryFile(path)
-    if (kind === 'pdf') {
-      let title = String(row.title || '').trim()
-      if (row.studio_project_id) {
-        const { data: project } = await supabaseAdmin
-          .from('studio_projects')
-          .select('title')
-          .eq('id', row.studio_project_id)
-          .maybeSingle()
-        if (project?.title) title = project.title
-      }
-      buffer = await overlayScoreTitleOnPdf(buffer, formatMusicTitle(title || 'Partitura'))
+    const fileBuffer = await readTranscriptionBinaryFile(path)
+    let title = String(row.title || '').trim()
+    if (kind === 'pdf' && row.studio_project_id) {
+      const { data: project } = await supabaseAdmin
+        .from('studio_projects')
+        .select('title')
+        .eq('id', row.studio_project_id)
+        .maybeSingle()
+      if (project?.title) title = project.title
     }
+    const responseBuffer = kind === 'pdf'
+      ? await overlayScoreTitleOnPdf(fileBuffer, formatMusicTitle(title || 'Partitura'))
+      : fileBuffer
     const extension = kind === 'musicxml' ? 'musicxml' : kind
     const contentType = kind === 'musicxml'
       ? 'application/vnd.recordare.musicxml+xml'
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         : 'application/pdf'
     const disposition = kind === 'pdf' ? 'inline' : 'attachment'
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(responseBuffer), {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `${disposition}; filename="${normalizeFilename(row.title || 'transcricao', extension)}"`,
