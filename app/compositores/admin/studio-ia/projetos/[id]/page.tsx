@@ -1271,7 +1271,6 @@ export default function StudioProjectDetailPage() {
       ? allVideoRequests.find((item: any) => !item.versionId)
       : null)
     || null
-  const currentVideoStatus = currentVideoRequest ? videoRequestStatus[currentVideoRequest.status] || videoRequestStatus.requested : null
   const hasActiveVideoRequest = allVideoRequests.some((item: any) => ['payment_pending', 'requested', 'in_production'].includes(item.status))
   const selectedVideoIsActive = Boolean(currentVideoRequest && ['payment_pending', 'requested', 'in_production'].includes(currentVideoRequest.status))
   const selectedVideoIsReady = Boolean(currentVideoRequest?.status === 'completed' && currentVideoRequest.videoUrl)
@@ -1661,36 +1660,71 @@ export default function StudioProjectDetailPage() {
                     </div>
                   )}
 
-                  {currentVideoRequest && currentVideoStatus && (
-                    <div className="mt-4 rounded-2xl border border-purple-700/60 bg-purple-950/25 p-4 sm:p-5">
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <div className="inline-flex items-center gap-2 text-sm font-bold text-purple-100">
-                          {currentVideoRequest.status === 'completed' ? <FiCheckCircle className="text-green-300" /> : <FiClock className="text-purple-300" />}
-                          Andamento do vídeo{selectedVideoVersionNumber ? ` da Versão ${selectedVideoVersionNumber}` : ' com letra'}
-                        </div>
-                        <span className="rounded-full border border-purple-500/50 bg-black/30 px-3 py-1 text-xs font-bold text-purple-100">
-                          {currentVideoStatus.label}
-                        </span>
-                      </div>
-                      <p className="text-sm text-purple-100/90">{currentVideoStatus.description}</p>
-                      {currentVideoRequest.videoUrl && (
-                        <a
-                          href={currentVideoRequest.videoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-4 py-3 font-bold text-white hover:from-green-500 hover:to-emerald-500"
-                        >
-                          <FiExternalLink /> Assistir / baixar vídeo
-                        </a>
-                      )}
-                      {currentVideoRequest.errorMessage && (
-                        <p className="mt-3 text-xs text-red-200">
-                          Detalhe: {currentVideoRequest.errorMessage}
-                        </p>
-                      )}
-                      <p className="mt-2 text-xs text-purple-200/70">
-                        Solicitado em {new Date(currentVideoRequest.createdAt).toLocaleDateString('pt-BR')}
-                      </p>
+                  {allVideoRequests.length > 0 && (
+                    <div className="mt-4 space-y-4">
+                      <h2 className="text-lg font-black text-white">Seus vídeos com letra</h2>
+                      {allVideoRequests.map((video: any) => {
+                        const versionNumber = getStudioVersionNumber(projectVersions, video.versionId)
+                        const versionLabel = video.versionName
+                          || (versionNumber > 0 ? `Versão ${versionNumber}` : 'Versão não identificada')
+                        const status = videoRequestStatus[video.status] || videoRequestStatus.requested
+                        const videoUrl = video.videoUrl || null
+                        return (
+                          <article key={video.id} className="rounded-2xl border border-purple-700/60 bg-purple-950/25 p-4 sm:p-5">
+                            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                              <div>
+                                <div className="mb-1 inline-flex items-center gap-2 text-sm font-bold text-purple-100">
+                                  {video.status === 'completed' ? <FiCheckCircle className="text-green-300" /> : <FiClock className="text-purple-300" />}
+                                  {versionLabel}
+                                </div>
+                                <p className="text-sm text-purple-100/90">{status.description}</p>
+                                <p className="mt-2 text-xs text-purple-200/70">
+                                  Solicitado em {new Date(video.createdAt || video.completedAt).toLocaleString('pt-BR')}
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                <span className="rounded-full border border-purple-500/50 bg-black/30 px-3 py-1 text-xs font-bold text-purple-100">
+                                  {status.label}
+                                </span>
+                                {videoUrl && (
+                                  <a
+                                    href={videoUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 rounded-full bg-gray-800 px-3 py-1 text-xs font-bold text-fuchsia-100 hover:bg-gray-700"
+                                  >
+                                    <FiExternalLink /> Abrir em nova aba
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                            {videoUrl ? (
+                              <div className="max-w-[220px]">
+                                <div className="overflow-hidden rounded-xl border border-gray-800 bg-black">
+                                  <video
+                                    controls
+                                    playsInline
+                                    preload="metadata"
+                                    src={videoUrl}
+                                    className="h-[280px] w-full object-contain"
+                                  >
+                                    Seu navegador não reproduz este vídeo.
+                                  </video>
+                                </div>
+                                <p className="mt-2 text-xs text-purple-200/70">
+                                  Preview para revisão. Use o play e o ícone de som na barra do player.
+                                </p>
+                              </div>
+                            ) : (
+                              video.errorMessage && (
+                                <p className="text-xs text-red-200">
+                                  Detalhe: {video.errorMessage}
+                                </p>
+                              )
+                            )}
+                          </article>
+                        )
+                      })}
                     </div>
                   )}
 
