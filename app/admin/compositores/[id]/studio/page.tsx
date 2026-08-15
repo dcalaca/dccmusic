@@ -681,11 +681,22 @@ export default async function AdminComposerStudioPage({
                                       </div>
                                     </div>
                                     {videoUrl ? (
-                                      <video
-                                        controls
-                                        src={videoUrl}
-                                        className="w-full rounded-2xl border border-gray-800 bg-black"
-                                      />
+                                      <div className="max-w-[220px]">
+                                        <div className="overflow-hidden rounded-xl border border-gray-800 bg-black">
+                                          <video
+                                            controls
+                                            playsInline
+                                            preload="metadata"
+                                            src={videoUrl}
+                                            className="h-[280px] w-full object-contain"
+                                          >
+                                            Seu navegador não reproduz este vídeo.
+                                          </video>
+                                        </div>
+                                        <p className="mt-2 text-xs text-gray-500">
+                                          Preview para revisão. Use o play e o ícone de som na barra do player.
+                                        </p>
+                                      </div>
                                     ) : (
                                       <p className="text-sm text-gray-500">
                                         {video.error_message || 'Este vídeo ainda não tem arquivo disponível.'}
