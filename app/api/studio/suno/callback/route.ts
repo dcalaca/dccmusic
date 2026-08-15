@@ -12,6 +12,7 @@ import {
   getTrackStreamAudioUrl,
   saveSunoGenerationTracksEnsuringTwo,
 } from '@/lib/studio-suno-versions'
+import { startStudioVideoGenerationWithProviderIds } from '@/lib/studio-video'
 import { getStudioGenerationProviderError, markExpiredVoiceFromGeneration } from '@/lib/studio-voice-expiration'
 import {
   getStudioMusicGenerationFailureMessage,
@@ -65,6 +66,85 @@ export async function POST(request: Request) {
 
     if (!generation) {
       return NextResponse.json({ received: true, processed: false, error: 'geração não encontrada' })
+    }
+
+    if (generation.request_payload?.feature === 'lyric_video_refresh') {
+      const videoRequestId = generation.request_payload?.videoRequestId
+      const firstTrack = Array.isArray(tracks) ? tracks[0] : null
+      const audioId = firstTrack?.id || firstTrack?.audio_id || firstTrack?.audioId || null
+      const callbackStatus = body?.data?.status || body?.status || null
+      const refreshFailed = Boolean(callbackStatus && (String(callbackStatus).includes('FAILED') || callbackStatus === 'SENSITIVE_WORD_ERROR'))
+
+      if (refreshFailed) {
+        if (videoRequestId) {
+          await supabaseAdmin
+            .from('studio_video_requests')
+            .update({
+              status: 'failed',
+              error_message: 'Não consegui gerar um vídeo novo com o nome da música agora.',
+              response_payload: body,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', videoRequestId)
+        }
+        await supabaseAdmin
+          .from('studio_generations')
+          .update({
+            status: 'failed',
+            callback_type: callbackType || null,
+            error_message: 'Falha ao renovar o vídeo com letra.',
+            response_payload: body,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', generation.id)
+        return NextResponse.json({ received: true, processed: true, feature: 'lyric_video_refresh' })
+      }
+
+      if (!audioId) {
+        await supabaseAdmin
+          .from('studio_generations')
+          .update({
+            status: 'processing',
+            callback_type: callbackType || null,
+            response_payload: body,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', generation.id)
+        return NextResponse.json({ received: true, processed: true, feature: 'lyric_video_refresh', waiting: true })
+      }
+
+      await supabaseAdmin
+        .from('studio_generations')
+        .update({
+          status: 'completed',
+          callback_type: callbackType || null,
+          provider_audio_id: audioId,
+          response_payload: body,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', generation.id)
+
+      if (videoRequestId && generation.status !== 'completed') {
+        await startStudioVideoGenerationWithProviderIds({
+          videoRequestId,
+          taskId,
+          audioId: String(audioId),
+          songTitle: generation.request_payload?.songTitle,
+          artistName: generation.request_payload?.artistName,
+        }).catch(async (videoError: any) => {
+          console.error('[Studio IA] Erro ao gerar MP4 após renovar vídeo:', videoError)
+          await supabaseAdmin
+            .from('studio_video_requests')
+            .update({
+              status: 'failed',
+              error_message: videoError?.message || 'Não consegui gerar o vídeo novo agora.',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', videoRequestId)
+        })
+      }
+
+      return NextResponse.json({ received: true, processed: true, feature: 'lyric_video_refresh' })
     }
 
     // Callback "first" atrasado depois do complete não deve reprocessar (pode deixar 1 versão).

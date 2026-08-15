@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { getCurrentProjectAssets, getProjectForComposer, mapStudioProject } from '@/lib/studio'
-import { mapStudioVideoRequest } from '@/lib/studio-video'
+import { mapStudioVideoRequest, studioVideoCanRegenerate } from '@/lib/studio-video'
 import { supabaseAdmin } from '@/lib/supabase'
 import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
 import {
@@ -205,7 +205,14 @@ export async function GET(
       .limit(30)
 
     const mappedVideoRequests = (videoRequests || [])
-      .map((item: any) => mapStudioVideoRequest(item))
+      .map((item: any) => {
+        const mapped = mapStudioVideoRequest(item)
+        if (!mapped) return null
+        return {
+          ...mapped,
+          canRegenerate: studioVideoCanRegenerate(item, project),
+        }
+      })
       .filter(Boolean)
     const completedVideoRequest = mappedVideoRequests.find((item: any) => item.status === 'completed' && item.videoUrl) || null
     const videoRequest = completedVideoRequest || mappedVideoRequests[0] || null

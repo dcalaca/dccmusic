@@ -5,6 +5,7 @@ import {
   getStudioVideoRequestVersionId,
   mapStudioVideoRequest,
   startStudioVideoGeneration,
+  studioVideoCanRegenerate,
 } from '@/lib/studio-video'
 import { supabaseAdmin } from '@/lib/supabase'
 
@@ -89,17 +90,29 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(30)
 
-    const completedForVersion = (existingRequests || []).find((item: any) => (
+    const completedByVersionId = (existingRequests || []).find((item: any) => (
       item.status === 'completed' &&
       item.video_url &&
       getStudioVideoRequestVersionId(item) === version.id
     ))
+    const untaggedCompleted = (existingRequests || []).find((item: any) => (
+      item.status === 'completed' &&
+      item.video_url &&
+      !getStudioVideoRequestVersionId(item)
+    ))
+    const completedForVersion = completedByVersionId
+      || ((Boolean(version.is_current) || Boolean(body.replaceExisting)) ? untaggedCompleted : null)
+    const replaceExisting = Boolean(body.replaceExisting)
+    const canReplace = Boolean(completedForVersion && studioVideoCanRegenerate(completedForVersion, project))
 
-    if (completedForVersion) {
+    if (completedForVersion && !(replaceExisting && canReplace)) {
       return NextResponse.json({
         success: true,
         message: 'Este vídeo com letra já estava pronto para esta versão. Use o botão abaixo para assistir ou baixar.',
-        videoRequest: mapStudioVideoRequest(completedForVersion),
+        videoRequest: {
+          ...mapStudioVideoRequest(completedForVersion),
+          canRegenerate: studioVideoCanRegenerate(completedForVersion, project),
+        },
       })
     }
 
@@ -146,6 +159,7 @@ export async function POST(request: NextRequest) {
       music_audio_url: version.audio_url || version.stream_audio_url,
       cover_url: cover?.image_url || null,
       amount: 0,
+      courtesy_regenerate: Boolean(replaceExisting && canReplace),
     }
 
     const reference = `studio-lyric-video:${project.id}:${version.id}:${Date.now()}`
@@ -157,7 +171,9 @@ export async function POST(request: NextRequest) {
       paidAt: new Date().toISOString(),
       metadata,
     })
-    const startedVideoRequest = await startStudioVideoGeneration(videoRequest.id)
+    const startedVideoRequest = await startStudioVideoGeneration(videoRequest.id, {
+      skipRecover: Boolean(replaceExisting && canReplace),
+    })
     const readyNow = startedVideoRequest?.status === 'completed'
 
     return NextResponse.json({
