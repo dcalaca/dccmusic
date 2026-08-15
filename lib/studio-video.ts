@@ -1,6 +1,7 @@
 import { supabaseAdmin } from '@/lib/supabase'
 import { getStudioCallbackUrl } from '@/lib/studio'
 import { formatMusicTitle } from '@/lib/normalize'
+import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 
 function getAudioId(version: any, generation: any) {
   return (
@@ -38,6 +39,21 @@ export function mapStudioVideoRequest(videoRequest: any) {
     versionId: getStudioVideoRequestVersionId(videoRequest),
     versionName: videoRequest.metadata?.version_name || videoRequest.metadata?.versionName || null,
   }
+}
+
+export const STUDIO_VIDEO_COURTESY_PROJECT_IDS = [
+  'e2d26798-b1ff-4291-b9d5-acac1802cd47',
+]
+
+export function studioVideoCanRegenerate(videoRequest: any, project: { id?: string; title?: string } | null) {
+  if (!videoRequest || videoRequest.status !== 'completed' || !videoRequest.video_url) return false
+  if (videoRequest.metadata?.courtesy_regenerate) return false
+  if (project?.id && STUDIO_VIDEO_COURTESY_PROJECT_IDS.includes(String(project.id))) return true
+  const author = String(videoRequest.request_payload?.author || videoRequest.metadata?.author || '').trim()
+  const expected = formatMusicTitle(String(project?.title || '').trim())
+  if (!author) return true
+  if (!expected) return false
+  return formatMusicTitle(author) !== expected
 }
 
 function getExistingVideoTaskId(result: any) {
@@ -146,7 +162,7 @@ async function recoverExistingVideoRequest(videoRequest: any, existingTaskId: st
   return null
 }
 
-export async function startStudioVideoGeneration(videoRequestId: string) {
+export async function startStudioVideoGeneration(videoRequestId: string, options?: { skipRecover?: boolean }) {
   const { data: videoRequest, error: requestError } = await supabaseAdmin
     .from('studio_video_requests')
     .select('*')
@@ -237,8 +253,10 @@ export async function startStudioVideoGeneration(videoRequestId: string) {
     throw new Error(errorMessage)
   }
 
-  const recoveredFromDb = await recoverExistingVideoRequest(videoRequest, null)
-  if (recoveredFromDb) return recoveredFromDb
+  if (!options?.skipRecover) {
+    const recoveredFromDb = await recoverExistingVideoRequest(videoRequest, null)
+    if (recoveredFromDb) return recoveredFromDb
+  }
 
   const songTitle = formatMusicTitle(String(project?.title || '').trim()) || 'DCC Music'
   const artistName = String(composer?.name || '').trim() || 'DCC Music'
@@ -273,8 +291,19 @@ export async function startStudioVideoGeneration(videoRequestId: string) {
 
   if (isExistingMp4Conflict(result, response)) {
     const existingTaskId = getExistingVideoTaskId(result)
-    const recovered = await recoverExistingVideoRequest(videoRequest, existingTaskId, result)
-    if (recovered) return recovered
+    if (!options?.skipRecover) {
+      const recovered = await recoverExistingVideoRequest(videoRequest, existingTaskId, result)
+      if (recovered) return recovered
+    }
+
+    const refreshed = await startLyricVideoRefreshFromOriginalAudio({
+      videoRequest,
+      version,
+      project,
+      composerName: artistName,
+      songTitle,
+    })
+    if (refreshed) return refreshed
 
     const errorMessage = 'Este vídeo com letra já existe, mas não consegui recuperar o link agora. Atualize a página ou fale com o suporte.'
     await supabaseAdmin
@@ -319,5 +348,180 @@ export async function startStudioVideoGeneration(videoRequestId: string) {
     .single()
 
   if (updateError) throw updateError
+  return updatedRequest
+}
+
+export async function startStudioVideoGenerationWithProviderIds(input: {
+  videoRequestId: string
+  taskId: string
+  audioId: string
+  songTitle?: string
+  artistName?: string
+}) {
+  const { data: videoRequest, error: requestError } = await supabaseAdmin
+    .from('studio_video_requests')
+    .select('*')
+    .eq('id', input.videoRequestId)
+    .maybeSingle()
+
+  if (requestError) throw requestError
+  if (!videoRequest) throw new Error('Solicitação de vídeo com letra não encontrada.')
+  if (!process.env.SUNOAPI_KEY) throw new Error('Geração de vídeo com letra não configurada no servidor.')
+
+  const [{ data: project }, { data: composer }] = await Promise.all([
+    supabaseAdmin.from('studio_projects').select('id, title').eq('id', videoRequest.project_id).maybeSingle(),
+    supabaseAdmin.from('dccmusic_composers').select('name').eq('id', videoRequest.composer_id).maybeSingle(),
+  ])
+
+  const songTitle = formatMusicTitle(String(input.songTitle || project?.title || '').trim()) || 'DCC Music'
+  const artistName = String(input.artistName || composer?.name || '').trim() || 'DCC Music'
+  const payload = {
+    taskId: input.taskId,
+    audioId: input.audioId,
+    callBackUrl: getStudioCallbackUrl('/api/studio/suno/video-callback'),
+    title: songTitle.slice(0, 50),
+    author: songTitle.slice(0, 50),
+    domainName: artistName.slice(0, 50),
+  }
+
+  await supabaseAdmin
+    .from('studio_video_requests')
+    .update({
+      status: 'in_production',
+      request_payload: payload,
+      error_message: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', videoRequest.id)
+
+  const response = await fetch('https://api.sunoapi.org/api/v1/mp4/generate', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.SUNOAPI_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+  const result = await response.json().catch(() => null)
+
+  if (isExistingMp4Conflict(result, response)) {
+    const existingTaskId = getExistingVideoTaskId(result)
+    const recovered = await recoverExistingVideoRequest(videoRequest, existingTaskId, result)
+    if (recovered) return recovered
+  }
+
+  if (!response.ok || result?.code !== 200) {
+    const errorMessage = result?.msg || 'Não consegui iniciar a geração do vídeo com letra agora.'
+    await supabaseAdmin
+      .from('studio_video_requests')
+      .update({
+        status: 'failed',
+        response_payload: result,
+        error_message: errorMessage,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', videoRequest.id)
+    throw new Error(errorMessage)
+  }
+
+  const { data: updatedRequest, error: updateError } = await supabaseAdmin
+    .from('studio_video_requests')
+    .update({
+      status: 'in_production',
+      provider_task_id: getExistingVideoTaskId(result),
+      response_payload: result,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', videoRequest.id)
+    .select('*')
+    .single()
+
+  if (updateError) throw updateError
+  return updatedRequest
+}
+
+async function startLyricVideoRefreshFromOriginalAudio(input: {
+  videoRequest: any
+  version: any
+  project: any
+  composerName: string
+  songTitle: string
+}) {
+  if (!process.env.SUNOAPI_KEY) return null
+
+  const audio = input.version ? await getStudioVersionAudioUrls(input.version) : null
+  const audioUrl = audio?.audioUrl || audio?.streamAudioUrl || input.version?.audio_url || input.version?.stream_audio_url
+  if (!audioUrl) return null
+
+  const { data: lyric } = await supabaseAdmin
+    .from('studio_lyrics')
+    .select('content')
+    .eq('project_id', input.videoRequest.project_id)
+    .eq('is_current', true)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const lyricContent = String(lyric?.content || '').trim()
+  if (!lyricContent) return null
+
+  const payload = {
+    uploadUrl: audioUrl,
+    customMode: true,
+    instrumental: false,
+    prompt: lyricContent.slice(0, 5000),
+    style: String(input.version?.style || input.project?.style || 'música brasileira').slice(0, 1000),
+    title: input.songTitle.slice(0, 80),
+    model: 'V5_5',
+    callBackUrl: getStudioCallbackUrl('/api/studio/suno/callback'),
+    audioWeight: 0.97,
+    styleWeight: 0.12,
+    weirdnessConstraint: 0.2,
+  }
+
+  const response = await fetch('https://api.sunoapi.org/api/v1/generate/upload-cover', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.SUNOAPI_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+  const result = await response.json().catch(() => null)
+  const refreshTaskId = result?.data?.taskId || result?.data?.task_id || null
+  if (!response.ok || result?.code !== 200 || !refreshTaskId) {
+    return null
+  }
+
+  await supabaseAdmin
+    .from('studio_generations')
+    .insert({
+      project_id: input.videoRequest.project_id,
+      composer_id: input.videoRequest.composer_id,
+      provider: 'sunoapi',
+      provider_task_id: refreshTaskId,
+      status: 'processing',
+      request_payload: {
+        feature: 'lyric_video_refresh',
+        videoRequestId: input.videoRequest.id,
+        songTitle: input.songTitle,
+        artistName: input.composerName,
+        ...payload,
+      },
+    })
+
+  const { data: updatedRequest } = await supabaseAdmin
+    .from('studio_video_requests')
+    .update({
+      status: 'in_production',
+      request_payload: payload,
+      response_payload: result,
+      error_message: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', input.videoRequest.id)
+    .select('*')
+    .single()
+
   return updatedRequest
 }

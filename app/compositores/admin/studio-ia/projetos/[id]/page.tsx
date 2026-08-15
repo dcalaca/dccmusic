@@ -316,6 +316,7 @@ function normalizeStudioVideoRequest(videoRequest: any) {
     updatedAt: videoRequest.updatedAt || videoRequest.updated_at || null,
     versionId: videoRequest.versionId || videoRequest.metadata?.version_id || null,
     versionName: videoRequest.versionName || videoRequest.metadata?.version_name || null,
+    canRegenerate: Boolean(videoRequest.canRegenerate),
   }
 }
 
@@ -1163,7 +1164,7 @@ export default function StudioProjectDetailPage() {
     return () => window.clearInterval(interval)
   }, [project?.videoRequest?.id, project?.videoRequest?.status, project?.videoRequests])
 
-  const requestVideoClip = async () => {
+  const requestVideoClip = async (replaceExisting = false) => {
     const token = localStorage.getItem('composer_token')
     if (!token) {
       router.push(`/compositores/login?redirect=${encodeURIComponent(`/compositores/admin/studio-ia/projetos/${projectId}`)}`)
@@ -1194,7 +1195,7 @@ export default function StudioProjectDetailPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ projectId, versionId }),
+        body: JSON.stringify({ projectId, versionId, replaceExisting }),
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao gerar vídeo com letra')
@@ -1274,6 +1275,7 @@ export default function StudioProjectDetailPage() {
   const hasActiveVideoRequest = allVideoRequests.some((item: any) => ['payment_pending', 'requested', 'in_production'].includes(item.status))
   const selectedVideoIsActive = Boolean(currentVideoRequest && ['payment_pending', 'requested', 'in_production'].includes(currentVideoRequest.status))
   const selectedVideoIsReady = Boolean(currentVideoRequest?.status === 'completed' && currentVideoRequest.videoUrl)
+  const canRegenerateSelectedVideo = Boolean(currentVideoRequest?.canRegenerate)
   const inspiration = project.inspiration
   const canRetryEnhance = Boolean(project.enhanceSource?.available)
   const voicePreferences = extractVoicePreferences(project.description)
@@ -1607,7 +1609,7 @@ export default function StudioProjectDetailPage() {
                       {!selectedVideoIsReady && (
                         <button
                           type="button"
-                          onClick={requestVideoClip}
+                          onClick={() => requestVideoClip(false)}
                           disabled={videoCheckoutLoading || hasActiveVideoRequest || !resolvedVideoVersionId}
                           className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-3 font-bold text-white hover:from-fuchsia-500 hover:to-purple-500 disabled:opacity-70"
                         >
@@ -1625,6 +1627,29 @@ export default function StudioProjectDetailPage() {
                             </>
                           )}
                         </button>
+                      )}
+                      {selectedVideoIsReady && canRegenerateSelectedVideo && (
+                        <button
+                          type="button"
+                          onClick={() => requestVideoClip(true)}
+                          disabled={videoCheckoutLoading || hasActiveVideoRequest || !resolvedVideoVersionId}
+                          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-3 font-bold text-white hover:from-fuchsia-500 hover:to-purple-500 disabled:opacity-70"
+                        >
+                          {videoCheckoutLoading ? (
+                            <>
+                              <FiLoader className="animate-spin" /> Gerando vídeo novo...
+                            </>
+                          ) : (
+                            <>
+                              <FiVideo /> Gerar de novo com o nome da música
+                            </>
+                          )}
+                        </button>
+                      )}
+                      {selectedVideoIsReady && canRegenerateSelectedVideo && (
+                        <p className="mt-2 text-center text-xs text-purple-100/80">
+                          Cortesia: gera um vídeo novo já com o nome da música. O vídeo antigo continua disponível.
+                        </p>
                       )}
                       {hasActiveVideoRequest && !selectedVideoIsReady && (
                         <p className="mt-2 text-center text-xs text-purple-100/80">
