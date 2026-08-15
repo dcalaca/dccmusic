@@ -59,6 +59,7 @@ async function notifyMusicReady(generation: any) {
     await sendStudioMusicReadyEmail({
       ...composer,
       projectId: project.id,
+      generationId: generation.id,
       projectTitle: project.title || 'Sua música',
     }).catch((emailError) => {
       console.error('[Studio IA] Erro ao enviar e-mail de música pronta:', emailError)

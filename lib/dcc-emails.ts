@@ -103,6 +103,11 @@ function emailLayout(input: DccEmailInput) {
   `
 }
 
+function isUniqueViolation(error: any) {
+  const message = String(error?.message || error?.details || '').toLowerCase()
+  return error?.code === '23505' || message.includes('duplicate') || message.includes('unique')
+}
+
 async function recordEmailEvent(input: DccEmailInput, result: EmailResult) {
   if (!result.sent) return
 
@@ -123,6 +128,65 @@ async function recordEmailEvent(input: DccEmailInput, result: EmailResult) {
   }
 }
 
+async function claimEmailEvent(input: DccEmailInput): Promise<boolean> {
+  if (!input.eventKey) return true
+
+  try {
+    const { error } = await supabaseAdmin.from('dccmusic_email_events').insert({
+      event_key: input.eventKey,
+      category: input.category,
+      recipient: input.to,
+      subject: input.subject,
+      provider_id: null,
+      metadata: { ...(input.metadata || {}), claimed: true },
+    })
+
+    if (!error) return true
+    if (isUniqueViolation(error)) return false
+    if (!String(error.message || '').includes('schema cache')) {
+      console.warn('[DCC EMAIL] Falha ao reservar evento:', error.message)
+    }
+    return true
+  } catch {
+    return true
+  }
+}
+
+async function releaseEmailEvent(eventKey?: string) {
+  if (!eventKey) return
+
+  try {
+    await supabaseAdmin.from('dccmusic_email_events').delete().eq('event_key', eventKey)
+  } catch {
+    // Se o log auxiliar falhar, o próximo envio ainda pode tentar de novo.
+  }
+}
+
+async function completeEmailEvent(input: DccEmailInput, result: EmailResult) {
+  if (!result.sent) return
+
+  if (!input.eventKey) {
+    await recordEmailEvent(input, result)
+    return
+  }
+
+  try {
+    const { error } = await supabaseAdmin
+      .from('dccmusic_email_events')
+      .update({
+        provider_id: result.id || null,
+        metadata: { ...(input.metadata || {}), claimed: false, sent: true },
+      })
+      .eq('event_key', input.eventKey)
+
+    if (error && !String(error.message || '').includes('schema cache')) {
+      console.warn('[DCC EMAIL] Falha ao concluir evento:', error.message)
+    }
+  } catch {
+    // O envio de e-mail não pode falhar só porque o log auxiliar não existe.
+  }
+}
+
 async function sendBrevoEmail(input: DccEmailInput): Promise<EmailResult> {
   const apiKey = normalizeEmailHeader(process.env.BREVO_API_KEY)
   const sender = parseEmailHeader(
@@ -137,15 +201,16 @@ async function sendBrevoEmail(input: DccEmailInput): Promise<EmailResult> {
   const allowAdminBcc = process.env.ALLOW_BREVO_ADMIN_BCC === 'true'
 
   if (!apiKey || !sender?.email) {
-    const result = { sent: false, reason: 'brevo_not_configured' }
-    await recordEmailEvent(input, result)
-    return result
+    return { sent: false, reason: 'brevo_not_configured' }
   }
 
   if (input.category === 'admin_email_campaign' && process.env.ALLOW_BACKUP_MARKETING_EMAILS !== 'true') {
-    const result = { sent: false, reason: 'marketing_disabled_on_backup_provider' }
-    await recordEmailEvent(input, result)
-    return result
+    return { sent: false, reason: 'marketing_disabled_on_backup_provider' }
+  }
+
+  const claimed = await claimEmailEvent(input)
+  if (!claimed) {
+    return { sent: false, reason: 'already_sent' }
   }
 
   const isMarketingEmail = input.category === 'admin_email_campaign'
@@ -157,35 +222,44 @@ async function sendBrevoEmail(input: DccEmailInput): Promise<EmailResult> {
         'X-Mailin-Track-Opens': 'false',
       }
 
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: {
-      accept: 'application/json',
-      'api-key': apiKey,
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      sender,
-      to: [{ email: input.to }],
-      replyTo: replyTo || undefined,
-      bcc: allowAdminBcc && input.bccAdmin && adminEmail?.email ? [adminEmail] : undefined,
-      subject: input.subject,
-      htmlContent: emailLayout(input),
-      tags: [input.category].filter(Boolean),
-      headers: brevoCustomHeaders,
-    }),
-  })
+  let sentSuccessfully = false
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'api-key': apiKey,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender,
+        to: [{ email: input.to }],
+        replyTo: replyTo || undefined,
+        bcc: allowAdminBcc && input.bccAdmin && adminEmail?.email ? [adminEmail] : undefined,
+        subject: input.subject,
+        htmlContent: emailLayout(input),
+        tags: [input.category].filter(Boolean),
+        headers: brevoCustomHeaders,
+      }),
+    })
 
-  const payload = await response.json().catch(() => ({}))
+    const payload = await response.json().catch(() => ({}))
 
-  if (!response.ok) {
-    console.error('[DCC EMAIL] Erro Brevo:', payload)
-    throw new Error(payload?.message || 'Erro ao enviar e-mail pelo Brevo')
+    if (!response.ok) {
+      console.error('[DCC EMAIL] Erro Brevo:', payload)
+      throw new Error(payload?.message || 'Erro ao enviar e-mail pelo Brevo')
+    }
+
+    sentSuccessfully = true
+    const result = { sent: true, id: payload?.messageId || null }
+    await completeEmailEvent(input, result)
+    return result
+  } catch (error) {
+    if (!sentSuccessfully) {
+      await releaseEmailEvent(input.eventKey)
+    }
+    throw error
   }
-
-  const result = { sent: true, id: payload?.messageId || null }
-  await recordEmailEvent(input, result)
-  return result
 }
 
 export async function sendDccEmail(input: DccEmailInput): Promise<EmailResult> {
@@ -365,9 +439,18 @@ export async function sendLowStudioCreditsEmail(input: ComposerEmailInput & {
   })
 }
 
+export function getStudioMusicReadyEventKey(input: {
+  generationId?: string | null
+  projectId?: string | null
+  projectTitle?: string | null
+}) {
+  return `studio-ready/${input.generationId || input.projectId || input.projectTitle || 'unknown'}`
+}
+
 export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
   projectTitle: string
   projectId?: string
+  generationId?: string | null
   projectSlug?: string | null
   audioUrl?: string | null
 }) {
@@ -376,8 +459,12 @@ export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
     subject: `Sua música "${input.projectTitle}" ficou pronta`,
     title: 'Sua música ficou pronta',
     category: 'studio_music_ready',
-    eventKey: `studio-ready/${input.projectId || input.projectTitle}`,
-    metadata: { composerId: input.composerId, projectId: input.projectId || null },
+    eventKey: getStudioMusicReadyEventKey(input),
+    metadata: {
+      composerId: input.composerId,
+      projectId: input.projectId || null,
+      generationId: input.generationId || null,
+    },
     contentHtml: `
       <p>Olá, ${escapeHtml(input.name)}.</p>
       <p>A música <strong>${escapeHtml(input.projectTitle)}</strong> já está disponível no seu Studio IA.</p>

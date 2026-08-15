@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { supabaseAdmin } from '@/lib/supabase'
 import { readTranscriptionBinaryFile } from '@/lib/music-transcription-storage'
+import { overlayScoreTitleOnPdf } from '@/lib/pdf-score-title'
+import { formatMusicTitle } from '@/lib/normalize'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,7 +47,19 @@ export async function GET(request: NextRequest) {
     const path = kind === 'musicxml' ? row.musicxml_path : kind === 'zip' ? row.zip_path : row.pdf_path
     if (!path) return NextResponse.json({ error: 'Arquivo não encontrado para esta transcrição.' }, { status: 404 })
 
-    const buffer = await readTranscriptionBinaryFile(path)
+    const fileBuffer = await readTranscriptionBinaryFile(path)
+    let title = String(row.title || '').trim()
+    if (kind === 'pdf' && row.studio_project_id) {
+      const { data: project } = await supabaseAdmin
+        .from('studio_projects')
+        .select('title')
+        .eq('id', row.studio_project_id)
+        .maybeSingle()
+      if (project?.title) title = project.title
+    }
+    const responseBuffer = kind === 'pdf'
+      ? await overlayScoreTitleOnPdf(fileBuffer, formatMusicTitle(title || 'Partitura'))
+      : fileBuffer
     const extension = kind === 'musicxml' ? 'musicxml' : kind
     const contentType = kind === 'musicxml'
       ? 'application/vnd.recordare.musicxml+xml'
@@ -54,7 +68,7 @@ export async function GET(request: NextRequest) {
         : 'application/pdf'
     const disposition = kind === 'pdf' ? 'inline' : 'attachment'
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(responseBuffer), {
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `${disposition}; filename="${normalizeFilename(row.title || 'transcricao', extension)}"`,
