@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase'
 import { getStudioCallbackUrl } from '@/lib/studio'
+import { formatMusicTitle } from '@/lib/normalize'
 
 function getAudioId(version: any, generation: any) {
   return (
@@ -239,12 +240,15 @@ export async function startStudioVideoGeneration(videoRequestId: string) {
   const recoveredFromDb = await recoverExistingVideoRequest(videoRequest, null)
   if (recoveredFromDb) return recoveredFromDb
 
+  const songTitle = formatMusicTitle(String(project?.title || '').trim()) || 'DCC Music'
+  const artistName = String(composer?.name || '').trim() || 'DCC Music'
   const payload = {
     taskId,
     audioId,
     callBackUrl: getStudioCallbackUrl('/api/studio/suno/video-callback'),
-    author: String(composer?.name || project?.title || 'DCC Music').slice(0, 50),
-    domainName: 'DCC Music',
+    title: songTitle.slice(0, 50),
+    author: songTitle.slice(0, 50),
+    domainName: artistName.slice(0, 50),
   }
 
   await supabaseAdmin
