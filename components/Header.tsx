@@ -204,7 +204,17 @@ export default function Header() {
     if (item.label === 'Home') {
       return pathname === '/' && surface !== 'blog'
     }
-    return pathname === item.href || pathname.startsWith(`${item.href}/`)
+
+    const matches = pathname === item.href || pathname.startsWith(`${item.href}/`)
+    if (!matches) return false
+
+    const hasMoreSpecificMatch = navItems.some((other) => {
+      if (other.href === item.href || other.label === 'Home' || other.label === 'Blog') return false
+      if (other.href.length <= item.href.length) return false
+      return pathname === other.href || pathname.startsWith(`${other.href}/`)
+    })
+
+    return !hasMoreSpecificMatch
   }
 
   return (
