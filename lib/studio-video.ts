@@ -561,7 +561,7 @@ async function startMurekaLyricsVideoGeneration(input: {
   let { response, result, videoUrl } = await requestMurekaLyricsVideo(payload)
 
   if ((!response.ok || !videoUrl) && payload.cover) {
-    const fallbackPayload = { ...payload, layout: 'layout_1' }
+    const fallbackPayload: Record<string, any> = { ...payload, layout: 'layout_1' }
     delete fallbackPayload.cover
     const retry = await requestMurekaLyricsVideo(fallbackPayload)
     if (retry.videoUrl) {
