@@ -49,14 +49,14 @@ export default function BlogCta({
   }
 
   return (
-    <aside className="my-8 rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-950/40 via-gray-950 to-black px-5 py-5">
-      <p className="text-xs font-bold uppercase tracking-wide text-purple-300">Ferramenta DCC Music</p>
-      <h2 className="mt-2 text-xl font-bold text-white">{title || item.label}</h2>
-      <p className="mt-2 text-sm leading-relaxed text-gray-300">{description || item.description}</p>
+    <aside className="my-5 rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-950/40 via-gray-950 to-black px-4 py-4">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-purple-300">Ferramenta DCC Music</p>
+      <h2 className="mt-1 text-base font-bold text-white">{title || item.label}</h2>
+      <p className="mt-1 text-sm leading-6 text-gray-300">{description || item.description}</p>
       <a
         href={href}
         onClick={handleClick}
-        className="mt-4 inline-flex rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-700"
+        className="mt-3 inline-flex rounded-lg bg-primary-600 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-700"
       >
         {label || item.defaultCta}
       </a>

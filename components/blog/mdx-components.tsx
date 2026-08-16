@@ -22,10 +22,10 @@ function heading(Tag: 'h2' | 'h3' | 'h4') {
   }: HTMLAttributes<HTMLHeadingElement>) {
     const className =
       Tag === 'h2'
-        ? 'mt-10 mb-3 text-2xl font-bold text-white scroll-mt-24'
+        ? 'mt-6 mb-2 text-lg font-bold text-white scroll-mt-24'
         : Tag === 'h3'
-          ? 'mt-8 mb-2 text-xl font-semibold text-white scroll-mt-24'
-          : 'mt-6 mb-2 text-lg font-semibold text-white scroll-mt-24'
+          ? 'mt-5 mb-1.5 text-base font-semibold text-white scroll-mt-24'
+          : 'mt-4 mb-1.5 text-sm font-semibold text-white scroll-mt-24'
 
     return (
       <Tag id={id} className={className} {...props}>
@@ -53,10 +53,10 @@ export function createBlogMdxComponents(options: {
     h2: heading('h2'),
     h3: heading('h3'),
     h4: heading('h4'),
-    p: ({ children }: { children?: ReactNode }) => <p className="my-4 text-[1.05rem] leading-8 text-gray-200">{children}</p>,
-    ul: ({ children }: { children?: ReactNode }) => <ul className="my-4 list-disc space-y-2 pl-6 text-gray-200">{children}</ul>,
-    ol: ({ children }: { children?: ReactNode }) => <ol className="my-4 list-decimal space-y-2 pl-6 text-gray-200">{children}</ol>,
-    li: ({ children }: { children?: ReactNode }) => <li className="leading-7">{children}</li>,
+    p: ({ children }: { children?: ReactNode }) => <p className="my-3 text-sm leading-6 text-gray-300">{children}</p>,
+    ul: ({ children }: { children?: ReactNode }) => <ul className="my-3 list-disc space-y-1.5 pl-5 text-sm text-gray-300">{children}</ul>,
+    ol: ({ children }: { children?: ReactNode }) => <ol className="my-3 list-decimal space-y-1.5 pl-5 text-sm text-gray-300">{children}</ol>,
+    li: ({ children }: { children?: ReactNode }) => <li className="leading-6">{children}</li>,
     blockquote: ({ children }: { children?: ReactNode }) => (
       <blockquote className="my-6 border-l-4 border-purple-500/50 bg-purple-950/10 py-2 pl-4 text-gray-300">
         {children}

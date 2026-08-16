@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 
-const boxClass = 'my-6 rounded-2xl border px-5 py-4'
+const boxClass = 'my-4 rounded-xl border px-4 py-3'
 
 export function Definition({ children, title = 'Definição rápida' }: { children: ReactNode; title?: string }) {
   return (
     <aside className={`${boxClass} border-purple-500/30 bg-purple-950/20`}>
       <p className="mb-2 text-xs font-bold uppercase tracking-wide text-purple-300">{title}</p>
-      <div className="text-[0.975rem] leading-relaxed text-gray-200">{children}</div>
+      <div className="text-sm leading-6 text-gray-200">{children}</div>
     </aside>
   )
 }
@@ -15,7 +15,7 @@ export function DirectAnswer({ children, title = 'Resposta direta' }: { children
   return (
     <aside className={`${boxClass} border-cyan-500/30 bg-cyan-950/20`}>
       <p className="mb-2 text-xs font-bold uppercase tracking-wide text-cyan-300">{title}</p>
-      <div className="text-[0.975rem] leading-relaxed text-gray-200">{children}</div>
+      <div className="text-sm leading-6 text-gray-200">{children}</div>
     </aside>
   )
 }
@@ -71,7 +71,7 @@ export function Example({ children, title = 'Exemplo' }: { children: ReactNode; 
   return (
     <aside className={`${boxClass} border-blue-500/30 bg-blue-950/20`}>
       <p className="mb-2 text-xs font-bold uppercase tracking-wide text-blue-300">{title}</p>
-      <div className="text-[0.975rem] leading-relaxed text-gray-200">{children}</div>
+      <div className="text-sm leading-6 text-gray-200">{children}</div>
     </aside>
   )
 }
@@ -92,7 +92,7 @@ export function Callout({
   return (
     <aside className={`${boxClass} ${styles}`}>
       <p className="mb-2 text-xs font-bold uppercase tracking-wide">{title}</p>
-      <div className="text-[0.975rem] leading-relaxed">{children}</div>
+      <div className="text-sm leading-6">{children}</div>
     </aside>
   )
 }
@@ -104,15 +104,15 @@ export function Faq({
 }) {
   if (!items?.length) return null
   return (
-    <section className="my-8">
-      <h2 id="perguntas-frequentes" className="text-2xl font-bold">
+    <section className="my-6">
+      <h2 id="perguntas-frequentes" className="text-lg font-bold text-white">
         Perguntas frequentes
       </h2>
-      <div className="mt-4 space-y-4">
+      <div className="mt-3 space-y-3">
         {items.map((item) => (
-          <div key={item.question} className="rounded-2xl border border-gray-800 bg-gray-950/50 px-5 py-4">
-            <h3 className="text-base font-semibold text-white">{item.question}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-gray-300">{item.answer}</p>
+          <div key={item.question} className="rounded-xl border border-gray-800 bg-gray-950/50 px-4 py-3">
+            <h3 className="text-sm font-semibold text-white">{item.question}</h3>
+            <p className="mt-1 text-sm leading-6 text-gray-300">{item.answer}</p>
           </div>
         ))}
       </div>

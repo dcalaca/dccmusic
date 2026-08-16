@@ -17,30 +17,38 @@ export default function BlogPostCard({
   const category = getBlogCategory(post.category)
 
   return (
-    <article className={`overflow-hidden rounded-2xl border border-gray-800 bg-gray-950/60 ${featured ? 'md:grid md:grid-cols-[1.1fr_1fr]' : ''}`}>
-      <Link href={blogHref(`/${post.slug}`, host)} className="block relative bg-gray-900">
+    <article
+      className={`overflow-hidden rounded-xl border border-gray-800 bg-gray-950/60 ${
+        featured ? 'md:grid md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:items-stretch' : ''
+      }`}
+    >
+      <Link
+        href={blogHref(`/${post.slug}`, host)}
+        className={`relative block overflow-hidden bg-black ${
+          featured ? 'aspect-[2/1] md:aspect-auto md:min-h-[160px] md:h-full' : 'aspect-[2/1]'
+        }`}
+      >
         <Image
           src={post.featuredImage}
           alt={post.imageAlt}
-          width={post.imageWidth}
-          height={post.imageHeight}
-          className={`w-full object-cover ${featured ? 'h-56 md:h-full' : 'h-44'}`}
-          sizes={featured ? '(min-width: 768px) 50vw, 100vw' : '(min-width: 768px) 33vw, 100vw'}
+          fill
+          className="object-contain p-4"
+          sizes={featured ? '(min-width: 768px) 40vw, 100vw' : '(min-width: 768px) 33vw, 100vw'}
         />
       </Link>
-      <div className="p-5">
+      <div className="p-4">
         {category && (
-          <Link href={blogHref(`/categoria/${category.slug}`, host)} className="text-xs font-semibold uppercase tracking-wide text-purple-300 hover:text-white">
+          <Link href={blogHref(`/categoria/${category.slug}`, host)} className="text-[11px] font-semibold uppercase tracking-wide text-purple-300 hover:text-white">
             {category.title}
           </Link>
         )}
-        <h3 className={`mt-2 font-bold leading-snug ${featured ? 'text-2xl' : 'text-lg'}`}>
+        <h3 className={`mt-1 font-bold leading-snug text-white ${featured ? 'text-lg' : 'text-base'}`}>
           <Link href={blogHref(`/${post.slug}`, host)} className="hover:text-purple-200">
             {post.title}
           </Link>
         </h3>
-        <p className="mt-2 text-sm text-gray-400 line-clamp-3">{post.excerpt}</p>
-        <p className="mt-4 text-xs text-gray-500">
+        <p className="mt-1 line-clamp-2 text-sm text-gray-400">{post.excerpt}</p>
+        <p className="mt-3 text-xs text-gray-500">
           {formatDate(post.publishedAt)} · {post.readingTimeMinutes} min de leitura
         </p>
       </div>

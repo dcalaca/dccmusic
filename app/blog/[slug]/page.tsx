@@ -106,7 +106,7 @@ export default function BlogArticlePage({ params }: PageProps) {
   ]
 
   return (
-    <article className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <article className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
       <JsonLd
         data={[
           ...articleJsonLd(post),
@@ -131,15 +131,15 @@ export default function BlogArticlePage({ params }: PageProps) {
 
       <BlogBreadcrumbs items={crumbs} />
 
-      <header className="mx-auto mt-6 max-w-3xl">
+      <header className="mx-auto mt-4 max-w-3xl">
         {category && (
-          <Link href={blogHref(`/categoria/${category.slug}`)} className="text-sm font-semibold uppercase tracking-wide text-purple-300 hover:text-white">
+          <Link href={blogHref(`/categoria/${category.slug}`)} className="text-xs font-semibold uppercase tracking-wide text-purple-300 hover:text-white">
             {category.title}
           </Link>
         )}
-        <h1 className="mt-3 text-3xl font-bold leading-tight sm:text-4xl">{post.title}</h1>
-        <p className="mt-4 text-lg text-gray-300">{post.excerpt}</p>
-        <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-400">
+        <h1 className="mt-2 text-2xl font-bold leading-tight text-white sm:text-3xl">{post.title}</h1>
+        <p className="mt-2 text-sm text-gray-400">{post.excerpt}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
           <Link href={blogHref(`/autor/${author.slug}`)} className="hover:text-white">
             {author.name}
           </Link>
@@ -149,21 +149,20 @@ export default function BlogArticlePage({ params }: PageProps) {
         </div>
       </header>
 
-      <div className="mx-auto mt-8 max-w-3xl overflow-hidden rounded-2xl border border-gray-800">
+      <div className="relative mx-auto mt-5 h-40 max-w-3xl overflow-hidden rounded-xl border border-gray-800 bg-black">
         <Image
           src={post.featuredImage}
           alt={post.imageAlt}
-          width={post.imageWidth}
-          height={post.imageHeight}
-          className="h-auto w-full object-cover"
+          fill
+          className="object-contain p-4"
           sizes="(min-width: 768px) 768px, 100vw"
           priority
         />
       </div>
 
-      <div className="mx-auto mt-10 grid max-w-6xl gap-10 lg:grid-cols-[minmax(0,48rem)_16rem] lg:justify-center">
+      <div className="mx-auto mt-6 grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,48rem)_15rem] lg:justify-center">
         <div className="min-w-0">
-          <div className="mb-8 lg:hidden">
+          <div className="mb-5 lg:hidden">
             <ArticleToc items={toc} />
           </div>
           <ArticleBody source={post.content} articleSlug={post.slug} articleTitle={post.title} />
@@ -183,7 +182,7 @@ export default function BlogArticlePage({ params }: PageProps) {
         </aside>
       </div>
 
-      <footer className="mx-auto mt-10 max-w-3xl space-y-6">
+      <footer className="mx-auto mt-8 max-w-3xl space-y-4">
         <div className="flex flex-wrap gap-2">
           {post.tags.map((tagSlug) => {
             const tag = getBlogTag(tagSlug)
@@ -210,9 +209,9 @@ export default function BlogArticlePage({ params }: PageProps) {
       </footer>
 
       {related.length > 0 && (
-        <section className="mx-auto mt-14 max-w-5xl">
-          <h2 className="text-2xl font-bold">Artigos relacionados</h2>
-          <div className="mt-6 grid gap-6 md:grid-cols-3">
+        <section className="mx-auto mt-8 max-w-5xl">
+          <h2 className="text-lg font-bold text-white">Artigos relacionados</h2>
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
             {related.map((item) => (
               <BlogPostCard key={item.slug} post={item} />
             ))}

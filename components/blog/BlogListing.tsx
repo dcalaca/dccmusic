@@ -24,19 +24,19 @@ export default function BlogListing({
   emptyText: string
 }) {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-      <p className="text-sm text-purple-300">
+    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+      <p className="text-xs text-purple-300">
         <Link href={blogHref('/', host)} className="hover:text-white">
           Blog
         </Link>
       </p>
-      <h1 className="mt-2 text-3xl font-bold sm:text-4xl">{title}</h1>
-      <p className="mt-3 max-w-3xl text-gray-400">{description}</p>
+      <h1 className="mt-1 text-2xl font-bold text-white sm:text-3xl">{title}</h1>
+      <p className="mt-2 max-w-3xl text-sm text-gray-400">{description}</p>
 
       {posts.length === 0 ? (
-        <p className="mt-10 text-gray-500">{emptyText}</p>
+        <p className="mt-8 text-sm text-gray-500">{emptyText}</p>
       ) : (
-        <div className="mt-10 grid gap-6 md:grid-cols-2">
+        <div className="mt-6 grid gap-4 md:grid-cols-2">
           {posts.map((post) => (
             <BlogPostCard key={post.slug} post={post} host={host} />
           ))}

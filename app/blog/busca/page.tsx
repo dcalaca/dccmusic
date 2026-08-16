@@ -28,10 +28,10 @@ export default function BlogSearchPage({ searchParams }: PageProps) {
 
   return (
     <div>
-      <div className="mx-auto max-w-5xl px-4 pt-10 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold">Busca</h1>
-        <p className="mt-2 text-gray-400">Encontre artigos por tema, ferramenta ou dúvida.</p>
-        <div className="mt-6 max-w-xl">
+      <div className="mx-auto max-w-5xl px-4 pt-6 sm:px-6 lg:px-8">
+        <h1 className="text-2xl font-bold text-white">Busca</h1>
+        <p className="mt-1 text-sm text-gray-400">Encontre artigos por tema, ferramenta ou dúvida.</p>
+        <div className="mt-4 max-w-xl">
           <BlogSearchForm defaultValue={query} />
         </div>
       </div>

@@ -48,12 +48,12 @@ export const metadata: Metadata = {
 
 export default function BlogLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
+    <div className="text-sm leading-relaxed text-gray-300">
       <JsonLd data={[organizationSchema(), websiteSchema()]} />
       <Suspense fallback={null}>
         <BlogAnalytics />
       </Suspense>
       {children}
-    </>
+    </div>
   )
 }

@@ -192,12 +192,12 @@ export default function Header() {
       label: 'Home',
       icon: FiHome,
     },
+    ...siteNavItems.filter((item) => item.href !== '/'),
     {
       href: blogHomeHref,
       label: 'Blog',
       icon: FiBookOpen,
     },
-    ...siteNavItems.filter((item) => item.href !== '/'),
   ]
   const logoHref = surface === 'blog' ? (pathname.startsWith('/blog') ? '/blog' : '/') : '/'
 

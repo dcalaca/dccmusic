@@ -60,15 +60,15 @@ export default function BlogAuthorPage({ params }: PageProps) {
           },
         ]}
       />
-      <div className="mx-auto max-w-5xl px-4 pt-10 sm:px-6 lg:px-8">
-        <div className="flex items-center gap-4">
-          <Image src={author.image} alt={author.imageAlt} width={72} height={72} className="h-16 w-16 rounded-full object-cover" />
+      <div className="mx-auto max-w-5xl px-4 pt-6 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3">
+          <Image src={author.image} alt={author.imageAlt} width={56} height={56} className="h-12 w-12 rounded-full object-cover" />
           <div>
-            <p className="text-sm text-purple-300">{author.role}</p>
-            <h1 className="text-3xl font-bold">{author.name}</h1>
+            <p className="text-xs text-purple-300">{author.role}</p>
+            <h1 className="text-2xl font-bold text-white">{author.name}</h1>
           </div>
         </div>
-        <p className="mt-4 max-w-3xl text-gray-400">{author.bio}</p>
+        <p className="mt-3 max-w-3xl text-sm text-gray-400">{author.bio}</p>
       </div>
       <BlogListing
         title="Artigos"
