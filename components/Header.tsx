@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { FiMusic, FiPlayCircle, FiHome, FiShield, FiUsers, FiUser, FiLogOut, FiChevronDown, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe } from 'react-icons/fi'
+import { FiMusic, FiPlayCircle, FiHome, FiShield, FiUsers, FiUser, FiLogOut, FiChevronDown, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe, FiBookOpen } from 'react-icons/fi'
 
-const navItems = [
+const siteNavItems = [
   { href: '/', label: 'Home', icon: FiHome },
   { href: '/studio-ia', label: 'Studio IA', icon: FiZap },
   { href: '/transcricao-musical', label: 'Partitura e Cifra', mobileLabel: 'Partitura', icon: FiFileText },
@@ -24,11 +24,14 @@ export default function Header() {
   const [composerStudioBalance, setComposerStudioBalance] = useState<number | null>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [surface, setSurface] = useState<'blog' | 'site'>('site')
 
   useEffect(() => {
-    // Marcar como montado apenas no cliente para evitar hydration mismatch
     setMounted(true)
-  }, [])
+    const host = window.location.hostname
+    const isBlog = host.startsWith('blog.') || window.location.pathname.startsWith('/blog')
+    setSurface(isBlog ? 'blog' : 'site')
+  }, [pathname])
 
   useEffect(() => {
     // Só executar no cliente após montagem
@@ -172,13 +175,48 @@ export default function Header() {
   const composerInitial = String(composerDisplayName).slice(0, 1).toUpperCase()
   const composerBalanceLabel = composerStudioBalance === null ? null : `${composerStudioBalance} créditos`
   const composerIsPremium = Boolean(composer?.isPremium)
+  const isLocal = mounted && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  const blogHomeHref = !mounted
+    ? '/blog'
+    : surface === 'blog'
+      ? pathname.startsWith('/blog')
+        ? '/blog'
+        : '/'
+      : isLocal
+        ? '/blog'
+        : 'https://blog.dccmusic.online'
+  const siteHomeHref = mounted && surface === 'blog' && !isLocal ? 'https://www.dccmusic.online/' : '/'
+  const navItems = [
+    {
+      href: surface === 'blog' ? siteHomeHref : '/',
+      label: 'Home',
+      icon: FiHome,
+    },
+    {
+      href: blogHomeHref,
+      label: 'Blog',
+      icon: FiBookOpen,
+    },
+    ...siteNavItems.filter((item) => item.href !== '/'),
+  ]
+  const logoHref = surface === 'blog' ? (pathname.startsWith('/blog') ? '/blog' : '/') : '/'
+
+  const isNavActive = (item: { href: string; label: string }) => {
+    if (item.label === 'Blog') {
+      return surface === 'blog' || pathname === '/blog' || pathname.startsWith('/blog/')
+    }
+    if (item.label === 'Home') {
+      return pathname === '/' && surface !== 'blog'
+    }
+    return pathname === item.href || pathname.startsWith(`${item.href}/`)
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-800 bg-black">
       <div className="container mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex min-h-16 flex-col gap-2 py-2 md:h-16 md:flex-row md:items-center md:justify-between md:py-0">
           <div className="flex w-full min-w-0 items-center justify-between md:flex-1 md:space-x-4">
-            <Link href="/" className="flex shrink-0 items-center space-x-2">
+            <Link href={logoHref} className="flex shrink-0 items-center space-x-2">
               <Image
                 src="/logopng.png"
                 alt="DCC Music"
@@ -193,10 +231,10 @@ export default function Header() {
             <nav className="hidden min-w-0 flex-1 items-center space-x-1 overflow-x-auto whitespace-nowrap pb-1 [scrollbar-color:#374151_transparent] [scrollbar-width:thin] md:flex">
               {navItems.map((item) => {
                 const Icon = item.icon
-                const isActive = pathname === item.href
+                const isActive = isNavActive(item)
                 return (
                   <Link
-                    key={item.href}
+                    key={item.label}
                     href={item.href}
                     className={`flex shrink-0 items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
                       isActive
@@ -364,11 +402,11 @@ export default function Header() {
             <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {navItems.map((item) => {
                 const Icon = item.icon
-                const isActive = pathname === item.href
+                const isActive = isNavActive(item)
                 const mobileLabel = 'mobileLabel' in item ? item.mobileLabel : item.label
                 return (
                   <Link
-                    key={item.href}
+                    key={item.label}
                     href={item.href}
                     className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-[11px] font-semibold transition-all sm:px-3 sm:text-xs ${
                       isActive

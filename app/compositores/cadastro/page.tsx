@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { FiArrowLeft, FiArrowRight, FiEye, FiEyeOff, FiLock, FiMail, FiUser } from 'react-icons/fi'
 import { getStoredPartnerAttribution } from '@/components/PartnerAttribution'
 import { pushGtmEvent } from '@/components/GtmEvents'
+import { blogAttributionEventPayload } from '@/lib/blog/attribution'
 import { validateSignupEmail } from '@/lib/email-validation'
 
 export default function ComposerSignupPage() {
@@ -94,6 +95,7 @@ export default function ComposerSignupPage() {
         event_id: data?.metaRegistrationEventId || null,
         value: 0.01,
         currency: 'BRL',
+        ...blogAttributionEventPayload(),
       })
       if (typeof window !== 'undefined' && typeof (window as any).fbq === 'function') {
         ;(window as any).fbq('track', 'CompleteRegistration', {

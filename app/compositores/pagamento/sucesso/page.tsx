@@ -7,6 +7,7 @@ import { FiCheckCircle, FiArrowRight } from 'react-icons/fi'
 import { trackGoogleAdsPurchaseConversion } from '@/components/GoogleAdsEvents'
 import { identifyTikTokCurrentComposer } from '@/components/TikTokEvents'
 import { pushGtmEvent } from '@/components/GtmEvents'
+import { blogAttributionEventPayload } from '@/lib/blog/attribution'
 
 function PaymentSuccessContent() {
   const router = useRouter()
@@ -65,6 +66,7 @@ function PaymentSuccessContent() {
         event_id: transactionId,
         currency,
         ...(typeof value === 'number' ? { value } : {}),
+        ...blogAttributionEventPayload(),
       })
     }
 

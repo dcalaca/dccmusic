@@ -118,3 +118,13 @@ select:-webkit-autofill {
     }
   }
 }
+
+@layer components {
+  .blog-prose table {
+    @apply w-full border-collapse;
+  }
+
+  .blog-steps ol {
+    @apply my-0 list-decimal space-y-2 pl-6;
+  }
+}

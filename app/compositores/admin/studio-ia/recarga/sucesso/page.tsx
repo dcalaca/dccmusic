@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation'
 import { FiCheckCircle, FiArrowRight, FiLoader } from 'react-icons/fi'
 import { trackGoogleAdsPurchaseConversion } from '@/components/GoogleAdsEvents'
 import { identifyTikTokCurrentComposer, trackTikTokEvent } from '@/components/TikTokEvents'
+import { blogAttributionEventPayload } from '@/lib/blog/attribution'
 
 function StudioTopupSuccessContent() {
   const searchParams = useSearchParams()
@@ -61,6 +62,7 @@ function StudioTopupSuccessContent() {
         transaction_id: eventId,
         currency,
         value,
+        ...blogAttributionEventPayload(),
       })
     }
 
