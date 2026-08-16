@@ -81,6 +81,24 @@ export const blogClusters: BlogCluster[] = [
     description: 'Como transformar áudio em partitura, MusicXML e letra cifrada.',
     pillarSlug: 'o-que-e-partitura-e-cifra',
   },
+  {
+    slug: 'composicao-e-letras',
+    title: 'Composição e letras',
+    description: 'Tema, estrutura de canção e o uso da IA para escrever letras.',
+    pillarSlug: 'o-que-e-composicao-e-letras',
+  },
+  {
+    slug: 'producao-musical',
+    title: 'Produção musical',
+    description: 'Voz, instrumental, versões e organização de projetos no Studio IA.',
+    pillarSlug: 'o-que-e-producao-musical',
+  },
+  {
+    slug: 'distribuicao-digital',
+    title: 'Distribuição digital',
+    description: 'Como enviar músicas para Spotify, Apple Music, TikTok e outras plataformas.',
+    pillarSlug: 'o-que-e-distribuicao-digital',
+  },
 ]
 
 export function getBlogCategory(slug: string) {
