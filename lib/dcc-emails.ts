@@ -1,3 +1,4 @@
+import { notifyMusicReady } from './notifications'
 import { supabaseAdmin } from './supabase'
 
 type EmailResult = {
@@ -454,6 +455,17 @@ export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
   projectSlug?: string | null
   audioUrl?: string | null
 }) {
+  if (input.composerId && input.projectId) {
+    await notifyMusicReady({
+      composerId: input.composerId,
+      projectId: input.projectId,
+      projectTitle: input.projectTitle,
+      generationId: input.generationId,
+    }).catch((notifyError) => {
+      console.error('[NOTIFICATIONS] Erro ao notificar música pronta:', notifyError)
+    })
+  }
+
   return sendDccEmail({
     to: input.email,
     subject: `Sua música "${input.projectTitle}" ficou pronta`,

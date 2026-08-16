@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { FiSend, FiTrash2, FiUser } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import { FiHeart, FiSend, FiTrash2, FiUser } from 'react-icons/fi'
 import { formatDate } from '@/lib/utils'
 
 interface Comment {
@@ -9,8 +9,11 @@ interface Comment {
   userId: string
   userName: string
   userFirstName: string
+  parentId: string | null
   comment: string
-  createdAt: Date
+  likesCount: number
+  likedByMe: boolean
+  createdAt: Date | string
 }
 
 interface CommentsSectionProps {
@@ -29,28 +32,39 @@ export default function CommentsSection({
   onLoginRequired,
 }: CommentsSectionProps) {
   const [comments, setComments] = useState<Comment[]>([])
+  const [viewerUserId, setViewerUserId] = useState<string | undefined>(currentUserId)
   const [loading, setLoading] = useState(true)
   const [newComment, setNewComment] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [replyingTo, setReplyingTo] = useState<Comment | null>(null)
+  const [replyText, setReplyText] = useState('')
+  const [likingId, setLikingId] = useState<string | null>(null)
 
   const getInteractionAuthToken = () => {
     if (typeof window === 'undefined') return null
     return localStorage.getItem('composer_token') || localStorage.getItem('site_user_token')
   }
 
+  const authHeaders = (): HeadersInit => {
+    const token = getInteractionAuthToken()
+    return token ? { Authorization: `Bearer ${token}` } : {}
+  }
+
   useEffect(() => {
     loadComments()
-  }, [contentType, contentId])
+  }, [contentType, contentId, isAuthenticated])
 
   const loadComments = async () => {
     try {
       setLoading(true)
       const response = await fetch(
-        `/api/comments?contentType=${contentType}&contentId=${contentId}`
+        `/api/comments?contentType=${contentType}&contentId=${contentId}`,
+        { headers: authHeaders() }
       )
       if (response.ok) {
         const data = await response.json()
-        setComments(data)
+        setComments(Array.isArray(data) ? data : data.comments || [])
+        if (data?.currentUserId) setViewerUserId(data.currentUserId)
       }
     } catch (error) {
       console.error('Erro ao carregar comentários:', error)
@@ -93,14 +107,111 @@ export default function CommentsSection({
         throw new Error(error.error || 'Erro ao comentar')
       }
 
-      const data = await response.json()
-      setComments([data.comment, ...comments])
       setNewComment('')
+      await loadComments()
     } catch (error: any) {
       console.error('Erro ao comentar:', error)
       alert(error.message || 'Erro ao comentar')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleReply = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!replyingTo) return
+
+    if (!isAuthenticated) {
+      onLoginRequired?.()
+      return
+    }
+
+    if (!replyText.trim() || replyText.trim().length < 3) {
+      alert('Resposta deve ter pelo menos 3 caracteres')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+      const token = getInteractionAuthToken()
+      const response = await fetch('/api/comments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify({
+          contentType,
+          contentId,
+          parentId: replyingTo.id,
+          comment: replyText.trim(),
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Erro ao responder')
+      }
+
+      setReplyText('')
+      setReplyingTo(null)
+      await loadComments()
+    } catch (error: any) {
+      console.error('Erro ao responder:', error)
+      alert(error.message || 'Erro ao responder')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleLike = async (comment: Comment) => {
+    if (!isAuthenticated) {
+      onLoginRequired?.()
+      return
+    }
+
+    const previous = comments
+    setLikingId(comment.id)
+    setComments((current) =>
+      current.map((item) =>
+        item.id === comment.id
+          ? {
+              ...item,
+              likedByMe: !item.likedByMe,
+              likesCount: item.likedByMe ? Math.max(0, item.likesCount - 1) : item.likesCount + 1,
+            }
+          : item
+      )
+    )
+
+    try {
+      const token = getInteractionAuthToken()
+      const response = await fetch('/api/comments/like', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token ? `Bearer ${token}` : '',
+        },
+        body: JSON.stringify({ commentId: comment.id }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao curtir')
+      }
+
+      const data = await response.json()
+      setComments((current) =>
+        current.map((item) =>
+          item.id === comment.id
+            ? { ...item, likedByMe: Boolean(data.liked), likesCount: Number(data.likesCount) || 0 }
+            : item
+        )
+      )
+    } catch (error) {
+      console.error('Erro ao curtir comentário:', error)
+      setComments(previous)
+    } finally {
+      setLikingId(null)
     }
   }
 
@@ -122,110 +233,180 @@ export default function CommentsSection({
         throw new Error('Erro ao deletar comentário')
       }
 
-      setComments(comments.filter((c) => c.id !== commentId))
+      setComments((current) =>
+        current.filter((item) => item.id !== commentId && item.parentId !== commentId)
+      )
+      if (replyingTo?.id === commentId) {
+        setReplyingTo(null)
+        setReplyText('')
+      }
     } catch (error: any) {
       console.error('Erro ao deletar comentário:', error)
       alert('Erro ao deletar comentário')
     }
   }
 
+  const roots = comments.filter((comment) => !comment.parentId)
+  const repliesByParent = comments.reduce((map, comment) => {
+    if (!comment.parentId) return map
+    const list = map.get(comment.parentId) || []
+    list.push(comment)
+    map.set(comment.parentId, list)
+    return map
+  }, new Map<string, Comment[]>())
+
+  const myId = viewerUserId || currentUserId
+
+  const renderComment = (comment: Comment, isReply = false) => (
+    <div key={comment.id} className={isReply ? 'ml-8 sm:ml-12' : ''}>
+      <div className={`rounded-lg p-4 ${isReply ? 'bg-gray-800/20' : 'bg-gray-800/30 border border-gray-700'}`}>
+        <div className="mb-2 flex items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-600">
+              <FiUser className="h-4 w-4 text-white" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-medium text-white">{comment.userFirstName}</div>
+              <div className="text-xs text-gray-500">{formatDate(comment.createdAt)}</div>
+            </div>
+          </div>
+          {myId === comment.userId && (
+            <button
+              onClick={() => handleDelete(comment.id)}
+              className="flex-shrink-0 p-1 text-gray-400 transition-colors hover:text-red-400"
+              title="Deletar comentário"
+            >
+              <FiTrash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+        <p className="whitespace-pre-wrap break-words text-gray-300">{comment.comment}</p>
+        <div className="mt-3 flex items-center gap-4 text-sm">
+          <button
+            type="button"
+            disabled={likingId === comment.id}
+            onClick={() => handleLike(comment)}
+            className={`flex items-center gap-1.5 transition-colors ${
+              comment.likedByMe ? 'text-red-400' : 'text-gray-400 hover:text-red-400'
+            }`}
+          >
+            <FiHeart className={`h-4 w-4 ${comment.likedByMe ? 'fill-current' : ''}`} />
+            <span>{comment.likesCount > 0 ? comment.likesCount : 'Curtir'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!isAuthenticated) {
+                onLoginRequired?.()
+                return
+              }
+              setReplyingTo(comment)
+              setReplyText('')
+            }}
+            className="text-gray-400 transition-colors hover:text-white"
+          >
+            Responder
+          </button>
+        </div>
+
+        {replyingTo?.id === comment.id && (
+          <form onSubmit={handleReply} className="mt-3 flex flex-col gap-2 sm:flex-row">
+            <input
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+              placeholder={`Responder ${comment.userFirstName}...`}
+              maxLength={500}
+              className="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={submitting || replyText.trim().length < 3}
+                className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Enviar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setReplyingTo(null)
+                  setReplyText('')
+                }}
+                className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:text-white"
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+
   return (
-    <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 sm:p-6">
-      <h2 className="text-2xl font-bold mb-6">
+    <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
+      <h2 className="mb-6 text-2xl font-bold">
         <span className="gradient-text">Comentários</span>
         {comments.length > 0 && (
-          <span className="text-gray-400 text-lg font-normal ml-2">
-            ({comments.length})
-          </span>
+          <span className="ml-2 text-lg font-normal text-gray-400">({comments.length})</span>
         )}
       </h2>
 
-      {/* Formulário de comentário */}
       {isAuthenticated ? (
         <form onSubmit={handleSubmit} className="mb-6">
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Escreva seu comentário..."
               rows={3}
-              className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500 resize-none"
+              className="flex-1 resize-none rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none"
               maxLength={500}
             />
             <button
               type="submit"
               disabled={submitting || !newComment.trim()}
-              className="px-6 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              className="flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-6 py-2 font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {submitting ? (
+              {submitting && !replyingTo ? (
                 'Enviando...'
               ) : (
                 <>
-                  <FiSend className="w-4 h-4" />
+                  <FiSend className="h-4 w-4" />
                   <span className="hidden sm:inline">Enviar</span>
                 </>
               )}
             </button>
           </div>
-          <div className="text-xs text-gray-500 mt-1 text-right">
-            {newComment.length}/500 caracteres
-          </div>
+          <div className="mt-1 text-right text-xs text-gray-500">{newComment.length}/500 caracteres</div>
         </form>
       ) : (
-        <div className="mb-6 p-4 bg-gray-800/50 border border-gray-700 rounded-lg text-center">
-          <p className="text-gray-400 mb-3">
-            Entre na sua conta para comentar e avaliar. Com a mesma conta você também cria músicas.
+        <div className="mb-6 rounded-lg border border-gray-700 bg-gray-800/50 p-4 text-center">
+          <p className="mb-3 text-gray-400">
+            Entre na sua conta para comentar, curtir e responder. Com a mesma conta você também cria músicas.
           </p>
           <button
             onClick={onLoginRequired}
-            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
+            className="rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700"
           >
             Entrar ou criar conta
           </button>
         </div>
       )}
 
-      {/* Lista de comentários */}
       {loading ? (
-        <div className="text-center py-8 text-gray-400">Carregando comentários...</div>
+        <div className="py-8 text-center text-gray-400">Carregando comentários...</div>
       ) : comments.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">
+        <div className="py-8 text-center text-gray-400">
           Nenhum comentário ainda. Seja o primeiro a comentar!
         </div>
       ) : (
         <div className="space-y-4">
-          {comments.map((comment) => (
-            <div
-              key={comment.id}
-              className="bg-gray-800/30 border border-gray-700 rounded-lg p-4"
-            >
-              <div className="flex items-start justify-between gap-4 mb-2">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center">
-                    <FiUser className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium text-white truncate">
-                      {comment.userFirstName}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {formatDate(comment.createdAt)}
-                    </div>
-                  </div>
-                </div>
-                {currentUserId === comment.userId && (
-                  <button
-                    onClick={() => handleDelete(comment.id)}
-                    className="flex-shrink-0 text-gray-400 hover:text-red-400 transition-colors p-1"
-                    title="Deletar comentário"
-                  >
-                    <FiTrash2 className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              <p className="text-gray-300 whitespace-pre-wrap break-words">
-                {comment.comment}
-              </p>
+          {roots.map((comment) => (
+            <div key={comment.id} className="space-y-3">
+              {renderComment(comment)}
+              {(repliesByParent.get(comment.id) || []).map((reply) => renderComment(reply, true))}
             </div>
           ))}
         </div>

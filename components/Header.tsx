@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { FiMusic, FiPlayCircle, FiHome, FiShield, FiUsers, FiUser, FiLogOut, FiChevronDown, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe, FiBookOpen } from 'react-icons/fi'
+import NotificationBell from './NotificationBell'
 
 const siteNavItems = [
   { href: '/', label: 'Home', icon: FiHome },
@@ -21,6 +22,7 @@ export default function Header() {
   const [composer, setComposer] = useState<any>(null)
   const [composerStudioBalance, setComposerStudioBalance] = useState<number | null>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showBell, setShowBell] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [surface, setSurface] = useState<'blog' | 'site'>('site')
 
@@ -134,6 +136,7 @@ export default function Header() {
     localStorage.removeItem('composer_data')
     setComposer(null)
     setShowUserMenu(false)
+    setShowBell(false)
     router.push('/compositores/login')
     window.dispatchEvent(new Event('authChange'))
   }
@@ -220,9 +223,20 @@ export default function Header() {
           {/* Botões à direita */}
           <nav className="hidden shrink-0 items-center space-x-2 md:flex">
             {mounted && composer ? (
+              <>
+              <NotificationBell
+                open={showBell}
+                onOpenChange={(open) => {
+                  setShowBell(open)
+                  if (open) setShowUserMenu(false)
+                }}
+              />
               <div className="relative z-[120]">
                 <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  onClick={() => {
+                    setShowUserMenu(!showUserMenu)
+                    setShowBell(false)
+                  }}
                   className="flex items-center space-x-2 rounded-lg bg-gradient-to-r from-primary-600 to-purple-600 px-3 py-2 font-medium text-white transition-all hover:from-primary-700 hover:to-purple-700"
                 >
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-sm font-black">
@@ -320,6 +334,7 @@ export default function Header() {
                   </div>
                 )}
               </div>
+              </>
             ) : (
               <Link
                 href="/compositores/admin"
@@ -357,9 +372,20 @@ export default function Header() {
             </div>
             
             {mounted && composer ? (
+              <div className="flex shrink-0 items-center gap-1">
+              <NotificationBell
+                open={showBell}
+                onOpenChange={(open) => {
+                  setShowBell(open)
+                  if (open) setShowUserMenu(false)
+                }}
+              />
               <div className="relative z-[120] shrink-0">
                 <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  onClick={() => {
+                    setShowUserMenu(!showUserMenu)
+                    setShowBell(false)
+                  }}
                   className="flex min-h-10 items-center justify-center gap-1 rounded-lg bg-gradient-to-r from-primary-600 to-purple-600 px-2 text-sm font-black text-white transition-all hover:from-primary-700 hover:to-purple-700"
                   title={composerDisplayName}
                 >
@@ -450,6 +476,7 @@ export default function Header() {
                   </div>
                 )}
               </div>
+              </div>
             ) : (
               <Link
                 href="/compositores/admin"
@@ -464,10 +491,13 @@ export default function Header() {
       </div>
       
       {/* Overlay para fechar menu ao clicar fora */}
-      {showUserMenu && (
+      {(showUserMenu || showBell) && (
         <div
           className="fixed inset-0 z-[110]"
-          onClick={() => setShowUserMenu(false)}
+          onClick={() => {
+            setShowUserMenu(false)
+            setShowBell(false)
+          }}
         />
       )}
     </header>

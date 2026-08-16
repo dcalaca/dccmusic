@@ -4521,13 +4521,22 @@ export interface Comment {
   userFirstName: string
   contentType: RateableContentType
   contentId: string
+  parentId: string | null
   comment: string
   isApproved: boolean
+  likesCount: number
+  likedByMe: boolean
   createdAt: Date
   updatedAt: Date
 }
 
-function mapComment(data: any, userName?: string, userFirstName?: string): Comment {
+function mapComment(
+  data: any,
+  userName?: string,
+  userFirstName?: string,
+  likesCount = 0,
+  likedByMe = false
+): Comment {
   return {
     id: data.id,
     userId: data.user_id,
@@ -4535,16 +4544,34 @@ function mapComment(data: any, userName?: string, userFirstName?: string): Comme
     userFirstName: userFirstName || 'Usuário',
     contentType: data.content_type,
     contentId: data.content_id,
+    parentId: data.parent_id || null,
     comment: data.comment,
     isApproved: data.is_approved !== false,
+    likesCount,
+    likedByMe,
     createdAt: new Date(data.created_at),
     updatedAt: new Date(data.updated_at),
   }
 }
 
+export async function getCommentById(commentId: string): Promise<Comment | null> {
+  const { data, error } = await supabaseAdmin
+    .from('dccmusic_comments')
+    .select('*')
+    .eq('id', commentId)
+    .maybeSingle()
+
+  if (error) throw error
+  if (!data) return null
+
+  const user = await getSiteUserById(data.user_id)
+  return mapComment(data, user?.name, user?.firstName)
+}
+
 export async function getComments(
   contentType: RateableContentType,
-  contentId: string
+  contentId: string,
+  viewerUserId?: string | null
 ): Promise<Comment[]> {
   try {
     const { data: comments, error } = await supabaseAdmin
@@ -4553,7 +4580,7 @@ export async function getComments(
       .eq('content_type', contentType)
       .eq('content_id', contentId)
       .eq('is_approved', true)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: true })
 
     if (error) {
       console.error('Erro ao buscar comentários:', error)
@@ -4564,13 +4591,23 @@ export async function getComments(
     const userIds = [...new Set((comments || []).map((c: any) => c.user_id))]
     if (userIds.length === 0) return []
 
-    const { data: users, error: usersError } = await supabaseAdmin
-      .from('dccmusic_site_users')
-      .select('id, name, first_name')
-      .in('id', userIds)
+    const commentIds = (comments || []).map((c: any) => c.id)
+    const [{ data: users, error: usersError }, { data: likes, error: likesError }] = await Promise.all([
+      supabaseAdmin
+        .from('dccmusic_site_users')
+        .select('id, name, first_name')
+        .in('id', userIds),
+      supabaseAdmin
+        .from('dccmusic_comment_likes')
+        .select('comment_id, user_id')
+        .in('comment_id', commentIds),
+    ])
 
     if (usersError) {
       console.error('Erro ao buscar usuários:', usersError)
+    }
+    if (likesError) {
+      console.error('Erro ao buscar curtidas:', likesError)
     }
 
     const usersMap = new Map(
@@ -4583,10 +4620,39 @@ export async function getComments(
       })
     )
 
-    return (comments || []).map((comment: any) => {
-      const user = usersMap.get(comment.user_id)
-      return mapComment(comment, user?.name, user?.firstName)
+    const likesCountMap = new Map<string, number>()
+    const likedByMeSet = new Set<string>()
+    ;(likes || []).forEach((like: any) => {
+      likesCountMap.set(like.comment_id, (likesCountMap.get(like.comment_id) || 0) + 1)
+      if (viewerUserId && like.user_id === viewerUserId) {
+        likedByMeSet.add(like.comment_id)
+      }
     })
+
+    const mapped = (comments || []).map((comment: any) => {
+      const user = usersMap.get(comment.user_id)
+      return mapComment(
+        comment,
+        user?.name,
+        user?.firstName,
+        likesCountMap.get(comment.id) || 0,
+        likedByMeSet.has(comment.id)
+      )
+    })
+
+    const roots = mapped.filter((comment) => !comment.parentId)
+    const repliesByParent = new Map<string, Comment[]>()
+    mapped
+      .filter((comment) => comment.parentId)
+      .forEach((reply) => {
+        const list = repliesByParent.get(reply.parentId as string) || []
+        list.push(reply)
+        repliesByParent.set(reply.parentId as string, list)
+      })
+
+    return roots
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      .flatMap((root) => [root, ...(repliesByParent.get(root.id) || [])])
   } catch (error) {
     console.error('Erro ao buscar comentários:', error)
     return []
@@ -4597,7 +4663,8 @@ export async function createComment(
   userId: string,
   contentType: RateableContentType,
   contentId: string,
-  comment: string
+  comment: string,
+  parentId?: string | null
 ): Promise<Comment> {
   try {
     // Buscar informações do usuário
@@ -4612,6 +4679,7 @@ export async function createComment(
         user_id: userId,
         content_type: contentType,
         content_id: contentId,
+        parent_id: parentId || null,
         comment: comment.trim(),
         is_approved: true, // Por padrão aprovado, pode adicionar moderação depois
       })
@@ -4624,6 +4692,54 @@ export async function createComment(
   } catch (error: any) {
     console.error('Erro ao criar comentário:', error)
     throw error
+  }
+}
+
+export async function toggleCommentLike(
+  commentId: string,
+  userId: string
+): Promise<{ liked: boolean; likesCount: number; comment: Comment }> {
+  const comment = await getCommentById(commentId)
+  if (!comment) {
+    throw new Error('Comentário não encontrado')
+  }
+
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from('dccmusic_comment_likes')
+    .select('comment_id')
+    .eq('comment_id', commentId)
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (existingError) throw existingError
+
+  if (existing) {
+    const { error: deleteError } = await supabaseAdmin
+      .from('dccmusic_comment_likes')
+      .delete()
+      .eq('comment_id', commentId)
+      .eq('user_id', userId)
+
+    if (deleteError) throw deleteError
+  } else {
+    const { error: insertError } = await supabaseAdmin
+      .from('dccmusic_comment_likes')
+      .insert({ comment_id: commentId, user_id: userId })
+
+    if (insertError) throw insertError
+  }
+
+  const { count, error: countError } = await supabaseAdmin
+    .from('dccmusic_comment_likes')
+    .select('*', { count: 'exact', head: true })
+    .eq('comment_id', commentId)
+
+  if (countError) throw countError
+
+  return {
+    liked: !existing,
+    likesCount: count || 0,
+    comment,
   }
 }
 

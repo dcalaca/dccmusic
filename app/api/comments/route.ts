@@ -3,6 +3,9 @@ import * as db from '@/lib/db'
 import { getPublicInteractionUserFromRequest } from '@/lib/public-interaction-auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { sendStudioMusicCommentEmail } from '@/lib/dcc-emails'
+import { notifyCommentReply, notifyNewComment } from '@/lib/notifications'
+
+export const dynamic = 'force-dynamic'
 
 type CommentableContentType = 'music' | 'video' | 'studio_music'
 
@@ -59,9 +62,13 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const comments = await db.getComments(contentType, contentId)
+    const viewer = await getPublicInteractionUserFromRequest(request)
+    const comments = await db.getComments(contentType, contentId, viewer?.userId)
 
-    return NextResponse.json(comments)
+    return NextResponse.json({
+      comments,
+      currentUserId: viewer?.userId || null,
+    })
   } catch (error: any) {
     console.error('Erro ao buscar comentários:', error)
     return NextResponse.json(
@@ -71,7 +78,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Criar comentário
+// POST - Criar comentário ou resposta
 export async function POST(request: NextRequest) {
   try {
     const user = await getPublicInteractionUserFromRequest(request)
@@ -84,6 +91,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const { contentType, contentId, comment } = body
+    const replyToId = typeof body.parentId === 'string' ? body.parentId : null
 
     if (!contentType || !contentId || !comment) {
       return NextResponse.json(
@@ -106,15 +114,61 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    let storedParentId: string | null = null
+    let replyTarget: db.Comment | null = null
+
+    if (replyToId) {
+      replyTarget = await db.getCommentById(replyToId)
+      if (
+        !replyTarget ||
+        replyTarget.contentType !== contentType ||
+        replyTarget.contentId !== contentId
+      ) {
+        return NextResponse.json(
+          { error: 'Comentário para responder não encontrado' },
+          { status: 404 }
+        )
+      }
+      storedParentId = replyTarget.parentId || replyTarget.id
+    }
+
     const newComment = await db.createComment(
       user.userId,
       contentType,
       contentId,
-      comment
+      comment,
+      storedParentId
     )
 
-    if (contentType === 'studio_music') {
-      await notifyStudioComposerAboutComment(contentId, newComment)
+    const actorName = user.firstName || user.name
+
+    if (replyTarget) {
+      await notifyCommentReply({
+        actorSiteUserId: user.userId,
+        actorName,
+        parentAuthorSiteUserId: replyTarget.userId,
+        contentType,
+        contentId,
+        commentId: newComment.id,
+        comment: newComment.comment,
+      }).catch((notifyError) => {
+        console.error('[COMMENTS] Erro ao notificar resposta:', notifyError)
+      })
+    } else {
+      await notifyNewComment({
+        actorSiteUserId: user.userId,
+        actorName,
+        contentType,
+        contentId,
+        commentId: newComment.id,
+        comment: newComment.comment,
+      }).catch((notifyError) => {
+        console.error('[COMMENTS] Erro ao notificar comentário:', notifyError)
+      })
+
+      if (contentType === 'studio_music') {
+        await notifyStudioComposerAboutComment(contentId, newComment)
+      }
     }
 
     return NextResponse.json({
