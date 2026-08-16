@@ -4,8 +4,35 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { FiMusic, FiPlayCircle, FiHome, FiShield, FiUsers, FiUser, FiLogOut, FiChevronDown, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe, FiBookOpen } from 'react-icons/fi'
+import { FiMusic, FiPlayCircle, FiHome, FiShield, FiUsers, FiUser, FiLogOut, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe, FiBookOpen } from 'react-icons/fi'
 import NotificationBell from './NotificationBell'
+
+function HeaderComposerAvatar({
+  name,
+  composerId,
+}: {
+  name: string
+  composerId?: string
+}) {
+  const [photoFailed, setPhotoFailed] = useState(false)
+  const photoUrl = composerId ? `/api/compositores/avatar/${composerId}` : null
+  const showPhoto = Boolean(photoUrl) && !photoFailed
+  const initial = String(name || 'C').trim().slice(0, 1).toUpperCase() || 'C'
+
+  return (
+    <span className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary-600 to-purple-600 text-sm font-black text-white">
+      <span aria-hidden={showPhoto}>{initial}</span>
+      {showPhoto ? (
+        <img
+          src={photoUrl!}
+          alt=""
+          onError={() => setPhotoFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : null}
+    </span>
+  )
+}
 
 const siteNavItems = [
   { href: '/', label: 'Home', icon: FiHome },
@@ -142,7 +169,6 @@ export default function Header() {
   }
 
   const composerDisplayName = composer?.name || composer?.email || 'Compositor'
-  const composerInitial = String(composerDisplayName).slice(0, 1).toUpperCase()
   const composerBalanceLabel = composerStudioBalance === null ? null : `${composerStudioBalance} créditos`
   const composerIsPremium = Boolean(composer?.isPremium)
   const isLocal = mounted && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -237,18 +263,10 @@ export default function Header() {
                     setShowUserMenu(!showUserMenu)
                     setShowBell(false)
                   }}
-                  className="flex items-center space-x-2 rounded-lg bg-gradient-to-r from-primary-600 to-purple-600 px-3 py-2 font-medium text-white transition-all hover:from-primary-700 hover:to-purple-700"
+                  className="rounded-full ring-2 ring-white/15 transition hover:ring-white/35"
+                  title={composerDisplayName}
                 >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-sm font-black">
-                    {composerInitial}
-                  </span>
-                  <span className="max-w-[130px] truncate">{composerDisplayName}</span>
-                  {composerBalanceLabel && (
-                    <span className="rounded-full bg-black/25 px-2 py-1 text-xs font-black text-green-200">
-                      {composerBalanceLabel}
-                    </span>
-                  )}
-                  <FiChevronDown className={`w-4 h-4 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
+                  <HeaderComposerAvatar name={composerDisplayName} composerId={composer?.id} />
                 </button>
                 {showUserMenu && (
                   <div className="absolute right-0 z-[130] mt-2 w-60 overflow-hidden rounded-lg border border-gray-700 bg-gray-900 shadow-2xl shadow-black/50">
@@ -386,11 +404,10 @@ export default function Header() {
                     setShowUserMenu(!showUserMenu)
                     setShowBell(false)
                   }}
-                  className="flex min-h-10 items-center justify-center gap-1 rounded-lg bg-gradient-to-r from-primary-600 to-purple-600 px-2 text-sm font-black text-white transition-all hover:from-primary-700 hover:to-purple-700"
+                  className="rounded-full ring-2 ring-white/15 transition hover:ring-white/35"
                   title={composerDisplayName}
                 >
-                  <span>{composerInitial}</span>
-                  {composerBalanceLabel && <span className="text-[10px] font-bold text-green-100">{composerStudioBalance}</span>}
+                  <HeaderComposerAvatar name={composerDisplayName} composerId={composer?.id} />
                 </button>
                 {showUserMenu && (
                   <div className="absolute right-0 z-[130] mt-2 w-60 overflow-hidden rounded-lg border border-gray-700 bg-gray-900 shadow-2xl shadow-black/50">
