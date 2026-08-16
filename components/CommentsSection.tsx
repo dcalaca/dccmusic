@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FiHeart, FiSend, FiTrash2, FiUser } from 'react-icons/fi'
+import { FiHeart, FiSend, FiTrash2 } from 'react-icons/fi'
 import { formatDate } from '@/lib/utils'
 
 interface Comment {
@@ -9,11 +9,32 @@ interface Comment {
   userId: string
   userName: string
   userFirstName: string
+  avatarUrl?: string | null
   parentId: string | null
   comment: string
   likesCount: number
   likedByMe: boolean
   createdAt: Date | string
+}
+
+function CommentAvatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
+  const [photoFailed, setPhotoFailed] = useState(false)
+  const showPhoto = Boolean(photoUrl) && !photoFailed
+  const initial = String(name || 'U').trim().slice(0, 1).toUpperCase() || 'U'
+
+  return (
+    <div className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary-600 text-xs font-black text-white">
+      <span aria-hidden={showPhoto}>{initial}</span>
+      {showPhoto ? (
+        <img
+          src={photoUrl!}
+          alt=""
+          onError={() => setPhotoFailed(true)}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : null}
+    </div>
+  )
 }
 
 interface CommentsSectionProps {
@@ -262,9 +283,7 @@ export default function CommentsSection({
       <div className={`rounded-lg p-4 ${isReply ? 'bg-gray-800/20' : 'bg-gray-800/30 border border-gray-700'}`}>
         <div className="mb-2 flex items-start justify-between gap-4">
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-600">
-              <FiUser className="h-4 w-4 text-white" />
-            </div>
+            <CommentAvatar name={comment.userFirstName || comment.userName} photoUrl={comment.avatarUrl} />
             <div className="min-w-0 flex-1">
               <div className="truncate font-medium text-white">{comment.userFirstName}</div>
               <div className="text-xs text-gray-500">{formatDate(comment.createdAt)}</div>

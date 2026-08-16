@@ -4519,6 +4519,7 @@ export interface Comment {
   userId: string
   userName: string
   userFirstName: string
+  avatarUrl: string | null
   contentType: RateableContentType
   contentId: string
   parentId: string | null
@@ -4535,13 +4536,15 @@ function mapComment(
   userName?: string,
   userFirstName?: string,
   likesCount = 0,
-  likedByMe = false
+  likedByMe = false,
+  avatarUrl: string | null = null
 ): Comment {
   return {
     id: data.id,
     userId: data.user_id,
     userName: userName || 'Usuário',
     userFirstName: userFirstName || 'Usuário',
+    avatarUrl,
     contentType: data.content_type,
     contentId: data.content_id,
     parentId: data.parent_id || null,
@@ -4595,7 +4598,7 @@ export async function getComments(
     const [{ data: users, error: usersError }, { data: likes, error: likesError }] = await Promise.all([
       supabaseAdmin
         .from('dccmusic_site_users')
-        .select('id, name, first_name')
+        .select('id, name, first_name, email')
         .in('id', userIds),
       supabaseAdmin
         .from('dccmusic_comment_likes')
@@ -4610,12 +4613,35 @@ export async function getComments(
       console.error('Erro ao buscar curtidas:', likesError)
     }
 
+    const emails = [...new Set(
+      (users || [])
+        .map((u: any) => String(u.email || '').trim())
+        .filter(Boolean)
+    )]
+    const emailLookup = [...new Set(emails.flatMap((email) => [email, email.toLowerCase()]))]
+    const { data: composers } = emailLookup.length
+      ? await supabaseAdmin
+          .from('dccmusic_composers')
+          .select('id, email')
+          .in('email', emailLookup)
+      : { data: [] as Array<{ id: string; email: string }> }
+
+    const emailToAvatar = new Map<string, string>()
+    ;(composers || []).forEach((composer: any) => {
+      const email = String(composer.email || '').trim().toLowerCase()
+      if (email && composer.id) {
+        emailToAvatar.set(email, getComposerAvatarApiPath(composer.id))
+      }
+    })
+
     const usersMap = new Map(
       (users || []).map((u: any) => {
         const formattedName = formatDisplayName(u.name)
+        const email = String(u.email || '').trim().toLowerCase()
         return [u.id, {
           name: formattedName,
           firstName: formatDisplayName(u.first_name || formattedName.split(' ')[0]),
+          avatarUrl: emailToAvatar.get(email) || null,
         }]
       })
     )
@@ -4636,7 +4662,8 @@ export async function getComments(
         user?.name,
         user?.firstName,
         likesCountMap.get(comment.id) || 0,
-        likedByMeSet.has(comment.id)
+        likedByMeSet.has(comment.id),
+        user?.avatarUrl || null
       )
     })
 
