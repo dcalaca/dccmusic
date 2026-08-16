@@ -15,7 +15,7 @@ const faqs = [
       {
         question: 'Preciso pagar para acessar o site?',
         answer:
-          'Não. As páginas públicas com músicas, vídeos, compositores e informações do DCC Music podem ser acessadas gratuitamente. Recursos como Studio IA e Partitura e Cifra usam créditos do compositor.',
+          'Não. Ouvir músicas e ver vídeos é grátis, sem cadastro. Para comentar, avaliar ou criar no Studio IA, use a conta de compositor. Não existe mais cadastro separado de ouvinte.',
       },
       {
         question: 'Posso ouvir músicas e assistir vídeos pelo celular?',
@@ -35,7 +35,7 @@ const faqs = [
       {
         question: 'O que consigo fazer na área do compositor?',
         answer:
-          'Você consegue criar músicas no Studio IA, gerar partitura e cifra, cadastrar músicas e vídeos, acompanhar projetos em Meus Projetos, comprar créditos, ver Conta e extrato e usar recursos disponíveis no seu plano.',
+          'Você consegue criar músicas no Studio IA, gerar partitura e cifra, cadastrar músicas e vídeos, acompanhar projetos em Meus Projetos, comprar créditos, comentar, avaliar, ver Conta e extrato e usar recursos disponíveis no seu plano.',
       },
       {
         question: 'Esqueci minha senha. O que faço?',

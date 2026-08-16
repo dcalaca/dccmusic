@@ -19,6 +19,95 @@ export interface ComposerAuth {
   composerId?: string
 }
 
+export class ComposerSignupError extends Error {
+  status: number
+  code: string
+  field?: 'email' | 'artistName' | 'password'
+  suggestionName?: string
+
+  constructor(
+    message: string,
+    options: {
+      code: string
+      status?: number
+      field?: 'email' | 'artistName' | 'password'
+      suggestionName?: string
+    }
+  ) {
+    super(message)
+    this.name = 'ComposerSignupError'
+    this.code = options.code
+    this.status = options.status ?? 409
+    this.field = options.field
+    this.suggestionName = options.suggestionName
+  }
+}
+
+function uniqueViolationField(error: any): 'name' | 'slug' | 'email' | null {
+  const blob = `${error?.code || ''} ${error?.message || ''} ${error?.details || ''} ${error?.constraint || ''}`.toLowerCase()
+  const isUnique =
+    error?.code === '23505' ||
+    blob.includes('duplicate') ||
+    blob.includes('unique constraint')
+  if (!isUnique) return null
+  if (blob.includes('key (email)') || blob.includes('email_key') || blob.includes('(email)=')) {
+    return 'email'
+  }
+  if (blob.includes('key (slug)') || blob.includes('slug_key') || blob.includes('(slug)=')) {
+    return 'slug'
+  }
+  if (blob.includes('key (name)') || blob.includes('name_key') || blob.includes('(name)=')) {
+    return 'name'
+  }
+  return null
+}
+
+function buildArtistNameSuggestion(artistName: string, accountName?: string): string | undefined {
+  const artist = formatDisplayName(artistName)
+  const account = accountName?.trim() ? formatDisplayName(accountName) : ''
+  if (account && normalizeName(account) !== normalizeName(artist) && account.split(' ').length > 1) {
+    return account
+  }
+  if (!normalizeName(artist).endsWith(' oficial')) {
+    return `${artist} Oficial`
+  }
+  return undefined
+}
+
+function artistNameTakenError(existingName: string, accountName?: string) {
+  const suggestionName = buildArtistNameSuggestion(existingName, accountName)
+  const suggestionText = suggestionName
+    ? ` Tente outro, por exemplo: ${suggestionName}.`
+    : ' Tente outro com sobrenome ou um nome composto.'
+  return new ComposerSignupError(
+    `Esse nome artístico já está em uso: "${existingName}".${suggestionText}`,
+    {
+      code: 'ARTIST_NAME_TAKEN',
+      status: 409,
+      field: 'artistName',
+      suggestionName,
+    }
+  )
+}
+
+async function findComposerWithSamePublicName(composerName: string) {
+  const formatted = formatDisplayName(composerName)
+
+  const { data: exact } = await supabaseAdmin
+    .from('dccmusic_composers')
+    .select('id, name, email')
+    .eq('name', formatted)
+    .maybeSingle()
+
+  if (exact) return exact
+
+  const { data: allComposers } = await supabaseAdmin
+    .from('dccmusic_composers')
+    .select('id, name, email')
+
+  return allComposers?.find((composer) => namesAreSimilar(composer.name, formatted)) || null
+}
+
 // Buscar compositores similares (sem email) para o usuário escolher
 export async function findSimilarComposers(composerName: string) {
   try {
@@ -191,33 +280,24 @@ export async function createComposerAccount(
       .maybeSingle()
 
     if (existingByEmail) {
-      throw new Error('Email já cadastrado. Use outro email ou faça login.')
+      throw new ComposerSignupError('Email já cadastrado. Use outro email ou faça login.', {
+        code: 'EMAIL_TAKEN',
+        status: 409,
+        field: 'email',
+      })
     }
-    
-    // Se forceCreate, pular verificação de similares
+
+    const existingByName = await findComposerWithSamePublicName(formattedComposerName)
+    if (existingByName) {
+      throw artistNameTakenError(existingByName.name, formattedAccountName)
+    }
+
+    // Se forceCreate, pular só a lista de nomes parecidos (sem email).
+    // Nome público igual continua bloqueado acima, senão o banco estoura 500.
     if (forceCreate) {
       console.log('[COMPOSER-AUTH] Forçando criação de novo compositor (ignorando similares)')
-      // Continuar para criar novo compositor
     } else {
-
-    // 2. Verificar se já existe compositor com nome similar (normalizado ou por palavras-chave)
-    const { data: allComposers } = await supabaseAdmin
-      .from('dccmusic_composers')
-      .select('id, name, email')
-    
-    // Verificar se existe compositor com nome exato que já tem email
-    const existingWithEmail = allComposers?.find(composer => 
-      namesAreSimilar(composer.name, formattedComposerName) && composer.email
-    )
-    
-    if (existingWithEmail) {
-      throw new Error(`Nome de compositor já cadastrado: "${existingWithEmail.name}". Use o mesmo nome exato ou entre em contato com o suporte.`)
-    }
-    
-      // Buscar compositores similares sem email
       const similarComposers = await findSimilarComposers(formattedComposerName)
-      
-      // Se encontrou compositores similares, retornar para o usuário escolher
       if (similarComposers.length > 0) {
         return {
           requiresChoice: true,
@@ -226,16 +306,11 @@ export async function createComposerAccount(
       }
     }
 
-    // 4. Se não existe, criar novo compositor
     console.log('[COMPOSER-AUTH] Criando novo compositor...')
     
-    // Hash da senha
     const passwordHash = await bcrypt.hash(password, 10)
-
-    // Criar slug
     const slug = normalizedComposerName.replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
 
-    // Criar compositor com email e senha
     const insertPayload: any = {
       name: formattedComposerName,
       slug: slug,
@@ -254,39 +329,49 @@ export async function createComposerAccount(
       .single()
 
     if (error) {
-      // Se já existe por slug, tentar adicionar número
-      if (error.code === '23505') {
-        const { data: existingSlug } = await supabaseAdmin
+      const conflict = uniqueViolationField(error)
+      if (conflict === 'name') {
+        throw artistNameTakenError(formattedComposerName, formattedAccountName)
+      }
+      if (conflict === 'email') {
+        throw new ComposerSignupError('Email já cadastrado. Use outro email ou faça login.', {
+          code: 'EMAIL_TAKEN',
+          status: 409,
+          field: 'email',
+        })
+      }
+
+      if (conflict === 'slug' || error.code === '23505') {
+        const newSlug = `${slug}-${Date.now()}`
+        const retryPayload: any = {
+          ...insertPayload,
+          slug: newSlug,
+        }
+
+        const { data: retryData, error: retryError } = await supabaseAdmin
           .from('dccmusic_composers')
-          .select('slug')
-          .eq('slug', slug)
-          .maybeSingle()
+          .insert(retryPayload)
+          .select()
+          .single()
 
-        if (existingSlug) {
-          const newSlug = `${slug}-${Date.now()}`
-          const retryPayload: any = {
-            name: formattedComposerName,
-            slug: newSlug,
-            email: normalizedEmail,
-            password_hash: passwordHash,
+        if (retryError) {
+          const retryConflict = uniqueViolationField(retryError)
+          if (retryConflict === 'name') {
+            throw artistNameTakenError(formattedComposerName, formattedAccountName)
           }
-
-          if (formattedAccountName) {
-            retryPayload.account_name = formattedAccountName
+          if (retryConflict === 'email') {
+            throw new ComposerSignupError('Email já cadastrado. Use outro email ou faça login.', {
+              code: 'EMAIL_TAKEN',
+              status: 409,
+              field: 'email',
+            })
           }
-
-          const { data: retryData, error: retryError } = await supabaseAdmin
-            .from('dccmusic_composers')
-            .insert(retryPayload)
-            .select()
-            .single()
-
-          if (retryError) throw retryError
-          return {
-            composer: db.mapComposer(retryData),
-            success: true,
-            wasExisting: false,
-          }
+          throw retryError
+        }
+        return {
+          composer: db.mapComposer(retryData),
+          success: true,
+          wasExisting: false,
         }
       }
       throw error
@@ -299,6 +384,18 @@ export async function createComposerAccount(
       wasExisting: false,
     }
   } catch (error: any) {
+    if (error instanceof ComposerSignupError) throw error
+    const conflict = uniqueViolationField(error)
+    if (conflict === 'name') {
+      throw artistNameTakenError(formatDisplayName(composerName), accountName)
+    }
+    if (conflict === 'email') {
+      throw new ComposerSignupError('Email já cadastrado. Use outro email ou faça login.', {
+        code: 'EMAIL_TAKEN',
+        status: 409,
+        field: 'email',
+      })
+    }
     console.error('[COMPOSER-AUTH] Erro ao criar conta de compositor:', error)
     throw error
   }

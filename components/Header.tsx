@@ -18,8 +18,6 @@ const siteNavItems = [
 export default function Header() {
   const pathname = usePathname()
   const router = useRouter()
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [user, setUser] = useState<any>(null)
   const [composer, setComposer] = useState<any>(null)
   const [composerStudioBalance, setComposerStudioBalance] = useState<number | null>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -78,8 +76,6 @@ export default function Header() {
     // Verificar se está no cliente antes de acessar localStorage
     if (typeof window === 'undefined') return
     
-    const token = localStorage.getItem('site_user_token')
-    const userData = localStorage.getItem('site_user_data')
     const composerToken = localStorage.getItem('composer_token')
     const composerData = localStorage.getItem('composer_data')
     const cachedStudioBalance = localStorage.getItem('composer_studio_balance')
@@ -98,20 +94,6 @@ export default function Header() {
     } else {
       setComposer(null)
       setComposerStudioBalance(null)
-    }
-    
-    if (token && userData) {
-      try {
-        const user = JSON.parse(userData)
-        setIsAuthenticated(true)
-        setUser(user)
-      } catch (error) {
-        setIsAuthenticated(false)
-        setUser(null)
-      }
-    } else {
-      setIsAuthenticated(false)
-      setUser(null)
     }
   }
 
@@ -141,21 +123,6 @@ export default function Header() {
       setComposerStudioBalance(balance)
     } catch {
       setComposerStudioBalance(null)
-    }
-  }
-
-  const handleLogout = () => {
-    if (typeof window === 'undefined') return
-    
-    if (confirm('Deseja realmente sair?')) {
-      localStorage.removeItem('site_user_token')
-      localStorage.removeItem('site_user_data')
-      setIsAuthenticated(false)
-      setUser(null)
-      setShowUserMenu(false)
-      router.push('/')
-      // Disparar evento para outros componentes atualizarem
-      window.dispatchEvent(new Event('storage'))
     }
   }
 
@@ -252,39 +219,6 @@ export default function Header() {
 
           {/* Botões à direita */}
           <nav className="hidden shrink-0 items-center space-x-2 md:flex">
-            {/* Usuário comum só aparece se já estiver logado pelo fluxo de avaliação */}
-            {mounted && !composer && isAuthenticated && user && (
-              <div className="relative z-[120]">
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium transition-all"
-                >
-                  <FiUser className="w-4 h-4" />
-                  <span className="max-w-[100px] truncate">{user.firstName || user.name}</span>
-                  <FiChevronDown className={`w-4 h-4 transition-transform ${showUserMenu ? 'rotate-180' : ''}`} />
-                </button>
-                {showUserMenu && (
-                  <div className="absolute right-0 z-[130] mt-2 w-48 overflow-hidden rounded-lg border border-gray-700 bg-gray-900 shadow-2xl shadow-black/50">
-                    <Link
-                      href="/minha-conta"
-                      onClick={() => setShowUserMenu(false)}
-                      className="flex items-center space-x-2 px-4 py-3 hover:bg-gray-800 transition-colors"
-                    >
-                      <FiUser className="w-4 h-4" />
-                      <span>Minha Conta</span>
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center space-x-2 px-4 py-3 hover:bg-gray-800 transition-colors text-left text-red-400"
-                    >
-                      <FiLogOut className="w-4 h-4" />
-                      <span>Sair</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-            
             {mounted && composer ? (
               <div className="relative z-[120]">
                 <button
@@ -421,42 +355,6 @@ export default function Header() {
                 )
               })}
             </div>
-            
-            {/* Mobile: usuário comum só aparece se já estiver logado pelo fluxo de avaliação */}
-            {mounted && !composer && isAuthenticated && user && (
-              <div className="relative z-[120] shrink-0">
-                <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="p-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white transition-all"
-                  title={user.firstName || user.name}
-                >
-                  <FiUser className="w-5 h-5" />
-                </button>
-                {showUserMenu && (
-                  <div className="absolute right-0 z-[130] mt-2 w-48 overflow-hidden rounded-lg border border-gray-700 bg-gray-900 shadow-2xl shadow-black/50">
-                    <div className="border-b border-gray-700 px-4 py-2">
-                      <div className="text-sm font-medium">{user.name}</div>
-                      <div className="text-xs text-gray-400">{user.email}</div>
-                    </div>
-                    <Link
-                      href="/minha-conta"
-                      onClick={() => setShowUserMenu(false)}
-                      className="flex items-center space-x-2 px-4 py-3 hover:bg-gray-800 transition-colors"
-                    >
-                      <FiUser className="w-4 h-4" />
-                      <span>Minha Conta</span>
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center space-x-2 px-4 py-3 hover:bg-gray-800 transition-colors text-left text-red-400"
-                    >
-                      <FiLogOut className="w-4 h-4" />
-                      <span>Sair</span>
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
             
             {mounted && composer ? (
               <div className="relative z-[120] shrink-0">

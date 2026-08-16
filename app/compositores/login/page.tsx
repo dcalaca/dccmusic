@@ -125,7 +125,7 @@ function LoginForm() {
               <span className="gradient-text">Login Compositor</span>
             </h1>
             <p className="text-gray-400">
-              Acesse sua conta e gerencie suas obras
+              Uma conta só: com ela você comenta, avalia e cria músicas no Studio IA.
             </p>
           </div>
 

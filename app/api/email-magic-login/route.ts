@@ -99,7 +99,7 @@ function buildErrorHtml(message: string) {
       <h1>Não foi possível entrar automaticamente</h1>
       <p>${escapeHtml(message)}</p>
       <p>Você ainda pode entrar normalmente pela página de login.</p>
-      <p><a href="/compositores/login">Login de compositor</a> · <a href="/login">Login de usuário</a></p>
+      <p><a href="/compositores/login">Entrar na conta</a> · <a href="/compositores/cadastro">Criar conta</a></p>
     </main>
   </body>
 </html>`

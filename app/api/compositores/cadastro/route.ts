@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as composerAuth from '@/lib/composer-auth'
+import { ComposerSignupError } from '@/lib/composer-auth'
 import { sendComposerVerificationEmail } from '@/lib/composer-email-verification'
 import { hasComposerAccountDeletionBlock } from '@/lib/dcc-emails'
 import { validateSignupEmail } from '@/lib/email-validation'
@@ -119,9 +120,32 @@ export async function POST(request: NextRequest) {
       message,
     })
   } catch (error: any) {
+    if (error instanceof ComposerSignupError) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          code: error.code,
+          field: error.field,
+          suggestionName: error.suggestionName,
+        },
+        { status: error.status }
+      )
+    }
+
+    const postgresMessage = `${error?.message || ''} ${error?.details || ''}`.toLowerCase()
+    if (error?.code === '23505' || postgresMessage.includes('duplicate') || postgresMessage.includes('unique constraint')) {
+      return NextResponse.json(
+        {
+          error: 'Esse nome artístico ou e-mail já está em uso. Escolha outro e tente novamente.',
+          code: 'SIGNUP_CONFLICT',
+        },
+        { status: 409 }
+      )
+    }
+
     console.error('Erro ao cadastrar compositor:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao cadastrar compositor' },
+      { error: 'Não foi possível concluir o cadastro. Tente novamente.' },
       { status: 500 }
     )
   }

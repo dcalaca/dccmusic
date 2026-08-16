@@ -22,6 +22,8 @@ export default function ComposerSignupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [emailSuggestion, setEmailSuggestion] = useState('')
+  const [nameSuggestion, setNameSuggestion] = useState('')
+  const [errorField, setErrorField] = useState<'email' | 'artistName' | ''>('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -29,6 +31,8 @@ export default function ComposerSignupPage() {
     event.preventDefault()
     setError('')
     setEmailSuggestion('')
+    setNameSuggestion('')
+    setErrorField('')
 
     if (step === 'account') {
       if (!formData.fullName.trim()) {
@@ -84,6 +88,15 @@ export default function ComposerSignupPage() {
         if (data.suggestion) {
           setEmailSuggestion(data.suggestion)
         }
+        if (data.suggestionName) {
+          setNameSuggestion(data.suggestionName)
+        }
+        if (data.field === 'artistName' || data.code === 'ARTIST_NAME_TAKEN') {
+          setErrorField('artistName')
+        } else if (data.field === 'email' || data.code === 'EMAIL_TAKEN') {
+          setErrorField('email')
+          setStep('account')
+        }
         throw new Error(data.error || 'Erro ao cadastrar')
       }
 
@@ -124,7 +137,7 @@ export default function ComposerSignupPage() {
             </h1>
             <p className="text-gray-400">
               {step === 'account'
-                ? 'Crie sua conta com seus dados de acesso.'
+                ? 'Uma conta só: com ela você comenta, avalia, cria músicas e compra créditos.'
                 : 'Agora escolha o nome artístico que aparecerá publicamente.'}
             </p>
           </div>
@@ -150,10 +163,25 @@ export default function ComposerSignupPage() {
                         setFormData({ ...formData, email: emailSuggestion })
                         setError('')
                         setEmailSuggestion('')
+                        setErrorField('')
                       }}
                       className="rounded-lg border border-red-700 bg-red-950/60 px-3 py-2 text-left text-xs font-bold text-red-100 hover:bg-red-900/70"
                     >
                       Corrigir para {emailSuggestion}
+                    </button>
+                  )}
+                  {nameSuggestion && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData({ ...formData, artistName: nameSuggestion })
+                        setError('')
+                        setNameSuggestion('')
+                        setErrorField('')
+                      }}
+                      className="rounded-lg border border-red-700 bg-red-950/60 px-3 py-2 text-left text-xs font-bold text-red-100 hover:bg-red-900/70"
+                    >
+                      Usar {nameSuggestion}
                     </button>
                   )}
                 </div>
@@ -186,13 +214,16 @@ export default function ComposerSignupPage() {
                         value={formData.email}
                         onChange={(event) => {
                           setFormData({ ...formData, email: event.target.value })
-                          if (error || emailSuggestion) {
+                          if (error || emailSuggestion || errorField === 'email') {
                             setError('')
                             setEmailSuggestion('')
+                            setErrorField('')
                           }
                         }}
                         required
-                        className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
+                        className={`w-full pl-10 pr-4 py-2 bg-gray-800 border rounded-lg focus:outline-none focus:border-primary-500 ${
+                          errorField === 'email' ? 'border-red-500' : 'border-gray-700'
+                        }`}
                         placeholder="seu@email.com"
                       />
                     </div>
@@ -251,14 +282,23 @@ export default function ComposerSignupPage() {
                     <input
                       type="text"
                       value={formData.artistName}
-                      onChange={(event) => setFormData({ ...formData, artistName: event.target.value })}
+                      onChange={(event) => {
+                        setFormData({ ...formData, artistName: event.target.value })
+                        if (error || nameSuggestion || errorField === 'artistName') {
+                          setError('')
+                          setNameSuggestion('')
+                          setErrorField('')
+                        }
+                      }}
                       required
-                      className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
+                      className={`w-full pl-10 pr-4 py-2 bg-gray-800 border rounded-lg focus:outline-none focus:border-primary-500 ${
+                        errorField === 'artistName' ? 'border-red-500' : 'border-gray-700'
+                      }`}
                       placeholder="Ex: João da Silva, JS Oficial, O Poeta..."
                     />
                   </div>
                   <p className="mt-2 text-xs text-gray-500">
-                    Esse será o nome público da sua página de compositor e das suas músicas.
+                    Esse será o nome público da sua página de compositor e das suas músicas. Se o nome curto já existir, use sobrenome ou um nome composto.
                   </p>
                 </div>
               )}

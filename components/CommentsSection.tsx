@@ -174,13 +174,13 @@ export default function CommentsSection({
       ) : (
         <div className="mb-6 p-4 bg-gray-800/50 border border-gray-700 rounded-lg text-center">
           <p className="text-gray-400 mb-3">
-            Entre como compositor para comentar e avaliar
+            Entre na sua conta para comentar e avaliar. Com a mesma conta você também cria músicas.
           </p>
           <button
             onClick={onLoginRequired}
             className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
           >
-            Entrar como compositor
+            Entrar ou criar conta
           </button>
         </div>
       )}
