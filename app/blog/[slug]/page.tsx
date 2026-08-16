@@ -15,7 +15,7 @@ import { getBlogAuthor } from '@/lib/blog/authors'
 import { extractToc } from '@/lib/blog/markdown'
 import { getPublishedPosts, getRelatedPosts, resolvePostRoute } from '@/lib/blog/posts'
 import { articleJsonLd, breadcrumbSchema } from '@/lib/blog/schema'
-import { blogAbsoluteUrl, blogHref } from '@/lib/blog/site'
+import { blogAbsoluteUrl, blogHref, isPlaceholderBlogImage } from '@/lib/blog/site'
 import { getBlogCategory, getBlogCluster, getBlogTag } from '@/lib/blog/taxonomy'
 import { formatDate } from '@/lib/utils'
 
@@ -149,16 +149,18 @@ export default function BlogArticlePage({ params }: PageProps) {
         </div>
       </header>
 
-      <div className="relative mx-auto mt-5 h-40 max-w-3xl overflow-hidden rounded-xl border border-gray-800 bg-black">
-        <Image
-          src={post.featuredImage}
-          alt={post.imageAlt}
-          fill
-          className="object-contain p-4"
-          sizes="(min-width: 768px) 768px, 100vw"
-          priority
-        />
-      </div>
+      {!isPlaceholderBlogImage(post.featuredImage) && (
+        <div className="relative mx-auto mt-5 h-40 max-w-3xl overflow-hidden rounded-xl border border-gray-800 bg-black">
+          <Image
+            src={post.featuredImage}
+            alt={post.imageAlt}
+            fill
+            className="object-contain p-4"
+            sizes="(min-width: 768px) 768px, 100vw"
+            priority
+          />
+        </div>
+      )}
 
       <div className="mx-auto mt-6 grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,48rem)_15rem] lg:justify-center">
         <div className="min-w-0">

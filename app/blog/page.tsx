@@ -47,15 +47,10 @@ export default function BlogHomePage() {
       {featured.length > 0 && (
         <section className="mt-8">
           <h2 className="text-lg font-bold text-white">Em destaque</h2>
-          <div className="mt-4 grid gap-4">
-            {featured[0] && <BlogPostCard post={featured[0]} featured />}
-            {featured.length > 1 && (
-              <div className="grid gap-4 md:grid-cols-2">
-                {featured.slice(1).map((post) => (
-                  <BlogPostCard key={post.slug} post={post} />
-                ))}
-              </div>
-            )}
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {featured.map((post) => (
+              <BlogPostCard key={post.slug} post={post} />
+            ))}
           </div>
         </section>
       )}

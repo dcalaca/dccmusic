@@ -17,6 +17,12 @@ export const BLOG_RESERVED_SLUGS = [
 ] as const
 
 export const POSTS_PER_PAGE = 12
+export const BLOG_PLACEHOLDER_IMAGE = '/logopng.png'
+
+export function isPlaceholderBlogImage(src?: string | null) {
+  if (!src) return true
+  return src === BLOG_PLACEHOLDER_IMAGE || src.endsWith(BLOG_PLACEHOLDER_IMAGE)
+}
 
 export function isBlogHost(host?: string | null) {
   const hostname = (host || '').split(':')[0].toLowerCase()
