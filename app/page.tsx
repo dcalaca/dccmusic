@@ -212,7 +212,6 @@ async function getSiteSummaryStats() {
     rVideoViews,
     rMusicViews,
     rComposers,
-    rSiteUsers,
     rComments,
     rRatings,
     rAiMusics,
@@ -223,7 +222,6 @@ async function getSiteSummaryStats() {
     db.getTotalViews(),
     db.getTotalMusicViews(),
     countPublicRows('dccmusic_composers'),
-    countPublicRows('dccmusic_site_users'),
     countPublicRows('dccmusic_comments'),
     countPublicRows('dccmusic_ratings'),
     countPublicRows('studio_versions'),
@@ -236,7 +234,6 @@ async function getSiteSummaryStats() {
     videoViews: rVideoViews.status === 'fulfilled' ? rVideoViews.value : 0,
     musicViews: rMusicViews.status === 'fulfilled' ? rMusicViews.value : 0,
     totalComposers: rComposers.status === 'fulfilled' ? rComposers.value : 0,
-    totalSiteUsers: rSiteUsers.status === 'fulfilled' ? rSiteUsers.value : 0,
     totalComments: rComments.status === 'fulfilled' ? rComments.value : 0,
     totalRatings: rRatings.status === 'fulfilled' ? rRatings.value : 0,
     deliveredAiMusics: rAiMusics.status === 'fulfilled' ? rAiMusics.value : 0,
@@ -383,7 +380,6 @@ export default async function Home() {
         totalMusics={siteStats.totalMusics}
         musicViews={siteStats.musicViews}
         totalComposers={siteStats.totalComposers}
-        totalSiteUsers={siteStats.totalSiteUsers}
         totalComments={siteStats.totalComments}
         totalRatings={siteStats.totalRatings}
         deliveredAiMusics={siteStats.deliveredAiMusics}

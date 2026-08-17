@@ -13,7 +13,6 @@ export type SiteStatsCompactProps = {
   totalMusics: number
   musicViews: number
   totalComposers?: number
-  totalSiteUsers?: number
   totalComments?: number
   totalRatings?: number
   deliveredAiMusics?: number
@@ -26,13 +25,11 @@ export default function SiteStatsCompact({
   totalMusics,
   musicViews,
   totalComposers = 0,
-  totalSiteUsers = 0,
   totalComments = 0,
   totalRatings = 0,
   deliveredAiMusics = 0,
   aiMusicDays = [],
 }: SiteStatsCompactProps) {
-  const totalUsers = totalComposers + totalSiteUsers
   const totalInteractions = totalComments + totalRatings
   const maxAiDay = Math.max(1, ...aiMusicDays.map((day) => day.deliveredMusics))
 
@@ -73,10 +70,10 @@ export default function SiteStatsCompact({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">Comunidade</p>
                 <p className="mt-1 text-2xl font-black leading-tight text-white tabular-nums sm:text-3xl">
-                  {formatIntegerPtBR(totalUsers)}
+                  {formatIntegerPtBR(totalComposers)}
                 </p>
                 <p className="mt-1 text-[11px] text-gray-500 tabular-nums sm:text-xs">
-                  {formatIntegerPtBR(totalComposers)} compositores + {formatIntegerPtBR(totalSiteUsers)} ouvintes
+                  compositores
                 </p>
               </div>
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-950 text-green-300 sm:h-10 sm:w-10" aria-hidden>
