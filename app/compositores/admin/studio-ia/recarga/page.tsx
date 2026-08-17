@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { FiArrowLeft, FiCheck, FiCreditCard, FiLoader, FiZap } from 'react-icons/fi'
 import { trackPartnerEvent } from '@/components/PartnerAttribution'
 import { trackTikTokEvent } from '@/components/TikTokEvents'
+import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
+import { isMercadoPagoInSiteCheckoutEnabled } from '@/lib/mp-in-site-checkout'
 
 type TopupTier = {
   maxMusicQuantity: number | null
@@ -28,10 +30,81 @@ export default function StudioTopupPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [error, setError] = useState('')
   const [musicQuantity, setMusicQuantity] = useState(1)
+  const [musicQuantityDraft, setMusicQuantityDraft] = useState('1')
+  const [inSiteCheckout, setInSiteCheckout] = useState<{
+    topupId: string
+    amount: number
+    email?: string | null
+  } | null>(null)
+  const paidRedirectRef = useRef(false)
 
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    if (!inSiteCheckout) {
+      paidRedirectRef.current = false
+      return
+    }
+
+    let cancelled = false
+    let inFlight = false
+
+    const goToSuccess = (data?: { topupId?: string; paymentId?: string | null }) => {
+      if (paidRedirectRef.current) return
+      paidRedirectRef.current = true
+      const params = new URLSearchParams()
+      params.set('topup_id', data?.topupId || inSiteCheckout.topupId)
+      if (data?.paymentId) params.set('payment_id', String(data.paymentId))
+      router.push(`/compositores/admin/studio-ia/recarga/sucesso?${params.toString()}`)
+    }
+
+    const checkWebhookStatus = async () => {
+      if (cancelled || inFlight || paidRedirectRef.current) return
+      const token = localStorage.getItem('composer_token')
+      if (!token) return
+
+      inFlight = true
+      try {
+        const response = await fetch(
+          `/api/compositores/studio/topup/status?topupId=${encodeURIComponent(inSiteCheckout.topupId)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
+          }
+        )
+        const data = await response.json()
+        if (cancelled || !response.ok) return
+        if (data.status === 'paid' || data.status === 'approved') {
+          goToSuccess(data)
+        }
+      } catch {
+        // O webhook ainda pode chegar; tenta de novo.
+      } finally {
+        inFlight = false
+      }
+    }
+
+    const onResume = () => {
+      if (document.visibilityState === 'hidden') return
+      void checkWebhookStatus()
+    }
+
+    void checkWebhookStatus()
+    const interval = window.setInterval(checkWebhookStatus, 2000)
+    document.addEventListener('visibilitychange', onResume)
+    window.addEventListener('pageshow', onResume)
+    window.addEventListener('focus', onResume)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', onResume)
+      window.removeEventListener('pageshow', onResume)
+      window.removeEventListener('focus', onResume)
+    }
+  }, [inSiteCheckout, router])
 
   const loadData = async () => {
     const token = localStorage.getItem('composer_token')
@@ -73,8 +146,9 @@ export default function StudioTopupPage() {
     }
   }
 
+  const normalizedMusicQuantity = Math.max(1, Math.floor(Number(musicQuantity) || 1))
   const getCurrentTier = () => {
-    return tiers.find((tier) => tier.maxMusicQuantity === null || musicQuantity <= tier.maxMusicQuantity) || {
+    return tiers.find((tier) => tier.maxMusicQuantity === null || normalizedMusicQuantity <= tier.maxMusicQuantity) || {
       maxMusicQuantity: null,
       unitPrice: 2.99,
       label: 'Música avulsa',
@@ -82,7 +156,6 @@ export default function StudioTopupPage() {
   }
 
   const currentTier = getCurrentTier()
-  const normalizedMusicQuantity = Math.max(1, Math.floor(Number(musicQuantity) || 1))
   const totalPrice = Number((normalizedMusicQuantity * currentTier.unitPrice).toFixed(2))
   const totalCredits = normalizedMusicQuantity * 10
   const quickQuantities = [1, 8, 13, 30, 50, 100]
@@ -117,6 +190,44 @@ export default function StudioTopupPage() {
       setError('')
       trackCheckoutStart(`initiate_checkout:studio_topup:${Date.now()}`)
 
+      if (isMercadoPagoInSiteCheckoutEnabled()) {
+        const intentResponse = await fetch('/api/compositores/studio/topup/intent', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ musicQuantity: normalizedMusicQuantity }),
+        })
+        const intent = await intentResponse.json()
+        if (!intentResponse.ok) throw new Error(intent.error || 'Erro ao iniciar pagamento')
+
+        const metaEventId = intent.metaInitiateCheckoutEventId || `initiate_checkout:studio_topup:${intent.topupId || Date.now()}`
+        const fbq = (window as any).fbq
+        if (typeof fbq === 'function') {
+          fbq('track', 'InitiateCheckout', {
+            content_id: 'studio_topup',
+            content_name: 'Recarga Studio IA',
+            content_type: 'product',
+            contents: [{
+              id: 'studio_topup',
+              quantity: normalizedMusicQuantity,
+            }],
+            currency: 'BRL',
+            value: totalPrice,
+          }, {
+            eventID: metaEventId,
+          })
+        }
+
+        setInSiteCheckout({
+          topupId: intent.topupId,
+          amount: Number(intent.amount) || totalPrice,
+          email: intent.composerEmail || null,
+        })
+        return
+      }
+
       const response = await fetch('/api/compositores/studio/topup/preferencia', {
         method: 'POST',
         headers: {
@@ -149,7 +260,6 @@ export default function StudioTopupPage() {
 
       const checkoutUrl = data.initPoint || data.sandboxInitPoint
       if (!checkoutUrl) throw new Error('Mercado Pago não retornou o link de pagamento.')
-
       window.location.href = checkoutUrl
     } catch (err: any) {
       setError(err.message || 'Erro ao iniciar pagamento')
@@ -159,7 +269,9 @@ export default function StudioTopupPage() {
   }
 
   const updateMusicQuantity = (quantity: number) => {
-    setMusicQuantity(quantity)
+    const next = Math.max(1, Math.min(500, Math.floor(Number(quantity) || 1)))
+    setMusicQuantity(next)
+    setMusicQuantityDraft(String(next))
     setError('')
   }
 
@@ -217,11 +329,27 @@ export default function StudioTopupPage() {
                 Quantas músicas você quer comprar?
               </label>
               <input
-                type="number"
-                min={1}
-                max={500}
-                value={musicQuantity}
-                onChange={(event) => updateMusicQuantity(Math.max(1, Math.floor(Number(event.target.value) || 1)))}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                enterKeyHint="done"
+                autoComplete="off"
+                value={musicQuantityDraft}
+                onChange={(event) => {
+                  const digits = event.target.value.replace(/\D/g, '')
+                  if (digits === '') {
+                    setMusicQuantityDraft('')
+                    return
+                  }
+                  const parsed = Math.min(500, parseInt(digits, 10))
+                  if (!Number.isFinite(parsed)) return
+                  setMusicQuantityDraft(String(parsed))
+                  if (parsed >= 1) {
+                    setMusicQuantity(parsed)
+                    setError('')
+                  }
+                }}
+                onBlur={() => updateMusicQuantity(Number(musicQuantityDraft) || 1)}
                 className="w-full rounded-2xl border border-purple-700/70 bg-black px-5 py-4 text-3xl font-black text-white outline-none focus:border-purple-300"
               />
 
@@ -284,6 +412,55 @@ export default function StudioTopupPage() {
 
         </div>
       </div>
+      {inSiteCheckout ? (
+        <MercadoPagoPaymentOverlay
+          amount={inSiteCheckout.amount}
+          email={inSiteCheckout.email}
+          onClose={() => setInSiteCheckout(null)}
+          onSubmitPayment={async (formData) => {
+            const token = localStorage.getItem('composer_token')
+            const response = await fetch('/api/compositores/studio/topup/payment', {
+              method: 'POST',
+              headers: {
+                Authorization: token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                topupId: inSiteCheckout.topupId,
+                formData,
+              }),
+            })
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error || 'Erro ao processar pagamento')
+            return result
+          }}
+          onCheckStatus={async (paymentId) => {
+            const token = localStorage.getItem('composer_token')
+            const response = await fetch('/api/compositores/studio/topup/sync', {
+              method: 'POST',
+              headers: {
+                Authorization: token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                topupId: inSiteCheckout.topupId,
+                paymentId,
+              }),
+            })
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error || 'Erro ao conferir pagamento')
+            return result
+          }}
+          onPaid={(result) => {
+            if (paidRedirectRef.current) return
+            paidRedirectRef.current = true
+            const params = new URLSearchParams()
+            params.set('topup_id', result?.topupId || inSiteCheckout.topupId)
+            if (result?.paymentId) params.set('payment_id', String(result.paymentId))
+            router.push(`/compositores/admin/studio-ia/recarga/sucesso?${params.toString()}`)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

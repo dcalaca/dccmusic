@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const topupId = String(body.topupId || '').trim()
-    const paymentId = String(body.paymentId || body.collectionId || '').trim()
+    const requestedPaymentId = String(body.paymentId || body.collectionId || '').trim()
 
     if (!topupId) {
       return NextResponse.json({ error: 'topupId obrigatório' }, { status: 400 })
@@ -36,8 +36,10 @@ export async function POST(request: NextRequest) {
     if (topupError) throw topupError
     if (!currentTopup) return NextResponse.json({ error: 'Recarga não encontrada' }, { status: 404 })
 
+    const paymentId = requestedPaymentId || String(currentTopup.payment_id || '').trim()
+
     if (currentTopup.status === 'paid') {
-      const paidPaymentId = String(paymentId || currentTopup.payment_id || '').trim()
+      const paidPaymentId = paymentId
       const composerEmail = await getComposerEmailIdentity(currentTopup.composer_id)
       if (composerEmail && paidPaymentId) {
         // Se o webhook creditou antes, ainda assim reforça o Purchase (mesmo event_id = dedupe na Meta).

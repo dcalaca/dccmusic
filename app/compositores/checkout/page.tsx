@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { FiAlertTriangle, FiArrowLeft, FiCheckCircle, FiExternalLink, FiLoader, FiMusic, FiUploadCloud } from 'react-icons/fi'
+import { FiAlertTriangle, FiArrowLeft, FiCheckCircle, FiExternalLink, FiLoader, FiMusic, FiUploadCloud, FiZap } from 'react-icons/fi'
 import { trackTikTokEvent } from '@/components/TikTokEvents'
+import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
+import { isMercadoPagoInSiteCheckoutEnabled } from '@/lib/mp-in-site-checkout'
 
 function CheckoutContent() {
   const router = useRouter()
@@ -15,38 +17,151 @@ function CheckoutContent() {
   const [error, setError] = useState('')
   const [preferenceId, setPreferenceId] = useState('')
   const [initPoint, setInitPoint] = useState('')
-  const [sdkLoaded, setSdkLoaded] = useState(false)
   const [readyToConfirm, setReadyToConfirm] = useState(false)
   const [checkingAccess, setCheckingAccess] = useState(true)
+  const [alreadyHasStudioPlan, setAlreadyHasStudioPlan] = useState(false)
+  const [currentStudioPlanName, setCurrentStudioPlanName] = useState('')
+  const [inSiteCheckout, setInSiteCheckout] = useState<{
+    subscriptionId: string
+    amount: number
+    email?: string | null
+  } | null>(null)
+  const paidRedirectRef = useRef(false)
 
   const isStudioPlan = (slug: string | null) => {
     if (!slug) return false
     return ['studio-start', 'studio-pro', 'studio-elite', 'dcc-studio-ia'].includes(slug) || slug.includes('studio')
   }
 
-  // Carregar SDK do Mercado Pago
   useEffect(() => {
-    const script = document.createElement('script')
-    script.src = 'https://sdk.mercadopago.com/js/v2'
-    script.async = true
-    script.onload = () => setSdkLoaded(true)
-    script.onerror = () => {
-      console.warn('SDK do Mercado Pago não carregado, usando redirecionamento direto')
-      setSdkLoaded(false)
+    if (!inSiteCheckout) {
+      paidRedirectRef.current = false
+      return
     }
-    document.body.appendChild(script)
+
+    let cancelled = false
+    let inFlight = false
+
+    const goToSuccess = (data?: { subscriptionId?: string; paymentId?: string | null }) => {
+      if (paidRedirectRef.current) return
+      paidRedirectRef.current = true
+      const params = new URLSearchParams()
+      params.set('subscription_id', data?.subscriptionId || inSiteCheckout.subscriptionId)
+      if (data?.paymentId) params.set('payment_id', String(data.paymentId))
+      router.push(`/compositores/pagamento/sucesso?${params.toString()}`)
+    }
+
+    const checkWebhookStatus = async () => {
+      if (cancelled || inFlight || paidRedirectRef.current) return
+      const token = localStorage.getItem('composer_token')
+      if (!token) return
+
+      inFlight = true
+      try {
+        const response = await fetch(
+          `/api/compositores/pagamento/status?subscriptionId=${encodeURIComponent(inSiteCheckout.subscriptionId)}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
+          }
+        )
+        const data = await response.json()
+        if (cancelled || !response.ok) return
+        if (data.status === 'paid' || data.status === 'active' || data.status === 'approved') {
+          goToSuccess(data)
+        }
+      } catch {
+        // O webhook ainda pode chegar; tenta de novo.
+      } finally {
+        inFlight = false
+      }
+    }
+
+    const onResume = () => {
+      if (document.visibilityState === 'hidden') return
+      void checkWebhookStatus()
+    }
+
+    void checkWebhookStatus()
+    const interval = window.setInterval(checkWebhookStatus, 2000)
+    document.addEventListener('visibilitychange', onResume)
+    window.addEventListener('pageshow', onResume)
+    window.addEventListener('focus', onResume)
 
     return () => {
-      document.body.removeChild(script)
+      cancelled = true
+      window.clearInterval(interval)
+      document.removeEventListener('visibilitychange', onResume)
+      window.removeEventListener('pageshow', onResume)
+      window.removeEventListener('focus', onResume)
     }
-  }, [])
+  }, [inSiteCheckout, router])
 
   const createPreference = async () => {
     setLoading(true)
     setError('')
 
     try {
+      const token = localStorage.getItem('composer_token')
       const composerData = JSON.parse(localStorage.getItem('composer_data') || '{}')
+      if (!token) {
+        const redirect = planSlug ? `/compositores/checkout?plan=${planSlug}` : '/compositores/checkout'
+        router.push(`/compositores/login?redirect=${encodeURIComponent(redirect)}`)
+        return
+      }
+
+      const trackInitiate = (data: any) => {
+        const metaEventId = data.metaInitiateCheckoutEventId || `initiate_checkout:${planSlug || 'composer_plan'}:${data.preferenceId || data.subscriptionId || Date.now()}`
+        const productId = data.planId || planSlug || 'composer_plan'
+        const productName = data.planName || (isStudioPlan(planSlug) ? 'Plano DCC Studio IA' : 'Compositor Premium')
+        const planPrice = Number(data.planPrice || data.amount) || 0
+        const fbq = (window as any).fbq
+        if (typeof fbq === 'function') {
+          fbq('track', 'InitiateCheckout', {
+            content_id: productId,
+            content_name: productName,
+            content_type: 'product',
+            contents: [{
+              id: productId,
+              quantity: 1,
+            }],
+            currency: 'BRL',
+            value: planPrice,
+          }, {
+            eventID: metaEventId,
+          })
+        }
+        trackTikTokEvent('InitiateCheckout', {
+          content_id: productId,
+          content_name: productName,
+          content_category: isStudioPlan(planSlug) ? 'Studio IA' : 'Compositores Premium',
+          currency: 'BRL',
+          event_id: metaEventId,
+          price: planPrice,
+          quantity: 1,
+          value: planPrice,
+        })
+      }
+
+      if (isMercadoPagoInSiteCheckoutEnabled()) {
+        const intentResponse = await fetch('/api/compositores/pagamento/intent', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ planId: planSlug }),
+        })
+        const intent = await intentResponse.json()
+        if (!intentResponse.ok) throw new Error(intent.error || 'Erro ao iniciar pagamento')
+        trackInitiate(intent)
+        setInSiteCheckout({
+          subscriptionId: intent.subscriptionId,
+          amount: Number(intent.amount || intent.planPrice) || 0,
+          email: intent.composerEmail || null,
+        })
+        return
+      }
 
       const response = await fetch('/api/compositores/pagamento/preferencia', {
         method: 'POST',
@@ -66,54 +181,14 @@ function CheckoutContent() {
       setPreferenceId(data.preferenceId)
       const initPointUrl = data.initPoint || data.sandboxInitPoint
       setInitPoint(initPointUrl)
-      const metaEventId = data.metaInitiateCheckoutEventId || `initiate_checkout:${planSlug || 'composer_plan'}:${data.preferenceId || Date.now()}`
-      const productId = data.planId || planSlug || 'composer_plan'
-      const productName = data.planName || (isStudioPlan(planSlug) ? 'Plano DCC Studio IA' : 'Compositor Premium')
-      const planPrice = Number(data.planPrice) || 0
-      const fbq = (window as any).fbq
-      if (typeof fbq === 'function') {
-        fbq('track', 'InitiateCheckout', {
-          content_id: productId,
-          content_name: productName,
-          content_type: 'product',
-          contents: [{
-            id: productId,
-            quantity: 1,
-          }],
-          currency: 'BRL',
-          value: planPrice,
-        }, {
-          eventID: metaEventId,
-        })
-      }
-      trackTikTokEvent('InitiateCheckout', {
-        content_id: productId,
-        content_name: productName,
-        content_category: isStudioPlan(planSlug) ? 'Studio IA' : 'Compositores Premium',
-        currency: 'BRL',
-        event_id: `initiate_checkout:${planSlug || 'composer_plan'}:${data.preferenceId || Date.now()}`,
-        price: planPrice,
-        quantity: 1,
-        value: planPrice,
-      })
+      trackInitiate(data)
 
-      // Redirecionar para o Mercado Pago (método mais confiável)
-      // O SDK pode ser usado no futuro se necessário, mas redirecionamento é mais simples e confiável
-      if (initPointUrl) {
-        // Pequeno delay para melhorar UX
-        setTimeout(() => {
-          window.location.href = initPointUrl
-        }, 500)
-      }
+      if (!initPointUrl) throw new Error('Mercado Pago não retornou o link de pagamento.')
+      window.location.href = initPointUrl
     } catch (err: any) {
       console.error('[CHECKOUT] Erro:', err)
       const errorMessage = err.message || 'Erro ao processar pagamento. Tente novamente.'
       setError(errorMessage)
-      
-      // Log adicional para debug
-      if (err.message?.includes('Token') || err.message?.includes('token')) {
-        console.error('[CHECKOUT] Possível problema com token do Mercado Pago')
-      }
     } finally {
       setLoading(false)
     }
@@ -145,8 +220,12 @@ function CheckoutContent() {
           })
           const status = await statusResponse.json()
 
-          if (statusResponse.ok && status?.allowed) {
-            router.replace('/compositores/admin/studio-ia/projetos')
+          // Só interrompe se existir plano Studio IA mensal ativo.
+          // Crédito avulso / música grátis não conta como plano.
+          if (statusResponse.ok && status?.hasStudioPlan) {
+            setAlreadyHasStudioPlan(true)
+            setCurrentStudioPlanName(status.planName || 'Studio IA')
+            setCheckingAccess(false)
             return
           }
         } catch (error) {
@@ -210,6 +289,42 @@ function CheckoutContent() {
                 <FiLoader className="w-12 h-12 text-primary-400 animate-spin mx-auto mb-4" />
                 <p className="text-gray-400 mb-2">Processando pagamento...</p>
                 <p className="text-gray-500 text-sm">Aguarde enquanto preparamos seu checkout</p>
+              </div>
+            ) : alreadyHasStudioPlan ? (
+              <div className="py-2">
+                <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-green-400/50 bg-green-500/15 px-3 py-1 text-xs font-bold text-green-100">
+                  <FiCheckCircle />
+                  Plano ativo
+                </div>
+                <h1 className="mb-3 text-2xl font-black text-white">Você já tem um plano Studio IA</h1>
+                <p className="mb-5 text-sm leading-relaxed text-gray-300">
+                  Seu plano atual é <strong className="text-white">{currentStudioPlanName}</strong>.
+                  Se clicou em outro plano querendo mais músicas, o caminho certo é a recarga avulsa.
+                </p>
+                <div className="mb-6 rounded-2xl border border-purple-700/60 bg-purple-950/25 p-4 text-sm text-purple-100">
+                  A recarga avulsa soma créditos extras sem trocar o plano mensal.
+                </div>
+                <div className="space-y-3">
+                  <Link
+                    href="/compositores/admin/studio-ia/recarga"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-4 font-bold text-white transition-all hover:from-primary-700 hover:to-purple-700"
+                  >
+                    <FiZap />
+                    Ir para recarga avulsa
+                  </Link>
+                  <Link
+                    href="/compositores/admin/studio-ia/projetos"
+                    className="flex w-full items-center justify-center rounded-xl border border-gray-700 px-5 py-3 font-semibold text-gray-200 transition-colors hover:border-primary-500 hover:text-primary-300"
+                  >
+                    Voltar ao Studio IA
+                  </Link>
+                  <Link
+                    href="/compositores/planos"
+                    className="flex w-full items-center justify-center text-sm text-gray-400 hover:text-primary-300"
+                  >
+                    Ver todos os planos
+                  </Link>
+                </div>
               </div>
             ) : error ? (
               <div className="text-center py-8">
@@ -323,6 +438,52 @@ function CheckoutContent() {
           </div>
         </div>
       </div>
+      {inSiteCheckout ? (
+        <MercadoPagoPaymentOverlay
+          amount={inSiteCheckout.amount}
+          email={inSiteCheckout.email}
+          onClose={() => setInSiteCheckout(null)}
+          onSubmitPayment={async (formData) => {
+            const token = localStorage.getItem('composer_token')
+            const response = await fetch('/api/compositores/pagamento/payment', {
+              method: 'POST',
+              headers: {
+                Authorization: token ? `Bearer ${token}` : '',
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                subscriptionId: inSiteCheckout.subscriptionId,
+                formData,
+              }),
+            })
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error || 'Erro ao processar pagamento')
+            return result
+          }}
+          onCheckStatus={async (paymentId) => {
+            const token = localStorage.getItem('composer_token')
+            const response = await fetch(
+              `/api/compositores/pagamento/status?subscriptionId=${encodeURIComponent(inSiteCheckout.subscriptionId)}`,
+              {
+                headers: { Authorization: token ? `Bearer ${token}` : '' },
+                cache: 'no-store',
+              }
+            )
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error || 'Erro ao conferir pagamento')
+            if (paymentId && !result.paymentId) result.paymentId = paymentId
+            return result
+          }}
+          onPaid={(result) => {
+            if (paidRedirectRef.current) return
+            paidRedirectRef.current = true
+            const params = new URLSearchParams()
+            params.set('subscription_id', result?.subscriptionId || inSiteCheckout.subscriptionId)
+            if (result?.paymentId) params.set('payment_id', String(result.paymentId))
+            router.push(`/compositores/pagamento/sucesso?${params.toString()}`)
+          }}
+        />
+      ) : null}
     </div>
   )
 }

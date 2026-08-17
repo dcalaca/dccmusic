@@ -11,12 +11,12 @@ import {
 import { sendTikTokPurchaseEvent } from '@/lib/tiktok-events'
 import { sendStudioTopupPurchaseEvents } from '@/lib/studio-topup-meta'
 import { recordPartnerPurchase } from '@/lib/partners'
-import * as db from '@/lib/db'
 import {
   getComposerEmailIdentity,
   sendAdminPaymentNotificationEmail,
   sendPaymentConfirmationEmail,
 } from '@/lib/dcc-emails'
+import { activateComposerPlanAccess, revokeComposerPlanAccess } from '@/lib/composer-plan-access'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,103 +44,6 @@ function isMercadoPagoPanelTest(body: any, requestUrl: string) {
   const paymentId = getPaymentIdFromNotification(body, requestUrl)
   const topic = url.searchParams.get('topic') || url.searchParams.get('type')
   return topic === 'payment' && String(paymentId) === '123456' && !body?.data?.id
-}
-
-function addMonths(date: Date, months: number) {
-  const next = new Date(date)
-  next.setMonth(next.getMonth() + months)
-  return next
-}
-
-function resolveSubscriptionEndDate(subscription: any, plan: any) {
-  const existingEndDate = subscription?.end_date ? new Date(subscription.end_date) : null
-  if (existingEndDate && existingEndDate > new Date()) return existingEndDate
-
-  const durationMonths = Math.max(1, Number(plan?.duration_months) || 1)
-  return addMonths(new Date(), durationMonths)
-}
-
-async function activateComposerPlanAccess(input: {
-  subscription: any
-  plan?: any
-  paymentId: string | number
-}) {
-  const endDate = resolveSubscriptionEndDate(input.subscription, input.plan)
-
-  const [{ error: subscriptionError }, { error: composerError }] = await Promise.all([
-    supabaseAdmin
-      .from('dccmusic_subscriptions')
-      .update({
-        status: 'active',
-        payment_id: input.paymentId,
-        end_date: endDate.toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', input.subscription.id),
-    supabaseAdmin
-      .from('dccmusic_composers')
-      .update({
-        is_premium: true,
-        has_active_subscription: true,
-        subscription_expires_at: endDate.toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', input.subscription.composer_id),
-  ])
-
-  if (subscriptionError) throw subscriptionError
-  if (composerError) throw composerError
-}
-
-async function revokeComposerPlanAccess(input: {
-  subscription: any
-  paymentId: string | number
-}) {
-  const { error: subscriptionError } = await supabaseAdmin
-    .from('dccmusic_subscriptions')
-    .update({
-      status: 'cancelled',
-      payment_id: input.paymentId,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', input.subscription.id)
-
-  if (subscriptionError) throw subscriptionError
-
-  // Fallback explícito: o trigger do banco também sincroniza is_premium,
-  // mas garantimos a revogação mesmo se o trigger não existir em produção.
-  const nowIso = new Date().toISOString()
-  const { data: remainingActive } = await supabaseAdmin
-    .from('dccmusic_subscriptions')
-    .select('id, end_date')
-    .eq('composer_id', input.subscription.composer_id)
-    .eq('status', 'active')
-    .gt('end_date', nowIso)
-    .order('end_date', { ascending: false })
-    .limit(1)
-
-  const stillActive = remainingActive?.[0] || null
-
-  const { error: composerError } = await supabaseAdmin
-    .from('dccmusic_composers')
-    .update(
-      stillActive
-        ? {
-            is_premium: true,
-            has_active_subscription: true,
-            subscription_expires_at: stillActive.end_date,
-            updated_at: nowIso,
-          }
-        : {
-            is_premium: false,
-            has_active_subscription: false,
-            subscription_expires_at: null,
-            updated_at: nowIso,
-          }
-    )
-    .eq('id', input.subscription.composer_id)
-
-  if (composerError) throw composerError
 }
 
 async function getMercadoPagoPaymentDetails(paymentId: string | number): Promise<any> {
