@@ -6,6 +6,12 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { FiMusic, FiPlayCircle, FiHome, FiShield, FiUsers, FiUser, FiLogOut, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe, FiBookOpen } from 'react-icons/fi'
 import NotificationBell from './NotificationBell'
+import {
+  clearComposerSessionCookie,
+  isComposerBlogSubdomain,
+  readComposerSessionCookie,
+  writeComposerSessionCookie,
+} from '@/lib/composer-session-cookie'
 
 function HeaderComposerAvatar({
   name,
@@ -47,6 +53,7 @@ export default function Header() {
   const pathname = usePathname()
   const router = useRouter()
   const [composer, setComposer] = useState<any>(null)
+  const [composerHasToken, setComposerHasToken] = useState(false)
   const [composerStudioBalance, setComposerStudioBalance] = useState<number | null>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showBell, setShowBell] = useState(false)
@@ -111,19 +118,39 @@ export default function Header() {
 
     if (composerToken && composerData) {
       try {
-        setComposer(JSON.parse(composerData))
+        const parsed = JSON.parse(composerData)
+        setComposer(parsed)
+        setComposerHasToken(true)
+        writeComposerSessionCookie(parsed)
         if (cachedStudioBalance !== null) {
           setComposerStudioBalance(Number(cachedStudioBalance) || 0)
         }
         loadComposerStudioBalance(composerToken)
       } catch {
         setComposer(null)
+        setComposerHasToken(false)
         setComposerStudioBalance(null)
       }
-    } else {
-      setComposer(null)
-      setComposerStudioBalance(null)
+      return
     }
+
+    // No blog o login fica em outro subdomínio (www), então o localStorage não existe.
+    // O cookie compartilhado só serve para o cabeçalho reconhecer o compositor.
+    if (isComposerBlogSubdomain()) {
+      const preview = readComposerSessionCookie()
+      if (preview) {
+        setComposer(preview)
+        setComposerHasToken(false)
+        setComposerStudioBalance(null)
+        return
+      }
+    } else {
+      clearComposerSessionCookie()
+    }
+
+    setComposer(null)
+    setComposerHasToken(false)
+    setComposerStudioBalance(null)
   }
 
   const loadComposerStudioBalance = async (composerToken: string) => {
@@ -161,7 +188,9 @@ export default function Header() {
     localStorage.removeItem('composer_token')
     localStorage.removeItem('composer_token_temp')
     localStorage.removeItem('composer_data')
+    clearComposerSessionCookie()
     setComposer(null)
+    setComposerHasToken(false)
     setShowUserMenu(false)
     setShowBell(false)
     router.push('/compositores/login')
@@ -260,6 +289,7 @@ export default function Header() {
           <nav className="hidden shrink-0 items-center space-x-2 md:flex">
             {mounted && composer ? (
               <>
+              {composerHasToken ? (
               <NotificationBell
                 open={showBell}
                 onOpenChange={(open) => {
@@ -267,6 +297,7 @@ export default function Header() {
                   if (open) setShowUserMenu(false)
                 }}
               />
+              ) : null}
               <div className="relative z-[120]">
                 <button
                   onClick={() => {
@@ -401,6 +432,7 @@ export default function Header() {
             
             {mounted && composer ? (
               <div className="flex shrink-0 items-center gap-1">
+              {composerHasToken ? (
               <NotificationBell
                 open={showBell}
                 onOpenChange={(open) => {
@@ -408,6 +440,7 @@ export default function Header() {
                   if (open) setShowUserMenu(false)
                 }}
               />
+              ) : null}
               <div className="relative z-[120] shrink-0">
                 <button
                   onClick={() => {
