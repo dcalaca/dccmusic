@@ -59,6 +59,13 @@ function formatNumber(value: number) {
   return value.toLocaleString('pt-BR')
 }
 
+const WEEKDAY_SHORT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
+
+function formatWeekdayShort(value: string) {
+  const date = new Date(`${value}T12:00:00-03:00`)
+  return WEEKDAY_SHORT[date.getDay()]
+}
+
 function getNumericValue(day: ChartDay, key: keyof ChartDay) {
   const value = day[key]
   return typeof value === 'number' ? value : 0
@@ -80,11 +87,11 @@ function DailyStackedBarChart({
   const maxValue = Math.max(1, ...data.map(day => (
     series.reduce((total, item) => total + getNumericValue(day, item.key), 0)
   )))
-  const labelEvery = Math.max(1, Math.ceil(data.length / 12))
   const selectedDay = selectedDate ? data.find(day => day.date === selectedDate) || null : null
   const selectedTotal = selectedDay
     ? series.reduce((sum, item) => sum + getNumericValue(selectedDay, item.key), 0)
     : 0
+  const chartMinWidth = Math.max(980, data.length * 36)
 
   useEffect(() => {
     setSelectedDate(null)
@@ -110,7 +117,9 @@ function DailyStackedBarChart({
 
       {selectedDay && (
         <div className="mb-4 rounded-xl border border-cyan-800/70 bg-cyan-950/30 px-4 py-3 text-sm text-cyan-50">
-          <p className="font-bold text-white">{selectedDay.label}: {formatNumber(selectedTotal)} total</p>
+          <p className="font-bold text-white">
+            {selectedDay.label} ({formatWeekdayShort(selectedDay.date)}): {formatNumber(selectedTotal)} total
+          </p>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-cyan-100">
             {series.map(item => (
               <span key={String(item.key)}>
@@ -122,17 +131,17 @@ function DailyStackedBarChart({
       )}
 
       <div className="overflow-x-auto pb-2">
-        <div className="flex h-80 min-w-[980px] items-end gap-2 border-b border-gray-800 px-3">
-          {data.map((day, index) => {
+        <div className="flex h-[22rem] items-end gap-1.5 border-b border-gray-800 px-3" style={{ minWidth: chartMinWidth }}>
+          {data.map((day) => {
             const total = series.reduce((sum, item) => sum + getNumericValue(day, item.key), 0)
             const tooltip = [
-              `${day.label}: ${formatNumber(total)} total`,
+              `${day.label} (${formatWeekdayShort(day.date)}): ${formatNumber(total)} total`,
               ...series.map(item => `${item.label}: ${formatNumber(getNumericValue(day, item.key))}`),
             ].join('\n')
             const isSelected = selectedDate === day.date
 
             return (
-              <div key={day.date} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
+              <div key={day.date} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
                 <button
                   type="button"
                   title={tooltip}
@@ -158,8 +167,9 @@ function DailyStackedBarChart({
                     )
                   })}
                 </button>
-                <span className="h-3 text-[10px] text-gray-700">
-                  {index % labelEvery === 0 || index === data.length - 1 ? day.label : ''}
+                <span className="flex h-8 flex-col items-center justify-start text-center leading-tight">
+                  <span className="text-[10px] text-gray-500">{day.label}</span>
+                  <span className="text-[9px] text-gray-600">{formatWeekdayShort(day.date)}</span>
                 </span>
               </div>
             )
@@ -321,24 +331,7 @@ export default function AdminChartsPanel() {
             ]}
           />
 
-          <DailyStackedBarChart
-            title="Letras feitas por dia"
-            description="Quantidade diária de letras salvas no Studio IA."
-            data={summary.days}
-            series={[{ key: 'lyricsCreated', label: 'Letras', color: '#38bdf8' }]}
-          />
-
           <StackedCoversChart data={summary.days} />
-
-          <DailyStackedBarChart
-            title="Vozes subidas e concluídas"
-            description="Subidas contam áudio base enviado; concluídas contam vozes verificadas e disponíveis."
-            data={summary.days}
-            series={[
-              { key: 'voicesUploaded', label: 'Subidas', color: '#f59e0b' },
-              { key: 'voicesCompleted', label: 'Concluídas', color: '#22c55e' },
-            ]}
-          />
         </div>
       ) : null}
     </section>

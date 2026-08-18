@@ -211,6 +211,28 @@ function emptySourceBreakdown(source: PaymentSource, label: string): SourceBreak
   }
 }
 
+async function fetchComposersByIds(composerIds: string[]) {
+  const composersById = new Map<string, { name: string; email: string }>()
+  if (composerIds.length === 0) return composersById
+
+  for (const ids of chunk(composerIds, 200)) {
+    const result = await supabaseAdmin
+      .from('dccmusic_composers')
+      .select('id, name, email')
+      .in('id', ids)
+
+    if (result.error) throw result.error
+    for (const row of result.data || []) {
+      composersById.set(row.id, {
+        name: row.name || 'Compositor sem nome',
+        email: row.email || '',
+      })
+    }
+  }
+
+  return composersById
+}
+
 export async function GET(request: NextRequest) {
   try {
     await requireAuth()
@@ -327,7 +349,10 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => new Date(a.paidAt).getTime() - new Date(b.paidAt).getTime())
 
     const composerIds = Array.from(new Set(rawPayments.map(payment => payment.composerId)))
-    const composersWithHistory = await collectComposerIdsWithPriorPayments(composerIds, startIso)
+    const [composersWithHistory, composersById] = await Promise.all([
+      collectComposerIdsWithPriorPayments(composerIds, startIso),
+      fetchComposersByIds(composerIds),
+    ])
     const composersSeenInPeriod = new Set<string>()
 
     const kindSummaries: Record<PaymentKind, KindSummary> = {
@@ -356,6 +381,12 @@ export async function GET(request: NextRequest) {
 
     const newComposerIds = new Set<string>()
     const recurringComposerIds = new Set<string>()
+    const exportRows: Array<{
+      name: string
+      email: string
+      amount: number
+      type: 'Novo' | 'Recorrente'
+    }> = []
 
     for (const payment of rawPayments) {
       const alreadyPaidBefore = composersWithHistory.has(payment.composerId) || composersSeenInPeriod.has(payment.composerId)
@@ -368,6 +399,14 @@ export async function GET(request: NextRequest) {
 
       if (kind === 'new') newComposerIds.add(payment.composerId)
       else recurringComposerIds.add(payment.composerId)
+
+      const composer = composersById.get(payment.composerId)
+      exportRows.push({
+        name: composer?.name || 'Compositor sem nome',
+        email: composer?.email || '',
+        amount: Number(payment.amount.toFixed(2)),
+        type: kind === 'new' ? 'Novo' : 'Recorrente',
+      })
 
       const source = sourceMap.get(payment.source)
       if (source) {
@@ -426,6 +465,7 @@ export async function GET(request: NextRequest) {
       kinds: [kindSummaries.new, kindSummaries.recurring],
       bySource: Array.from(sourceMap.values()).filter(item => item.totalCount > 0),
       days: Array.from(buckets.values()),
+      exportRows,
       totals: {
         count: kindSummaries.new.count + kindSummaries.recurring.count,
         amount: kindSummaries.new.amount + kindSummaries.recurring.amount,

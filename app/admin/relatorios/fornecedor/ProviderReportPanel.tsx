@@ -58,6 +58,13 @@ function formatNumber(value: number) {
   return value.toLocaleString('pt-BR')
 }
 
+const WEEKDAY_SHORT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
+
+function formatWeekdayShort(value: string) {
+  const date = new Date(`${value}T12:00:00-03:00`)
+  return WEEKDAY_SHORT[date.getDay()]
+}
+
 function ProviderBadge({ provider, label }: { provider: string; label: string }) {
   const className = provider === 'sunoapi'
     ? 'border-green-700 bg-green-950/50 text-green-300'
@@ -85,13 +92,13 @@ function SummaryCard({ label, value, hint }: { label: string; value: number; hin
 function ProviderBarChart({ days }: { days: ProviderDay[] }) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const maxValue = Math.max(1, ...days.map(day => day.total))
-  const labelEvery = Math.max(1, Math.ceil(days.length / 12))
   const series = [
     { key: 'sunoapi' as const, label: 'Suno', color: '#22c55e' },
     { key: 'mureka' as const, label: 'Mureka', color: '#a855f7' },
     { key: 'other' as const, label: 'Outros', color: '#64748b' },
   ]
   const selectedDay = selectedDate ? days.find(day => day.date === selectedDate) || null : null
+  const chartMinWidth = Math.max(980, days.length * 36)
 
   useEffect(() => {
     setSelectedDate(null)
@@ -117,7 +124,9 @@ function ProviderBarChart({ days }: { days: ProviderDay[] }) {
 
       {selectedDay && (
         <div className="mb-4 rounded-xl border border-cyan-800/70 bg-cyan-950/30 px-4 py-3 text-sm text-cyan-50">
-          <p className="font-bold text-white">{selectedDay.label}: {formatNumber(selectedDay.total)} total</p>
+          <p className="font-bold text-white">
+            {selectedDay.label} ({formatWeekdayShort(selectedDay.date)}): {formatNumber(selectedDay.total)} total
+          </p>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-cyan-100">
             <span>Suno: <strong className="text-white">{formatNumber(selectedDay.sunoapi)}</strong></span>
             <span>Mureka: <strong className="text-white">{formatNumber(selectedDay.mureka)}</strong></span>
@@ -127,17 +136,17 @@ function ProviderBarChart({ days }: { days: ProviderDay[] }) {
       )}
 
       <div className="overflow-x-auto pb-2">
-        <div className="flex h-80 min-w-[980px] items-end gap-2 border-b border-gray-800 px-3">
-          {days.map((day, index) => {
+        <div className="flex h-[22rem] items-end gap-1.5 border-b border-gray-800 px-3" style={{ minWidth: chartMinWidth }}>
+          {days.map((day) => {
             const tooltip = [
-              `${day.label}: ${formatNumber(day.total)} total`,
+              `${day.label} (${formatWeekdayShort(day.date)}): ${formatNumber(day.total)} total`,
               `Suno: ${formatNumber(day.sunoapi)}`,
               `Mureka: ${formatNumber(day.mureka)}`,
               `Outros: ${formatNumber(day.other)}`,
             ].join('\n')
             const isSelected = selectedDate === day.date
             return (
-              <div key={day.date} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
+              <div key={day.date} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
                 <button
                   type="button"
                   title={tooltip}
@@ -163,8 +172,9 @@ function ProviderBarChart({ days }: { days: ProviderDay[] }) {
                     )
                   })}
                 </button>
-                <span className="h-3 text-[10px] text-gray-700">
-                  {index % labelEvery === 0 || index === days.length - 1 ? day.label : ''}
+                <span className="flex h-8 flex-col items-center justify-start text-center leading-tight">
+                  <span className="text-[10px] text-gray-500">{day.label}</span>
+                  <span className="text-[9px] text-gray-600">{formatWeekdayShort(day.date)}</span>
                 </span>
               </div>
             )

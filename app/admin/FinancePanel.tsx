@@ -309,20 +309,31 @@ function formatPercent(value: number) {
   return `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`
 }
 
+const WEEKDAY_SHORT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
+
+function parseChartDate(value: string) {
+  return new Date(`${value}T12:00:00-03:00`)
+}
+
 function formatShortDate(value: string) {
-  return new Date(`${value}T12:00:00-03:00`).toLocaleDateString('pt-BR', {
+  return parseChartDate(value).toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
   })
 }
 
+function formatWeekdayShort(value: string) {
+  return WEEKDAY_SHORT[parseChartDate(value).getDay()]
+}
+
 function FinanceSalesChart({ series }: { series: FinanceSummary['sales']['series'] }) {
-  const width = 1400
-  const height = 340
   const axisLeftX = 72
-  const axisRightX = width - 72
+  const axisRightPad = 72
+  const width = Math.max(1400, axisLeftX + axisRightPad + series.length * 46)
+  const height = 352
+  const axisRightX = width - axisRightPad
   const paddingTop = 34
-  const paddingBottom = 42
+  const paddingBottom = 54
   const innerWidth = axisRightX - axisLeftX
   const innerHeight = height - paddingTop - paddingBottom
   const maxAmount = Math.max(1, ...series.map(day => day.amount))
@@ -334,7 +345,6 @@ function FinanceSalesChart({ series }: { series: FinanceSummary['sales']['series
     const y = paddingTop + innerHeight - (day.count / maxCount) * innerHeight
     return `${index === 0 ? 'M' : 'L'} ${x.toFixed(2)} ${y.toFixed(2)}`
   }).join(' ')
-  const labelEvery = Math.max(1, Math.ceil(series.length / 12))
   const yTicks = [1, 0.5, 0]
 
   return (
@@ -357,7 +367,7 @@ function FinanceSalesChart({ series }: { series: FinanceSummary['sales']['series
       </div>
 
       <div className="overflow-x-auto pb-2">
-        <svg viewBox={`0 0 ${width} ${height}`} className="h-80 min-w-[1180px] w-full">
+        <svg viewBox={`0 0 ${width} ${height}`} className="h-[22rem] min-w-[1180px] w-full" style={{ minWidth: Math.max(1180, width * 0.72) }}>
           <text x={axisLeftX} y="14" className="fill-green-300 text-[11px] font-semibold">Valor R$</text>
           <text x={axisRightX} y="14" textAnchor="end" className="fill-primary-300 text-[11px] font-semibold">Quantidade</text>
 
@@ -386,8 +396,7 @@ function FinanceSalesChart({ series }: { series: FinanceSummary['sales']['series
             const backgroundY = paddingTop
             const backgroundHeight = innerHeight
             const barY = paddingTop + innerHeight - amountHeight
-            const showLabel = index % labelEvery === 0 || index === series.length - 1
-            const tooltip = `${formatShortDate(day.date)}\nValor: ${formatMoney(day.amount)}\nQuantidade: ${formatNumber(day.count)} venda(s)`
+            const tooltip = `${formatShortDate(day.date)} (${formatWeekdayShort(day.date)})\nValor: ${formatMoney(day.amount)}\nQuantidade: ${formatNumber(day.count)} venda(s)`
 
             return (
               <g key={day.date}>
@@ -420,11 +429,12 @@ function FinanceSalesChart({ series }: { series: FinanceSummary['sales']['series
                   height={innerHeight}
                   fill="transparent"
                 />
-                {showLabel && (
-                  <text x={centerX} y={height - 9} textAnchor="middle" className="fill-gray-700 text-[10px]">
-                    {formatShortDate(day.date)}
-                  </text>
-                )}
+                <text x={centerX} y={height - 22} textAnchor="middle" className="fill-gray-500 text-[10px]">
+                  {formatShortDate(day.date)}
+                </text>
+                <text x={centerX} y={height - 8} textAnchor="middle" className="fill-gray-600 text-[9px]">
+                  {formatWeekdayShort(day.date)}
+                </text>
               </g>
             )
           })}

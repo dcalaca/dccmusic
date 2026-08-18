@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { FiCalendar, FiRefreshCw } from 'react-icons/fi'
+import { FiCalendar, FiDownload, FiRefreshCw } from 'react-icons/fi'
 
 type ComparisonItem = {
   key: 'new' | 'recurring'
@@ -38,6 +38,13 @@ type DayBucket = {
   recurringAmount: number
 }
 
+type ExportPaymentRow = {
+  name: string
+  email: string
+  amount: number
+  type: 'Novo' | 'Recorrente'
+}
+
 type PaymentTypesReport = {
   period: {
     startDate: string
@@ -51,6 +58,7 @@ type PaymentTypesReport = {
   kinds: KindSummary[]
   bySource: SourceBreakdown[]
   days: DayBucket[]
+  exportRows: ExportPaymentRow[]
   totals: {
     count: number
     amount: number
@@ -89,6 +97,13 @@ function formatMoney(value: number) {
     style: 'currency',
     currency: 'BRL',
   })
+}
+
+const WEEKDAY_SHORT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
+
+function formatWeekdayShort(value: string) {
+  const date = new Date(`${value}T12:00:00-03:00`)
+  return WEEKDAY_SHORT[date.getDay()]
 }
 
 function SummaryCard({
@@ -207,8 +222,8 @@ function ComparisonChart({
 function DailyChart({ days }: { days: DayBucket[] }) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const maxCount = Math.max(1, ...days.map(day => day.newCount + day.recurringCount))
-  const labelEvery = Math.max(1, Math.ceil(days.length / 12))
   const selectedDay = selectedDate ? days.find(day => day.date === selectedDate) || null : null
+  const chartMinWidth = Math.max(980, days.length * 36)
 
   useEffect(() => {
     setSelectedDate(null)
@@ -237,7 +252,7 @@ function DailyChart({ days }: { days: DayBucket[] }) {
       {selectedDay && (
         <div className="mb-4 rounded-xl border border-cyan-800/70 bg-cyan-950/30 px-4 py-3 text-sm text-cyan-50">
           <p className="font-bold text-white">
-            {selectedDay.label}: {formatNumber(selectedDay.newCount + selectedDay.recurringCount)} pagamentos
+            {selectedDay.label} ({formatWeekdayShort(selectedDay.date)}): {formatNumber(selectedDay.newCount + selectedDay.recurringCount)} pagamentos
           </p>
           <div className="mt-2 grid gap-1 text-xs text-cyan-100 sm:grid-cols-2">
             <span>Novos: <strong className="text-white">{formatNumber(selectedDay.newCount)}</strong> · {formatMoney(selectedDay.newAmount)}</span>
@@ -247,11 +262,11 @@ function DailyChart({ days }: { days: DayBucket[] }) {
       )}
 
       <div className="overflow-x-auto pb-2">
-        <div className="flex h-80 min-w-[980px] items-end gap-2 border-b border-gray-800 px-3">
-          {days.map((day, index) => {
+        <div className="flex h-[22rem] items-end gap-1.5 border-b border-gray-800 px-3" style={{ minWidth: chartMinWidth }}>
+          {days.map((day) => {
             const totalCount = day.newCount + day.recurringCount
             const tooltip = [
-              `${day.label}: ${formatNumber(totalCount)} pagamentos`,
+              `${day.label} (${formatWeekdayShort(day.date)}): ${formatNumber(totalCount)} pagamentos`,
               `Novos: ${formatNumber(day.newCount)} (${formatMoney(day.newAmount)})`,
               `Recorrentes: ${formatNumber(day.recurringCount)} (${formatMoney(day.recurringAmount)})`,
             ].join('\n')
@@ -260,7 +275,7 @@ function DailyChart({ days }: { days: DayBucket[] }) {
             const recurringHeight = day.recurringCount > 0 ? Math.max(2, (day.recurringCount / maxCount) * 100) : 0
 
             return (
-              <div key={day.date} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
+              <div key={day.date} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
                 <button
                   type="button"
                   title={tooltip}
@@ -276,8 +291,9 @@ function DailyChart({ days }: { days: DayBucket[] }) {
                   <div className="w-full bg-emerald-400" style={{ height: `${recurringHeight}%` }} aria-hidden="true" />
                   <div className="w-full bg-sky-400" style={{ height: `${newHeight}%` }} aria-hidden="true" />
                 </button>
-                <span className="h-3 text-[10px] text-gray-700">
-                  {index % labelEvery === 0 || index === days.length - 1 ? day.label : ''}
+                <span className="flex h-8 flex-col items-center justify-start text-center leading-tight">
+                  <span className="text-[10px] text-gray-500">{day.label}</span>
+                  <span className="text-[9px] text-gray-600">{formatWeekdayShort(day.date)}</span>
                 </span>
               </div>
             )
@@ -293,6 +309,7 @@ export default function PaymentTypesPanel() {
   const [range, setRange] = useState(getDefaultRange)
   const [report, setReport] = useState<PaymentTypesReport | null>(null)
   const [loading, setLoading] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [error, setError] = useState('')
 
   const queryString = useMemo(() => {
@@ -318,6 +335,37 @@ export default function PaymentTypesPanel() {
     }
   }
 
+  const exportToXlsx = async () => {
+    const rows = report?.exportRows || []
+    if (rows.length === 0) {
+      setError('Nenhum pagamento para exportar. Clique em Calcular primeiro.')
+      return
+    }
+
+    try {
+      setExporting(true)
+      setError('')
+      const XLSX = await import('xlsx')
+      const sheetRows = rows.map((row) => ({
+        Nome: row.name,
+        Email: row.email || 'Sem email',
+        'Valor comprado': row.amount,
+        Tipo: row.type,
+      }))
+      const worksheet = XLSX.utils.json_to_sheet(sheetRows)
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Pagamentos')
+      XLSX.writeFile(
+        workbook,
+        `tipos-pagamento-${report?.period.startDate || range.startDate}-a-${report?.period.endDate || range.endDate}.xlsx`
+      )
+    } catch (err: any) {
+      setError(err.message || 'Erro ao exportar XLSX')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   const clearResult = (key: 'startDate' | 'endDate', value: string) => {
     setRange(prev => ({ ...prev, [key]: value }))
     setReport(null)
@@ -337,15 +385,26 @@ export default function PaymentTypesPanel() {
             Separação entre usuário novo (primeiro pagamento) e recorrente (já pagou antes).
           </p>
         </div>
-        <button
-          type="button"
-          onClick={loadReport}
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-primary-700 disabled:opacity-60"
-        >
-          <FiRefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Calcular
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={loadReport}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-primary-700 disabled:opacity-60"
+          >
+            <FiRefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Calcular
+          </button>
+          <button
+            type="button"
+            onClick={exportToXlsx}
+            disabled={loading || exporting || !report?.exportRows?.length}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-700 bg-gray-950 px-4 py-2 text-sm font-bold text-white transition-colors hover:border-primary-400 hover:text-primary-300 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <FiDownload className="h-4 w-4" />
+            {exporting ? 'Exportando…' : 'Exportar XLSX'}
+          </button>
+        </div>
       </div>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
