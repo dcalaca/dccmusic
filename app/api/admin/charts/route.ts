@@ -160,7 +160,6 @@ export async function GET(request: NextRequest) {
       voicesUploaded,
       voicesCompleted,
       composers,
-      siteUsers,
     ] = await Promise.all([
       safeFetchPaged<any>('Músicas concluídas', (from, to) => supabaseAdmin
         .from('studio_generations')
@@ -216,13 +215,6 @@ export async function GET(request: NextRequest) {
         .lt('created_at', endIso)
         .range(from, to)
       ),
-      safeFetchPaged<any>('Cadastros de usuários do site', (from, to) => supabaseAdmin
-        .from('dccmusic_site_users')
-        .select('id, created_at')
-        .gte('created_at', startIso)
-        .lt('created_at', endIso)
-        .range(from, to)
-      ),
     ])
 
     for (const row of musicRequests.rows) addToBucket(buckets, row.updated_at, 'musicRequestsCompleted')
@@ -234,11 +226,10 @@ export async function GET(request: NextRequest) {
     for (const row of voicesUploaded.rows) addToBucket(buckets, row.created_at, 'voicesUploaded')
     for (const row of voicesCompleted.rows) addToBucket(buckets, row.updated_at, 'voicesCompleted')
     for (const row of composers.rows) addToBucket(buckets, row.created_at, 'composerRegistrations')
-    for (const row of siteUsers.rows) addToBucket(buckets, row.created_at, 'siteUserRegistrations')
 
     const days = Array.from(buckets.values()).map(day => ({
       ...day,
-      totalRegistrations: day.composerRegistrations + day.siteUserRegistrations,
+      totalRegistrations: day.composerRegistrations,
     }))
 
     return NextResponse.json({
@@ -278,7 +269,6 @@ export async function GET(request: NextRequest) {
         voicesUploaded.warning,
         voicesCompleted.warning,
         composers.warning,
-        siteUsers.warning,
       ].filter(Boolean),
     })
   } catch (error: any) {

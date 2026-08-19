@@ -315,7 +315,7 @@ export default function AdminChartsPanel() {
           )}
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <TotalCard label="Cadastros" value={summary.totals.totalRegistrations} hint="Compositores + usuários do site" />
+            <TotalCard label="Cadastros" value={summary.totals.totalRegistrations} hint="Novos compositores" />
             <TotalCard label="Letras feitas" value={summary.totals.lyricsCreated} hint="Registros em letras do Studio" />
             <TotalCard label="Capas feitas" value={summary.totals.coversDefault + summary.totals.coversPremium + summary.totals.coversCustom} hint="Padrão + premium + personalizada" />
             <TotalCard label="Vozes concluídas" value={summary.totals.voicesCompleted} hint="Status ready e disponível" />
@@ -323,11 +323,10 @@ export default function AdminChartsPanel() {
 
           <DailyStackedBarChart
             title="Cadastros por dia"
-            description="Mostra compositores e usuários comuns cadastrados no site."
+            description="Mostra os novos compositores cadastrados no DCC Music."
             data={summary.days}
             series={[
               { key: 'composerRegistrations', label: 'Compositores', color: '#a855f7' },
-              { key: 'siteUserRegistrations', label: 'Usuários do site', color: '#38bdf8' },
             ]}
           />
 

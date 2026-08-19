@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getPublicInteractionUserFromRequest(request)
+    const user = await getPublicInteractionUserFromRequest(request, { createForComposer: true })
     if (!user) {
       return NextResponse.json(
         { error: 'Não autorizado. Faça login para curtir.' },

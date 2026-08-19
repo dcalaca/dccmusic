@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 // POST - Criar comentário ou resposta
 export async function POST(request: NextRequest) {
   try {
-    const user = await getPublicInteractionUserFromRequest(request)
+    const user = await getPublicInteractionUserFromRequest(request, { createForComposer: true })
     if (!user) {
       return NextResponse.json(
         { error: 'Não autorizado. Faça login para comentar.' },
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
 // DELETE - Deletar comentário
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await getPublicInteractionUserFromRequest(request)
+    const user = await getPublicInteractionUserFromRequest(request, { createForComposer: true })
     if (!user) {
       return NextResponse.json(
         { error: 'Não autorizado' },
