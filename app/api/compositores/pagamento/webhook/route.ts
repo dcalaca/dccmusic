@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { startStudioVideoGeneration } from '@/lib/studio-video'
 import { creditStudioTopupOnce, revokeStudioTopupCreditOnce } from '@/lib/studio'
-import { paymentClient, verifyMercadoPagoWebhookSignature } from '@/lib/mercadopago'
+import {
+  isMercadoPagoLegacyIpnNotification,
+  paymentClient,
+  verifyMercadoPagoWebhookSignature,
+} from '@/lib/mercadopago'
 import {
   mergeMetaBrowserContext,
   readMetaBrowserContextFromMetadata,
@@ -81,13 +85,21 @@ export async function POST(request: Request) {
       })
     }
 
-    // 1ª trava: validar a assinatura secreta do Mercado Pago.
-    const signature = verifyMercadoPagoWebhookSignature(request, notificationPaymentId)
-    if (!signature.configured) {
-      console.warn('[WEBHOOK] MERCADOPAGO_WEBHOOK_SECRET não configurado — assinatura não verificada.')
-    } else if (!signature.ok) {
-      console.error('[WEBHOOK] Assinatura inválida. Notificação recusada:', signature.reason)
-      return NextResponse.json({ error: 'Assinatura inválida' }, { status: 401 })
+    const legacyIpn = isMercadoPagoLegacyIpnNotification(request, body)
+
+    // Webhooks atuais exigem assinatura válida. IPNs legados não suportam essa
+    // validação; nesses casos a autenticidade é confirmada logo abaixo buscando
+    // o pagamento diretamente na API do Mercado Pago.
+    if (legacyIpn) {
+      console.warn('[WEBHOOK] IPN legado recebido; pagamento será validado pela API do Mercado Pago.')
+    } else {
+      const signature = verifyMercadoPagoWebhookSignature(request, notificationPaymentId)
+      if (!signature.configured) {
+        console.warn('[WEBHOOK] MERCADOPAGO_WEBHOOK_SECRET não configurado — assinatura não verificada.')
+      } else if (!signature.ok) {
+        console.error('[WEBHOOK] Assinatura inválida. Notificação recusada:', signature.reason)
+        return NextResponse.json({ error: 'Assinatura inválida' }, { status: 401 })
+      }
     }
 
     // Mercado Pago envia diferentes tipos de notificações

@@ -27,6 +27,28 @@ export interface MercadoPagoWebhookVerification {
 }
 
 /**
+ * Identifica notificações IPN legadas do Mercado Pago.
+ *
+ * O IPN chega apenas com `topic`/`id` na query (ou `type`/`id`) e sem o
+ * envelope JSON dos Webhooks atuais. Apesar de poder conter `x-signature`,
+ * esse formato não pode ser validado com a chave secreta de Webhooks.
+ */
+export function isMercadoPagoLegacyIpnNotification(request: Request, body: any): boolean {
+  const url = new URL(request.url)
+  const paymentId = url.searchParams.get('id')
+  const topic = url.searchParams.get('topic') || url.searchParams.get('type')
+  const hasModernDataId = url.searchParams.has('data.id')
+  const hasModernEnvelope = Boolean(body?.type || body?.action || body?.data?.id)
+
+  return Boolean(
+    paymentId &&
+    topic === 'payment' &&
+    !hasModernDataId &&
+    !hasModernEnvelope
+  )
+}
+
+/**
  * Valida a assinatura (x-signature) enviada pelo Mercado Pago nos webhooks.
  *
  * Segue o algoritmo oficial: monta o manifesto `id:<data.id>;request-id:<x-request-id>;ts:<ts>;`
