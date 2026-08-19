@@ -5,13 +5,20 @@ import { studioMonthKey } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
 import { buildMetaCapiMetadata, sendMetaInitiateCheckoutEvent } from '@/lib/meta-conversions'
 import { isStripeConfigured } from '@/lib/stripe'
+import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const stripeRequested = body?.provider === 'stripe'
+    const requestCountry = normalizeCountry(
+      request.cookies.get(COUNTRY_COOKIE)?.value ||
+      request.headers.get('x-dcc-country') ||
+      request.headers.get('x-vercel-ip-country') ||
+      request.headers.get('cf-ipcountry')
+    )
+    const stripeRequested = requestCountry === 'PY' || body?.provider === 'stripe'
     const provider = stripeRequested && isStripeConfigured()
       ? 'stripe'
       : process.env.MERCADOPAGO_ACCESS_TOKEN
@@ -71,6 +78,8 @@ export async function POST(request: NextRequest) {
           tier_label: quote.tierLabel,
           composer_name: composerData?.name || null,
           checkout_type: provider === 'stripe' ? 'stripe_embedded' : 'payment_brick',
+          customer_country: requestCountry,
+          customer_locale: requestCountry === 'PY' ? 'es-PY' : 'pt-BR',
           meta_capi: metaCapi,
         },
       })
@@ -111,6 +120,7 @@ export async function POST(request: NextRequest) {
       packageName,
       composerEmail: composerData?.email || null,
       metaInitiateCheckoutEventId,
+      country: requestCountry,
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro ao criar intenção de recarga:', error)

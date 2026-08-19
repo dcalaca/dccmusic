@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useLocalization } from '@/components/LocalizationProvider'
 import { FiArrowLeft, FiCheck, FiCreditCard, FiLoader, FiZap } from 'react-icons/fi'
 import { trackPartnerEvent } from '@/components/PartnerAttribution'
 import { trackTikTokEvent } from '@/components/TikTokEvents'
@@ -25,6 +26,7 @@ function formatMoney(value: number) {
 
 export default function StudioTopupPage() {
   const router = useRouter()
+  const { country, paymentProvider } = useLocalization()
   const [tiers, setTiers] = useState<TopupTier[]>([])
   const [status, setStatus] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -216,14 +218,18 @@ export default function StudioTopupPage() {
       setError('')
       trackCheckoutStart(`initiate_checkout:studio_topup:${Date.now()}`)
 
-      if (isMercadoPagoInSiteCheckoutEnabled()) {
+      if (paymentProvider === 'stripe' || isMercadoPagoInSiteCheckoutEnabled()) {
         const intentResponse = await fetch('/api/compositores/studio/topup/intent', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ musicQuantity: normalizedMusicQuantity }),
+          body: JSON.stringify({
+            musicQuantity: normalizedMusicQuantity,
+            provider: paymentProvider,
+            country,
+          }),
         })
         const intent = await intentResponse.json()
         if (!intentResponse.ok) throw new Error(intent.error || 'Erro ao iniciar pagamento')

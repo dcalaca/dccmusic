@@ -31,6 +31,11 @@ function buildProjectDescription(body: any) {
     .filter((value) => value && value !== 'Deixar a IA escolher')
 
   const lines = [idea]
+  const songLanguage = typeof body.songLanguage === 'string' && body.songLanguage.trim()
+    ? body.songLanguage.trim()
+    : 'Português (Brasil)'
+
+  lines.push('', `Idioma da música: ${songLanguage}`)
 
   if (voiceNotes.length > 0) {
     lines.push('', `Preferência de voz: ${voiceNotes.join(', ')}`)
@@ -198,6 +203,7 @@ export async function POST(request: NextRequest) {
             lyricNormalized: lyricNormalization.changed,
             linesBefore: lyricNormalization.linesBefore,
             linesAfter: lyricNormalization.linesAfter,
+            songLanguage: body.songLanguage || 'Português (Brasil)',
           },
         })
 

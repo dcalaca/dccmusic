@@ -30,13 +30,21 @@ export async function POST(request: NextRequest) {
     params.set('mode', 'payment')
     params.set('ui_mode', 'embedded')
     params.set('redirect_on_completion', 'never')
+    params.set('adaptive_pricing[enabled]', 'true')
     const integrationSuffix = crypto.createHash('sha256').update(topup.id).digest().subarray(0, 8)
       .toString('hex').replace(/[0-9]/g, (digit) => String.fromCharCode(97 + Number(digit)))
       .slice(0, 8)
     params.set('integration_identifier', `dccmusic_${integrationSuffix}`)
     params.set('line_items[0][price_data][currency]', 'brl')
     params.set('line_items[0][price_data][unit_amount]', String(Math.round(quote.totalPrice * 100)))
-    params.set('line_items[0][price_data][product_data][name]', topup.metadata?.package_name || `Recarga DCC Music - ${topup.music_quantity} música(s)`)
+    const isParaguay = topup.metadata?.customer_country === 'PY'
+    params.set(
+      'line_items[0][price_data][product_data][name]',
+      isParaguay
+        ? `Recarga DCC Music - ${topup.music_quantity} canción(es)`
+        : topup.metadata?.package_name || `Recarga DCC Music - ${topup.music_quantity} música(s)`
+    )
+    if (isParaguay) params.set('locale', 'es')
     params.set('line_items[0][quantity]', '1')
     params.set('metadata[topup_id]', topup.id)
     params.set('metadata[external_reference]', topup.external_reference)

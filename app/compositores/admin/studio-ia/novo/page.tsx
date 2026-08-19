@@ -4,6 +4,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { useLocalization } from '@/components/LocalizationProvider'
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -35,6 +36,8 @@ const lineCounts = ['curta', 'média', 'longa']
 const voiceGenders = ['Deixar a IA escolher', 'Voz masculina', 'Voz feminina', 'Dueto masculino e feminino']
 const voiceTones = ['Deixar a IA escolher', 'Voz grave', 'Voz média', 'Voz aguda', 'Voz rouca', 'Voz suave', 'Voz forte']
 const studioMusicCredits = 10
+const songLanguages = ['Português (Brasil)', 'Español (Paraguay)']
+const paraguayStyles = ['Guarania paraguaya', 'Polca paraguaya', 'Cumbia paraguaya', 'Reggaetón', 'Música cristiana']
 const themeSuggestions = [
   { id: 'amor', label: 'Amor', text: 'Uma história de amor verdadeira, com carinho, desejo e a vontade de ficar juntos.' },
   { id: 'termino', label: 'Término', text: 'O fim de um relacionamento, a dor da despedida e a dificuldade de seguir em frente.' },
@@ -76,6 +79,7 @@ async function getComposerBalanceStatus(token: string) {
 
 export default function NewStudioMusicPage() {
   const router = useRouter()
+  const { country } = useLocalization()
   const errorRef = useRef<HTMLDivElement>(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -110,7 +114,18 @@ export default function NewStudioMusicPage() {
     voiceTone: 'Deixar a IA escolher',
     voiceProfileId: '',
     extraInstructions: '',
+    songLanguage: country === 'PY' ? 'Español (Paraguay)' : 'Português (Brasil)',
   })
+
+  useEffect(() => {
+    if (country !== 'PY') return
+    setStyles((current) => Array.from(new Set([...paraguayStyles, ...current])))
+    setForm((current) => ({
+      ...current,
+      songLanguage: current.songLanguage || 'Español (Paraguay)',
+      style: current.style === 'Sertanejo' ? 'Guarania paraguaya' : current.style,
+    }))
+  }, [country])
 
   useEffect(() => {
     const token = localStorage.getItem('composer_token')
@@ -533,6 +548,7 @@ export default function NewStudioMusicPage() {
                         <Select label="Clima da música" value={form.mood} options={moods} onChange={(value) => setForm({ ...form, mood: value })} />
                       )}
                       <Select label="Tamanho da letra" value={form.lineCount} options={lineCounts} onChange={(value) => setForm({ ...form, lineCount: value })} />
+                      <Select label="Idioma da música" value={form.songLanguage} options={songLanguages} onChange={(value) => setForm({ ...form, songLanguage: value })} />
                     </div>
                   </section>
 

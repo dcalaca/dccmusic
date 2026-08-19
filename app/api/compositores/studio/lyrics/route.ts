@@ -74,13 +74,15 @@ function buildProjectDescription(body: any, fallbackDescription?: string | null)
   const voiceNotes = [voiceGender, voiceTone]
     .filter((value) => value && value !== 'Deixar a IA escolher')
 
-  if (!idea && voiceNotes.length === 0) return fallbackDescription || null
-  if (voiceNotes.length === 0) return idea || fallbackDescription || null
+  const language = typeof body.songLanguage === 'string' && body.songLanguage.trim()
+    ? body.songLanguage.trim()
+    : 'Português (Brasil)'
 
   return [
     idea || fallbackDescription || '',
     '',
-    `Preferência de voz: ${voiceNotes.join(', ')}`,
+    `Idioma da música: ${language}`,
+    voiceNotes.length > 0 ? `Preferência de voz: ${voiceNotes.join(', ')}` : '',
   ].filter(Boolean).join('\n')
 }
 
@@ -95,12 +97,26 @@ function buildPrompt(input: any, existingLyric?: string) {
   ].filter(Boolean).join(', ')
 
   const actionInstruction = input.action ? actions[input.action] || input.action : ''
+  const paraguayanSpanish = String(input.songLanguage || '').toLowerCase().includes('espa') ||
+    String(input.songLanguage || '').toLowerCase().includes('paraguay')
+  const culturalInstruction = paraguayanSpanish
+    ? `
+Idioma e identidade cultural obrigatórios:
+- escrever toda a letra em espanhol natural do Paraguai;
+- usar vocabulário, ritmo de fala e construções compreensíveis para paraguaios;
+- não usar português brasileiro e não usar espanhol artificial traduzido literalmente;
+- respeitar o gênero escolhido e, quando for guarania, polca ou cumbia paraguaia, refletir a identidade musical do Paraguai;
+- não inserir palavras em guarani, a menos que o usuário peça explicitamente.`
+    : `
+Idioma e identidade cultural obrigatórios:
+- escrever toda a letra em português brasileiro natural;
+- usar fraseado, vocabulário e pronúncia adequados ao Brasil.`
 
   return `
-Você é um compositor profissional brasileiro. Escreva letras cantáveis, naturais e emocionais, sem parecer IA.
+Você é um compositor profissional especializado no mercado musical do país escolhido pelo usuário. Escreva letras cantáveis, naturais e emocionais, sem parecer IA.
 
 Regras:
-- foco em música brasileira
+- foco na cultura musical e no sotaque do país/idioma selecionado
 - frases naturais, sem clichês baratos
 - evitar rimas forçadas e palavras colocadas só para rimar
 - criar storytelling e imagens emocionais
@@ -125,6 +141,8 @@ Estrutura: ${input.structure || 'Livre'}
 Quantidade: ${input.lineCount || 'média'}
 Diretrizes: ${avoid || 'nenhuma'}
 Tema: ${input.idea || 'não informado'}
+Idioma selecionado: ${input.songLanguage || 'Português (Brasil)'}
+${culturalInstruction}
 ${getStyleSpecificLyricInstruction(input.style)}
 ${actionInstruction ? `Pedido de edição: ${actionInstruction}` : ''}
 ${existingLyric ? `\nLetra atual para reescrever/melhorar:\n${existingLyric}` : ''}
@@ -133,7 +151,7 @@ Responda somente com a letra completa, organizada por partes.
 `.trim()
 }
 
-async function generateLyricWithOpenAI(prompt: string) {
+async function generateLyricWithOpenAI(prompt: string, songLanguage?: string) {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error('A geração de letras não está configurada no servidor.')
 
@@ -149,7 +167,9 @@ async function generateLyricWithOpenAI(prompt: string) {
       messages: [
         {
           role: 'system',
-          content: 'Você é um compositor profissional especializado em música brasileira popular, rádio e streaming.',
+          content: String(songLanguage || '').toLowerCase().includes('paraguay') || String(songLanguage || '').toLowerCase().includes('espa')
+            ? 'Eres un compositor profesional paraguayo. Escribes canciones naturales en español paraguayo, con identidad local, listas para radio y streaming.'
+            : 'Você é um compositor profissional especializado em música brasileira popular, rádio e streaming.',
         },
         { role: 'user', content: prompt },
       ],
@@ -206,9 +226,17 @@ export async function POST(request: NextRequest) {
     const project = await getProjectForComposer(body.projectId, composer.composerId)
     if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
 
+    const projectDescription = String(project.description || '')
+    const inferredLanguage = /idioma da m[uú]sica:\s*espa|\(paraguay\)/i.test(projectDescription)
+      ? 'Español (Paraguay)'
+      : 'Português (Brasil)'
+    const input = {
+      ...body,
+      songLanguage: String(body.songLanguage || inferredLanguage),
+    }
     const existingLyric = typeof body.existingLyric === 'string' ? body.existingLyric : ''
-    const prompt = buildPrompt(body, existingLyric)
-    const lyric = await generateLyricWithOpenAI(prompt)
+    const prompt = buildPrompt(input, existingLyric)
+    const lyric = await generateLyricWithOpenAI(prompt, input.songLanguage)
 
     await supabaseAdmin
       .from('studio_lyrics')
@@ -222,7 +250,7 @@ export async function POST(request: NextRequest) {
         project_id: project.id,
         composer_id: composer.composerId,
         content: lyric,
-        prompt: body,
+        prompt: input,
         is_current: true,
       })
       .select('*')

@@ -7,9 +7,12 @@ import { FiAlertTriangle, FiArrowLeft, FiCheckCircle, FiExternalLink, FiLoader, 
 import { trackTikTokEvent } from '@/components/TikTokEvents'
 import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
 import { isMercadoPagoInSiteCheckoutEnabled } from '@/lib/mp-in-site-checkout'
+import { StripePaymentOverlay } from '@/components/StripeCheckout'
+import { useLocalization } from '@/components/LocalizationProvider'
 
 function CheckoutContent() {
   const router = useRouter()
+  const { country, paymentProvider } = useLocalization()
   const searchParams = useSearchParams()
   const planSlug = searchParams.get('plan')
   
@@ -25,6 +28,9 @@ function CheckoutContent() {
     subscriptionId: string
     amount: number
     email?: string | null
+    provider: 'mercadopago' | 'stripe'
+    stripeClientSecret?: string
+    stripePublishableKey?: string
   } | null>(null)
   const paidRedirectRef = useRef(false)
 
@@ -143,23 +149,45 @@ function CheckoutContent() {
         })
       }
 
-      if (isMercadoPagoInSiteCheckoutEnabled()) {
+      if (paymentProvider === 'stripe' || isMercadoPagoInSiteCheckoutEnabled()) {
         const intentResponse = await fetch('/api/compositores/pagamento/intent', {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ planId: planSlug }),
+          body: JSON.stringify({ planId: planSlug, provider: paymentProvider, country }),
         })
         const intent = await intentResponse.json()
         if (!intentResponse.ok) throw new Error(intent.error || 'Erro ao iniciar pagamento')
         trackInitiate(intent)
-        setInSiteCheckout({
-          subscriptionId: intent.subscriptionId,
-          amount: Number(intent.amount || intent.planPrice) || 0,
-          email: intent.composerEmail || null,
-        })
+        if (intent.provider === 'stripe') {
+          const stripeResponse = await fetch('/api/compositores/pagamento/stripe/session', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ planId: planSlug, subscriptionId: intent.subscriptionId }),
+          })
+          const stripe = await stripeResponse.json()
+          if (!stripeResponse.ok) throw new Error(stripe.error || 'Erro ao abrir Stripe')
+          setInSiteCheckout({
+            subscriptionId: stripe.subscriptionId,
+            amount: Number(stripe.amount || intent.amount || intent.planPrice) || 0,
+            email: intent.composerEmail || null,
+            provider: 'stripe',
+            stripeClientSecret: stripe.clientSecret,
+            stripePublishableKey: stripe.publishableKey,
+          })
+        } else {
+          setInSiteCheckout({
+            subscriptionId: intent.subscriptionId,
+            amount: Number(intent.amount || intent.planPrice) || 0,
+            email: intent.composerEmail || null,
+            provider: 'mercadopago',
+          })
+        }
         return
       }
 
@@ -433,12 +461,12 @@ function CheckoutContent() {
           {/* Informações de segurança */}
           <div className="mt-4 text-center">
             <p className="text-gray-500 text-xs">
-              🔒 Pagamento seguro processado pelo Mercado Pago
+              🔒 Pagamento seguro processado pelo {paymentProvider === 'stripe' ? 'Stripe' : 'Mercado Pago'}
             </p>
           </div>
         </div>
       </div>
-      {inSiteCheckout ? (
+      {inSiteCheckout?.provider === 'mercadopago' ? (
         <MercadoPagoPaymentOverlay
           amount={inSiteCheckout.amount}
           email={inSiteCheckout.email}
@@ -480,6 +508,19 @@ function CheckoutContent() {
             const params = new URLSearchParams()
             params.set('subscription_id', result?.subscriptionId || inSiteCheckout.subscriptionId)
             if (result?.paymentId) params.set('payment_id', String(result.paymentId))
+            router.push(`/compositores/pagamento/sucesso?${params.toString()}`)
+          }}
+        />
+      ) : null}
+      {inSiteCheckout?.provider === 'stripe' && inSiteCheckout.stripeClientSecret && inSiteCheckout.stripePublishableKey ? (
+        <StripePaymentOverlay
+          clientSecret={inSiteCheckout.stripeClientSecret}
+          publishableKey={inSiteCheckout.stripePublishableKey}
+          onClose={() => setInSiteCheckout(null)}
+          onComplete={() => {
+            if (paidRedirectRef.current) return
+            paidRedirectRef.current = true
+            const params = new URLSearchParams({ subscription_id: inSiteCheckout.subscriptionId })
             router.push(`/compositores/pagamento/sucesso?${params.toString()}`)
           }}
         />

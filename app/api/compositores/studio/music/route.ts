@@ -202,6 +202,31 @@ function getSunoCreativeDirection(description?: string | null) {
   return getInspirationInstruction(description) || STUDIO_CREATIVE_VARIATION_INSTRUCTION
 }
 
+function isParaguayanSpanishSong(description?: string | null) {
+  const value = String(description || '').toLowerCase()
+  return value.includes('idioma da música: espa') || value.includes('idioma da musica: espa') || value.includes('(paraguay)')
+}
+
+function getVocalLanguageInstruction(description?: string | null) {
+  return isParaguayanSpanishSong(description)
+    ? 'vocal en español paraguayo, pronunciación natural de Paraguay'
+    : 'vocal em português do Brasil'
+}
+
+function getMurekaLanguageInstructions(description?: string | null) {
+  return isParaguayanSpanishSong(description)
+    ? [
+        'Use natural Paraguayan Spanish vocal phrasing and pronunciation.',
+        'The lyrics are in Paraguayan Spanish; preserve their emotional meaning and section structure.',
+        'Use a polished production that respects the selected Paraguayan or Latin genre.',
+      ]
+    : [
+        'Use Brazilian Portuguese vocal phrasing and pronunciation.',
+        'The lyrics are in Brazilian Portuguese; preserve their emotional meaning and section structure.',
+        'Create a polished full song arrangement, radio-ready, modern mix, professional Brazilian production.',
+      ]
+}
+
 function getMurekaCreativeDirection(description?: string | null) {
   const inspirationInstruction = getInspirationInstruction(description)
   return inspirationInstruction
@@ -221,7 +246,7 @@ function buildSunoStyle(style: string | null, mood: string | null, description?:
     getSunoCreativeDirection(description),
     ...getVoicePrompt(description),
     desiredInstruments ? `instrumentos: ${desiredInstruments}` : null,
-    'vocal em português do Brasil',
+    getVocalLanguageInstruction(description),
     'interpretação natural e expressiva',
     'dicção clara sem atropelar palavras',
     'fraseado com pausas e respiração natural',
@@ -402,12 +427,10 @@ function buildMurekaFirstStylePrompt(corePrompt: string, mood: string | null, de
     forbiddenInstruments.length > 0
       ? `Avoid these instruments requested by the user: ${forbiddenInstruments.join(', ')}.`
       : null,
-    'Use Brazilian Portuguese vocal phrasing and pronunciation.',
+    ...getMurekaLanguageInstructions(description),
     getMurekaCreativeDirection(description),
-    'Create a polished full song arrangement, radio-ready, modern mix, professional Brazilian production.',
     MAX_STUDIO_MUSIC_DURATION_INSTRUCTION,
     'Avoid robotic vocals, distorted vocals, unclear pronunciation, spoken-only performance, weak melody, amateur arrangement.',
-    'The lyrics are in Brazilian Portuguese; preserve their emotional meaning and section structure.',
   ].filter(Boolean)
 
   return parts.join(', ').slice(0, 1024)
@@ -425,20 +448,21 @@ function buildMurekaPrompt(style: string | null, mood: string | null, descriptio
   const forbiddenInstruments = getForbiddenInstruments(description)
   const desiredInstruments = getDesiredInstruments(description)
   const stylePrompt = stripForbiddenInstrumentsFromStyle(getBrazilianStylePrompt(style), forbiddenInstruments)
+  const countryStyleLabel = isParaguayanSpanishSong(description)
+    ? 'Paraguayan or Latin music style'
+    : 'Brazilian music style'
   const parts = [
-    `Brazilian music style: ${stylePrompt}.`,
+    `${countryStyleLabel}: ${stylePrompt}.`,
     mood ? `Must express this mood clearly: ${mood}.` : 'Use an emotional, commercial and engaging mood.',
     ...getMurekaVoiceInstructions(description),
     desiredInstruments ? `Use these instruments requested by the user: ${desiredInstruments}.` : null,
     forbiddenInstruments.length > 0
       ? `Avoid these instruments requested by the user: ${forbiddenInstruments.join(', ')}.`
       : null,
-    'Use Brazilian Portuguese vocal phrasing and pronunciation.',
+    ...getMurekaLanguageInstructions(description),
     getMurekaCreativeDirection(description),
-    'Create a polished full song arrangement, radio-ready, modern mix, professional Brazilian production.',
     MAX_STUDIO_MUSIC_DURATION_INSTRUCTION,
     'Avoid robotic vocals, distorted vocals, unclear pronunciation, spoken-only performance, weak melody, amateur arrangement.',
-    'The lyrics are in Brazilian Portuguese; preserve their emotional meaning and section structure.',
   ].filter(Boolean)
 
   return parts.join(', ').slice(0, 1024)

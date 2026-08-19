@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Suspense } from 'react'
+import { headers } from 'next/headers'
 import { Inter } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
@@ -10,6 +11,8 @@ import ActivityHeartbeat from '@/components/ActivityHeartbeat'
 import PartnerAttribution from '@/components/PartnerAttribution'
 import TikTokTestPageView from '@/components/TikTokTestPageView'
 import GtmPageEvents from '@/components/GtmEvents'
+import LocalizationProvider from '@/components/LocalizationProvider'
+import { normalizeCountry } from '@/lib/localization'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -132,8 +135,10 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  const country = normalizeCountry(headers().get('x-dcc-country'))
+  const locale = country === 'PY' ? 'es-PY' : 'pt-BR'
   return (
-    <html lang="pt-BR" className="dark">
+    <html lang={locale} data-country={country} className="dark">
       <head>
         {/* Verificação de propriedade (sistema Carimbo) */}
         <meta name="carimbo-verificacao" content="dc3620ace28fd5285c2a3fa2" />
@@ -233,6 +238,7 @@ export default function RootLayout({
             alt=""
           />
         </noscript>
+        <LocalizationProvider initialCountry={country}>
         <div className="min-h-screen flex flex-col bg-black text-white">
           <Header />
           <ActivityHeartbeat />
@@ -245,6 +251,7 @@ export default function RootLayout({
           <main className="flex-1">{children}</main>
           <Footer />
         </div>
+        </LocalizationProvider>
       </body>
     </html>
   )
