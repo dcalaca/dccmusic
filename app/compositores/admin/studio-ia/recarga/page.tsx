@@ -8,7 +8,7 @@ import { trackPartnerEvent } from '@/components/PartnerAttribution'
 import { trackTikTokEvent } from '@/components/TikTokEvents'
 import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
 import { isMercadoPagoInSiteCheckoutEnabled } from '@/lib/mp-in-site-checkout'
-import { AsaasPaymentOverlay } from '@/components/AsaasCheckout'
+import { StripePaymentOverlay } from '@/components/StripeCheckout'
 
 type TopupTier = {
   maxMusicQuantity: number | null
@@ -36,9 +36,33 @@ export default function StudioTopupPage() {
     topupId: string
     amount: number
     email?: string | null
-    provider: 'asaas' | 'mercadopago'
+    provider: 'stripe' | 'mercadopago'
+    stripeClientSecret?: string
+    stripePublishableKey?: string
+    stripeSessionId?: string
   } | null>(null)
   const paidRedirectRef = useRef(false)
+
+  const openStripeFallback = async (topupId: string, amount: number, email?: string | null) => {
+    const token = localStorage.getItem('composer_token')
+    if (!token) throw new Error('Sessão expirada')
+    const response = await fetch('/api/compositores/studio/topup/stripe/session', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ topupId }),
+    })
+    const result = await response.json()
+    if (!response.ok) throw new Error(result.error || 'Erro ao abrir pagamento alternativo')
+    setInSiteCheckout({
+      topupId,
+      amount,
+      email,
+      provider: 'stripe',
+      stripeClientSecret: result.clientSecret,
+      stripePublishableKey: result.publishableKey,
+      stripeSessionId: result.sessionId,
+    })
+  }
 
   useEffect(() => {
     loadData()
@@ -222,11 +246,16 @@ export default function StudioTopupPage() {
           })
         }
 
+        if (intent.provider === 'stripe') {
+          await openStripeFallback(intent.topupId, Number(intent.amount) || totalPrice, intent.composerEmail || null)
+          return
+        }
+
         setInSiteCheckout({
           topupId: intent.topupId,
           amount: Number(intent.amount) || totalPrice,
           email: intent.composerEmail || null,
-          provider: intent.provider === 'asaas' ? 'asaas' : 'mercadopago',
+          provider: 'mercadopago',
         })
         return
       }
@@ -415,39 +444,24 @@ export default function StudioTopupPage() {
 
         </div>
       </div>
-      {inSiteCheckout?.provider === 'asaas' ? (
-        <AsaasPaymentOverlay
-          amount={inSiteCheckout.amount}
-          email={inSiteCheckout.email}
+      {inSiteCheckout?.provider === 'stripe' && inSiteCheckout.stripeClientSecret && inSiteCheckout.stripePublishableKey ? (
+        <StripePaymentOverlay
+          clientSecret={inSiteCheckout.stripeClientSecret}
+          publishableKey={inSiteCheckout.stripePublishableKey}
           onClose={() => setInSiteCheckout(null)}
-          onSubmit={async (payload) => {
-            const token = localStorage.getItem('composer_token')
-            const response = await fetch('/api/compositores/studio/topup/asaas/payment', {
-              method: 'POST',
-              headers: { Authorization: token ? `Bearer ${token}` : '', 'Content-Type': 'application/json' },
-              body: JSON.stringify({ topupId: inSiteCheckout.topupId, ...payload }),
-            })
-            const result = await response.json()
-            if (!response.ok) throw new Error(result.error || 'Erro ao processar pagamento')
-            return result
-          }}
-          onCheckStatus={async (paymentId) => {
+          onComplete={async () => {
             const token = localStorage.getItem('composer_token')
             const response = await fetch('/api/compositores/studio/topup/sync', {
               method: 'POST',
               headers: { Authorization: token ? `Bearer ${token}` : '', 'Content-Type': 'application/json' },
-              body: JSON.stringify({ topupId: inSiteCheckout.topupId, paymentId }),
+              body: JSON.stringify({ topupId: inSiteCheckout.topupId, paymentId: inSiteCheckout.stripeSessionId }),
             })
             const result = await response.json()
-            if (!response.ok) throw new Error(result.error || 'Erro ao conferir pagamento')
-            return result
-          }}
-          onPaid={(result) => {
-            if (paidRedirectRef.current) return
-            paidRedirectRef.current = true
-            const params = new URLSearchParams({ topup_id: result?.topupId || inSiteCheckout.topupId })
-            if (result?.paymentId) params.set('payment_id', String(result.paymentId))
-            router.push(`/compositores/admin/studio-ia/recarga/sucesso?${params.toString()}`)
+            if (!response.ok) throw new Error(result.error || 'Erro ao confirmar pagamento alternativo')
+            if (result.status === 'paid') {
+              const params = new URLSearchParams({ topup_id: inSiteCheckout.topupId, payment_id: result.paymentId || '' })
+              router.push(`/compositores/admin/studio-ia/recarga/sucesso?${params.toString()}`)
+            }
           }}
         />
       ) : inSiteCheckout ? (
@@ -455,6 +469,7 @@ export default function StudioTopupPage() {
           amount={inSiteCheckout.amount}
           email={inSiteCheckout.email}
           onClose={() => setInSiteCheckout(null)}
+          onUseFallback={() => openStripeFallback(inSiteCheckout.topupId, inSiteCheckout.amount, inSiteCheckout.email)}
           onSubmitPayment={async (formData) => {
             const token = localStorage.getItem('composer_token')
             const response = await fetch('/api/compositores/studio/topup/payment', {

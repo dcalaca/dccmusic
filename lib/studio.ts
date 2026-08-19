@@ -664,12 +664,12 @@ export async function creditStudioTopupOnce(input: {
   paymentId: string | number
   paymentData?: any
   metadata?: any
-  provider?: 'mercadopago' | 'asaas'
+  provider?: 'mercadopago' | 'stripe'
 }) {
   const paymentId = String(input.paymentId)
-  const provider = input.provider || (input.topup.payment_gateway === 'asaas' ? 'asaas' : 'mercadopago')
-  const gatewayMetadata = provider === 'asaas'
-    ? { asaas_payment: input.paymentData || input.topup.metadata?.asaas_payment || null }
+  const provider = input.provider || (input.topup.payment_gateway === 'stripe' ? 'stripe' : 'mercadopago')
+  const gatewayMetadata = provider === 'stripe'
+    ? { stripe_payment: input.paymentData || input.topup.metadata?.stripe_payment || null }
     : { mercadopago_payment: input.paymentData || input.topup.metadata?.mercadopago_payment || null }
   const { data: claimedTopup, error: claimError } = await supabaseAdmin
     .from('studio_credit_topups')
@@ -764,6 +764,7 @@ export async function revokeStudioTopupCreditOnce(input: {
   paymentId: string | number
   paymentData?: any
   reason?: string
+  provider?: 'mercadopago' | 'stripe'
 }) {
   const paymentId = String(input.paymentId)
   const { data: existingReversal, error: existingReversalError } = await supabaseAdmin
@@ -794,7 +795,9 @@ export async function revokeStudioTopupCreditOnce(input: {
       packageSlug: input.topup.package_slug,
       amount: input.topup.amount,
       reason: input.reason || 'payment_refunded_or_charged_back',
-      mercadopagoPayment: input.paymentData || null,
+      ...(input.provider === 'stripe'
+        ? { stripePayment: input.paymentData || null }
+        : { mercadopagoPayment: input.paymentData || null }),
     },
   })
 
