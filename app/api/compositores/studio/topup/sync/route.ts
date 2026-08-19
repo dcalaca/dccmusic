@@ -10,7 +10,7 @@ import {
   sendAdminPaymentNotificationEmail,
   sendPaymentConfirmationEmail,
 } from '@/lib/dcc-emails'
-import { asaasRequest, asaasStatusToTopupStatus, sanitizeAsaasPayment } from '@/lib/asaas'
+import { sanitizeStripeObject, stripeRequest } from '@/lib/stripe'
 import { sendApprovedStudioTopupSideEffects } from '@/lib/studio-topup-side-effects'
 
 export const dynamic = 'force-dynamic'
@@ -71,29 +71,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, status: currentTopup.status, pending: true })
     }
 
-    if (currentTopup.payment_gateway === 'asaas') {
-      const payment = await asaasRequest<any>(`/payments/${encodeURIComponent(paymentId)}`, { method: 'GET' })
-      if (payment.externalReference && payment.externalReference !== currentTopup.external_reference) {
+    if (currentTopup.payment_gateway === 'stripe') {
+      const sessionId = paymentId.startsWith('cs_') ? paymentId : String(currentTopup.metadata?.stripe_session_id || '')
+      if (!sessionId) return NextResponse.json({ success: true, status: currentTopup.status, pending: true })
+      const session = await stripeRequest<any>(`/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=payment_intent`, { method: 'GET' })
+      if (session.metadata?.external_reference !== currentTopup.external_reference || session.metadata?.topup_id !== currentTopup.id) {
         return NextResponse.json({ error: 'Pagamento não pertence a esta recarga' }, { status: 400 })
       }
-      const asaasTopupStatus = asaasStatusToTopupStatus(payment.status)
-      if (asaasTopupStatus !== 'paid') {
+      const stripePaymentId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
+      if (session.payment_status !== 'paid' || !stripePaymentId) {
+        const nextStatus = session.status === 'expired' ? 'cancelled' : 'pending'
         await supabaseAdmin.from('studio_credit_topups').update({
-          status: asaasTopupStatus,
-          metadata: { ...(currentTopup.metadata || {}), asaas_payment: sanitizeAsaasPayment(payment) },
+          status: nextStatus,
+          metadata: { ...(currentTopup.metadata || {}), stripe_session: sanitizeStripeObject(session) },
           updated_at: new Date().toISOString(),
         }).eq('id', currentTopup.id)
-        return NextResponse.json({ success: true, status: asaasTopupStatus, pending: asaasTopupStatus === 'pending' })
+        return NextResponse.json({ success: true, status: nextStatus, pending: nextStatus === 'pending' })
       }
       const result = await creditStudioTopupOnce({
         topup: currentTopup,
-        paymentId,
-        paymentData: sanitizeAsaasPayment(payment),
-        provider: 'asaas',
-        metadata: { syncedFromAsaasStatus: true },
+        paymentId: stripePaymentId,
+        paymentData: sanitizeStripeObject(session),
+        provider: 'stripe',
+        metadata: { syncedFromStripeSession: true, stripe_session_id: session.id },
       })
-      if (result.credited) await sendApprovedStudioTopupSideEffects(request, result.topup, paymentId)
-      return NextResponse.json({ success: true, status: 'paid', credited: result.credited, paymentId, topupId: currentTopup.id })
+      if (result.credited) await sendApprovedStudioTopupSideEffects(request, result.topup, stripePaymentId)
+      return NextResponse.json({ success: true, status: 'paid', credited: result.credited, paymentId: stripePaymentId, topupId: currentTopup.id })
     }
 
     if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {

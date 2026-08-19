@@ -324,6 +324,7 @@ export function MercadoPagoPaymentOverlay({
   onCheckStatus,
   onPaid,
   onClose,
+  onUseFallback,
 }: {
   amount: number
   email?: string | null
@@ -331,7 +332,24 @@ export function MercadoPagoPaymentOverlay({
   onCheckStatus?: (paymentId?: string | null) => Promise<any>
   onPaid: (result: any) => void
   onClose: () => void
+  onUseFallback?: () => void | Promise<void>
 }) {
+  const [fallbackLoading, setFallbackLoading] = useState(false)
+  const [fallbackError, setFallbackError] = useState('')
+
+  const useFallback = async () => {
+    if (!onUseFallback || fallbackLoading) return
+    try {
+      setFallbackLoading(true)
+      setFallbackError('')
+      await onUseFallback()
+    } catch (error: any) {
+      setFallbackError(error?.message || 'Pagamento alternativo indisponível.')
+    } finally {
+      setFallbackLoading(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/80 p-0 sm:items-center sm:p-4">
       <div className="relative max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-gray-700 bg-gray-900 p-5 shadow-2xl sm:rounded-2xl sm:p-6">
@@ -351,6 +369,17 @@ export function MercadoPagoPaymentOverlay({
           onCheckStatus={onCheckStatus}
           onPaid={onPaid}
         />
+        {onUseFallback ? (
+          <button
+            type="button"
+            onClick={() => void useFallback()}
+            disabled={fallbackLoading}
+            className="mt-4 w-full rounded-xl border border-gray-600 px-4 py-3 text-sm font-bold text-gray-200 hover:border-primary-400 hover:text-white"
+          >
+            {fallbackLoading ? 'Abrindo Stripe...' : 'Usar pagamento alternativo (Stripe)'}
+          </button>
+        ) : null}
+        {fallbackError ? <p className="mt-2 text-center text-sm text-red-300">{fallbackError}</p> : null}
       </div>
     </div>
   )

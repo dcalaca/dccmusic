@@ -4,17 +4,21 @@ import { getStudioTopupQuote } from '@/lib/studio-topups'
 import { studioMonthKey } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
 import { buildMetaCapiMetadata, sendMetaInitiateCheckoutEvent } from '@/lib/meta-conversions'
-import { isAsaasConfigured } from '@/lib/asaas'
+import { isStripeConfigured } from '@/lib/stripe'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const provider = process.env.MERCADOPAGO_ACCESS_TOKEN
-      ? 'mercadopago'
-      : isAsaasConfigured()
-        ? 'asaas'
-        : null
+    const body = await request.json()
+    const stripeRequested = body?.provider === 'stripe'
+    const provider = stripeRequested && isStripeConfigured()
+      ? 'stripe'
+      : process.env.MERCADOPAGO_ACCESS_TOKEN
+        ? 'mercadopago'
+        : isStripeConfigured()
+          ? 'stripe'
+          : null
 
     if (!provider) {
       return NextResponse.json({ error: 'Nenhum meio de pagamento está configurado no servidor.' }, { status: 500 })
@@ -23,7 +27,6 @@ export async function POST(request: NextRequest) {
     const composer = getComposerFromRequest(request)
     if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-    const body = await request.json()
     const musicQuantity = Math.floor(Number(body.musicQuantity) || 0)
 
     if (musicQuantity <= 0) {
@@ -67,7 +70,7 @@ export async function POST(request: NextRequest) {
           unit_price: quote.unitPrice,
           tier_label: quote.tierLabel,
           composer_name: composerData?.name || null,
-          checkout_type: provider === 'asaas' ? 'asaas_embedded' : 'payment_brick',
+          checkout_type: provider === 'stripe' ? 'stripe_embedded' : 'payment_brick',
           meta_capi: metaCapi,
         },
       })
@@ -96,6 +99,7 @@ export async function POST(request: NextRequest) {
       success: true,
       provider,
       publicKey: process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || null,
+      stripePublishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || null,
       topupId: topup.id,
       externalReference: reference,
       amount: quote.totalPrice,

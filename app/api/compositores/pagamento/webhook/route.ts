@@ -200,6 +200,7 @@ export async function POST(request: Request) {
             topup: currentTopup,
             paymentId,
             paymentData,
+            provider: 'mercadopago',
           })
           creditedTopup = creditResult.topup
           credited = creditResult.credited
