@@ -48,6 +48,16 @@ const themeSuggestions = [
   { id: 'festa', label: 'Festa', text: 'Uma noite de festa, alegria, amizade e vontade de curtir sem pensar no amanhã.' },
   { id: 'superacao', label: 'Superação', text: 'Uma pessoa que caiu, se levantou e descobriu a própria força no caminho.' },
 ]
+const themeSuggestionsEsPy = [
+  { id: 'amor', label: 'Amor', text: 'Una historia de amor verdadero, con cariño, deseo y ganas de permanecer juntos.' },
+  { id: 'termino', label: 'Ruptura', text: 'El final de una relación, el dolor de la despedida y la dificultad de seguir adelante.' },
+  { id: 'sofrencia', label: 'Desamor', text: 'Alguien que todavía ama, sufre en silencio y no logra olvidar a la persona amada.' },
+  { id: 'saudade', label: 'Añoranza', text: 'La añoranza de alguien especial, de los recuerdos y de los momentos que ya no volverán.' },
+  { id: 'perdao', label: 'Perdón', text: 'Un pedido sincero de perdón, con arrepentimiento y deseos de comenzar de nuevo.' },
+  { id: 'fe', label: 'Fe', text: 'Un mensaje de fe, esperanza y fortaleza para atravesar los momentos difíciles.' },
+  { id: 'festa', label: 'Fiesta', text: 'Una noche de fiesta, alegría y amistad, con ganas de disfrutar sin pensar en mañana.' },
+  { id: 'superacao', label: 'Superación', text: 'Una persona que cayó, volvió a levantarse y descubrió su propia fuerza en el camino.' },
+]
 
 function canCreateFromStudioStatus(status: any) {
   return Boolean(status?.canCreateMusic) ||
@@ -80,6 +90,11 @@ async function getComposerBalanceStatus(token: string) {
 export default function NewStudioMusicPage() {
   const router = useRouter()
   const { country } = useLocalization()
+  const isParaguay = country === 'PY'
+  const localizedThemeSuggestions = isParaguay ? themeSuggestionsEsPy : themeSuggestions
+  const localizedStructures = isParaguay
+    ? ['Estándar', 'A/B/Estribillo/C/Estribillo', 'A/Estribillo/A/Estribillo']
+    : structures
   const errorRef = useRef<HTMLDivElement>(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -124,6 +139,7 @@ export default function NewStudioMusicPage() {
       ...current,
       songLanguage: current.songLanguage || 'Español (Paraguay)',
       style: current.style === 'Sertanejo' ? 'Guarania paraguaya' : current.style,
+      structure: current.structure === 'Padrão' ? 'Estándar' : current.structure,
     }))
   }, [country])
 
@@ -236,7 +252,7 @@ export default function NewStudioMusicPage() {
   }
 
   const applyThemeSuggestion = (themeId: string) => {
-    const theme = themeSuggestions.find((item) => item.id === themeId)
+    const theme = localizedThemeSuggestions.find((item) => item.id === themeId)
     if (!theme) return
     setSelectedTheme(themeId)
     setHasOwnLyric(false)
@@ -584,8 +600,12 @@ export default function NewStudioMusicPage() {
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <SectionTitle
                         icon={<FiFileText />}
-                        title={hasOwnLyric ? 'Letra pronta' : 'Ideia da música'}
-                        subtitle={hasOwnLyric ? 'Cole a letra completa para criar o projeto.' : 'Fale sobre sua ideia, história ou sentimento.'}
+                        title={hasOwnLyric
+                          ? (isParaguay ? 'Letra lista' : 'Letra pronta')
+                          : (isParaguay ? 'Idea de la canción' : 'Ideia da música')}
+                        subtitle={hasOwnLyric
+                          ? (isParaguay ? 'Pega la letra completa para crear el proyecto.' : 'Cole a letra completa para criar o projeto.')
+                          : (isParaguay ? 'Cuéntanos tu idea, historia o sentimiento.' : 'Fale sobre sua ideia, história ou sentimento.')}
                       />
                       <button
                         type="button"
@@ -595,15 +615,17 @@ export default function NewStudioMusicPage() {
                         }}
                         className="inline-flex w-full items-center justify-center rounded-2xl border border-primary-400/30 bg-primary-500/10 px-4 py-2.5 text-xs font-black text-primary-100 transition hover:border-primary-300/60 hover:bg-primary-500/20 sm:w-fit"
                       >
-                        {hasOwnLyric ? 'Quero gerar com IA' : 'Já tenho a letra'}
+                        {hasOwnLyric
+                          ? (isParaguay ? 'Quiero crearla con IA' : 'Quero gerar com IA')
+                          : (isParaguay ? 'Ya tengo la letra' : 'Já tenho a letra')}
                       </button>
                     </div>
 
                     {!hasOwnLyric && (
                       <div className="mb-3">
-                        <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Sugestões de temas</p>
+                        <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-gray-500">{isParaguay ? 'IDEAS DE TEMAS' : 'Sugestões de temas'}</p>
                         <div className="flex flex-wrap gap-2">
-                          {themeSuggestions.map((theme) => (
+                          {localizedThemeSuggestions.map((theme) => (
                             <button
                               key={theme.id}
                               type="button"
@@ -634,7 +656,9 @@ export default function NewStudioMusicPage() {
                         }}
                         rows={hasOwnLyric ? 10 : 6}
                         maxLength={hasOwnLyric ? undefined : ideaMaxLength}
-                        placeholder={hasOwnLyric ? 'Cole aqui a letra completa da música...' : 'Ex: Um compositor descobre que a pessoa que ele amava usava uma chave falsa para entrar e sair da vida dele...'}
+                        placeholder={hasOwnLyric
+                          ? (isParaguay ? 'Pega aquí la letra completa de la canción...' : 'Cole aqui a letra completa da música...')
+                          : (isParaguay ? 'Ej.: Un compositor descubre que la persona que amaba usaba una llave falsa para entrar y salir de su vida...' : 'Ex: Um compositor descobre que a pessoa que ele amava usava uma chave falsa para entrar e sair da vida dele...')}
                         className="w-full resize-none rounded-[1.35rem] border border-white/10 bg-black/40 px-4 py-4 text-sm leading-relaxed text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/55"
                       />
                       {!hasOwnLyric && (
@@ -646,7 +670,9 @@ export default function NewStudioMusicPage() {
 
                     {hasOwnLyric && (
                       <p className="mt-3 text-xs font-semibold text-green-300">
-                        Neste modo, salvamos sua letra no projeto sem gerar letra com IA. Ao criar o projeto, o sistema só reorganiza as quebras de linha para a IA cantar melhor — sem mudar nenhuma palavra.
+                        {isParaguay
+                          ? 'En este modo guardamos tu letra sin generar una nueva con IA. El sistema solamente reorganiza los saltos de línea para que la IA cante mejor, sin cambiar ninguna palabra.'
+                          : 'Neste modo, salvamos sua letra no projeto sem gerar letra com IA. Ao criar o projeto, o sistema só reorganiza as quebras de linha para a IA cantar melhor — sem mudar nenhuma palavra.'}
                       </p>
                     )}
                   </section>
@@ -658,7 +684,7 @@ export default function NewStudioMusicPage() {
                       className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-left text-sm font-black text-gray-100 transition hover:border-primary-400/50 hover:bg-white/[0.06]"
                     >
                       <span className="inline-flex items-center gap-2">
-                        <FiSliders className="text-primary-300" /> Ajustes finos
+                        <FiSliders className="text-primary-300" /> {isParaguay ? 'Ajustes avanzados' : 'Ajustes finos'}
                       </span>
                       <FiChevronDown className={`h-4 w-4 transition-transform ${showLyricOptions ? 'rotate-180' : ''}`} />
                     </button>
@@ -667,12 +693,12 @@ export default function NewStudioMusicPage() {
                       <div className="mt-3 space-y-3">
                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                           {[
-                            ['avoidCliches', 'Evitar clichês'],
-                            ['avoidChildishRhymes', 'Evitar rimas infantis'],
-                            ['avoidRepeatedWords', 'Evitar palavras repetidas'],
-                            ['stickyChorus', 'Refrão mais chiclete'],
-                            ['popularLanguage', 'Linguagem mais popular'],
-                            ['sophisticatedLanguage', 'Linguagem mais sofisticada'],
+                            ['avoidCliches', isParaguay ? 'Evitar clichés' : 'Evitar clichês'],
+                            ['avoidChildishRhymes', isParaguay ? 'Evitar rimas infantiles' : 'Evitar rimas infantis'],
+                            ['avoidRepeatedWords', isParaguay ? 'Evitar palabras repetidas' : 'Evitar palavras repetidas'],
+                            ['stickyChorus', isParaguay ? 'Estribillo más pegadizo' : 'Refrão mais chiclete'],
+                            ['popularLanguage', isParaguay ? 'Lenguaje más popular' : 'Linguagem mais popular'],
+                            ['sophisticatedLanguage', isParaguay ? 'Lenguaje más sofisticado' : 'Linguagem mais sofisticada'],
                           ].map(([key, label]) => (
                             <label key={key} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/25 px-3 py-2.5 text-xs font-bold text-gray-200 transition hover:border-primary-400/30 sm:text-sm">
                               <input
@@ -687,29 +713,31 @@ export default function NewStudioMusicPage() {
                         </div>
 
                         <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                          <Select label="Estrutura da música" value={form.structure} options={structures} onChange={(value) => setForm({ ...form, structure: value })} />
+                          <Select label={isParaguay ? 'Estructura de la canción' : 'Estrutura da música'} value={form.structure} options={localizedStructures} onChange={(value) => setForm({ ...form, structure: value })} />
                           <p className="mt-1.5 text-[11px] leading-relaxed text-gray-500">
-                            Use Padrão para deixar a IA escolher a melhor organização da música.
+                            {isParaguay
+                              ? 'Usa Estándar para que la IA elija la mejor organización de la canción.'
+                              : 'Use Padrão para deixar a IA escolher a melhor organização da música.'}
                           </p>
                         </div>
 
                         <div className="grid gap-3 md:grid-cols-2">
                           <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                            <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">Instrumentos que você quer (opcional)</label>
+                            <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{isParaguay ? 'Instrumentos que quieres (opcional)' : 'Instrumentos que você quer (opcional)'}</label>
                             <input
                               value={form.wantInstruments}
                               onChange={(e) => setForm({ ...form, wantInstruments: e.target.value })}
-                              placeholder="Ex: viola, violão, piano"
+                              placeholder={isParaguay ? 'Ej.: guitarra, arpa paraguaya, piano' : 'Ex: viola, violão, piano'}
                               className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/50"
                             />
                           </div>
 
                           <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                            <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">Instrumentos para evitar (opcional)</label>
+                            <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{isParaguay ? 'Instrumentos que quieres evitar (opcional)' : 'Instrumentos para evitar (opcional)'}</label>
                             <input
                               value={form.avoidInstruments}
                               onChange={(e) => setForm({ ...form, avoidInstruments: e.target.value })}
-                              placeholder="Ex: acordeon, sanfona"
+                              placeholder={isParaguay ? 'Ej.: acordeón, guitarra eléctrica' : 'Ex: acordeon, sanfona'}
                               className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/50"
                             />
                           </div>
@@ -717,7 +745,7 @@ export default function NewStudioMusicPage() {
 
                         <div className="rounded-2xl border border-purple-300/15 bg-black/25 p-3">
                           <label className="block text-xs font-bold text-purple-100 sm:text-sm" htmlFor="new-studio-extra-instructions">
-                            Outras instruções para a música
+                            {isParaguay ? 'Otras instrucciones para la canción' : 'Outras instruções para a música'}
                           </label>
                           <textarea
                             id="new-studio-extra-instructions"
@@ -725,7 +753,9 @@ export default function NewStudioMusicPage() {
                             onChange={(e) => setForm({ ...form, extraInstructions: e.target.value.slice(0, 700) })}
                             rows={3}
                             maxLength={700}
-                            placeholder="Ex.: usar minha voz cadastrada com interpretação masculina calma e expressiva."
+                            placeholder={isParaguay
+                              ? 'Ej.: usar mi voz registrada con una interpretación masculina tranquila y expresiva.'
+                              : 'Ex.: usar minha voz cadastrada com interpretação masculina calma e expressiva.'}
                             className="mt-3 w-full resize-none rounded-2xl border border-purple-300/20 bg-gray-950 px-4 py-3 text-sm leading-relaxed text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400"
                           />
                           <p className="mt-2 text-right text-[11px] text-gray-500">
