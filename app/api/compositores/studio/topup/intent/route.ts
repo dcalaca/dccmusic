@@ -10,8 +10,13 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const provider = isAsaasConfigured() ? 'asaas' : 'mercadopago'
-    if (provider === 'mercadopago' && !process.env.MERCADOPAGO_ACCESS_TOKEN) {
+    const provider = process.env.MERCADOPAGO_ACCESS_TOKEN
+      ? 'mercadopago'
+      : isAsaasConfigured()
+        ? 'asaas'
+        : null
+
+    if (!provider) {
       return NextResponse.json({ error: 'Nenhum meio de pagamento está configurado no servidor.' }, { status: 500 })
     }
 
