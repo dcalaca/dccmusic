@@ -664,8 +664,13 @@ export async function creditStudioTopupOnce(input: {
   paymentId: string | number
   paymentData?: any
   metadata?: any
+  provider?: 'mercadopago' | 'asaas'
 }) {
   const paymentId = String(input.paymentId)
+  const provider = input.provider || (input.topup.payment_gateway === 'asaas' ? 'asaas' : 'mercadopago')
+  const gatewayMetadata = provider === 'asaas'
+    ? { asaas_payment: input.paymentData || input.topup.metadata?.asaas_payment || null }
+    : { mercadopago_payment: input.paymentData || input.topup.metadata?.mercadopago_payment || null }
   const { data: claimedTopup, error: claimError } = await supabaseAdmin
     .from('studio_credit_topups')
     .update({
@@ -675,7 +680,7 @@ export async function creditStudioTopupOnce(input: {
       metadata: {
         ...(input.topup.metadata || {}),
         ...(input.metadata || {}),
-        mercadopago_payment: input.paymentData || input.topup.metadata?.mercadopago_payment || null,
+        ...gatewayMetadata,
       },
       updated_at: new Date().toISOString(),
     })
