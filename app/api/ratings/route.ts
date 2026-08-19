@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
 // POST - Criar ou atualizar avaliação
 export async function POST(request: NextRequest) {
   try {
-    const user = await getPublicInteractionUserFromRequest(request)
+    const user = await getPublicInteractionUserFromRequest(request, { createForComposer: true })
     if (!user) {
       return NextResponse.json(
         { error: 'Não autorizado. Faça login para avaliar.' },
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
 // DELETE - Remover avaliação
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await getPublicInteractionUserFromRequest(request)
+    const user = await getPublicInteractionUserFromRequest(request, { createForComposer: true })
     if (!user) {
       return NextResponse.json(
         { error: 'Não autorizado' },

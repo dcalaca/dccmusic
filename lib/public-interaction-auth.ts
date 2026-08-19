@@ -20,7 +20,10 @@ function getBearerToken(request: NextRequest | Request) {
   return authHeader.substring(7)
 }
 
-async function getOrCreateSiteUserForComposer(composerId: string): Promise<PublicInteractionUser | null> {
+async function getSiteUserForComposer(
+  composerId: string,
+  createIfMissing: boolean
+): Promise<PublicInteractionUser | null> {
   const { data: composer, error } = await supabaseAdmin
     .from('dccmusic_composers')
     .select('id, name, email')
@@ -42,6 +45,10 @@ async function getOrCreateSiteUserForComposer(composerId: string): Promise<Publi
       source: 'composer',
     }
   }
+
+  // A tabela de usuários do site é mantida apenas como compatibilidade com
+  // comentários/avaliações antigos. Nunca crie uma duplicata só para leitura.
+  if (!createIfMissing) return null
 
   const passwordHash = await bcrypt.hash(randomUUID(), 10)
   const { data: siteUser, error: createError } = await supabaseAdmin
@@ -82,7 +89,8 @@ async function getOrCreateSiteUserForComposer(composerId: string): Promise<Publi
 }
 
 export async function getPublicInteractionUserFromRequest(
-  request: NextRequest | Request
+  request: NextRequest | Request,
+  options: { createForComposer?: boolean } = {}
 ): Promise<PublicInteractionUser | null> {
   const token = getBearerToken(request)
   if (!token) return null
@@ -100,7 +108,7 @@ export async function getPublicInteractionUserFromRequest(
 
   const composerToken = verifyComposerToken(token)
   if (composerToken?.composerId) {
-    return getOrCreateSiteUserForComposer(composerToken.composerId)
+    return getSiteUserForComposer(composerToken.composerId, options.createForComposer === true)
   }
 
   return null
