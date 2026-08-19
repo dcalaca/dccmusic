@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import crypto from 'crypto'
-import { verifyMercadoPagoWebhookSignature } from '../mercadopago'
+import {
+  isMercadoPagoLegacyIpnNotification,
+  verifyMercadoPagoWebhookSignature,
+} from '../mercadopago'
 
 const SECRET = 'test-webhook-secret-abc123'
 
@@ -74,5 +77,24 @@ describe('verifyMercadoPagoWebhookSignature', () => {
     const result = verifyMercadoPagoWebhookSignature(request, '1')
     expect(result.configured).toBe(false)
     expect(result.ok).toBe(true)
+  })
+})
+
+describe('isMercadoPagoLegacyIpnNotification', () => {
+  it('reconhece IPN antigo com topic e id na query', () => {
+    const request = new Request('https://dccmusic.online/webhook?topic=payment&id=173656129473')
+    expect(isMercadoPagoLegacyIpnNotification(request, {})).toBe(true)
+  })
+
+  it('não confunde Webhook moderno com IPN', () => {
+    const request = new Request('https://dccmusic.online/webhook?data.id=173656129473&type=payment')
+    const body = { type: 'payment', action: 'payment.updated', data: { id: '173656129473' } }
+    expect(isMercadoPagoLegacyIpnNotification(request, body)).toBe(false)
+  })
+
+  it('não ignora assinatura quando existe envelope moderno', () => {
+    const request = new Request('https://dccmusic.online/webhook?topic=payment&id=173656129473')
+    const body = { type: 'payment', action: 'payment.updated', data: { id: '173656129473' } }
+    expect(isMercadoPagoLegacyIpnNotification(request, body)).toBe(false)
   })
 })
