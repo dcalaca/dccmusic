@@ -8,6 +8,7 @@ import { trackPartnerEvent } from '@/components/PartnerAttribution'
 import { trackTikTokEvent } from '@/components/TikTokEvents'
 import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
 import { isMercadoPagoInSiteCheckoutEnabled } from '@/lib/mp-in-site-checkout'
+import { AsaasPaymentOverlay } from '@/components/AsaasCheckout'
 
 type TopupTier = {
   maxMusicQuantity: number | null
@@ -35,6 +36,7 @@ export default function StudioTopupPage() {
     topupId: string
     amount: number
     email?: string | null
+    provider: 'asaas' | 'mercadopago'
   } | null>(null)
   const paidRedirectRef = useRef(false)
 
@@ -224,6 +226,7 @@ export default function StudioTopupPage() {
           topupId: intent.topupId,
           amount: Number(intent.amount) || totalPrice,
           email: intent.composerEmail || null,
+          provider: intent.provider === 'asaas' ? 'asaas' : 'mercadopago',
         })
         return
       }
@@ -377,7 +380,7 @@ export default function StudioTopupPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <FiCheck className="text-green-400" />
-                  Pagamento via Mercado Pago
+                  Pagamento seguro via Pix ou cartão
                 </div>
               </div>
             </section>
@@ -412,7 +415,42 @@ export default function StudioTopupPage() {
 
         </div>
       </div>
-      {inSiteCheckout ? (
+      {inSiteCheckout?.provider === 'asaas' ? (
+        <AsaasPaymentOverlay
+          amount={inSiteCheckout.amount}
+          email={inSiteCheckout.email}
+          onClose={() => setInSiteCheckout(null)}
+          onSubmit={async (payload) => {
+            const token = localStorage.getItem('composer_token')
+            const response = await fetch('/api/compositores/studio/topup/asaas/payment', {
+              method: 'POST',
+              headers: { Authorization: token ? `Bearer ${token}` : '', 'Content-Type': 'application/json' },
+              body: JSON.stringify({ topupId: inSiteCheckout.topupId, ...payload }),
+            })
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error || 'Erro ao processar pagamento')
+            return result
+          }}
+          onCheckStatus={async (paymentId) => {
+            const token = localStorage.getItem('composer_token')
+            const response = await fetch('/api/compositores/studio/topup/sync', {
+              method: 'POST',
+              headers: { Authorization: token ? `Bearer ${token}` : '', 'Content-Type': 'application/json' },
+              body: JSON.stringify({ topupId: inSiteCheckout.topupId, paymentId }),
+            })
+            const result = await response.json()
+            if (!response.ok) throw new Error(result.error || 'Erro ao conferir pagamento')
+            return result
+          }}
+          onPaid={(result) => {
+            if (paidRedirectRef.current) return
+            paidRedirectRef.current = true
+            const params = new URLSearchParams({ topup_id: result?.topupId || inSiteCheckout.topupId })
+            if (result?.paymentId) params.set('payment_id', String(result.paymentId))
+            router.push(`/compositores/admin/studio-ia/recarga/sucesso?${params.toString()}`)
+          }}
+        />
+      ) : inSiteCheckout ? (
         <MercadoPagoPaymentOverlay
           amount={inSiteCheckout.amount}
           email={inSiteCheckout.email}

@@ -10,6 +10,8 @@ import {
   sendAdminPaymentNotificationEmail,
   sendPaymentConfirmationEmail,
 } from '@/lib/dcc-emails'
+import { asaasRequest, asaasStatusToTopupStatus, sanitizeAsaasPayment } from '@/lib/asaas'
+import { sendApprovedStudioTopupSideEffects } from '@/lib/studio-topup-side-effects'
 
 export const dynamic = 'force-dynamic'
 
@@ -67,6 +69,31 @@ export async function POST(request: NextRequest) {
 
     if (!paymentId) {
       return NextResponse.json({ success: true, status: currentTopup.status, pending: true })
+    }
+
+    if (currentTopup.payment_gateway === 'asaas') {
+      const payment = await asaasRequest<any>(`/payments/${encodeURIComponent(paymentId)}`, { method: 'GET' })
+      if (payment.externalReference && payment.externalReference !== currentTopup.external_reference) {
+        return NextResponse.json({ error: 'Pagamento não pertence a esta recarga' }, { status: 400 })
+      }
+      const asaasTopupStatus = asaasStatusToTopupStatus(payment.status)
+      if (asaasTopupStatus !== 'paid') {
+        await supabaseAdmin.from('studio_credit_topups').update({
+          status: asaasTopupStatus,
+          metadata: { ...(currentTopup.metadata || {}), asaas_payment: sanitizeAsaasPayment(payment) },
+          updated_at: new Date().toISOString(),
+        }).eq('id', currentTopup.id)
+        return NextResponse.json({ success: true, status: asaasTopupStatus, pending: asaasTopupStatus === 'pending' })
+      }
+      const result = await creditStudioTopupOnce({
+        topup: currentTopup,
+        paymentId,
+        paymentData: sanitizeAsaasPayment(payment),
+        provider: 'asaas',
+        metadata: { syncedFromAsaasStatus: true },
+      })
+      if (result.credited) await sendApprovedStudioTopupSideEffects(request, result.topup, paymentId)
+      return NextResponse.json({ success: true, status: 'paid', credited: result.credited, paymentId, topupId: currentTopup.id })
     }
 
     if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {

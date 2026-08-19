@@ -4,13 +4,15 @@ import { getStudioTopupQuote } from '@/lib/studio-topups'
 import { studioMonthKey } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
 import { buildMetaCapiMetadata, sendMetaInitiateCheckoutEvent } from '@/lib/meta-conversions'
+import { isAsaasConfigured } from '@/lib/asaas'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
-      return NextResponse.json({ error: 'Mercado Pago não está configurado no servidor.' }, { status: 500 })
+    const provider = isAsaasConfigured() ? 'asaas' : 'mercadopago'
+    if (provider === 'mercadopago' && !process.env.MERCADOPAGO_ACCESS_TOKEN) {
+      return NextResponse.json({ error: 'Nenhum meio de pagamento está configurado no servidor.' }, { status: 500 })
     }
 
     const composer = getComposerFromRequest(request)
@@ -52,7 +54,7 @@ export async function POST(request: NextRequest) {
         amount: quote.totalPrice,
         currency: 'BRL',
         status: 'pending',
-        payment_gateway: 'mercadopago',
+        payment_gateway: provider,
         external_reference: reference,
         month_key: studioMonthKey(),
         metadata: {
@@ -60,7 +62,7 @@ export async function POST(request: NextRequest) {
           unit_price: quote.unitPrice,
           tier_label: quote.tierLabel,
           composer_name: composerData?.name || null,
-          checkout_type: 'payment_brick',
+          checkout_type: provider === 'asaas' ? 'asaas_embedded' : 'payment_brick',
           meta_capi: metaCapi,
         },
       })
@@ -87,6 +89,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      provider,
       publicKey: process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || null,
       topupId: topup.id,
       externalReference: reference,
