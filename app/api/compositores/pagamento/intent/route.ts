@@ -4,14 +4,30 @@ import { supabaseAdmin } from '@/lib/supabase'
 import * as db from '@/lib/db'
 import { getOrCreatePendingSubscription } from '@/lib/composer-plan-access'
 import { buildMetaCapiMetadata, sendMetaInitiateCheckoutEvent } from '@/lib/meta-conversions'
+import { isStripeConfigured } from '@/lib/stripe'
+import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+    const requestCountry = normalizeCountry(
+      request.cookies.get(COUNTRY_COOKIE)?.value ||
+      request.headers.get('x-dcc-country') ||
+      request.headers.get('x-vercel-ip-country') ||
+      request.headers.get('cf-ipcountry')
+    )
+    const provider = requestCountry !== 'BR'
+      ? (isStripeConfigured() ? 'stripe' : null)
+      : process.env.MERCADOPAGO_ACCESS_TOKEN
+        ? 'mercadopago'
+        : isStripeConfigured()
+          ? 'stripe'
+          : null
+
+    if (!provider) {
       return NextResponse.json(
-        { error: 'Configuração do Mercado Pago não encontrada. Entre em contato com o suporte.' },
+        { error: 'Nenhum meio de pagamento está configurado. Entre em contato com o suporte.' },
         { status: 500 }
       )
     }
@@ -68,7 +84,9 @@ export async function POST(request: NextRequest) {
         metadata: {
           ...(subscription.metadata || {}),
           meta_capi: metaCapi,
-          checkout_type: 'payment_brick',
+          checkout_type: provider === 'stripe' ? 'stripe_embedded' : 'payment_brick',
+          customer_country: requestCountry,
+          customer_locale: requestCountry === 'PY' ? 'es-PY' : requestCountry === 'CO' ? 'es-CO' : 'pt-BR',
         },
       })
       .eq('id', subscription.id)
@@ -91,6 +109,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      provider,
       publicKey: process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || null,
       subscriptionId: subscription.id,
       planId: plan.id,
@@ -99,6 +118,7 @@ export async function POST(request: NextRequest) {
       amount,
       composerEmail: composerData.email || null,
       metaInitiateCheckoutEventId,
+      country: requestCountry,
     })
   } catch (error: any) {
     console.error('[PLAN INTENT] Erro ao preparar pagamento do plano:', error)

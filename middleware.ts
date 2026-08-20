@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isBlogHost, MAIN_SITE_PATH_PREFIXES } from '@/lib/blog/site'
+import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 const SITE_URL = 'https://www.dccmusic.online'
 const BLOG_URL = 'https://blog.dccmusic.online'
@@ -12,8 +13,16 @@ function withSurface(response: NextResponse, surface: 'blog' | 'site') {
 function nextWithSurface(request: NextRequest, surface: 'blog' | 'site') {
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-dcc-surface', surface)
+  const country = normalizeCountry(
+    request.cookies.get(COUNTRY_COOKIE)?.value ||
+    request.headers.get('x-vercel-ip-country') ||
+    request.headers.get('cf-ipcountry')
+  )
+  requestHeaders.set('x-dcc-country', country)
+  requestHeaders.set('x-dcc-locale', getLocaleForCountry(country))
   const response = NextResponse.next({ request: { headers: requestHeaders } })
   response.headers.set('x-dcc-surface', surface)
+  response.headers.set('x-dcc-country', country)
   return response
 }
 
@@ -22,6 +31,13 @@ function rewriteWithSurface(request: NextRequest, pathname: string) {
   url.pathname = pathname
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-dcc-surface', 'blog')
+  const country = normalizeCountry(
+    request.cookies.get(COUNTRY_COOKIE)?.value ||
+    request.headers.get('x-vercel-ip-country') ||
+    request.headers.get('cf-ipcountry')
+  )
+  requestHeaders.set('x-dcc-country', country)
+  requestHeaders.set('x-dcc-locale', getLocaleForCountry(country))
   const response = NextResponse.rewrite(url, { request: { headers: requestHeaders } })
   response.headers.set('x-dcc-surface', 'blog')
   return response

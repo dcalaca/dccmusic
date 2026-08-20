@@ -28,15 +28,24 @@ export async function POST(request: NextRequest) {
     const { data: composerData } = await supabaseAdmin.from('dccmusic_composers').select('email').eq('id', composer.composerId).maybeSingle()
     const params = new URLSearchParams()
     params.set('mode', 'payment')
-    params.set('ui_mode', 'embedded')
+    params.set('ui_mode', 'embedded_page')
     params.set('redirect_on_completion', 'never')
+    params.set('adaptive_pricing[enabled]', 'true')
     const integrationSuffix = crypto.createHash('sha256').update(topup.id).digest().subarray(0, 8)
       .toString('hex').replace(/[0-9]/g, (digit) => String.fromCharCode(97 + Number(digit)))
       .slice(0, 8)
     params.set('integration_identifier', `dccmusic_${integrationSuffix}`)
     params.set('line_items[0][price_data][currency]', 'brl')
     params.set('line_items[0][price_data][unit_amount]', String(Math.round(quote.totalPrice * 100)))
-    params.set('line_items[0][price_data][product_data][name]', topup.metadata?.package_name || `Recarga DCC Music - ${topup.music_quantity} música(s)`)
+    const customerCountry = String(topup.metadata?.customer_country || 'BR')
+    const isInternational = customerCountry === 'PY' || customerCountry === 'CO'
+    params.set(
+      'line_items[0][price_data][product_data][name]',
+      isInternational
+        ? `Recarga DCC Music - ${topup.music_quantity} canción(es)`
+        : topup.metadata?.package_name || `Recarga DCC Music - ${topup.music_quantity} música(s)`
+    )
+    if (isInternational) params.set('locale', 'es')
     params.set('line_items[0][quantity]', '1')
     params.set('metadata[topup_id]', topup.id)
     params.set('metadata[external_reference]', topup.external_reference)

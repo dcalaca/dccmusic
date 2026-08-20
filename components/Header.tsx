@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { FiMusic, FiPlayCircle, FiHome, FiShield, FiUsers, FiUser, FiLogOut, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe, FiBookOpen } from 'react-icons/fi'
 import NotificationBell from './NotificationBell'
+import CountrySelector from './CountrySelector'
 import {
   clearComposerSessionCookie,
   isComposerBlogSubdomain,
@@ -287,6 +288,7 @@ export default function Header() {
 
           {/* Botões à direita */}
           <nav className="hidden shrink-0 items-center space-x-2 md:flex">
+            <CountrySelector />
             {mounted && composer ? (
               <>
               {composerHasToken ? (
@@ -429,6 +431,7 @@ export default function Header() {
                 )
               })}
             </div>
+            <CountrySelector />
             
             {mounted && composer ? (
               <div className="flex shrink-0 items-center gap-1">
