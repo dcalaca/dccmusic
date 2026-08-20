@@ -5,7 +5,7 @@ import { FiChevronDown, FiGlobe } from 'react-icons/fi'
 import { COUNTRY_CONFIG, type DccCountry } from '@/lib/localization'
 import { useLocalization } from '@/components/LocalizationProvider'
 
-export default function CountrySelector() {
+export default function CountrySelector({ compact = false }: { compact?: boolean }) {
   const { country, setCountry } = useLocalization()
   const [open, setOpen] = useState(false)
   const current = COUNTRY_CONFIG[country]
@@ -15,16 +15,18 @@ export default function CountrySelector() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-gray-700 bg-gray-950 px-2.5 text-sm font-semibold text-gray-200 transition hover:border-primary-500 hover:text-white sm:gap-2 sm:px-3"
+        className={compact
+          ? 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-700 bg-gray-950 text-sm font-semibold text-gray-200 transition hover:border-primary-500 hover:text-white'
+          : 'inline-flex h-10 items-center gap-1.5 rounded-xl border border-gray-700 bg-gray-950 px-2.5 text-sm font-semibold text-gray-200 transition hover:border-primary-500 hover:text-white sm:gap-2 sm:px-3'}
         aria-label={country === 'BR' ? 'Mudar país' : 'Cambiar país'}
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        <FiGlobe className="h-4 w-4 text-primary-300" />
-        <span className="text-xs font-medium text-gray-400">País:</span>
+        {compact ? null : <FiGlobe className="h-4 w-4 text-primary-300" />}
+        {compact ? null : <span className="text-xs font-medium text-gray-400">País:</span>}
         <span>{current.flag}</span>
-        <span>{current.label}</span>
-        <FiChevronDown className="h-3.5 w-3.5" />
+        {compact ? null : <span>{current.label}</span>}
+        {compact ? null : <FiChevronDown className="h-3.5 w-3.5" />}
       </button>
 
       {open ? (

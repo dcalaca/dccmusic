@@ -431,7 +431,7 @@ export default function Header() {
                 )
               })}
             </div>
-            <CountrySelector />
+            <CountrySelector compact />
             
             {mounted && composer ? (
               <div className="flex shrink-0 items-center gap-1">
