@@ -202,19 +202,30 @@ function getSunoCreativeDirection(description?: string | null) {
   return getInspirationInstruction(description) || STUDIO_CREATIVE_VARIATION_INSTRUCTION
 }
 
-function isParaguayanSpanishSong(description?: string | null) {
+function getSpanishSongCountry(description?: string | null) {
   const value = String(description || '').toLowerCase()
-  return value.includes('idioma da música: espa') || value.includes('idioma da musica: espa') || value.includes('(paraguay)')
+  if (value.includes('colombia')) return 'CO'
+  if (value.includes('idioma da música: espa') || value.includes('idioma da musica: espa') || value.includes('(paraguay)')) return 'PY'
+  return null
 }
 
 function getVocalLanguageInstruction(description?: string | null) {
-  return isParaguayanSpanishSong(description)
-    ? 'vocal en español paraguayo, pronunciación natural de Paraguay'
-    : 'vocal em português do Brasil'
+  const spanishCountry = getSpanishSongCountry(description)
+  if (spanishCountry === 'CO') return 'vocal en español colombiano, pronunciación natural de Colombia'
+  if (spanishCountry === 'PY') return 'vocal en español paraguayo, pronunciación natural de Paraguay'
+  return 'vocal em português do Brasil'
 }
 
 function getMurekaLanguageInstructions(description?: string | null) {
-  return isParaguayanSpanishSong(description)
+  const spanishCountry = getSpanishSongCountry(description)
+  if (spanishCountry === 'CO') {
+    return [
+      'Use natural Colombian Spanish vocal phrasing and pronunciation.',
+      'The lyrics are in Colombian Spanish; preserve their emotional meaning and section structure.',
+      'Use a polished production that respects the selected Colombian or Latin genre.',
+    ]
+  }
+  return spanishCountry === 'PY'
     ? [
         'Use natural Paraguayan Spanish vocal phrasing and pronunciation.',
         'The lyrics are in Paraguayan Spanish; preserve their emotional meaning and section structure.',
@@ -448,9 +459,12 @@ function buildMurekaPrompt(style: string | null, mood: string | null, descriptio
   const forbiddenInstruments = getForbiddenInstruments(description)
   const desiredInstruments = getDesiredInstruments(description)
   const stylePrompt = stripForbiddenInstrumentsFromStyle(getBrazilianStylePrompt(style), forbiddenInstruments)
-  const countryStyleLabel = isParaguayanSpanishSong(description)
-    ? 'Paraguayan or Latin music style'
-    : 'Brazilian music style'
+  const spanishCountry = getSpanishSongCountry(description)
+  const countryStyleLabel = spanishCountry === 'CO'
+    ? 'Colombian or Latin music style'
+    : spanishCountry === 'PY'
+      ? 'Paraguayan or Latin music style'
+      : 'Brazilian music style'
   const parts = [
     `${countryStyleLabel}: ${stylePrompt}.`,
     mood ? `Must express this mood clearly: ${mood}.` : 'Use an emotional, commercial and engaging mood.',

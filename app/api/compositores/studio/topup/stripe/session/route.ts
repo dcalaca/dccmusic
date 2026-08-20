@@ -37,14 +37,15 @@ export async function POST(request: NextRequest) {
     params.set('integration_identifier', `dccmusic_${integrationSuffix}`)
     params.set('line_items[0][price_data][currency]', 'brl')
     params.set('line_items[0][price_data][unit_amount]', String(Math.round(quote.totalPrice * 100)))
-    const isParaguay = topup.metadata?.customer_country === 'PY'
+    const customerCountry = String(topup.metadata?.customer_country || 'BR')
+    const isInternational = customerCountry === 'PY' || customerCountry === 'CO'
     params.set(
       'line_items[0][price_data][product_data][name]',
-      isParaguay
+      isInternational
         ? `Recarga DCC Music - ${topup.music_quantity} canción(es)`
         : topup.metadata?.package_name || `Recarga DCC Music - ${topup.music_quantity} música(s)`
     )
-    if (isParaguay) params.set('locale', 'es')
+    if (isInternational) params.set('locale', 'es')
     params.set('line_items[0][quantity]', '1')
     params.set('metadata[topup_id]', topup.id)
     params.set('metadata[external_reference]', topup.external_reference)

@@ -5,6 +5,7 @@ import { getOrCreatePendingSubscription } from '@/lib/composer-plan-access'
 import { isStripeConfigured, stripeRequest } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase'
 import * as db from '@/lib/db'
+import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,16 @@ export async function POST(request: NextRequest) {
 
     const composerToken = getComposerFromRequest(request)
     if (!composerToken) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+
+    const customerCountry = normalizeCountry(
+      request.cookies.get(COUNTRY_COOKIE)?.value ||
+      request.headers.get('x-dcc-country') ||
+      request.headers.get('x-vercel-ip-country')
+    )
+    if (customerCountry === 'BR') {
+      return NextResponse.json({ error: 'Stripe internacional disponível apenas fora do Brasil' }, { status: 400 })
+    }
+    const customerLocale = customerCountry === 'CO' ? 'es-CO' : 'es-PY'
 
     const body = await request.json()
     const planId = String(body.planId || '').trim()
@@ -78,8 +89,8 @@ export async function POST(request: NextRequest) {
         metadata: {
           ...(subscription.metadata || {}),
           checkout_type: 'stripe_embedded',
-          customer_country: 'PY',
-          customer_locale: 'es-PY',
+          customer_country: customerCountry,
+          customer_locale: customerLocale,
           stripe_session_id: session.id,
         },
         updated_at: new Date().toISOString(),

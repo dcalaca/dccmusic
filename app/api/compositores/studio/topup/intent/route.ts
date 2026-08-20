@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       request.headers.get('x-vercel-ip-country') ||
       request.headers.get('cf-ipcountry')
     )
-    const stripeRequested = requestCountry === 'PY' || body?.provider === 'stripe'
+    const stripeRequested = requestCountry !== 'BR' || body?.provider === 'stripe'
     const provider = stripeRequested && isStripeConfigured()
       ? 'stripe'
       : process.env.MERCADOPAGO_ACCESS_TOKEN
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
           composer_name: composerData?.name || null,
           checkout_type: provider === 'stripe' ? 'stripe_embedded' : 'payment_brick',
           customer_country: requestCountry,
-          customer_locale: requestCountry === 'PY' ? 'es-PY' : 'pt-BR',
+          customer_locale: requestCountry === 'PY' ? 'es-PY' : requestCountry === 'CO' ? 'es-CO' : 'pt-BR',
           meta_capi: metaCapi,
         },
       })

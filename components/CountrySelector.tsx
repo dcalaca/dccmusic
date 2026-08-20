@@ -16,7 +16,7 @@ export default function CountrySelector() {
         type="button"
         onClick={() => setOpen((value) => !value)}
         className="inline-flex h-10 items-center gap-2 rounded-xl border border-gray-700 bg-gray-950 px-3 text-sm font-semibold text-gray-200 transition hover:border-primary-500 hover:text-white"
-        aria-label={country === 'PY' ? 'Cambiar país' : 'Mudar país'}
+        aria-label={country === 'BR' ? 'Mudar país' : 'Cambiar país'}
       >
         <FiGlobe className="h-4 w-4 text-primary-300" />
         <span>{current.flag}</span>
@@ -40,7 +40,9 @@ export default function CountrySelector() {
                 <span className="text-xl">{item.flag}</span>
                 <span>
                   <strong className="block">{item.label}</strong>
-                  <span className="text-xs opacity-70">{code === 'BR' ? 'Português · BRL' : 'Español · PYG'}</span>
+                  <span className="text-xs opacity-70">
+                    {code === 'BR' ? 'Português · BRL' : code === 'PY' ? 'Español · PYG' : 'Español · COP'}
+                  </span>
                 </span>
               </button>
             )
@@ -50,4 +52,3 @@ export default function CountrySelector() {
     </div>
   )
 }
-

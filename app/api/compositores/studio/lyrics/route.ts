@@ -97,9 +97,19 @@ function buildPrompt(input: any, existingLyric?: string) {
   ].filter(Boolean).join(', ')
 
   const actionInstruction = input.action ? actions[input.action] || input.action : ''
-  const paraguayanSpanish = String(input.songLanguage || '').toLowerCase().includes('espa') ||
-    String(input.songLanguage || '').toLowerCase().includes('paraguay')
-  const culturalInstruction = paraguayanSpanish
+  const selectedLanguage = String(input.songLanguage || '').toLowerCase()
+  const colombianSpanish = selectedLanguage.includes('colombia')
+  const paraguayanSpanish = selectedLanguage.includes('paraguay')
+  const spanishLanguage = colombianSpanish || paraguayanSpanish || selectedLanguage.includes('espa')
+  const culturalInstruction = colombianSpanish
+    ? `
+Idioma e identidade cultural obrigatórios:
+- escrever toda a letra em espanhol natural da Colômbia;
+- usar vocabulário e construções compreensíveis para colombianos, sem caricaturar o sotaque;
+- não usar português brasileiro e não fazer tradução literal;
+- respeitar o gênero escolhido e, quando for vallenato, cumbia, salsa ou música popular colombiana, refletir a identidade musical da Colômbia;
+- evitar regionalismos de outros países quando não forem pedidos.`
+    : paraguayanSpanish || spanishLanguage
     ? `
 Idioma e identidade cultural obrigatórios:
 - escrever toda a letra em espanhol natural do Paraguai;
@@ -167,8 +177,10 @@ async function generateLyricWithOpenAI(prompt: string, songLanguage?: string) {
       messages: [
         {
           role: 'system',
-          content: String(songLanguage || '').toLowerCase().includes('paraguay') || String(songLanguage || '').toLowerCase().includes('espa')
-            ? 'Eres un compositor profesional paraguayo. Escribes canciones naturales en español paraguayo, con identidad local, listas para radio y streaming.'
+          content: String(songLanguage || '').toLowerCase().includes('colombia')
+            ? 'Eres un compositor profesional colombiano. Escribes canciones naturales en español colombiano, con identidad local, listas para radio y streaming.'
+            : String(songLanguage || '').toLowerCase().includes('paraguay') || String(songLanguage || '').toLowerCase().includes('espa')
+              ? 'Eres un compositor profesional paraguayo. Escribes canciones naturales en español paraguayo, con identidad local, listas para radio y streaming.'
             : 'Você é um compositor profissional especializado em música brasileira popular, rádio e streaming.',
         },
         { role: 'user', content: prompt },
@@ -227,9 +239,11 @@ export async function POST(request: NextRequest) {
     if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
 
     const projectDescription = String(project.description || '')
-    const inferredLanguage = /idioma da m[uú]sica:\s*espa|\(paraguay\)/i.test(projectDescription)
-      ? 'Español (Paraguay)'
-      : 'Português (Brasil)'
+    const inferredLanguage = /colombia/i.test(projectDescription)
+      ? 'Español (Colombia)'
+      : /idioma da m[uú]sica:\s*espa|\(paraguay\)/i.test(projectDescription)
+        ? 'Español (Paraguay)'
+        : 'Português (Brasil)'
     const input = {
       ...body,
       songLanguage: String(body.songLanguage || inferredLanguage),

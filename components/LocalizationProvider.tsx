@@ -8,6 +8,7 @@ import {
   type DccCountry,
   type DccLocale,
   brlToPygDisplay,
+  brlToCopDisplay,
   normalizeCountry,
 } from '@/lib/localization'
 import { translateToParaguayanSpanish } from '@/lib/i18n-es-py'
@@ -15,7 +16,7 @@ import { translateToParaguayanSpanish } from '@/lib/i18n-es-py'
 type LocalizationContextValue = {
   country: DccCountry
   locale: DccLocale
-  currency: 'BRL' | 'PYG'
+  currency: 'BRL' | 'PYG' | 'COP'
   paymentProvider: 'mercadopago' | 'stripe'
   setCountry: (country: DccCountry) => void
   formatMoney: (brlValue: number) => string
@@ -23,19 +24,20 @@ type LocalizationContextValue = {
 
 const LocalizationContext = createContext<LocalizationContextValue | null>(null)
 
-function translatePriceText(value: string) {
+function translatePriceText(value: string, country: DccCountry) {
   return value.replace(/R\$\s*([\d.]+(?:,\d{1,2})?)/g, (_match, raw) => {
     const brl = Number(String(raw).replace(/\./g, '').replace(',', '.'))
     if (!Number.isFinite(brl)) return _match
-    return new Intl.NumberFormat('es-PY', {
+    const isColombia = country === 'CO'
+    return new Intl.NumberFormat(isColombia ? 'es-CO' : 'es-PY', {
       style: 'currency',
-      currency: 'PYG',
+      currency: isColombia ? 'COP' : 'PYG',
       maximumFractionDigits: 0,
-    }).format(brlToPygDisplay(brl))
+    }).format(isColombia ? brlToCopDisplay(brl) : brlToPygDisplay(brl))
   })
 }
 
-function translateDom(root: ParentNode) {
+function translateDom(root: ParentNode, country: DccCountry) {
   const skipped = new Set(['SCRIPT', 'STYLE', 'CODE', 'PRE', 'NOSCRIPT'])
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
   let node = walker.nextNode()
@@ -43,7 +45,7 @@ function translateDom(root: ParentNode) {
     const parent = node.parentElement
     if (parent && !skipped.has(parent.tagName) && !parent.closest('[data-no-translate]')) {
       const current = node.nodeValue || ''
-      const next = translatePriceText(translateToParaguayanSpanish(current))
+      const next = translatePriceText(translateToParaguayanSpanish(current), country)
       if (next !== current) node.nodeValue = next
     }
     node = walker.nextNode()
@@ -53,7 +55,7 @@ function translateDom(root: ParentNode) {
     for (const attribute of ['placeholder', 'title', 'aria-label']) {
       const current = element.getAttribute(attribute)
       if (!current) continue
-      const next = translatePriceText(translateToParaguayanSpanish(current))
+      const next = translatePriceText(translateToParaguayanSpanish(current), country)
       if (next !== current) element.setAttribute(attribute, next)
     }
   })
@@ -82,16 +84,16 @@ export default function LocalizationProvider({
     document.documentElement.dataset.country = country
     // O painel operacional interno continua em português. O Studio do compositor
     // faz parte do produto e, portanto, também recebe a localização paraguaia.
-    if (country !== 'PY' || pathname.startsWith('/admin')) return
+    if (country === 'BR' || pathname.startsWith('/admin')) return
 
-    translateDom(document.body)
+    translateDom(document.body, country)
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === Node.TEXT_NODE && node.parentNode) {
-            translateDom(node.parentNode as ParentNode)
+            translateDom(node.parentNode as ParentNode, country)
           } else if (node.nodeType === Node.ELEMENT_NODE) {
-            translateDom(node as ParentNode)
+            translateDom(node as ParentNode, country)
           }
         })
       }
@@ -107,6 +109,13 @@ export default function LocalizationProvider({
         currency: 'PYG',
         maximumFractionDigits: 0,
       }).format(brlToPygDisplay(brlValue))
+    }
+    if (country === 'CO') {
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 0,
+      }).format(brlToCopDisplay(brlValue))
     }
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(brlValue)
   }, [country])

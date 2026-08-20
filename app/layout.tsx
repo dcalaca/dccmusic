@@ -12,7 +12,7 @@ import PartnerAttribution from '@/components/PartnerAttribution'
 import TikTokTestPageView from '@/components/TikTokTestPageView'
 import GtmPageEvents from '@/components/GtmEvents'
 import LocalizationProvider from '@/components/LocalizationProvider'
-import { normalizeCountry } from '@/lib/localization'
+import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -136,7 +136,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   const country = normalizeCountry(headers().get('x-dcc-country'))
-  const locale = country === 'PY' ? 'es-PY' : 'pt-BR'
+  const locale = getLocaleForCountry(country)
   return (
     <html lang={locale} data-country={country} className="dark">
       <head>

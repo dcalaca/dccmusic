@@ -32,7 +32,7 @@ export const faqsEsPy = [
     category: 'Partitura y Cifrado',
     questions: [
       { question: '¿Qué es Partitura y Cifrado?', answer: 'Es el servicio que transforma el audio de una canción en materiales para estudiar y tocar: partitura en PDF, MusicXML y letra cifrada. Puedes usar una canción creada en Studio IA o subir tu propio audio.' },
-      { question: '¿Cuánto cuesta generar una partitura y un cifrado?', answer: 'El precio se muestra en guaraníes para Paraguay. El sistema descuenta 25 créditos DCC por cada transcripción finalizada correctamente.' },
+      { question: '¿Cuánto cuesta generar una partitura y un cifrado?', answer: 'El precio se muestra en la moneda local del país seleccionado. El sistema descuenta 25 créditos DCC por cada transcripción finalizada correctamente.' },
       { question: '¿Qué archivos recibo?', answer: 'Recibes la partitura en PDF, un archivo MusicXML para programas de notación y el PDF de la letra cifrada. También puedes ver una vista previa con tonalidad y BPM cuando estén disponibles.' },
       { question: '¿Puedo usar una canción creada en Studio IA?', answer: 'Sí. En Partitura y Cifrado, selecciona Canción de Studio IA y elige la canción. Si vienes de un proyecto recién creado, la plataforma intenta seleccionarla automáticamente.' },
       { question: '¿Puedo subir un audio que no fue creado en Studio IA?', answer: 'Sí. Usa la opción Subir audio y envía un archivo MP3, WAV, M4A, AAC, FLAC u OGG de hasta 50 MB. Informa el nombre de la canción y el sistema generará la transcripción.' },
