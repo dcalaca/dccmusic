@@ -15,24 +15,35 @@ export default function CountrySelector() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex h-10 items-center gap-2 rounded-xl border border-gray-700 bg-gray-950 px-3 text-sm font-semibold text-gray-200 transition hover:border-primary-500 hover:text-white"
+        className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-gray-700 bg-gray-950 px-2.5 text-sm font-semibold text-gray-200 transition hover:border-primary-500 hover:text-white sm:gap-2 sm:px-3"
         aria-label={country === 'BR' ? 'Mudar país' : 'Cambiar país'}
+        aria-expanded={open}
+        aria-haspopup="menu"
       >
         <FiGlobe className="h-4 w-4 text-primary-300" />
+        <span className="text-xs font-medium text-gray-400">País:</span>
         <span>{current.flag}</span>
-        <span className="hidden lg:inline">{current.label}</span>
+        <span>{current.label}</span>
         <FiChevronDown className="h-3.5 w-3.5" />
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-12 z-[80] w-52 overflow-hidden rounded-2xl border border-gray-700 bg-gray-950 p-2 shadow-2xl shadow-black/70">
+        <div role="menu" className="absolute right-0 top-12 z-[80] w-56 overflow-hidden rounded-2xl border border-gray-700 bg-gray-950 p-2 shadow-2xl shadow-black/70">
+          <p className="px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">
+            {country === 'BR' ? 'Escolha seu país' : 'Elige tu país'}
+          </p>
           {(Object.keys(COUNTRY_CONFIG) as DccCountry[]).map((code) => {
             const item = COUNTRY_CONFIG[code]
             return (
               <button
                 key={code}
                 type="button"
-                onClick={() => setCountry(code)}
+                role="menuitemradio"
+                aria-checked={country === code}
+                onClick={() => {
+                  setCountry(code)
+                  setOpen(false)
+                }}
                 className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition ${
                   country === code ? 'bg-primary-600 text-white' : 'text-gray-200 hover:bg-gray-800'
                 }`}
