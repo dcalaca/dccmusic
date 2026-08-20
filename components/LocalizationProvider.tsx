@@ -29,11 +29,12 @@ function translatePriceText(value: string, country: DccCountry) {
     const brl = Number(String(raw).replace(/\./g, '').replace(',', '.'))
     if (!Number.isFinite(brl)) return _match
     const isColombia = country === 'CO'
-    return new Intl.NumberFormat(isColombia ? 'es-CO' : 'es-PY', {
+    const formatted = new Intl.NumberFormat(isColombia ? 'es-CO' : 'es-PY', {
       style: 'currency',
       currency: isColombia ? 'COP' : 'PYG',
       maximumFractionDigits: 0,
     }).format(isColombia ? brlToCopDisplay(brl) : brlToPygDisplay(brl))
+    return isColombia ? `COP ${formatted}` : formatted
   })
 }
 
@@ -111,11 +112,12 @@ export default function LocalizationProvider({
       }).format(brlToPygDisplay(brlValue))
     }
     if (country === 'CO') {
-      return new Intl.NumberFormat('es-CO', {
+      const formatted = new Intl.NumberFormat('es-CO', {
         style: 'currency',
         currency: 'COP',
         maximumFractionDigits: 0,
       }).format(brlToCopDisplay(brlValue))
+      return `COP ${formatted}`
     }
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(brlValue)
   }, [country])

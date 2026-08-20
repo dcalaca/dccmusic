@@ -10,6 +10,7 @@ import { trackTikTokEvent } from '@/components/TikTokEvents'
 import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
 import { isMercadoPagoInSiteCheckoutEnabled } from '@/lib/mp-in-site-checkout'
 import { StripePaymentOverlay } from '@/components/StripeCheckout'
+import { brlToCopDisplay, type DccCountry } from '@/lib/localization'
 
 type TopupTier = {
   maxMusicQuantity: number | null
@@ -22,6 +23,20 @@ function formatMoney(value: number) {
     style: 'currency',
     currency: 'BRL',
   })
+}
+
+function LocalizedMoney({ value, country }: { value: number; country: DccCountry }) {
+  if (country === 'CO') {
+    const amount = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(brlToCopDisplay(value))
+    return (
+      <>
+        <span className="mr-1 align-middle text-[0.42em] font-extrabold tracking-wide text-purple-200">COP</span>
+        <span>$ {amount}</span>
+      </>
+    )
+  }
+
+  return <>{formatMoney(value)}</>
 }
 
 export default function StudioTopupPage() {
@@ -422,12 +437,12 @@ export default function StudioTopupPage() {
 
             <aside className="rounded-3xl border border-purple-500/70 bg-gradient-to-br from-purple-950/70 via-gray-950 to-black p-6 sm:p-8">
               <p className="text-sm text-purple-200">{currentTier.label}</p>
-              <p className="mt-3 text-5xl font-black text-white">{formatMoney(totalPrice)}</p>
+              <p className="mt-3 text-5xl font-black text-white"><LocalizedMoney value={totalPrice} country={country} /></p>
               <p className="mt-2 text-lg text-primary-300">
-                {formatMoney(currentTier.unitPrice)} por música
+                <LocalizedMoney value={currentTier.unitPrice} country={country} /> por música
               </p>
               <p className="mt-4 text-sm text-gray-400">
-                {normalizedMusicQuantity} músicas x {formatMoney(currentTier.unitPrice)}
+                {normalizedMusicQuantity} músicas x <LocalizedMoney value={currentTier.unitPrice} country={country} />
               </p>
 
               <button
@@ -442,7 +457,7 @@ export default function StudioTopupPage() {
 
               <div className="mt-6 rounded-2xl border border-gray-800 bg-black/40 p-4 text-xs text-gray-400">
                 {tiers.map((tier) => (
-                  <p key={tier.label}>{tier.label}: {formatMoney(tier.unitPrice)} por música</p>
+                  <p key={tier.label}>{tier.label}: <LocalizedMoney value={tier.unitPrice} country={country} /> por música</p>
                 ))}
               </div>
             </aside>
