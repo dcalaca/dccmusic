@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
+  productionBrowserSourceMaps: false,
   images: {
     domains: ['i.ytimg.com', 'i.scdn.co', 'is1-ssl.mzstatic.com'],
   },
