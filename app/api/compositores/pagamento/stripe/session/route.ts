@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
     const params = new URLSearchParams()
     params.set('mode', 'payment')
-    params.set('ui_mode', 'embedded')
+    params.set('ui_mode', 'embedded_page')
     params.set('redirect_on_completion', 'never')
     params.set('adaptive_pricing[enabled]', 'true')
     params.set('locale', 'es')

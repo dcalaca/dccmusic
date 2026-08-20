@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const { data: composerData } = await supabaseAdmin.from('dccmusic_composers').select('email').eq('id', composer.composerId).maybeSingle()
     const params = new URLSearchParams()
     params.set('mode', 'payment')
-    params.set('ui_mode', 'embedded')
+    params.set('ui_mode', 'embedded_page')
     params.set('redirect_on_completion', 'never')
     params.set('adaptive_pricing[enabled]', 'true')
     const integrationSuffix = crypto.createHash('sha256').update(topup.id).digest().subarray(0, 8)
