@@ -168,16 +168,6 @@ export default function RootLayout({
         <link rel="icon" href="/favicon-dcc-fundopreto.png" type="image/png" sizes="192x192" />
         <link rel="shortcut icon" href="/favicon-dcc-fundopreto.png" type="image/png" />
         <link rel="apple-touch-icon" href="/favicon-dcc-fundopreto.png" sizes="180x180" />
-        {/* Google Tag Manager */}
-        <Script id="google-tag-manager" strategy="beforeInteractive">
-          {`
-            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-            new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','GTM-5RL7VC34');
-          `}
-        </Script>
         {/* Google AdSense - Deve estar no <head> */}
         <script
           async
@@ -204,34 +194,24 @@ export default function RootLayout({
         </Script>
       </head>
       <body className={inter.className}>
-        {/* Google Tag Manager (noscript) */}
-        <noscript>
-          <iframe
-            src="https://www.googletagmanager.com/ns.html?id=GTM-5RL7VC34"
-            height="0"
-            width="0"
-            style={{ display: 'none', visibility: 'hidden' }}
-          />
-        </noscript>
         <Script
           id="dccmusic-organization-jsonld"
           type="application/ld+json"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-        {/* Google tag (gtag.js) — stub cedo para não perder conversão na página de sucesso */}
+        {/* Google tag (gtag.js) — implementação direta solicitada pelo Google */}
         <Script id="google-gtag-stub" strategy="beforeInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             window.gtag = gtag;
             gtag('js', new Date());
-            gtag('config', 'G-CNBQFWQ9QT');
-            gtag('config', 'AW-16698092699');
+            gtag('config', 'GT-5TGLNPLZ');
           `}
         </Script>
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=G-CNBQFWQ9QT"
+          src="https://www.googletagmanager.com/gtag/js?id=GT-5TGLNPLZ"
           strategy="afterInteractive"
         />
         {/* Meta Pixel */}
