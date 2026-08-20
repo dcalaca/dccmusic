@@ -263,6 +263,10 @@ export default function Header() {
               />
             </Link>
 
+            <div className="shrink-0 md:hidden">
+              <CountrySelector compact />
+            </div>
+
             {/* Navegação à esquerda */}
             <nav className="hidden min-w-0 flex-1 items-center space-x-1 overflow-x-auto whitespace-nowrap pb-1 [scrollbar-color:#374151_transparent] [scrollbar-width:thin] md:flex">
               {navItems.map((item) => {
@@ -431,8 +435,6 @@ export default function Header() {
                 )
               })}
             </div>
-            <CountrySelector compact />
-            
             {mounted && composer ? (
               <div className="flex shrink-0 items-center gap-1">
               {composerHasToken ? (
