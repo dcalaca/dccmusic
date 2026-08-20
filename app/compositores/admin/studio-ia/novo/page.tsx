@@ -28,6 +28,7 @@ const rootStudioStyles = ['Moda de Viola', 'Sertanejo Raiz']
 const studioExtraStyles = ['Trap']
 const fallbackStyles = ['Sertanejo', ...rootStudioStyles, ...studioExtraStyles, 'Pagode', 'Arrocha', 'Pop', 'Livre']
 const customStyleOption = 'Outro / escrever meu estilo'
+const customStyleOptionEs = 'Otro / escribir mi estilo'
 const titleMaxLength = 30
 const ideaMaxLength = 1000
 const moods = ['Romântica', 'Sofrência', 'Chiclete', 'Engraçada', 'Reflexiva', 'Balada', 'Triste', 'Motivacional']
@@ -37,8 +38,37 @@ const voiceGenders = ['Deixar a IA escolher', 'Voz masculina', 'Voz feminina', '
 const voiceTones = ['Deixar a IA escolher', 'Voz grave', 'Voz média', 'Voz aguda', 'Voz rouca', 'Voz suave', 'Voz forte']
 const studioMusicCredits = 10
 const songLanguages = ['Português (Brasil)', 'Español (Paraguay)', 'Español (Colombia)']
-const paraguayStyles = ['Guarania paraguaya', 'Polca paraguaya', 'Cumbia paraguaya', 'Reggaetón', 'Música cristiana']
-const colombiaStyles = ['Música popular colombiana', 'Vallenato', 'Cumbia colombiana', 'Reggaetón colombiano', 'Salsa colombiana', 'Música cristiana']
+const commonSpanishStyles = [
+  'Pop latino',
+  'Balada romántica',
+  'Rock en español',
+  'Rap / Hip-hop',
+  'Trap latino',
+  'Música cristiana',
+]
+const paraguayStyles = [
+  'Guarania paraguaya',
+  'Polca paraguaya',
+  'Cumbia paraguaya',
+  'Cachaca paraguaya',
+  'Reggaetón',
+  ...commonSpanishStyles,
+]
+const colombiaStyles = [
+  'Música popular colombiana',
+  'Vallenato',
+  'Cumbia colombiana',
+  'Salsa colombiana',
+  'Champeta',
+  'Reggaetón colombiano',
+  'Música llanera / Joropo',
+  'Carranga',
+  'Bambuco',
+  'Porro colombiano',
+  ...commonSpanishStyles,
+]
+const paraguayStyleOptions = [...paraguayStyles, customStyleOptionEs]
+const colombiaStyleOptions = [...colombiaStyles, customStyleOptionEs]
 const themeSuggestions = [
   { id: 'amor', label: 'Amor', text: 'Uma história de amor verdadeira, com carinho, desejo e a vontade de ficar juntos.' },
   { id: 'termino', label: 'Término', text: 'O fim de um relacionamento, a dor da despedida e a dificuldade de seguir em frente.' },
@@ -134,17 +164,20 @@ export default function NewStudioMusicPage() {
     extraInstructions: '',
     songLanguage: country === 'PY' ? 'Español (Paraguay)' : country === 'CO' ? 'Español (Colombia)' : 'Português (Brasil)',
   })
+  const isCustomStyle = form.style === customStyleOption || form.style === customStyleOptionEs
 
   useEffect(() => {
     if (country === 'BR') return
-    const countryStyles = country === 'CO' ? colombiaStyles : paraguayStyles
+    const countryStyles = country === 'CO' ? colombiaStyleOptions : paraguayStyleOptions
     const defaultStyle = country === 'CO' ? 'Música popular colombiana' : 'Guarania paraguaya'
     const defaultLanguage = country === 'CO' ? 'Español (Colombia)' : 'Español (Paraguay)'
-    setStyles((current) => Array.from(new Set([...countryStyles, ...current])))
+    setStyles(countryStyles)
     setForm((current) => ({
       ...current,
-      songLanguage: current.songLanguage === 'Português (Brasil)' ? defaultLanguage : current.songLanguage || defaultLanguage,
-      style: current.style === 'Sertanejo' ? defaultStyle : current.style,
+      songLanguage: current.songLanguage !== defaultLanguage ? defaultLanguage : current.songLanguage,
+      style: !countryStyles.includes(current.style)
+        ? defaultStyle
+        : current.style,
       structure: current.structure === 'Padrão' ? 'Estándar' : current.structure,
     }))
   }, [country])
@@ -195,10 +228,16 @@ export default function NewStudioMusicPage() {
           .map((genre: any) => String(genre.name || '').trim())
           .filter(Boolean)
 
-        if (genreNames.length > 0) {
-          const localizedCountryStyles = country === 'CO' ? colombiaStyles : country === 'PY' ? paraguayStyles : []
+        if (country === 'CO' || country === 'PY') {
+          const styleOptions = country === 'CO' ? colombiaStyleOptions : paraguayStyleOptions
+          setStyles(styleOptions)
+          setForm((currentForm) => (
+            styleOptions.includes(currentForm.style)
+              ? currentForm
+              : { ...currentForm, style: styleOptions[0] }
+          ))
+        } else if (genreNames.length > 0) {
           const styleOptions = [
-            ...localizedCountryStyles,
             ...genreNames.filter((name: string) => name !== customStyleOption),
             ...rootStudioStyles.filter((name) => !genreNames.some((genre: string) => genre.toLowerCase() === name.toLowerCase())),
             ...studioExtraStyles.filter((name) => !genreNames.some((genre: string) => genre.toLowerCase() === name.toLowerCase())),
@@ -278,7 +317,7 @@ export default function NewStudioMusicPage() {
       showError('Informe o nome da música.')
       return
     }
-    if (form.style === customStyleOption && form.customStyle.trim().length < 3) {
+    if (isCustomStyle && form.customStyle.trim().length < 3) {
       showError('Escreva o estilo musical que você quer.')
       return
     }
@@ -293,7 +332,7 @@ export default function NewStudioMusicPage() {
 
     setLoading(true)
     try {
-      const effectiveStyle = form.style === customStyleOption ? form.customStyle.trim() : form.style
+      const effectiveStyle = isCustomStyle ? form.customStyle.trim() : form.style
       const token = localStorage.getItem('composer_token')
       if (!token) {
         router.push('/compositores/login?redirect=/compositores/admin/studio-ia/novo')
@@ -555,7 +594,7 @@ export default function NewStudioMusicPage() {
                         options={styles}
                         onChange={(value) => setForm({ ...form, style: value })}
                       />
-                      {form.style === customStyleOption ? (
+                      {isCustomStyle ? (
                         <div>
                           <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">Digite o estilo</label>
                           <input
@@ -568,7 +607,7 @@ export default function NewStudioMusicPage() {
                       ) : (
                         <Select label="Clima da música" value={form.mood} options={moods} onChange={(value) => setForm({ ...form, mood: value })} />
                       )}
-                      {form.style === customStyleOption && (
+                      {isCustomStyle && (
                         <Select label="Clima da música" value={form.mood} options={moods} onChange={(value) => setForm({ ...form, mood: value })} />
                       )}
                       <Select label="Tamanho da letra" value={form.lineCount} options={lineCounts} onChange={(value) => setForm({ ...form, lineCount: value })} />
