@@ -140,6 +140,26 @@ export default function RootLayout({
   return (
     <html lang={locale} data-country={country} className="dark">
       <head>
+        {process.env.NODE_ENV === 'production' ? (
+          <Script id="dcc-production-console" strategy="beforeInteractive">
+            {`
+              (function () {
+                var methods = ['log', 'info', 'debug', 'warn', 'error'];
+                for (var index = 0; index < methods.length; index += 1) {
+                  try {
+                    Object.defineProperty(window.console, methods[index], {
+                      configurable: true,
+                      writable: true,
+                      value: function () {}
+                    });
+                  } catch (_) {
+                    window.console[methods[index]] = function () {};
+                  }
+                }
+              })();
+            `}
+          </Script>
+        ) : null}
         {/* Verificação de propriedade (sistema Carimbo) */}
         <meta name="carimbo-verificacao" content="dc3620ace28fd5285c2a3fa2" />
         <link rel="manifest" href="/manifest.json" />
