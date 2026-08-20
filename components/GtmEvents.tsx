@@ -40,10 +40,7 @@ function getPartnerContext() {
 export function pushGtmEvent(event: string, payload: GtmEventPayload = {}) {
   if (typeof window === 'undefined') return
 
-  const dataLayer = ((window as any).dataLayer = (window as any).dataLayer || [])
-
-  dataLayer.push({
-    event,
+  const eventPayload = {
     event_source: 'dccmusic',
     page_path: window.location.pathname,
     page_url: window.location.href,
@@ -52,7 +49,17 @@ export function pushGtmEvent(event: string, payload: GtmEventPayload = {}) {
     ...getComposerContext(),
     ...getPartnerContext(),
     ...payload,
-  })
+  }
+
+  const w = window as any
+  w.dataLayer = w.dataLayer || []
+  if (typeof w.gtag !== 'function') {
+    w.gtag = function gtag() {
+      w.dataLayer.push(arguments)
+    }
+  }
+
+  w.gtag('event', event, eventPayload)
 }
 
 export default function GtmPageEvents() {
