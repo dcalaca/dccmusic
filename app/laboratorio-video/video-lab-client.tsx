@@ -3,17 +3,18 @@
 import Link from 'next/link'
 import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
 import { FiArrowLeft, FiCheck, FiFilm, FiLoader, FiMusic, FiPlay, FiUpload, FiZap } from 'react-icons/fi'
-import { VEO_LAB_PREVIEW_SECONDS } from '@/lib/veo-lab'
+import { VEO_LAB_PREVIEW_SECONDS, VEO_LAB_SCENE_COUNT, VEO_LAB_SCENE_SECONDS, type VeoLabStoryboard } from '@/lib/veo-lab'
 
 type Project = {
   id: string
   title: string
   version?: { audioUrl?: string | null; streamAudioUrl?: string | null; duration?: number | null } | null
   cover?: { imageUrl?: string | null } | null
+  lyric?: string | null
 }
 type Scene = { operationName?: string; videoUrl?: string; status: 'idle' | 'generating' | 'ready' | 'error'; error?: string }
 
-const emptyScenes = (): Scene[] => Array.from({ length: 4 }, () => ({ status: 'idle' }))
+const emptyScenes = (): Scene[] => Array.from({ length: VEO_LAB_SCENE_COUNT }, () => ({ status: 'idle' }))
 
 function secondsLabel(value: number) {
   const minutes = Math.floor(value / 60)
@@ -24,6 +25,7 @@ export default function VideoLabClient() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const finalVideoRef = useRef<HTMLVideoElement>(null)
   const localObjectUrl = useRef<string | null>(null)
+  const uploadedFile = useRef<File | null>(null)
   const [token, setToken] = useState('')
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProjectId, setSelectedProjectId] = useState('')
@@ -32,6 +34,9 @@ export default function VideoLabClient() {
   const [duration, setDuration] = useState(30)
   const [startAt, setStartAt] = useState(0)
   const [prompt, setPrompt] = useState('Um casal se reencontrando à noite sob a chuva, luzes da cidade refletidas no asfalto, cinematográfico, emocional')
+  const [lyrics, setLyrics] = useState('')
+  const [storyboard, setStoryboard] = useState<VeoLabStoryboard | null>(null)
+  const [scripting, setScripting] = useState(false)
   const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9'>('9:16')
   const [scenes, setScenes] = useState<Scene[]>(emptyScenes)
   const [error, setError] = useState('')
@@ -71,12 +76,24 @@ export default function VideoLabClient() {
     void finalVideoRef.current.play()
   }, [previewScene, previewing])
 
+  useEffect(() => {
+    if (!previewing) return
+    const timer = window.setTimeout(() => {
+      if (previewScene >= VEO_LAB_SCENE_COUNT - 1) stopPreview()
+      else setPreviewScene((current) => current + 1)
+    }, VEO_LAB_SCENE_SECONDS * 1000)
+    return () => window.clearTimeout(timer)
+  }, [previewScene, previewing])
+
   function selectProject(id: string) {
     setSelectedProjectId(id)
     const project = projects.find((item) => item.id === id)
     const url = project?.version?.audioUrl || project?.version?.streamAudioUrl || ''
     setAudioUrl(url)
     setAudioName(project?.title || '')
+    uploadedFile.current = null
+    setLyrics(project?.lyric || '')
+    setStoryboard(null)
     setStartAt(0)
   }
 
@@ -89,11 +106,46 @@ export default function VideoLabClient() {
     }
     if (localObjectUrl.current) URL.revokeObjectURL(localObjectUrl.current)
     localObjectUrl.current = URL.createObjectURL(file)
+    uploadedFile.current = file
     setSelectedProjectId('')
     setAudioUrl(localObjectUrl.current)
     setAudioName(file.name)
+    setLyrics('')
+    setStoryboard(null)
     setStartAt(0)
     setError('')
+  }
+
+  async function createStoryboard() {
+    if (!audioUrl) return setError('Escolha uma música da DCC ou envie um MP3.')
+    if (!authHeaders) return setError('Entre na sua conta de compositor para usar o laboratório.')
+    setError('')
+    setScripting(true)
+    try {
+      let sourceLyrics = lyrics.trim()
+      if (!sourceLyrics && uploadedFile.current) {
+        const form = new FormData()
+        form.append('audio', uploadedFile.current)
+        const transcriptionResponse = await fetch('/api/compositores/studio/transcribe', { method: 'POST', headers: authHeaders, body: form })
+        const transcription = await transcriptionResponse.json()
+        if (!transcriptionResponse.ok) throw new Error(transcription.error || 'Não foi possível transcrever a música.')
+        sourceLyrics = String(transcription.text || '').trim()
+        setLyrics(sourceLyrics)
+      }
+      if (!sourceLyrics) throw new Error('Esta música ainda não tem letra. Envie um MP3 para transcrever ou escolha um projeto com letra.')
+      const response = await fetch('/api/laboratorio-video/storyboard', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ lyrics: sourceLyrics, visualDirection: prompt }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Não foi possível criar o roteiro.')
+      setStoryboard(data.storyboard)
+      setScenes(emptyScenes())
+    } catch (err: any) {
+      setError(err.message || 'Não foi possível criar o roteiro.')
+    } finally {
+      setScripting(false)
+    }
   }
 
   async function generate() {
@@ -101,12 +153,13 @@ export default function VideoLabClient() {
     if (!authHeaders) return setError('Entre na sua conta de compositor para usar o laboratório.')
     setError('')
     setGenerating(true)
-    setScenes(Array.from({ length: 4 }, () => ({ status: 'generating' })))
+    if (!storyboard) return setError('Primeiro use a IA para entender a letra e criar o roteiro.')
+    setScenes(Array.from({ length: VEO_LAB_SCENE_COUNT }, () => ({ status: 'generating' })))
     try {
       const response = await fetch('/api/laboratorio-video/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
-        body: JSON.stringify({ prompt, aspectRatio }),
+        body: JSON.stringify({ storyboard, aspectRatio }),
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Não foi possível iniciar o vídeo.')
@@ -163,11 +216,6 @@ export default function VideoLabClient() {
     setPreviewing(false)
   }
 
-  function nextPreviewScene() {
-    if (previewScene >= 3) return stopPreview()
-    setPreviewScene((current) => current + 1)
-  }
-
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(126,34,206,0.22),transparent_32%),#050507] px-4 py-7 text-white sm:px-6">
       <div className="mx-auto max-w-6xl">
@@ -181,7 +229,7 @@ export default function VideoLabClient() {
           </div>
           <h1 className="text-3xl font-black sm:text-5xl">Laboratório de Vídeo <span className="text-purple-400">— Veo</span></h1>
           <p className="mt-3 max-w-3xl text-sm leading-relaxed text-gray-300 sm:text-base">
-            Transforme 30 segundos da sua música em quatro cenas cinematográficas para Reels, TikTok ou YouTube.
+            A IA entende a letra, cria uma história e transforma 30 segundos da música em cinco cenas cinematográficas conectadas.
           </p>
         </section>
 
@@ -219,14 +267,30 @@ export default function VideoLabClient() {
             <h2 className="mb-3 mt-6 flex items-center gap-2 text-xl font-black"><FiFilm className="text-purple-400" /> 2. Direção visual</h2>
             <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={5} maxLength={1800} className="w-full resize-none rounded-2xl border border-white/10 bg-black/70 p-4 text-sm leading-relaxed text-white outline-none placeholder:text-gray-600 focus:border-purple-400" />
 
+            <button disabled={scripting || generating || !token || !audioUrl} onClick={createStoryboard} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-fuchsia-400/40 bg-fuchsia-950/30 px-5 py-4 font-black text-fuchsia-100 transition hover:bg-fuchsia-950/50 disabled:cursor-not-allowed disabled:opacity-50">
+              {scripting ? <><FiLoader className="animate-spin" /> Entendendo a letra e escrevendo...</> : <><FiFilm /> Entender letra e criar roteiro</>}
+            </button>
+            {uploadedFile.current && !lyrics && <p className="mt-2 text-center text-[11px] text-amber-200/70">Ao criar o roteiro, o MP3 será transcrito usando 1 crédito do Studio.</p>}
+
+            {storyboard && <div className="mt-5 rounded-2xl border border-purple-400/25 bg-purple-950/15 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-purple-300">Roteiro criado</p>
+              <h3 className="mt-2 text-lg font-black">{storyboard.title}</h3>
+              <p className="mt-1 text-sm leading-relaxed text-gray-300">{storyboard.logline}</p>
+              <div className="mt-4 space-y-2">{storyboard.scenes.map((scene, index) => <div key={index} className="rounded-xl border border-white/10 bg-black/45 p-3">
+                <p className="text-xs font-black text-purple-200">{index + 1}. {scene.title} <span className="font-normal text-gray-500">· 6 s</span></p>
+                <p className="mt-1 text-xs leading-relaxed text-gray-400">{scene.story}</p>
+              </div>)}</div>
+              <p className="mt-3 text-[11px] leading-relaxed text-gray-500">Identidade fixa: {storyboard.characterBible}</p>
+            </div>}
+
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {(['9:16', '16:9'] as const).map((ratio) => <button key={ratio} onClick={() => setAspectRatio(ratio)} className={`rounded-xl border px-4 py-3 text-left text-sm font-bold ${aspectRatio === ratio ? 'border-purple-400 bg-purple-500/20 text-white' : 'border-white/10 bg-black/50 text-gray-400'}`}>
                 {ratio === '9:16' ? 'Reels / TikTok' : 'YouTube'} <span className="ml-1 text-xs opacity-60">{ratio}</span>
               </button>)}
             </div>
-            <div className="mt-3 rounded-xl bg-white/[0.04] px-4 py-3 text-xs text-gray-400">Qualidade do teste: <strong className="text-gray-200">720p</strong> · 4 cenas de 8 segundos</div>
-            <button disabled={generating || !token} onClick={generate} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-fuchsia-600 px-5 py-4 font-black shadow-lg shadow-purple-950/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">
-              {generating ? <><FiLoader className="animate-spin" /> Gerando quatro cenas...</> : <><FiZap /> Gerar preview de 30 segundos</>}
+            <div className="mt-3 rounded-xl bg-white/[0.04] px-4 py-3 text-xs text-gray-400">Qualidade do teste: <strong className="text-gray-200">720p</strong> · 5 gerações de 8 s · preview usa 6 s de cada</div>
+            <button disabled={generating || !token || !storyboard} onClick={generate} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-fuchsia-600 px-5 py-4 font-black shadow-lg shadow-purple-950/40 transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50">
+              {generating ? <><FiLoader className="animate-spin" /> Gerando cinco cenas...</> : <><FiZap /> Gerar as 5 cenas do preview</>}
             </button>
           </section>
 
@@ -244,7 +308,7 @@ export default function VideoLabClient() {
 
             <div className="mt-5 rounded-2xl border border-purple-400/20 bg-black/70 p-4">
               <div className={`mx-auto overflow-hidden rounded-xl bg-black ${aspectRatio === '9:16' ? 'aspect-[9/16] max-h-[440px]' : 'aspect-video'}`}>
-                {allReady ? <video key={previewScene} ref={finalVideoRef} src={scenes[previewScene].videoUrl} muted playsInline onEnded={nextPreviewScene} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center px-5 text-center text-sm text-gray-600">O preview sincronizado aparecerá aqui quando as quatro cenas estiverem prontas.</div>}
+                {allReady ? <video key={previewScene} ref={finalVideoRef} src={scenes[previewScene].videoUrl} muted playsInline className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center px-5 text-center text-sm text-gray-600">O preview sincronizado aparecerá aqui quando as cinco cenas estiverem prontas.</div>}
               </div>
               <button disabled={!allReady} onClick={previewing ? stopPreview : startPreview} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-purple-400/40 bg-purple-950/30 px-4 py-3 text-sm font-black text-purple-100 disabled:opacity-40">
                 <FiPlay /> {previewing ? 'Parar preview' : 'Assistir com a música'}

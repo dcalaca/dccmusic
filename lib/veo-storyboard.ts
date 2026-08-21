@@ -1,0 +1,62 @@
+import { getGoogleCloudAccessToken, getVertexPublisherModelUrl } from '@/lib/veo-vertex'
+import { isVeoLabStoryboard, VEO_LAB_SCENE_COUNT, type VeoLabStoryboard } from '@/lib/veo-lab'
+
+function extractJson(text: string) {
+  const clean = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
+  return JSON.parse(clean)
+}
+
+export async function createVeoLabStoryboard(lyrics: string, visualDirection: string): Promise<VeoLabStoryboard> {
+  const accessToken = await getGoogleCloudAccessToken()
+  const model = process.env.VEO_STORY_MODEL || 'gemini-2.5-flash'
+  const response = await fetch(`${getVertexPublisherModelUrl(model)}:generateContent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: [
+        'You are a Brazilian music-video creative director. Read the song lyrics and design one coherent 30-second release teaser split into exactly five chronological scenes of six seconds.',
+        'The five scenes MUST show different actions, compositions and story beats. Together they form a beginning, development, turn, climax and resolution.',
+        'Create a precise locked character bible: apparent age, face, hair, skin tone, body, wardrobe and accessories. Never use celebrity names. Keep the exact same people and wardrobe throughout.',
+        'Write title, logline and scene story summaries in Brazilian Portuguese. Write characterBible, visualStyle and videoPrompt in detailed English optimized for Veo.',
+        'Do not quote or display lyrics inside the video. No typography, subtitles, logos, singing or dialogue.',
+        `User visual direction: ${visualDirection}`,
+        `LYRICS:\n${lyrics.slice(0, 12000)}`,
+        'Return only valid JSON with this shape: {"title":"...","logline":"...","characterBible":"...","visualStyle":"...","scenes":[{"title":"...","story":"...","videoPrompt":"..."}]}. Exactly five scenes.',
+      ].join('\n\n') }] }],
+      generationConfig: { temperature: 0.75, responseMimeType: 'application/json', maxOutputTokens: 4096 },
+    }),
+    cache: 'no-store',
+  })
+  const result = await response.json().catch(() => null)
+  if (!response.ok) throw new Error(result?.error?.message || 'Não foi possível interpretar a letra.')
+  const text = result?.candidates?.[0]?.content?.parts?.map((part: any) => part?.text || '').join('') || ''
+  let storyboard: unknown
+  try { storyboard = extractJson(text) } catch { throw new Error('A IA não devolveu um roteiro válido. Tente novamente.') }
+  if (!isVeoLabStoryboard(storyboard)) throw new Error(`O roteiro precisa ter exatamente ${VEO_LAB_SCENE_COUNT} cenas completas.`)
+  return storyboard
+}
+
+export async function createVeoCharacterReference(storyboard: VeoLabStoryboard) {
+  const accessToken = await getGoogleCloudAccessToken()
+  const model = process.env.VEO_CHARACTER_IMAGE_MODEL || 'imagen-4.0-generate-001'
+  const response = await fetch(`${getVertexPublisherModelUrl(model)}:predict`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({
+      instances: [{ prompt: [
+        'Create a clean cinematic casting reference photograph for a music video.',
+        `Characters: ${storyboard.characterBible}`,
+        `Visual language: ${storyboard.visualStyle}`,
+        'Show every recurring character together, full body, facing camera, neutral simple studio background, wardrobe and accessories clearly visible, realistic anatomy, adult characters only.',
+        'No text, no labels, no collage borders, no logos, no watermark.',
+      ].join(' ') }],
+      parameters: { sampleCount: 1, aspectRatio: '16:9', personGeneration: 'allow_adult' },
+    }),
+    cache: 'no-store',
+  })
+  const result = await response.json().catch(() => null)
+  if (!response.ok) throw new Error(result?.error?.message || 'Não foi possível criar a referência dos personagens.')
+  const bytesBase64Encoded = result?.predictions?.[0]?.bytesBase64Encoded
+  if (!bytesBase64Encoded) throw new Error('O Google não devolveu a referência dos personagens.')
+  return { bytesBase64Encoded: String(bytesBase64Encoded), mimeType: String(result?.predictions?.[0]?.mimeType || 'image/png') }
+}

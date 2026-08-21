@@ -1,25 +1,42 @@
-export const VEO_LAB_SCENE_COUNT = 4
-export const VEO_LAB_SCENE_SECONDS = 8
+export const VEO_LAB_SCENE_COUNT = 5
+export const VEO_LAB_SCENE_SECONDS = 6
+export const VEO_LAB_GENERATION_SECONDS = 8
 export const VEO_LAB_PREVIEW_SECONDS = 30
 
 export type VeoLabAspectRatio = '9:16' | '16:9'
 
-const sceneDirections = [
-  'Opening shot: establish the place and emotional atmosphere with a strong cinematic hook.',
-  'Second shot: move closer to the main subject and continue the same visual story.',
-  'Third shot: raise the emotion and movement while preserving character, wardrobe, lighting, and location continuity.',
-  'Final shot: deliver a memorable visual climax and a clean ending suitable for a music-release teaser.',
-]
+export type VeoLabStoryboardScene = {
+  title: string
+  story: string
+  videoPrompt: string
+}
 
-export function buildVeoLabScenePrompts(prompt: string) {
-  const cleanPrompt = prompt.replace(/\s+/g, ' ').trim()
+export type VeoLabStoryboard = {
+  title: string
+  logline: string
+  characterBible: string
+  visualStyle: string
+  scenes: VeoLabStoryboardScene[]
+}
 
-  return sceneDirections.map((direction, index) => [
-    cleanPrompt,
-    direction,
-    `Scene ${index + 1} of ${VEO_LAB_SCENE_COUNT}.`,
-    'Cinematic music video, coherent visual identity, no captions, no subtitles, no logos, no watermark.',
-    'The final soundtrack will be replaced by the user selected song, so prioritize visual storytelling.',
+export function isVeoLabStoryboard(value: unknown): value is VeoLabStoryboard {
+  const item = value as VeoLabStoryboard
+  return Boolean(
+    item && typeof item.title === 'string' && typeof item.logline === 'string'
+    && typeof item.characterBible === 'string' && typeof item.visualStyle === 'string'
+    && Array.isArray(item.scenes) && item.scenes.length === VEO_LAB_SCENE_COUNT
+    && item.scenes.every((scene) => scene && typeof scene.title === 'string' && typeof scene.story === 'string' && typeof scene.videoPrompt === 'string'),
+  )
+}
+
+export function buildVeoLabScenePrompts(storyboard: VeoLabStoryboard) {
+  return storyboard.scenes.map((scene, index) => [
+    `SCENE ${index + 1} OF ${VEO_LAB_SCENE_COUNT}: ${scene.videoPrompt}`,
+    `LOCKED CHARACTERS — reproduce exactly in every scene: ${storyboard.characterBible}`,
+    `LOCKED VISUAL LANGUAGE: ${storyboard.visualStyle}`,
+    `Narrative purpose: ${scene.story}`,
+    'This scene must have a clearly different location, action, framing, and camera movement from all other scenes while advancing the same continuous story.',
+    'Cinematic music video, adult characters, no dialogue, no captions, no subtitles, no logos, no watermark.',
   ].join(' '))
 }
 

@@ -1,31 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
-import { buildVeoLabScenePrompts, isVeoLabAspectRatio } from '@/lib/veo-lab'
+import { buildVeoLabScenePrompts, isVeoLabAspectRatio, isVeoLabStoryboard, VEO_LAB_GENERATION_SECONDS } from '@/lib/veo-lab'
 import { getGoogleCloudAccessToken, getVeoVertexConfig, getVeoVertexModelUrl } from '@/lib/veo-vertex'
+import { createVeoCharacterReference } from '@/lib/veo-storyboard'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
+export const maxDuration = 300
 
 export async function POST(request: NextRequest) {
   if (!getComposerFromRequest(request)) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   const body = await request.json().catch(() => null)
-  const prompt = typeof body?.prompt === 'string' ? body.prompt.trim().slice(0, 1800) : ''
+  const storyboard = body?.storyboard
   const aspectRatio = body?.aspectRatio
-  if (prompt.length < 12) return NextResponse.json({ error: 'Descreva a ideia visual com um pouco mais de detalhe.' }, { status: 400 })
+  if (!isVeoLabStoryboard(storyboard)) return NextResponse.json({ error: 'Crie e aprove o roteiro de cinco cenas antes de gerar.' }, { status: 400 })
   if (!isVeoLabAspectRatio(aspectRatio)) return NextResponse.json({ error: 'Formato de vídeo inválido.' }, { status: 400 })
 
-  const scenePrompts = buildVeoLabScenePrompts(prompt)
+  const scenePrompts = buildVeoLabScenePrompts(storyboard)
   try {
     const accessToken = await getGoogleCloudAccessToken()
     const { model } = getVeoVertexConfig()
     const modelUrl = getVeoVertexModelUrl()
+    const characterReference = await createVeoCharacterReference(storyboard)
     const operations = await Promise.all(scenePrompts.map(async (scenePrompt, index) => {
       const response = await fetch(`${modelUrl}:predictLongRunning`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
-          instances: [{ prompt: scenePrompt }],
-          parameters: { aspectRatio, resolution: '720p', durationSeconds: 8, sampleCount: 1 },
+          instances: [{
+            prompt: scenePrompt,
+            referenceImages: [{ image: characterReference, referenceType: 'asset' }],
+          }],
+          parameters: { aspectRatio, resolution: '720p', durationSeconds: VEO_LAB_GENERATION_SECONDS, sampleCount: 1, seed: 741963 },
         }),
         cache: 'no-store',
       })

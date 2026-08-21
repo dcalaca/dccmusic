@@ -73,6 +73,11 @@ export function getVeoVertexModelUrl() {
   return `https://${location}-aiplatform.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/locations/${encodeURIComponent(location)}/publishers/google/models/${encodeURIComponent(model)}`
 }
 
+export function getVertexPublisherModelUrl(model: string) {
+  const { projectId, location } = getVeoVertexConfig()
+  return `https://${location}-aiplatform.googleapis.com/v1/projects/${encodeURIComponent(projectId)}/locations/${encodeURIComponent(location)}/publishers/google/models/${encodeURIComponent(model)}`
+}
+
 export async function downloadVertexGcsVideo(gcsUri: string, accessToken: string) {
   const match = gcsUri.match(/^gs:\/\/([^/]+)\/(.+)$/)
   if (!match) throw new Error('O Google retornou um endereço de vídeo inválido.')

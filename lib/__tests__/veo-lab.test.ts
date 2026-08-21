@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { buildVeoLabScenePrompts, extractVeoVideoUri, isVeoLabAspectRatio } from '@/lib/veo-lab'
 
 describe('Veo video lab helpers', () => {
-  it('builds four distinct, coherent scene prompts', () => {
-    const prompts = buildVeoLabScenePrompts('  casal   na chuva  ')
-    expect(prompts).toHaveLength(4)
-    expect(prompts[0]).toContain('casal na chuva')
-    expect(new Set(prompts).size).toBe(4)
+  it('builds five distinct prompts with a locked cast', () => {
+    const prompts = buildVeoLabScenePrompts({
+      title: 'Reencontro', logline: 'Duas pessoas voltam a se encontrar.',
+      characterBible: 'Same adult couple, blue coat and black jacket.',
+      visualStyle: 'Cinematic rainy neon night.',
+      scenes: Array.from({ length: 5 }, (_, index) => ({ title: `Cena ${index + 1}`, story: `Beat ${index + 1}`, videoPrompt: `Different action ${index + 1}` })),
+    })
+    expect(prompts).toHaveLength(5)
+    expect(prompts[0]).toContain('Same adult couple')
+    expect(new Set(prompts).size).toBe(5)
   })
 
   it('accepts only supported aspect ratios', () => {
