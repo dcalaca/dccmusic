@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
+import { buildLyriaTimedLyrics } from '@/lib/lyria-timing'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -29,18 +30,23 @@ async function getServiceAccountAccessToken() {
 
 export async function POST(req: NextRequest) {
   try {
-    const { prompt, lyrics, bpm = 'auto', duration = 'auto', naturalProsody = true } = await req.json()
+    const { prompt, lyrics, bpm = '100', duration = '150', naturalProsody = true } = await req.json()
     if (!prompt || typeof prompt !== 'string') return NextResponse.json({ error: 'Informe uma descrição para a música.' }, { status: 400 })
+    const bpmValue = Number(bpm)
+    const durationValue = Number(duration)
+    if (![90, 100, 110, 120].includes(bpmValue)) return NextResponse.json({ error: 'Escolha um BPM válido.' }, { status: 400 })
+    if (![120, 150, 180].includes(durationValue)) return NextResponse.json({ error: 'Escolha uma duração válida.' }, { status: 400 })
     const accessToken = await getServiceAccountAccessToken()
 
     const controls = [
-      bpm !== 'auto' ? `Target tempo: ${bpm} BPM.` : '',
-      duration !== 'auto' ? `Target total duration: approximately ${duration} seconds.` : '',
-      naturalProsody && lyrics?.trim() ? `VOCAL PROSODY PRIORITY: Adapt the vocal melody and phrasing dynamically to the natural prosody, stresses, pauses, and syllable count of every lyric line. Never rush, cram, compress, speed-read, or unnaturally accelerate words to preserve a fixed melody. For longer lyric lines, extend the melodic phrase, use additional measures, vary note durations, add natural pickups or rests, or change the melodic contour. Shorter and longer lines do not need identical melodic shapes or identical bar counts. Preserve a coherent song and groove, but let the vocal melody follow the lyric. Prioritize clear, natural Brazilian Portuguese pronunciation, breathing room, intelligibility, and expressive singing over rigid melodic repetition.`,
+      `MANDATORY FIXED TEMPO: ${bpmValue} BPM. Never choose or drift to an automatic tempo.`,
+      `Target total duration: approximately ${durationValue} seconds.`,
+      naturalProsody && lyrics?.trim() ? `VOCAL PROSODY PRIORITY: Adapt the vocal melody and phrasing dynamically to the natural prosody, stresses, pauses, and syllable count of every lyric line. Never rush, cram, compress, speed-read, or unnaturally accelerate words to preserve a fixed melody. For longer lyric lines, extend the melodic phrase, use additional measures, vary note durations, add natural pickups or rests, or change the melodic contour. Shorter and longer lines do not need identical melodic shapes or identical bar counts. Preserve a coherent song and groove, but let the vocal melody follow the lyric. Prioritize clear, natural Brazilian Portuguese pronunciation, breathing room, intelligibility, and expressive singing over rigid melodic repetition.` : '',
     ].filter(Boolean).join('\n')
 
+    const timedLyrics = lyrics?.trim() ? buildLyriaTimedLyrics(lyrics.trim(), bpmValue, durationValue) : ''
     const text = lyrics?.trim()
-      ? `${prompt.trim()}\n\n${controls}\n\nUse the following user-provided lyrics exactly as the song lyrics. Do not rewrite, omit, duplicate, or reorder lines. Preserve section boundaries and Portuguese language:\n${lyrics.trim()}`
+      ? `${prompt.trim()}\n\n${controls}\n\nTIMED LYRICS PLAN: Sing every lyric line only inside its assigned time interval. Longer phrases intentionally receive more time. Respect instrumental gaps, breathing room, section boundaries and the exact fixed BPM. Use the user-provided words exactly: do not rewrite, omit, duplicate, reorder or add lyrics. Preserve Portuguese pronunciation.\n\n${timedLyrics}`
       : `${prompt.trim()}\n\n${controls}`
 
     const response = await fetch(`https://aiplatform.googleapis.com/v1beta1/projects/${PROJECT_ID}/locations/global/interactions`, {
@@ -54,7 +60,7 @@ export async function POST(req: NextRequest) {
     const audio = outputs.find((o: any) => o?.type === 'audio' && o?.data)
     const texts = outputs.filter((o: any) => o?.type === 'text' && o?.text).map((o: any) => o.text)
     if (!audio?.data) return NextResponse.json({ error: 'O Lyria respondeu, mas não encontrei áudio na resposta.', details: JSON.stringify(data, null, 2).slice(0, 8000) }, { status: 502 })
-    return NextResponse.json({ audio: `data:${audio.mime_type || 'audio/mpeg'};base64,${audio.data}`, lyrics: texts[0] || '', description: texts[1] || '', model: data?.model || MODEL })
+    return NextResponse.json({ audio: `data:${audio.mime_type || 'audio/mpeg'};base64,${audio.data}`, lyrics: texts[0] || '', description: texts[1] || '', timingPlan: timedLyrics, model: data?.model || MODEL })
   } catch (err) {
     return NextResponse.json({ error: 'Erro interno no laboratório do Lyria.', details: err instanceof Error ? err.message : String(err) }, { status: 500 })
   }

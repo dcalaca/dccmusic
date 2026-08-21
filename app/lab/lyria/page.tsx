@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react'
 
-type Result = { audio?: string; lyrics?: string; description?: string; error?: string; details?: string }
+type Result = { audio?: string; lyrics?: string; description?: string; timingPlan?: string; error?: string; details?: string }
 
 export default function LyriaLabPage() {
   const [prompt, setPrompt] = useState('Brazilian sertanejo universitário, romantic love song, male vocal, acoustic guitar, modern polished production, catchy chorus')
@@ -51,13 +51,13 @@ export default function LyriaLabPage() {
             <label className="block">
               <span className="mb-2 block text-sm font-medium">BPM</span>
               <select value={bpm} onChange={(e) => setBpm(e.target.value)} className="w-full rounded-xl border border-zinc-700 bg-black p-3 text-sm">
-                <option value="auto">Auto</option><option value="90">90</option><option value="100">100</option><option value="110">110</option><option value="120">120</option>
+                <option value="90">90</option><option value="100">100</option><option value="110">110</option><option value="120">120</option>
               </select>
             </label>
             <label className="block">
               <span className="mb-2 block text-sm font-medium">Duração</span>
               <select value={duration} onChange={(e) => setDuration(e.target.value)} className="w-full rounded-xl border border-zinc-700 bg-black p-3 text-sm">
-                <option value="auto">Auto</option><option value="120">120s</option><option value="150">150s</option><option value="180">180s</option>
+                <option value="120">120s</option><option value="150">150s</option><option value="180">180s</option>
               </select>
             </label>
           </div>
@@ -76,7 +76,7 @@ export default function LyriaLabPage() {
           </button>
         </form>
 
-        {result?.audio && <section className="mt-6 rounded-2xl border border-emerald-900/60 bg-zinc-950 p-5 sm:p-7"><div className="mb-4 text-sm font-semibold text-emerald-400">Geração concluída</div><audio controls className="w-full" src={result.audio} />{result.description && <p className="mt-4 text-sm text-zinc-400">{result.description}</p>}{result.lyrics && <pre className="mt-4 whitespace-pre-wrap rounded-xl bg-black p-4 text-xs text-zinc-300">{result.lyrics}</pre>}</section>}
+        {result?.audio && <section className="mt-6 rounded-2xl border border-emerald-900/60 bg-zinc-950 p-5 sm:p-7"><div className="mb-4 text-sm font-semibold text-emerald-400">Geração concluída</div><audio controls className="w-full" src={result.audio} />{result.description && <p className="mt-4 text-sm text-zinc-400">{result.description}</p>}{result.timingPlan && <details className="mt-4 rounded-xl bg-black p-4"><summary className="cursor-pointer text-sm font-medium text-zinc-300">Ver planejamento de tempo da letra</summary><pre className="mt-3 whitespace-pre-wrap text-xs text-zinc-400">{result.timingPlan}</pre></details>}{result.lyrics && <pre className="mt-4 whitespace-pre-wrap rounded-xl bg-black p-4 text-xs text-zinc-300">{result.lyrics}</pre>}</section>}
         {result?.error && <section className="mt-6 rounded-2xl border border-red-900/60 bg-red-950/20 p-5 text-sm"><div className="font-semibold text-red-400">{result.error}</div>{result.details && <pre className="mt-3 whitespace-pre-wrap break-words text-xs text-zinc-400">{result.details}</pre>}</section>}
       </div>
     </main>
