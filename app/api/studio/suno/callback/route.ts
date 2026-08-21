@@ -74,6 +74,7 @@ export async function POST(request: Request) {
       const audioId = firstTrack?.id || firstTrack?.audio_id || firstTrack?.audioId || null
       const callbackStatus = body?.data?.status || body?.status || null
       const refreshFailed = Boolean(callbackStatus && (String(callbackStatus).includes('FAILED') || callbackStatus === 'SENSITIVE_WORD_ERROR'))
+      const refreshReady = callbackType === 'complete' || body?.msg === 'All generated successfully.'
 
       if (refreshFailed) {
         if (videoRequestId) {
@@ -100,7 +101,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true, processed: true, feature: 'lyric_video_refresh' })
       }
 
-      if (!audioId) {
+      // A Suno envia callbacks intermediários (por exemplo, "text") que já
+      // contêm um audioId, mas o registro ainda não está pronto para gerar MP4.
+      // Só avançar quando chegar a confirmação final.
+      if (!audioId || !refreshReady) {
         await supabaseAdmin
           .from('studio_generations')
           .update({
