@@ -200,18 +200,19 @@ export default function RootLayout({
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-        {/* Google tag (gtag.js) — implementação direta solicitada pelo Google */}
+        {/* Google tag (gtag.js) — IDs ativos do Analytics e Google Ads */}
         <Script id="google-gtag-stub" strategy="beforeInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             window.gtag = gtag;
             gtag('js', new Date());
-            gtag('config', 'GT-5TGLNPLZ');
+            gtag('config', 'G-CNBQFWQ9QT');
+            gtag('config', 'AW-16698092699');
           `}
         </Script>
         <Script
-          src="https://www.googletagmanager.com/gtag/js?id=GT-5TGLNPLZ"
+          src="https://www.googletagmanager.com/gtag/js?id=G-CNBQFWQ9QT"
           strategy="afterInteractive"
         />
         {/* Meta Pixel */}
