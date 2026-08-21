@@ -3,7 +3,10 @@ import { isVeoLabStoryboard, VEO_LAB_SCENE_COUNT, type VeoLabStoryboard } from '
 
 function extractJson(text: string) {
   const clean = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim()
-  return JSON.parse(clean)
+  const firstBrace = clean.indexOf('{')
+  const lastBrace = clean.lastIndexOf('}')
+  if (firstBrace < 0 || lastBrace <= firstBrace) throw new Error('JSON ausente')
+  return JSON.parse(clean.slice(firstBrace, lastBrace + 1))
 }
 
 export async function createVeoLabStoryboard(lyrics: string, visualDirection: string): Promise<VeoLabStoryboard> {
@@ -24,13 +27,42 @@ export async function createVeoLabStoryboard(lyrics: string, visualDirection: st
         `LYRICS:\n${lyrics.slice(0, 12000)}`,
         'Return only valid JSON with this shape: {"title":"...","logline":"...","characterBible":"...","visualStyle":"...","scenes":[{"title":"...","story":"...","videoPrompt":"...","caption":"short excerpt from lyrics"}]}. Exactly five scenes.',
       ].join('\n\n') }] }],
-      generationConfig: { temperature: 0.75, responseMimeType: 'application/json', maxOutputTokens: 4096 },
+      generationConfig: {
+        temperature: 0.65,
+        responseMimeType: 'application/json',
+        maxOutputTokens: 4096,
+        responseSchema: {
+          type: 'OBJECT',
+          required: ['title', 'logline', 'characterBible', 'visualStyle', 'scenes'],
+          properties: {
+            title: { type: 'STRING' },
+            logline: { type: 'STRING' },
+            characterBible: { type: 'STRING' },
+            visualStyle: { type: 'STRING' },
+            scenes: {
+              type: 'ARRAY', minItems: 5, maxItems: 5,
+              items: {
+                type: 'OBJECT', required: ['title', 'story', 'videoPrompt', 'caption'],
+                properties: {
+                  title: { type: 'STRING' },
+                  story: { type: 'STRING' },
+                  videoPrompt: { type: 'STRING' },
+                  caption: { type: 'STRING' },
+                },
+              },
+            },
+          },
+        },
+      },
     }),
     cache: 'no-store',
   })
   const result = await response.json().catch(() => null)
   if (!response.ok) throw new Error(result?.error?.message || 'Não foi possível interpretar a letra.')
-  const text = result?.candidates?.[0]?.content?.parts?.map((part: any) => part?.text || '').join('') || ''
+  const text = result?.candidates?.[0]?.content?.parts
+    ?.filter((part: any) => !part?.thought && typeof part?.text === 'string')
+    .map((part: any) => part.text)
+    .join('') || ''
   let storyboard: any
   try { storyboard = extractJson(text) } catch { throw new Error('A IA não devolveu um roteiro válido. Tente novamente.') }
   if (Array.isArray(storyboard?.scenes) && storyboard.scenes.length === VEO_LAB_SCENE_COUNT) {
