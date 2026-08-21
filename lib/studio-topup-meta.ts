@@ -9,9 +9,9 @@ import { sendTikTokPurchaseEvent } from '@/lib/tiktok-events'
 
 /**
  * Envia Purchase da recarga avulsa para Meta/TikTok.
- * Pode ser chamado mais de uma vez com o mesmo paymentId (event_id) —
- * a Meta deduplica. Isso evita perder o evento quando o webhook credita
- * antes da página de sucesso (ou o contrário).
+ * O chamador deve executar esta função somente depois de conquistar a trava
+ * idempotente da recarga (creditStudioTopupOnce retornando credited=true).
+ * O event_id continua sendo o paymentId como proteção adicional.
  */
 export async function sendStudioTopupPurchaseEvents(input: {
   request?: Request
