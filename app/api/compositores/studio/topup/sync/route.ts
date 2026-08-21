@@ -3,13 +3,6 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { paymentClient } from '@/lib/mercadopago'
 import { supabaseAdmin } from '@/lib/supabase'
 import { creditStudioTopupOnce, revokeStudioTopupCreditOnce } from '@/lib/studio'
-import { sendStudioTopupPurchaseEvents } from '@/lib/studio-topup-meta'
-import { recordPartnerPurchase } from '@/lib/partners'
-import {
-  getComposerEmailIdentity,
-  sendAdminPaymentNotificationEmail,
-  sendPaymentConfirmationEmail,
-} from '@/lib/dcc-emails'
 import { sanitizeStripeObject, stripeRequest } from '@/lib/stripe'
 import { sendApprovedStudioTopupSideEffects } from '@/lib/studio-topup-side-effects'
 
@@ -42,18 +35,6 @@ export async function POST(request: NextRequest) {
 
     if (currentTopup.status === 'paid') {
       const paidPaymentId = paymentId
-      const composerEmail = await getComposerEmailIdentity(currentTopup.composer_id)
-      if (composerEmail && paidPaymentId) {
-        // Se o webhook creditou antes, ainda assim reforça o Purchase (mesmo event_id = dedupe na Meta).
-        await sendStudioTopupPurchaseEvents({
-          request,
-          topup: currentTopup,
-          paymentId: paidPaymentId,
-          email: composerEmail.email,
-          eventSourceUrl: request.headers.get('referer') || request.url,
-        })
-      }
-
       return NextResponse.json({
         success: true,
         status: 'paid',
@@ -164,44 +145,10 @@ export async function POST(request: NextRequest) {
 
     const creditedTopup = creditResult.topup
 
-    const composerEmail = await getComposerEmailIdentity(creditedTopup.composer_id)
-    if (composerEmail) {
-      await sendStudioTopupPurchaseEvents({
-        request,
-        topup: creditedTopup,
-        paymentId,
-        email: composerEmail.email,
-        paymentMetadata: payment?.metadata,
-        eventSourceUrl: request.headers.get('referer') || request.url,
-      })
-    }
-
-    if (composerEmail && creditResult.credited) {
-      await recordPartnerPurchase({
-        composerId: creditedTopup.composer_id,
-        purchaseId: paymentId,
-        amount: Number(creditedTopup.amount) || 0,
-        productType: 'studio_topup',
-      })
-
-      await Promise.allSettled([
-        sendPaymentConfirmationEmail({
-          ...composerEmail,
-          paymentId,
-          productType: 'studio_topup',
-          description: `Recarga avulsa Studio IA - ${creditedTopup.music_quantity} música(s)`,
-          amount: creditedTopup.amount,
-          paidAt: new Date(),
-        }),
-        sendAdminPaymentNotificationEmail({
-          composerName: composerEmail.name,
-          composerEmail: composerEmail.email,
-          paymentId,
-          productType: 'studio_topup',
-          description: `Recarga avulsa Studio IA - ${creditedTopup.music_quantity} música(s)`,
-          amount: creditedTopup.amount,
-        }),
-      ])
+    // creditStudioTopupOnce é a trava idempotente. Só o processo que mudou
+    // a recarga para "paid" pode emitir Purchase e os demais efeitos.
+    if (creditResult.credited) {
+      await sendApprovedStudioTopupSideEffects(request, creditedTopup, paymentId)
     }
 
     return NextResponse.json({
