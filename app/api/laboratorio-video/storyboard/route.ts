@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
   const lyrics = typeof body?.lyrics === 'string' ? body.lyrics.trim() : ''
   const visualDirection = typeof body?.visualDirection === 'string' ? body.visualDirection.trim().slice(0, 1800) : ''
   if (lyrics.length < 40) return NextResponse.json({ error: 'A letra está curta demais para criar uma história.' }, { status: 400 })
-  if (visualDirection.length < 8) return NextResponse.json({ error: 'Informe uma direção visual para o clipe.' }, { status: 400 })
   try {
     return NextResponse.json({ storyboard: await createVeoLabStoryboard(lyrics, visualDirection) })
   } catch (error: any) {

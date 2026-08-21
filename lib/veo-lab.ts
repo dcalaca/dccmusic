@@ -9,6 +9,7 @@ export type VeoLabStoryboardScene = {
   title: string
   story: string
   videoPrompt: string
+  caption: string
 }
 
 export type VeoLabStoryboard = {
@@ -25,7 +26,7 @@ export function isVeoLabStoryboard(value: unknown): value is VeoLabStoryboard {
     item && typeof item.title === 'string' && typeof item.logline === 'string'
     && typeof item.characterBible === 'string' && typeof item.visualStyle === 'string'
     && Array.isArray(item.scenes) && item.scenes.length === VEO_LAB_SCENE_COUNT
-    && item.scenes.every((scene) => scene && typeof scene.title === 'string' && typeof scene.story === 'string' && typeof scene.videoPrompt === 'string'),
+    && item.scenes.every((scene) => scene && typeof scene.title === 'string' && typeof scene.story === 'string' && typeof scene.videoPrompt === 'string' && typeof scene.caption === 'string'),
   )
 }
 

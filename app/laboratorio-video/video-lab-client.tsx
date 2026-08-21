@@ -33,7 +33,10 @@ export default function VideoLabClient() {
   const [audioName, setAudioName] = useState('')
   const [duration, setDuration] = useState(30)
   const [startAt, setStartAt] = useState(0)
-  const [prompt, setPrompt] = useState('Um casal se reencontrando à noite sob a chuva, luzes da cidade refletidas no asfalto, cinematográfico, emocional')
+  const [prompt, setPrompt] = useState('')
+  const [songTitle, setSongTitle] = useState('')
+  const [artistName, setArtistName] = useState('')
+  const [showCaptions, setShowCaptions] = useState(true)
   const [lyrics, setLyrics] = useState('')
   const [storyboard, setStoryboard] = useState<VeoLabStoryboard | null>(null)
   const [scripting, setScripting] = useState(false)
@@ -85,12 +88,25 @@ export default function VideoLabClient() {
     return () => window.clearTimeout(timer)
   }, [previewScene, previewing])
 
+  useEffect(() => {
+    if (!previewing || !audioRef.current) return
+    const audio = audioRef.current
+    const fade = window.setInterval(() => {
+      const elapsed = Math.max(0, audio.currentTime - startAt)
+      audio.volume = elapsed >= VEO_LAB_PREVIEW_SECONDS - 3
+        ? Math.max(0, (VEO_LAB_PREVIEW_SECONDS - elapsed) / 3)
+        : 1
+    }, 100)
+    return () => window.clearInterval(fade)
+  }, [previewing, startAt])
+
   function selectProject(id: string) {
     setSelectedProjectId(id)
     const project = projects.find((item) => item.id === id)
     const url = project?.version?.audioUrl || project?.version?.streamAudioUrl || ''
     setAudioUrl(url)
     setAudioName(project?.title || '')
+    setSongTitle(project?.title || '')
     uploadedFile.current = null
     setLyrics(project?.lyric || '')
     setStoryboard(null)
@@ -110,6 +126,7 @@ export default function VideoLabClient() {
     setSelectedProjectId('')
     setAudioUrl(localObjectUrl.current)
     setAudioName(file.name)
+    setSongTitle(file.name.replace(/\.[^.]+$/, ''))
     setLyrics('')
     setStoryboard(null)
     setStartAt(0)
@@ -217,6 +234,7 @@ export default function VideoLabClient() {
 
   function stopPreview() {
     audioRef.current?.pause()
+    if (audioRef.current) audioRef.current.volume = 1
     finalVideoRef.current?.pause()
     setPreviewing(false)
   }
@@ -269,8 +287,15 @@ export default function VideoLabClient() {
               <input aria-label="Início do trecho" type="range" min={0} max={maxStart} step={1} value={Math.min(startAt, maxStart)} onChange={(event) => setStartAt(Number(event.target.value))} className="mt-2 w-full accent-purple-500" />
             </div>}
 
-            <h2 className="mb-3 mt-6 flex items-center gap-2 text-xl font-black"><FiFilm className="text-purple-400" /> 2. Direção visual</h2>
-            <textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={5} maxLength={1800} className="w-full resize-none rounded-2xl border border-white/10 bg-black/70 p-4 text-sm leading-relaxed text-white outline-none placeholder:text-gray-600 focus:border-purple-400" />
+            <h2 className="mb-3 mt-6 flex items-center gap-2 text-xl font-black"><FiFilm className="text-purple-400" /> 2. Identidade do lançamento</h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-gray-500">Nome da música</span><input value={songTitle} onChange={(event) => setSongTitle(event.target.value)} placeholder="Nome que ficará no clipe" maxLength={100} className="w-full rounded-xl border border-white/10 bg-black px-3 py-3 text-sm text-white outline-none focus:border-purple-400" /></label>
+              <label><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-gray-500">Artista (opcional)</span><input value={artistName} onChange={(event) => setArtistName(event.target.value)} placeholder="Aparece no começo" maxLength={100} className="w-full rounded-xl border border-white/10 bg-black px-3 py-3 text-sm text-white outline-none focus:border-purple-400" /></label>
+            </div>
+            <label className="mt-3 block"><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-gray-500">Referência visual (opcional)</span><textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} rows={4} maxLength={1800} placeholder="Deixe vazio para a IA decidir de acordo com a letra" className="w-full resize-none rounded-2xl border border-white/10 bg-black/70 p-4 text-sm leading-relaxed text-white outline-none placeholder:text-gray-600 focus:border-purple-400" /></label>
+            <button type="button" onClick={() => setShowCaptions((current) => !current)} className={`mt-3 w-full rounded-xl border px-4 py-3 text-left text-sm font-bold ${showCaptions ? 'border-purple-400 bg-purple-500/20' : 'border-white/10 bg-black/50 text-gray-400'}`}>
+              {showCaptions ? '●' : '○'} Legenda da letra no preview
+            </button>
 
             <button disabled={scripting || generating || !token || !audioUrl} onClick={createStoryboard} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-fuchsia-400/40 bg-fuchsia-950/30 px-5 py-4 font-black text-fuchsia-100 transition hover:bg-fuchsia-950/50 disabled:cursor-not-allowed disabled:opacity-50">
               {scripting ? <><FiLoader className="animate-spin" /> Entendendo a letra e escrevendo...</> : <><FiFilm /> Entender letra e criar roteiro</>}
@@ -313,7 +338,12 @@ export default function VideoLabClient() {
 
             <div className="mt-5 rounded-2xl border border-purple-400/20 bg-black/70 p-4">
               <div className={`mx-auto overflow-hidden rounded-xl bg-black ${aspectRatio === '9:16' ? 'aspect-[9/16] max-h-[440px]' : 'aspect-video'}`}>
-                {allReady ? <video key={previewScene} ref={finalVideoRef} src={scenes[previewScene].videoUrl} muted playsInline className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center px-5 text-center text-sm text-gray-600">O preview sincronizado aparecerá aqui quando as cinco cenas estiverem prontas.</div>}
+                {allReady ? <div className="relative h-full w-full">
+                  <video key={previewScene} ref={finalVideoRef} src={scenes[previewScene].videoUrl} muted playsInline className="h-full w-full object-cover" />
+                  {songTitle && <div className="absolute left-3 top-3 max-w-[75%] rounded-lg bg-black/55 px-3 py-2 text-sm font-black tracking-wide text-white shadow-lg backdrop-blur-sm">{songTitle}</div>}
+                  {artistName && previewScene === 0 && <div className="absolute right-3 top-3 rounded-lg bg-black/55 px-3 py-2 text-xs font-bold text-white/90 backdrop-blur-sm">{artistName}</div>}
+                  {showCaptions && storyboard?.scenes[previewScene]?.caption && <div className="absolute inset-x-3 bottom-5 text-center"><span className="inline rounded-lg bg-black/70 px-3 py-2 text-sm font-bold leading-relaxed text-white shadow-lg [box-decoration-break:clone]">{storyboard.scenes[previewScene].caption}</span></div>}
+                </div> : <div className="flex h-full items-center justify-center px-5 text-center text-sm text-gray-600">O preview sincronizado aparecerá aqui quando as cinco cenas estiverem prontas.</div>}
               </div>
               <button disabled={!allReady} onClick={previewing ? stopPreview : startPreview} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-purple-400/40 bg-purple-950/30 px-4 py-3 text-sm font-black text-purple-100 disabled:opacity-40">
                 <FiPlay /> {previewing ? 'Parar preview' : 'Assistir com a música'}

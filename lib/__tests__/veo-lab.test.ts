@@ -7,7 +7,7 @@ describe('Veo video lab helpers', () => {
       title: 'Reencontro', logline: 'Duas pessoas voltam a se encontrar.',
       characterBible: 'Same adult couple, blue coat and black jacket.',
       visualStyle: 'Cinematic rainy neon night.',
-      scenes: Array.from({ length: 5 }, (_, index) => ({ title: `Cena ${index + 1}`, story: `Beat ${index + 1}`, videoPrompt: `Different action ${index + 1}` })),
+      scenes: Array.from({ length: 5 }, (_, index) => ({ title: `Cena ${index + 1}`, story: `Beat ${index + 1}`, videoPrompt: `Different action ${index + 1}`, caption: `Verso ${index + 1}` })),
     })
     expect(prompts).toHaveLength(5)
     expect(prompts[0]).toContain('Same adult couple')
