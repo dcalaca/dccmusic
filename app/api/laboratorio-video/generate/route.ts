@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
           instances: [{ prompt: scenePrompt }],
-          parameters: { aspectRatio, resolution: '720p', durationSeconds: VEO_LAB_GENERATION_SECONDS, sampleCount: 1, seed: 741963 },
+          parameters: { aspectRatio, resolution: '720p', durationSeconds: VEO_LAB_GENERATION_SECONDS, sampleCount: 1 },
         }),
         cache: 'no-store',
       })
