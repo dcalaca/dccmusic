@@ -29,7 +29,15 @@ export async function POST(request: NextRequest) {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({
         instances: [{ prompt: scenePrompt }],
-        parameters: { aspectRatio, resolution: '720p', durationSeconds: VEO_LAB_GENERATION_SECONDS, sampleCount: 1 },
+        parameters: {
+          aspectRatio,
+          resolution: '720p',
+          durationSeconds: VEO_LAB_GENERATION_SECONDS,
+          sampleCount: 1,
+          // O preview recebe a música escolhida pelo usuário na montagem final.
+          // Gerar áudio nativo no Veo seria descartado e dobraria o custo da cena.
+          generateAudio: false,
+        },
       }),
       cache: 'no-store',
     })
