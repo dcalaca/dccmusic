@@ -302,6 +302,10 @@ export default function VideoLabClient() {
             </button>
             {error && <div className="mt-3 rounded-xl border border-red-400/30 bg-red-950/30 px-4 py-3 text-sm leading-relaxed text-red-100">{error}</div>}
             {uploadedFile.current && !lyrics && <p className="mt-2 text-center text-[11px] text-amber-200/70">Ao criar o roteiro, o MP3 será transcrito usando 1 crédito do Studio.</p>}
+            {lyrics && <details className="mt-3 rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-gray-300">
+              <summary className="cursor-pointer font-black text-purple-200">Ver letra reconhecida pela IA</summary>
+              <pre className="mt-3 max-h-52 overflow-auto whitespace-pre-wrap font-sans leading-relaxed text-gray-400">{lyrics}</pre>
+            </details>}
 
             {storyboard && <div className="mt-5 rounded-2xl border border-purple-400/25 bg-purple-950/15 p-4">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-purple-300">Roteiro criado</p>

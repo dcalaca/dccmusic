@@ -14,27 +14,6 @@ function lyricLinesFrom(lyrics: string) {
     .filter((line) => line.length >= 3 && !/^\s*(verso|refrão|ponte|intro|final)\s*:?\s*$/i.test(line))
 }
 
-function fallbackStoryboard(lyrics: string, visualDirection: string): VeoLabStoryboard {
-  const lyricLines = lyricLinesFrom(lyrics)
-  const captions = Array.from({ length: VEO_LAB_SCENE_COUNT }, (_, index) =>
-    lyricLines[Math.min(lyricLines.length - 1, Math.floor(index * lyricLines.length / VEO_LAB_SCENE_COUNT))] || '')
-  const style = visualDirection || 'cinematic Brazilian music video, emotionally derived from the song lyrics, realistic, rich lighting, coherent color palette'
-  const beats = [
-    ['O começo', 'Apresenta o protagonista e o conflito emocional da canção.', 'Wide establishing shot introducing the adult protagonist alone in a symbolic location, a strong visual hook and restrained emotion.'],
-    ['A lembrança', 'Uma memória revela o que está por trás do sentimento.', 'Intimate medium shot as the same protagonist encounters an object or place that triggers a vivid emotional memory.'],
-    ['A mudança', 'O personagem toma uma decisão e a história ganha movimento.', 'Dynamic tracking shot as the same protagonist makes a decision and moves through a visibly different environment.'],
-    ['O auge', 'A emoção do refrão chega ao seu ponto mais forte.', 'Powerful cinematic climax with the same protagonist confronting the central emotion through a decisive visual action.'],
-    ['O desfecho', 'A história termina com uma imagem marcante de lançamento.', 'Memorable final shot resolving the emotional journey, the same protagonist transformed, with a clean iconic ending.'],
-  ]
-  return {
-    title: 'História do lançamento',
-    logline: 'Uma jornada visual inspirada na emoção e nas imagens presentes na letra.',
-    characterBible: 'The exact same adult protagonist in every scene, identical face, hair, skin tone, body, wardrobe and accessories throughout the entire video.',
-    visualStyle: style,
-    scenes: beats.map(([title, story, videoPrompt], index) => ({ title, story, videoPrompt, caption: captions[index] })),
-  }
-}
-
 export async function createVeoLabStoryboard(lyrics: string, visualDirection: string): Promise<VeoLabStoryboard> {
   const apiKey = process.env.OPENAI_API_KEY?.trim()
   if (!apiKey) throw new Error('A chave da OpenAI não está configurada.')
@@ -59,7 +38,38 @@ export async function createVeoLabStoryboard(lyrics: string, visualDirection: st
         { role: 'system', content: 'Return precise, production-ready structured JSON for a music-video storyboard.' },
         { role: 'user', content: instructions },
       ],
-      response_format: { type: 'json_object' },
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'music_video_storyboard',
+          strict: true,
+          schema: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['title', 'logline', 'characterBible', 'visualStyle', 'scenes'],
+            properties: {
+              title: { type: 'string' },
+              logline: { type: 'string' },
+              characterBible: { type: 'string' },
+              visualStyle: { type: 'string' },
+              scenes: {
+                type: 'array', minItems: 5, maxItems: 5,
+                items: {
+                  type: 'object',
+                  additionalProperties: false,
+                  required: ['title', 'story', 'videoPrompt', 'caption'],
+                  properties: {
+                    title: { type: 'string' },
+                    story: { type: 'string' },
+                    videoPrompt: { type: 'string' },
+                    caption: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       temperature: 0.65,
       max_tokens: 4096,
     }),
@@ -69,7 +79,7 @@ export async function createVeoLabStoryboard(lyrics: string, visualDirection: st
   if (!response.ok) throw new Error(result?.error?.message || 'A OpenAI não conseguiu interpretar a letra.')
   const text = String(result?.choices?.[0]?.message?.content || '')
   let storyboard: any
-  try { storyboard = extractJson(text) } catch { return fallbackStoryboard(lyrics, visualDirection) }
+  try { storyboard = extractJson(text) } catch { throw new Error('A OpenAI não devolveu o roteiro estruturado. Tente novamente.') }
   if (Array.isArray(storyboard?.scenes) && storyboard.scenes.length === VEO_LAB_SCENE_COUNT) {
     const lyricLines = lyricLinesFrom(lyrics)
     storyboard.scenes = storyboard.scenes.map((scene: any, index: number) => ({
@@ -79,6 +89,6 @@ export async function createVeoLabStoryboard(lyrics: string, visualDirection: st
         : (lyricLines[Math.min(lyricLines.length - 1, Math.floor(index * lyricLines.length / VEO_LAB_SCENE_COUNT))] || ''),
     }))
   }
-  if (!isVeoLabStoryboard(storyboard)) return fallbackStoryboard(lyrics, visualDirection)
+  if (!isVeoLabStoryboard(storyboard)) throw new Error(`A OpenAI não devolveu as ${VEO_LAB_SCENE_COUNT} cenas completas.`)
   return storyboard
 }
