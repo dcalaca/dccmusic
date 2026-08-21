@@ -1,10 +1,7 @@
 'use client'
 
 /** Conta Google Ads (tag global). */
-const GOOGLE_ADS_ID = 'AW-16698092699'
-
-/** Tag antiga (ainda válida se a ação existir no Ads). */
-const GOOGLE_ADS_PURCHASE_SEND_TO = 'AW-16698092699/uJPVCL7Ew9EZEJvZopo-'
+const GOOGLE_ADS_ID = 'AW-18367449265'
 
 /** Evento da ação PURCHASE do assistente do Google Ads. */
 const GOOGLE_ADS_PURCHASE_EVENT = 'conversion_event_purchase'
@@ -75,17 +72,6 @@ function firePurchaseEvents(
 
   // Nova conversão do assistente do Ads (PURCHASE)
   gtag('event', GOOGLE_ADS_PURCHASE_EVENT, eventParams)
-
-  // Tag clássica send_to (legado)
-  const legacyPayload: Record<string, string | number> = {
-    send_to: GOOGLE_ADS_PURCHASE_SEND_TO,
-    transaction_id: tx,
-  }
-  if (hasValue) {
-    legacyPayload.value = value
-    legacyPayload.currency = safeCurrency
-  }
-  gtag('event', 'conversion', legacyPayload)
 
   // GA4 purchase padrão (importação Ads ← GA4)
   gtag('event', 'purchase', {
