@@ -300,6 +300,7 @@ export default function VideoLabClient() {
             <button disabled={scripting || generating || !token || !audioUrl} onClick={createStoryboard} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-fuchsia-400/40 bg-fuchsia-950/30 px-5 py-4 font-black text-fuchsia-100 transition hover:bg-fuchsia-950/50 disabled:cursor-not-allowed disabled:opacity-50">
               {scripting ? <><FiLoader className="animate-spin" /> Entendendo a letra e escrevendo...</> : <><FiFilm /> Entender letra e criar roteiro</>}
             </button>
+            {error && <div className="mt-3 rounded-xl border border-red-400/30 bg-red-950/30 px-4 py-3 text-sm leading-relaxed text-red-100">{error}</div>}
             {uploadedFile.current && !lyrics && <p className="mt-2 text-center text-[11px] text-amber-200/70">Ao criar o roteiro, o MP3 será transcrito usando 1 crédito do Studio.</p>}
 
             {storyboard && <div className="mt-5 rounded-2xl border border-purple-400/25 bg-purple-950/15 p-4">

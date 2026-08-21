@@ -31,8 +31,19 @@ export async function createVeoLabStoryboard(lyrics: string, visualDirection: st
   const result = await response.json().catch(() => null)
   if (!response.ok) throw new Error(result?.error?.message || 'Não foi possível interpretar a letra.')
   const text = result?.candidates?.[0]?.content?.parts?.map((part: any) => part?.text || '').join('') || ''
-  let storyboard: unknown
+  let storyboard: any
   try { storyboard = extractJson(text) } catch { throw new Error('A IA não devolveu um roteiro válido. Tente novamente.') }
+  if (Array.isArray(storyboard?.scenes) && storyboard.scenes.length === VEO_LAB_SCENE_COUNT) {
+    const lyricLines = lyrics.split(/\r?\n/)
+      .map((line) => line.replace(/^\s*\[[^\]]+]\s*/, '').trim())
+      .filter((line) => line.length >= 3 && !/^\s*(verso|refrão|ponte|intro|final)\s*:?\s*$/i.test(line))
+    storyboard.scenes = storyboard.scenes.map((scene: any, index: number) => ({
+      ...scene,
+      caption: typeof scene?.caption === 'string' && scene.caption.trim()
+        ? scene.caption.trim()
+        : (lyricLines[Math.min(lyricLines.length - 1, Math.floor(index * lyricLines.length / VEO_LAB_SCENE_COUNT))] || ''),
+    }))
+  }
   if (!isVeoLabStoryboard(storyboard)) throw new Error(`O roteiro precisa ter exatamente ${VEO_LAB_SCENE_COUNT} cenas completas.`)
   return storyboard
 }
