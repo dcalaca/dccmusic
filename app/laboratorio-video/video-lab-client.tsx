@@ -156,17 +156,22 @@ export default function VideoLabClient() {
     if (!storyboard) return setError('Primeiro use a IA para entender a letra e criar o roteiro.')
     setScenes(Array.from({ length: VEO_LAB_SCENE_COUNT }, () => ({ status: 'generating' })))
     try {
-      const response = await fetch('/api/laboratorio-video/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...authHeaders },
-        body: JSON.stringify({ storyboard, aspectRatio }),
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Não foi possível iniciar o vídeo.')
-      const next: Scene[] = data.operations.map((operation: any) => ({
-        operationName: operation.operationName,
-        status: 'generating',
-      }))
+      const startScene = async (sceneIndex: number) => {
+        const response = await fetch('/api/laboratorio-video/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders },
+          body: JSON.stringify({ storyboard, aspectRatio, sceneIndex }),
+        })
+        const text = await response.text()
+        let data: any = null
+        try { data = JSON.parse(text) } catch { /* gateway responses can be HTML */ }
+        if (!response.ok || !data?.operation) {
+          throw new Error(data?.error || `Cena ${sceneIndex + 1}: o servidor respondeu ${response.status}.`)
+        }
+        return data.operation
+      }
+      const operations = await Promise.all(Array.from({ length: VEO_LAB_SCENE_COUNT }, (_, index) => startScene(index)))
+      const next: Scene[] = operations.map((operation: any) => ({ operationName: operation.operationName, status: 'generating' }))
       setScenes(next)
       await Promise.all(next.map((scene, index) => pollScene(scene.operationName!, index)))
     } catch (err: any) {
