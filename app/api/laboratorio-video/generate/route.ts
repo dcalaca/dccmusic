@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { buildVeoLabScenePrompts, isVeoLabAspectRatio } from '@/lib/veo-lab'
+import { getVeoLabApiKey } from '@/lib/veo-lab-media'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
   const composer = getComposerFromRequest(request)
   if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY
+  const apiKey = getVeoLabApiKey()
   if (!apiKey) {
     return NextResponse.json(
       { error: 'O Laboratório Veo ainda não tem uma chave Google configurada no servidor.' },

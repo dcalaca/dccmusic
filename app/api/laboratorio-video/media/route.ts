@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyVeoLabMediaUri } from '@/lib/veo-lab-media'
+import { getVeoLabApiKey, verifyVeoLabMediaUri } from '@/lib/veo-lab-media'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY
+  const apiKey = getVeoLabApiKey()
   const searchParams = new URL(request.url).searchParams
   const uri = searchParams.get('uri') || ''
   const signature = searchParams.get('signature') || ''

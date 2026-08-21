@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { extractVeoVideoUri } from '@/lib/veo-lab'
-import { signVeoLabMediaUri } from '@/lib/veo-lab-media'
+import { getVeoLabApiKey, signVeoLabMediaUri } from '@/lib/veo-lab-media'
 
 export const dynamic = 'force-dynamic'
 const API_BASE = 'https://generativelanguage.googleapis.com/v1beta'
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   if (!getComposerFromRequest(request)) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
-  const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY
+  const apiKey = getVeoLabApiKey()
   const operationName = new URL(request.url).searchParams.get('operation') || ''
   if (!apiKey) return NextResponse.json({ error: 'Chave Google não configurada.' }, { status: 503 })
   if (!/^operations\/[A-Za-z0-9._-]+$/.test(operationName)) {
