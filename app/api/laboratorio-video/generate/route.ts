@@ -21,25 +21,42 @@ export async function POST(request: NextRequest) {
     const accessToken = await getGoogleCloudAccessToken()
     const { model } = getVeoVertexConfig()
     const modelUrl = getVeoVertexModelUrl()
-    const characterReference = await createVeoCharacterReference(storyboard)
-    const operations = await Promise.all(scenePrompts.map(async (scenePrompt, index) => {
-      const response = await fetch(`${modelUrl}:predictLongRunning`, {
+    let characterReference: Awaited<ReturnType<typeof createVeoCharacterReference>> | null = null
+    try {
+      characterReference = await createVeoCharacterReference(storyboard)
+    } catch (referenceError: any) {
+      console.warn('[Video Lab] Character reference unavailable; using locked text identity.', referenceError?.message)
+    }
+
+    const operations = []
+    for (let index = 0; index < scenePrompts.length; index += 1) {
+      const scenePrompt = scenePrompts[index]
+      const startGeneration = (includeReference: boolean) => fetch(`${modelUrl}:predictLongRunning`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({
           instances: [{
             prompt: scenePrompt,
-            referenceImages: [{ image: characterReference, referenceType: 'asset' }],
+            ...(includeReference && characterReference
+              ? { referenceImages: [{ image: characterReference, referenceType: 'asset' }] }
+              : {}),
           }],
           parameters: { aspectRatio, resolution: '720p', durationSeconds: VEO_LAB_GENERATION_SECONDS, sampleCount: 1, seed: 741963 },
         }),
         cache: 'no-store',
       })
-      const result = await response.json().catch(() => null)
+
+      let response = await startGeneration(Boolean(characterReference))
+      let result = await response.json().catch(() => null)
+      if (!response.ok && characterReference) {
+        console.warn(`[Video Lab] Scene ${index + 1} rejected reference image; retrying text-only.`, result?.error?.message)
+        response = await startGeneration(false)
+        result = await response.json().catch(() => null)
+      }
       if (!response.ok || !result?.name) throw new Error(result?.error?.message || `Não foi possível iniciar a cena ${index + 1}.`)
-      return { index, operationName: String(result.name), prompt: scenePrompt }
-    }))
-    return NextResponse.json({ operations, model })
+      operations.push({ index, operationName: String(result.name), prompt: scenePrompt })
+    }
+    return NextResponse.json({ operations, model, continuityMode: characterReference ? 'visual-reference' : 'locked-text' })
   } catch (error: any) {
     return NextResponse.json({ error: error?.message || 'Não foi possível iniciar o vídeo.' }, { status: 502 })
   }
