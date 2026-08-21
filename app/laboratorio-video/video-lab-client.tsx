@@ -148,6 +148,9 @@ export default function VideoLabClient() {
         if (!transcriptionResponse.ok) throw new Error(transcription.error || 'Não foi possível transcrever a música.')
         sourceLyrics = String(transcription.text || '').trim()
         setLyrics(sourceLyrics)
+        setStoryboard(null)
+        if (!sourceLyrics) throw new Error('Não foi possível reconhecer a letra neste áudio.')
+        return
       }
       if (!sourceLyrics) throw new Error('Esta música ainda não tem letra. Envie um MP3 para transcrever ou escolha um projeto com letra.')
       const response = await fetch('/api/laboratorio-video/storyboard', {
@@ -298,14 +301,20 @@ export default function VideoLabClient() {
             </button>
 
             <button disabled={scripting || generating || !token || !audioUrl} onClick={createStoryboard} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-fuchsia-400/40 bg-fuchsia-950/30 px-5 py-4 font-black text-fuchsia-100 transition hover:bg-fuchsia-950/50 disabled:cursor-not-allowed disabled:opacity-50">
-              {scripting ? <><FiLoader className="animate-spin" /> Entendendo a letra e escrevendo...</> : <><FiFilm /> Entender letra e criar roteiro</>}
+              {scripting
+                ? <><FiLoader className="animate-spin" /> {lyrics ? 'Criando o roteiro...' : 'Reconhecendo a letra...'}</>
+                : <><FiFilm /> {lyrics ? 'Criar roteiro com esta letra' : 'Entender e mostrar a letra'}</>}
             </button>
             {error && <div className="mt-3 rounded-xl border border-red-400/30 bg-red-950/30 px-4 py-3 text-sm leading-relaxed text-red-100">{error}</div>}
             {uploadedFile.current && !lyrics && <p className="mt-2 text-center text-[11px] text-amber-200/70">Ao criar o roteiro, o MP3 será transcrito usando 1 crédito do Studio.</p>}
-            {lyrics && <details className="mt-3 rounded-xl border border-white/10 bg-black/40 p-3 text-xs text-gray-300">
-              <summary className="cursor-pointer font-black text-purple-200">Ver letra reconhecida pela IA</summary>
-              <pre className="mt-3 max-h-52 overflow-auto whitespace-pre-wrap font-sans leading-relaxed text-gray-400">{lyrics}</pre>
-            </details>}
+            {lyrics && <div className="mt-4 rounded-2xl border border-emerald-400/25 bg-emerald-950/10 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-emerald-300">Letra reconhecida</p>
+                <span className="text-[10px] font-bold text-gray-500">Confira antes do roteiro</span>
+              </div>
+              <textarea value={lyrics} onChange={(event) => { setLyrics(event.target.value); setStoryboard(null) }} rows={10} className="mt-3 w-full resize-y rounded-xl border border-white/10 bg-black/65 p-3 text-xs leading-relaxed text-gray-200 outline-none focus:border-emerald-400" />
+              <p className="mt-2 text-[11px] leading-relaxed text-gray-500">Você pode corrigir qualquer palavra. O roteiro será criado exatamente com o texto acima.</p>
+            </div>}
 
             {storyboard && <div className="mt-5 rounded-2xl border border-purple-400/25 bg-purple-950/15 p-4">
               <p className="text-xs font-black uppercase tracking-[0.16em] text-purple-300">Roteiro criado</p>
