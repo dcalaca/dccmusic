@@ -13,6 +13,7 @@ type Project = {
   lyric?: string | null
 }
 type Scene = { operationName?: string; videoUrl?: string; status: 'idle' | 'generating' | 'ready' | 'error'; error?: string }
+type CaptionSegment = { start: number; end: number; text: string }
 
 const emptyScenes = (): Scene[] => Array.from({ length: VEO_LAB_SCENE_COUNT }, () => ({ status: 'idle' }))
 
@@ -38,6 +39,8 @@ export default function VideoLabClient() {
   const [artistName, setArtistName] = useState('')
   const [showCaptions, setShowCaptions] = useState(true)
   const [lyrics, setLyrics] = useState('')
+  const [captionSegments, setCaptionSegments] = useState<CaptionSegment[]>([])
+  const [previewAudioTime, setPreviewAudioTime] = useState(0)
   const [storyboard, setStoryboard] = useState<VeoLabStoryboard | null>(null)
   const [scripting, setScripting] = useState(false)
   const [aspectRatio, setAspectRatio] = useState<'9:16' | '16:9'>('9:16')
@@ -93,6 +96,7 @@ export default function VideoLabClient() {
     const audio = audioRef.current
     const fade = window.setInterval(() => {
       const elapsed = Math.max(0, audio.currentTime - startAt)
+      setPreviewAudioTime(audio.currentTime)
       audio.volume = elapsed >= VEO_LAB_PREVIEW_SECONDS - 3
         ? Math.max(0, (VEO_LAB_PREVIEW_SECONDS - elapsed) / 3)
         : 1
@@ -109,6 +113,7 @@ export default function VideoLabClient() {
     setSongTitle(project?.title || '')
     uploadedFile.current = null
     setLyrics(project?.lyric || '')
+    setCaptionSegments([])
     setStoryboard(null)
     setStartAt(0)
   }
@@ -128,6 +133,7 @@ export default function VideoLabClient() {
     setAudioName(file.name)
     setSongTitle(file.name.replace(/\.[^.]+$/, ''))
     setLyrics('')
+    setCaptionSegments([])
     setStoryboard(null)
     setStartAt(0)
     setError('')
@@ -148,6 +154,7 @@ export default function VideoLabClient() {
         if (!transcriptionResponse.ok) throw new Error(transcription.error || 'Não foi possível transcrever a música.')
         sourceLyrics = String(transcription.text || '').trim()
         setLyrics(sourceLyrics)
+        setCaptionSegments(Array.isArray(transcription.segments) ? transcription.segments : [])
         setStoryboard(null)
         if (!sourceLyrics) throw new Error('Não foi possível reconhecer a letra neste áudio.')
         return
@@ -225,6 +232,7 @@ export default function VideoLabClient() {
     setPreviewScene(0)
     setPreviewing(true)
     audioRef.current.currentTime = startAt
+    setPreviewAudioTime(startAt)
     void audioRef.current.play()
     requestAnimationFrame(() => {
       if (finalVideoRef.current) {
@@ -241,6 +249,11 @@ export default function VideoLabClient() {
     finalVideoRef.current?.pause()
     setPreviewing(false)
   }
+
+  const synchronizedCaption = useMemo(() => {
+    const segment = captionSegments.find((item) => previewAudioTime >= item.start && previewAudioTime <= item.end + 0.25)
+    return segment?.text || storyboard?.scenes[previewScene]?.caption || ''
+  }, [captionSegments, previewAudioTime, storyboard, previewScene])
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(126,34,206,0.22),transparent_32%),#050507] px-4 py-7 text-white sm:px-6">
@@ -356,7 +369,7 @@ export default function VideoLabClient() {
                   <video key={previewScene} ref={finalVideoRef} src={scenes[previewScene].videoUrl} muted playsInline className="h-full w-full object-cover" />
                   {songTitle && <div className="absolute left-3 top-3 max-w-[75%] rounded-lg bg-black/55 px-3 py-2 text-sm font-black tracking-wide text-white shadow-lg backdrop-blur-sm">{songTitle}</div>}
                   {artistName && previewScene === 0 && <div className="absolute right-3 top-3 rounded-lg bg-black/55 px-3 py-2 text-xs font-bold text-white/90 backdrop-blur-sm">{artistName}</div>}
-                  {showCaptions && storyboard?.scenes[previewScene]?.caption && <div className="absolute inset-x-3 bottom-5 text-center"><span className="inline rounded-lg bg-black/70 px-3 py-2 text-sm font-bold leading-relaxed text-white shadow-lg [box-decoration-break:clone]">{storyboard.scenes[previewScene].caption}</span></div>}
+                  {showCaptions && synchronizedCaption && <div className="absolute inset-x-3 bottom-5 text-center"><span className="inline rounded-lg bg-black/70 px-3 py-2 text-sm font-bold leading-relaxed text-white shadow-lg [box-decoration-break:clone]">{synchronizedCaption}</span></div>}
                 </div> : <div className="flex h-full items-center justify-center px-5 text-center text-sm text-gray-600">O preview sincronizado aparecerá aqui quando as cinco cenas estiverem prontas.</div>}
               </div>
               <button disabled={!allReady} onClick={previewing ? stopPreview : startPreview} className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-purple-400/40 bg-purple-950/30 px-4 py-3 text-sm font-black text-purple-100 disabled:opacity-40">

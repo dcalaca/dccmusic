@@ -11,7 +11,7 @@ import {
   getStudioCreditUsage,
   STUDIO_TRANSCRIBE_CREDITS,
 } from '@/lib/studio'
-import { transcribeStudioAudioBuffer, transcribeStudioAudioFile } from '@/lib/studio-transcribe'
+import { transcribeStudioAudioBufferDetailed, transcribeStudioAudioFileDetailed, type StudioTranscriptionSegment } from '@/lib/studio-transcribe'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
 
     const contentTypeHeader = request.headers.get('content-type') || ''
     let text = ''
+    let segments: StudioTranscriptionSegment[] = []
 
     // Preferido: áudio já no R2 (evita FUNCTION_PAYLOAD_TOO_LARGE)
     if (contentTypeHeader.includes('application/json')) {
@@ -78,11 +79,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Áudio indisponível para transcrição.' }, { status: 404 })
       }
 
-      text = await transcribeStudioAudioBuffer({
+      const transcription = await transcribeStudioAudioBufferDetailed({
         buffer: downloaded.buffer,
         fileName: String(body.audioPath).split('/').pop() || 'audio.mp3',
         contentType: downloaded.contentType || String(body.audioContentType || 'audio/mpeg'),
       })
+      text = transcription.text
+      segments = transcription.segments
     } else {
       const formData = await request.formData()
       const file = formData.get('audio')
@@ -93,7 +96,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Envie um arquivo de áudio válido.' }, { status: 400 })
       }
 
-      text = await transcribeStudioAudioFile(file, file.name || 'gravacao.webm')
+      const transcription = await transcribeStudioAudioFileDetailed(file, file.name || 'gravacao.webm')
+      text = transcription.text
+      segments = transcription.segments
     }
 
     await addStudioCreditTransaction({
@@ -106,6 +111,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       text,
+      segments,
       creditsCharged: STUDIO_TRANSCRIBE_CREDITS,
       message: `Letra transcrita. Foram debitados ${STUDIO_TRANSCRIBE_CREDITS} crédito.`,
     })

@@ -1,6 +1,7 @@
 import { normalizeStudioLyricStructure } from '@/lib/studio-lyric-normalizer'
 
 const MAX_TRANSCRIPTION_AUDIO_BYTES = 25 * 1024 * 1024
+export type StudioTranscriptionSegment = { start: number; end: number; text: string }
 
 const YOUTUBE_SPAM_RE =
   /inscreva[- ]se no canal|ative o sininho|subscribe to (the|my) channel|turn on (the )?notifications|deixe seu like|compartilhe (esse|este) v[ií]deo/i
@@ -22,7 +23,7 @@ export function looksLikeTranscriptionSpam(text: string) {
   return false
 }
 
-export async function transcribeStudioAudioFile(file: File | Blob, fileName = 'audio.mp3') {
+export async function transcribeStudioAudioFileDetailed(file: File | Blob, fileName = 'audio.mp3') {
   const apiKey = process.env.OPENAI_API_KEY?.trim()
   if (!apiKey) {
     throw new Error('Transcrição de áudio não configurada no servidor.')
@@ -39,6 +40,8 @@ export async function transcribeStudioAudioFile(file: File | Blob, fileName = 'a
   openAiFormData.set('file', file, fileName)
   openAiFormData.set('model', process.env.OPENAI_TRANSCRIPTION_MODEL || 'whisper-1')
   openAiFormData.set('language', 'pt')
+  openAiFormData.set('response_format', 'verbose_json')
+  openAiFormData.append('timestamp_granularities[]', 'segment')
   openAiFormData.set(
     'prompt',
     'Transcreva somente a letra cantada em português brasileiro desta música. Preserve versos e repetições reais da canção. Ignore instrumentos, vinhetas, falas de YouTube, "inscreva-se no canal", "ative o sininho", pedidos de like e qualquer texto que não seja a letra cantada.'
@@ -65,7 +68,16 @@ export async function transcribeStudioAudioFile(file: File | Blob, fileName = 'a
     throw new Error('Não consegui capturar a letra cantada nesse áudio. Tente um áudio mais limpo, só com a voz da música.')
   }
 
-  return formatTranscribedLyric(text)
+  const segments: StudioTranscriptionSegment[] = Array.isArray(data?.segments)
+    ? data.segments
+      .map((segment: any) => ({ start: Number(segment?.start), end: Number(segment?.end), text: String(segment?.text || '').trim() }))
+      .filter((segment: StudioTranscriptionSegment) => Number.isFinite(segment.start) && Number.isFinite(segment.end) && segment.end > segment.start && segment.text)
+    : []
+  return { text: await formatTranscribedLyric(text), segments }
+}
+
+export async function transcribeStudioAudioFile(file: File | Blob, fileName = 'audio.mp3') {
+  return (await transcribeStudioAudioFileDetailed(file, fileName)).text
 }
 
 /** Organiza o texto cru do Whisper em versos/estrofes cantáveis. */
@@ -126,4 +138,15 @@ export async function transcribeStudioAudioBuffer(input: {
   const fileName = input.fileName || 'audio.mp3'
   const blob = new Blob([new Uint8Array(input.buffer)], { type: contentType })
   return transcribeStudioAudioFile(blob, fileName)
+}
+
+export async function transcribeStudioAudioBufferDetailed(input: {
+  buffer: Buffer
+  fileName?: string
+  contentType?: string | null
+}) {
+  const contentType = input.contentType || 'audio/mpeg'
+  const fileName = input.fileName || 'audio.mp3'
+  const blob = new Blob([new Uint8Array(input.buffer)], { type: contentType })
+  return transcribeStudioAudioFileDetailed(blob, fileName)
 }

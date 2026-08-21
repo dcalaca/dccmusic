@@ -22,7 +22,8 @@ export async function createVeoLabStoryboard(lyrics: string, visualDirection: st
     'You are a Brazilian music-video creative director. Read the song lyrics and design one coherent 30-second release teaser split into exactly five chronological scenes of six seconds.',
     'The five scenes MUST show different actions, compositions and story beats. Together they form a beginning, development, turn, climax and resolution.',
     'Create a precise locked character bible: apparent age, face, hair, skin tone, body, wardrobe and accessories. Never use celebrity names. Keep the exact same people and wardrobe throughout.',
-    'Write title, logline, scene story summaries and captions in Brazilian Portuguese. Write characterBible, visualStyle and videoPrompt in detailed English optimized for Veo.',
+    'LANGUAGE RULE: everything visible to the user MUST be written in natural Brazilian Portuguese: title, logline, every scene title, every scene story and every caption.',
+    'Only the technical fields characterBible, visualStyle and videoPrompt may be written in detailed English optimized for Veo. Never write scene story in English.',
     'For each scene, choose one short caption from the supplied lyrics that emotionally matches that six-second moment. Preserve the lyric wording and use at most 12 words.',
     'Do not put typography, subtitles, logos, singing or dialogue inside videoPrompt. Captions are rendered separately by the application.',
     `Optional user visual reference: ${visualDirection || 'None. Infer the best cinematic visual direction from the lyrics, mood and story.'}`,
@@ -35,7 +36,7 @@ export async function createVeoLabStoryboard(lyrics: string, visualDirection: st
     body: JSON.stringify({
       model,
       messages: [
-        { role: 'system', content: 'Return precise, production-ready structured JSON for a music-video storyboard.' },
+        { role: 'system', content: 'Você é um diretor de videoclipes brasileiro. Todo texto visível ao usuário deve ser escrito em português do Brasil. Apenas prompts técnicos destinados ao Veo são escritos em inglês. Retorne JSON estruturado e pronto para produção.' },
         { role: 'user', content: instructions },
       ],
       response_format: {
@@ -48,10 +49,10 @@ export async function createVeoLabStoryboard(lyrics: string, visualDirection: st
             additionalProperties: false,
             required: ['title', 'logline', 'characterBible', 'visualStyle', 'scenes'],
             properties: {
-              title: { type: 'string' },
-              logline: { type: 'string' },
-              characterBible: { type: 'string' },
-              visualStyle: { type: 'string' },
+              title: { type: 'string', description: 'Título do roteiro em português brasileiro.' },
+              logline: { type: 'string', description: 'Resumo da história em português brasileiro.' },
+              characterBible: { type: 'string', description: 'Technical locked character description in English for Veo.' },
+              visualStyle: { type: 'string', description: 'Technical visual style in English for Veo.' },
               scenes: {
                 type: 'array', minItems: 5, maxItems: 5,
                 items: {
@@ -59,10 +60,10 @@ export async function createVeoLabStoryboard(lyrics: string, visualDirection: st
                   additionalProperties: false,
                   required: ['title', 'story', 'videoPrompt', 'caption'],
                   properties: {
-                    title: { type: 'string' },
-                    story: { type: 'string' },
-                    videoPrompt: { type: 'string' },
-                    caption: { type: 'string' },
+                    title: { type: 'string', description: 'Nome curto da cena em português brasileiro.' },
+                    story: { type: 'string', description: 'Descrição narrativa da cena em português brasileiro. Nunca em inglês.' },
+                    videoPrompt: { type: 'string', description: 'Detailed technical generation prompt in English for Veo.' },
+                    caption: { type: 'string', description: 'Trecho curto da letra original, em português brasileiro.' },
                   },
                 },
               },
