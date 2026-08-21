@@ -244,13 +244,29 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
   const artistName = String(composer?.name || '').trim() || 'DCC Music'
 
   if (isMurekaStudioTrack(generationToUse, version)) {
-    return startMurekaLyricsVideoGeneration({
+    // O endpoint nativo de lyric video da Mureka não aceita o nome do artista.
+    // Quando recebe um song_id, ele imprime no MP4 o proprietário da conta da API,
+    // o que pode atribuir a música ao administrador da plataforma. Passe primeiro
+    // pelo fluxo da Suno, que aceita domainName e preserva o nome do compositor.
+    const refreshed = await startLyricVideoRefreshFromOriginalAudio({
       videoRequest,
       version,
-      generation: generationToUse,
+      project,
+      composerName: artistName,
       songTitle,
-      artistName,
     })
+    if (refreshed) return refreshed
+
+    const errorMessage = 'Não consegui preparar este vídeo com o nome correto do compositor agora.'
+    await supabaseAdmin
+      .from('studio_video_requests')
+      .update({
+        status: 'failed',
+        error_message: errorMessage,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', videoRequest.id)
+    throw new Error(errorMessage)
   }
 
   if (!taskId || !audioId) {
