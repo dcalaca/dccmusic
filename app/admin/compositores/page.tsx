@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { FiUser, FiMail, FiCalendar, FiCheckCircle, FiXCircle, FiRefreshCw, FiSearch, FiEdit2, FiMusic, FiVideo, FiEye, FiKey, FiFileText, FiDownload, FiTrash2, FiCreditCard, FiGift, FiFilter } from 'react-icons/fi'
+import { FiUser, FiMail, FiCalendar, FiXCircle, FiRefreshCw, FiSearch, FiEdit2, FiMusic, FiKey, FiFileText, FiDownload, FiTrash2, FiCreditCard, FiGift, FiFilter } from 'react-icons/fi'
 
 interface Composer {
   id: string
   name: string
   slug: string
   email?: string
+  country?: string | null
   emailVerified?: boolean
   emailVerifiedAt?: Date | null
   hasActiveSubscription?: boolean
@@ -509,6 +510,20 @@ export default function AdminComposersPage() {
     })
   }
 
+  const formatCountry = (country: string | null | undefined) => {
+    const code = String(country || '').trim().toUpperCase()
+    if (!/^[A-Z]{2}$/.test(code)) return 'Não informado'
+
+    const flag = String.fromCodePoint(...Array.from(code, (letter) => 127397 + letter.charCodeAt(0)))
+
+    try {
+      const name = new Intl.DisplayNames(['pt-BR'], { type: 'region' }).of(code) || code
+      return `${flag} ${name}`
+    } catch {
+      return `${flag} ${code}`
+    }
+  }
+
   const formatDateTime = (date: Date | null | undefined) => {
     if (!date) return 'N/A'
     return new Date(date).toLocaleString('pt-BR', {
@@ -805,11 +820,14 @@ export default function AdminComposersPage() {
         {/* Lista de Compositores */}
         <div className="bg-gray-900/50 border border-gray-800 rounded-lg overflow-hidden">
           <div className="max-h-[70vh] overflow-auto">
-            <table className="min-w-[1080px] w-full">
+            <table className="min-w-[760px] w-full">
               <thead className="sticky top-0 z-20 bg-gray-900 shadow-[0_1px_0_rgba(31,41,55,1)]">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                     Compositor
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                    País
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                     Email
@@ -818,39 +836,19 @@ export default function AdminComposersPage() {
                     Cadastro
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                    Vídeos
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                    Músicas
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                    Visualizações
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                     Studio IA
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                    Expira em
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {listTotal === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-8 text-center text-gray-400">
+                    <td colSpan={5} className="px-6 py-8 text-center text-gray-400">
                       {appliedSearch || statusFilter !== 'all' ? 'Nenhum compositor encontrado' : 'Nenhum compositor cadastrado'}
                     </td>
                   </tr>
                 ) : (
                   composers.map((composer) => {
-                    const hasAccess = composer.hasActiveSubscription && composer.isPremium
-                    const isExpired = composer.subscriptionExpiresAt
-                      ? new Date(composer.subscriptionExpiresAt) < new Date()
-                      : false
-
                     return (
                       <tr key={composer.id} className="hover:bg-gray-800/30 transition-colors">
                         <td className="px-4 py-2 whitespace-nowrap">
@@ -869,6 +867,9 @@ export default function AdminComposersPage() {
                               <span className="text-xs text-gray-500">/{composer.slug}</span>
                             </div>
                           </div>
+                        </td>
+                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-300">
+                          {formatCountry(composer.country)}
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap">
                           <div className="flex items-center text-sm text-gray-300">
@@ -889,24 +890,6 @@ export default function AdminComposersPage() {
                           </div>
                         </td>
                         <td className="px-4 py-2 whitespace-nowrap">
-                          <div className="flex items-center text-sm text-gray-300">
-                            <FiVideo className="w-4 h-4 mr-2 text-gray-400" />
-                            {composer.videoCount ?? 0}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 whitespace-nowrap">
-                          <div className="flex items-center text-sm text-gray-300">
-                            <FiMusic className="w-4 h-4 mr-2 text-gray-400" />
-                            {composer.musicCount ?? 0}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 whitespace-nowrap">
-                          <div className="flex items-center text-sm text-gray-300">
-                            <FiEye className="w-4 h-4 mr-2 text-gray-400" />
-                            {composer.totalViews?.toLocaleString('pt-BR') ?? 0}
-                          </div>
-                        </td>
-                        <td className="px-4 py-2 whitespace-nowrap">
                           <Link
                             href={`/admin/compositores/${composer.id}/studio`}
                             className="inline-flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-gray-300 transition hover:bg-purple-950/40 hover:text-purple-100"
@@ -918,29 +901,6 @@ export default function AdminComposersPage() {
                             <FiMusic className="h-4 w-4 text-primary-300" />
                             <span>{composer.studioMusicCount ?? 0} músicas IA</span>
                           </Link>
-                        </td>
-                        <td className="px-4 py-2 whitespace-nowrap">
-                          {hasAccess && !isExpired ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-900/50 text-green-300 border border-green-800">
-                              <FiCheckCircle className="w-3 h-3 mr-1" />
-                              Ativo
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-900/50 text-red-300 border border-red-800">
-                              <FiXCircle className="w-3 h-3 mr-1" />
-                              Inativo
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-300">
-                          {composer.subscriptionExpiresAt ? (
-                            <div className="flex items-center">
-                              <FiCalendar className="w-4 h-4 mr-2 text-gray-400" />
-                              {formatDate(composer.subscriptionExpiresAt)}
-                            </div>
-                          ) : (
-                            <span className="text-gray-500">N/A</span>
-                          )}
                         </td>
                       </tr>
                     )

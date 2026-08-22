@@ -130,6 +130,7 @@ export interface Composer {
   name: string
   slug: string
   email?: string
+  country?: string | null
   emailVerified?: boolean
   emailVerifiedAt?: Date | null
   hasActiveSubscription?: boolean
@@ -2064,6 +2065,7 @@ export function mapComposer(data: any): Composer {
     name: formatDisplayName(data.name),
     slug: data.slug,
     email: data.email || undefined,
+    country: data.country || null,
     emailVerified: Boolean(data.email_verified),
     emailVerifiedAt: data.email_verified_at ? new Date(data.email_verified_at) : null,
     hasActiveSubscription: data.has_active_subscription || false,
