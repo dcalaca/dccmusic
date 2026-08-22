@@ -192,7 +192,8 @@ export async function associateAccountToComposer(
   composerId: string,
   email: string,
   password: string,
-  composerName: string
+  composerName: string,
+  country?: string
 ) {
   try {
     const normalizedEmail = email.toLowerCase().trim()
@@ -234,6 +235,7 @@ export async function associateAccountToComposer(
         email: normalizedEmail,
         password_hash: passwordHash,
         name: formattedComposerName,
+        ...(country ? { country } : {}),
       })
       .eq('id', composerId)
       .select()
@@ -262,7 +264,8 @@ export async function createComposerAccount(
   password: string, 
   composerName: string,
   forceCreate: boolean = false,
-  accountName?: string
+  accountName?: string,
+  country?: string
 ) {
   try {
     const normalizedEmail = email.toLowerCase().trim()
@@ -316,6 +319,7 @@ export async function createComposerAccount(
       slug: slug,
       email: normalizedEmail,
       password_hash: passwordHash,
+      ...(country ? { country } : {}),
     }
 
     if (formattedAccountName) {

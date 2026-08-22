@@ -45,6 +45,24 @@ export function normalizeCountry(value?: string | null): DccCountry {
   return normalized === 'PY' || normalized === 'CO' ? normalized : 'BR'
 }
 
+/** Detect the signup country from trusted hosting/proxy geolocation headers. */
+export function getDetectedCountry(headers: Pick<Headers, 'get'>): string {
+  const candidates = [
+    headers.get('x-vercel-ip-country'),
+    headers.get('cf-ipcountry'),
+    headers.get('x-dcc-country'),
+  ]
+
+  for (const candidate of candidates) {
+    const country = String(candidate || '').trim().toUpperCase()
+    if (/^[A-Z]{2}$/.test(country) && country !== 'XX') {
+      return country
+    }
+  }
+
+  return DEFAULT_COUNTRY
+}
+
 export function getLocaleForCountry(country: DccCountry): DccLocale {
   return COUNTRY_CONFIG[country].locale
 }

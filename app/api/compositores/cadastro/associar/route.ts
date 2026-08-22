@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as composerAuth from '@/lib/composer-auth'
 import { validateSignupEmail } from '@/lib/email-validation'
+import { getDetectedCountry } from '@/lib/localization'
 
 export async function POST(request: Request) {
   try {
@@ -42,7 +43,8 @@ export async function POST(request: Request) {
       composerId,
       normalizedEmail,
       password,
-      composerName
+      composerName,
+      getDetectedCountry(request.headers)
     )
 
     let message = 'Conta associada ao compositor existente com sucesso! Você já pode fazer login.'

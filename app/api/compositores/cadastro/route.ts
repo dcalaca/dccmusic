@@ -6,6 +6,7 @@ import { hasComposerAccountDeletionBlock } from '@/lib/dcc-emails'
 import { validateSignupEmail } from '@/lib/email-validation'
 import { PARTNER_SESSION_COOKIE, applyComposerPartnerAttribution } from '@/lib/partners'
 import { sendMetaCompleteRegistrationEvent } from '@/lib/meta-conversions'
+import { getDetectedCountry } from '@/lib/localization'
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +47,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const result = await composerAuth.createComposerAccount(normalizedEmail, password, composerName, forceCreate === true, accountName)
+    const country = getDetectedCountry(request.headers)
+    const result = await composerAuth.createComposerAccount(normalizedEmail, password, composerName, forceCreate === true, accountName, country)
 
     // Se precisa de escolha do usuário, retornar lista de compositores similares
     if ('requiresChoice' in result && result.requiresChoice) {
