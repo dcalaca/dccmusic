@@ -6,12 +6,19 @@ import { isStripeConfigured, stripeRequest } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase'
 import * as db from '@/lib/db'
 import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
+import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
     if (!isStripeConfigured()) {
+      await reportPaymentFailure({
+        provider: 'stripe',
+        stage: 'configuracao_plano',
+        error: 'Stripe não configurada no servidor',
+        requestUrl: request.url,
+      })
       return NextResponse.json({ error: 'Stripe não configurado no servidor' }, { status: 503 })
     }
 
@@ -109,6 +116,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[PLAN STRIPE] Erro ao criar sessão:', error?.message)
+    await reportPaymentFailure({
+      provider: 'stripe',
+      stage: 'criacao_checkout_plano',
+      error,
+      requestUrl: request.url,
+      composerId: getComposerFromRequest(request)?.composerId,
+    })
     return NextResponse.json({ error: error?.message || 'Erro ao abrir pagamento Stripe' }, { status: 500 })
   }
 }

@@ -6,6 +6,7 @@ import { getOrCreatePendingSubscription } from '@/lib/composer-plan-access'
 import { buildMetaCapiMetadata, sendMetaInitiateCheckoutEvent } from '@/lib/meta-conversions'
 import { isStripeConfigured } from '@/lib/stripe'
 import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
+import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +27,12 @@ export async function POST(request: NextRequest) {
           : null
 
     if (!provider) {
+      await reportPaymentFailure({
+        provider: 'checkout',
+        stage: 'configuracao_plano',
+        error: 'Nenhum provedor de pagamento está configurado',
+        requestUrl: request.url,
+      })
       return NextResponse.json(
         { error: 'Nenhum meio de pagamento está configurado. Entre em contato com o suporte.' },
         { status: 500 }
@@ -122,6 +129,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[PLAN INTENT] Erro ao preparar pagamento do plano:', error)
+    await reportPaymentFailure({
+      provider: 'checkout',
+      stage: 'preparacao_plano',
+      error,
+      requestUrl: request.url,
+      composerId: getComposerFromRequest(request)?.composerId,
+    })
     return NextResponse.json(
       { error: error.message || 'Erro ao preparar pagamento do plano' },
       { status: 500 }

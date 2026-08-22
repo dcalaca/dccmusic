@@ -1,4 +1,5 @@
 import * as db from '@/lib/db'
+import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 import { supabaseAdmin } from '@/lib/supabase'
 import { slugify } from '@/lib/utils'
 
@@ -668,6 +669,7 @@ export async function creditStudioTopupOnce(input: {
 }) {
   const paymentId = String(input.paymentId)
   const provider = input.provider || (input.topup.payment_gateway === 'stripe' ? 'stripe' : 'mercadopago')
+  try {
   const gatewayMetadata = provider === 'stripe'
     ? { stripe_payment: input.paymentData || input.topup.metadata?.stripe_payment || null }
     : { mercadopago_payment: input.paymentData || input.topup.metadata?.mercadopago_payment || null }
@@ -756,6 +758,19 @@ export async function creditStudioTopupOnce(input: {
     credited: true,
     topup: claimedTopup,
     reason: 'credited',
+  }
+  } catch (error) {
+    await reportPaymentFailure({
+      provider,
+      stage: 'liberacao_creditos_pagamento_aprovado',
+      error,
+      composerId: input.topup?.composer_id,
+      paymentId,
+      orderId: input.topup?.id,
+      amount: Number(input.topup?.amount) || null,
+      currency: input.topup?.currency || 'BRL',
+    })
+    throw error
   }
 }
 

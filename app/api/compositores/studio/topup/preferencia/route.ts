@@ -4,6 +4,7 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { getSiteUrl, studioMonthKey } from '@/lib/studio'
 import { getStudioTopupQuote } from '@/lib/studio-topups'
 import { supabaseAdmin } from '@/lib/supabase'
+import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 import {
   buildMetaCapiMetadata,
   sendMetaInitiateCheckoutEvent,
@@ -15,6 +16,12 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+      await reportPaymentFailure({
+        provider: 'mercadopago',
+        stage: 'configuracao_checkout_recarga',
+        error: 'MERCADOPAGO_ACCESS_TOKEN não configurado',
+        requestUrl: request.url,
+      })
       return NextResponse.json(
         { error: 'Mercado Pago não está configurado no servidor.' },
         { status: 500 }
@@ -155,6 +162,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro ao criar recarga avulsa:', error)
+    await reportPaymentFailure({
+      provider: 'mercadopago',
+      stage: 'criacao_checkout_recarga',
+      error,
+      requestUrl: request.url,
+      composerId: getComposerFromRequest(request)?.composerId,
+    })
     return NextResponse.json(
       { error: error.message || 'Erro ao criar recarga avulsa' },
       { status: 500 }

@@ -4,12 +4,21 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { getStudioTopupQuote } from '@/lib/studio-topups'
 import { isStripeConfigured, stripeRequest } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase'
+import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    if (!isStripeConfigured()) return NextResponse.json({ error: 'Stripe não configurada no servidor' }, { status: 503 })
+    if (!isStripeConfigured()) {
+      await reportPaymentFailure({
+        provider: 'stripe',
+        stage: 'configuracao_recarga',
+        error: 'Stripe não configurada no servidor',
+        requestUrl: request.url,
+      })
+      return NextResponse.json({ error: 'Stripe não configurada no servidor' }, { status: 503 })
+    }
     const composer = getComposerFromRequest(request)
     if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     const { topupId } = await request.json()
@@ -72,6 +81,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro ao criar sessão Stripe:', error?.message)
+    await reportPaymentFailure({
+      provider: 'stripe',
+      stage: 'criacao_checkout_recarga',
+      error,
+      requestUrl: request.url,
+      composerId: getComposerFromRequest(request)?.composerId,
+    })
     return NextResponse.json({ error: error?.message || 'Erro ao abrir pagamento alternativo' }, { status: 500 })
   }
 }

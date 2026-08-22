@@ -8,6 +8,7 @@ import { recordPartnerPurchase } from '@/lib/partners'
 import { sendAdminPaymentNotificationEmail, sendPaymentConfirmationEmail } from '@/lib/dcc-emails'
 import { readMetaBrowserContextFromMetadata, sendMetaPurchaseEvent } from '@/lib/meta-conversions'
 import { sendTikTokPurchaseEvent } from '@/lib/tiktok-events'
+import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
 export const dynamic = 'force-dynamic'
 
@@ -77,6 +78,14 @@ export async function POST(request: NextRequest) {
     const verification = verifyStripeWebhookSignature(rawBody, request.headers.get('stripe-signature'))
     if (!verification.ok) {
       console.error('[STRIPE WEBHOOK] Assinatura inválida:', verification.reason)
+      if (!verification.configured) {
+        await reportPaymentFailure({
+          provider: 'stripe',
+          stage: 'configuracao_webhook',
+          error: 'STRIPE_WEBHOOK_SECRET não configurado; pagamentos aprovados não podem ser confirmados',
+          requestUrl: request.url,
+        })
+      }
       return NextResponse.json({ error: 'Assinatura inválida' }, { status: 401 })
     }
     const event = JSON.parse(rawBody)
@@ -188,6 +197,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: true })
   } catch (error: any) {
     console.error('[STRIPE WEBHOOK] Erro:', error?.message)
+    await reportPaymentFailure({
+      provider: 'stripe',
+      stage: 'processamento_webhook',
+      error,
+      requestUrl: request.url,
+    })
     return NextResponse.json({ error: 'Erro ao processar webhook' }, { status: 500 })
   }
 }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { paymentClient } from '@/lib/mercadopago'
 import { supabaseAdmin } from '@/lib/supabase'
+import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 import {
   buildMetaCapiMetadata,
   mergeMetaBrowserContext,
@@ -112,6 +113,12 @@ async function sendApprovedPlanSideEffects(request: NextRequest, subscription: a
 export async function POST(request: NextRequest) {
   try {
     if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+      await reportPaymentFailure({
+        provider: 'mercadopago',
+        stage: 'configuracao_plano',
+        error: 'MERCADOPAGO_ACCESS_TOKEN não configurado',
+        requestUrl: request.url,
+      })
       return NextResponse.json({ error: 'Mercado Pago não configurado no servidor' }, { status: 500 })
     }
 
@@ -259,6 +266,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[PLAN PAYMENT] Erro ao processar pagamento embutido:', error)
+    await reportPaymentFailure({
+      provider: 'mercadopago',
+      stage: 'processamento_pagamento_plano',
+      error,
+      requestUrl: request.url,
+      composerId: getComposerFromRequest(request)?.composerId,
+    })
     return NextResponse.json(
       { error: error.message || 'Erro ao processar pagamento' },
       { status: 500 }

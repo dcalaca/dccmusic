@@ -5,6 +5,7 @@ import { paymentClient } from '@/lib/mercadopago'
 import { getStudioTopupQuote } from '@/lib/studio-topups'
 import { creditStudioTopupOnce } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
+import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 import {
   buildMetaCapiMetadata,
   mergeMetaBrowserContext,
@@ -68,6 +69,12 @@ async function sendApprovedTopupSideEffects(request: NextRequest, topup: any, pa
 export async function POST(request: NextRequest) {
   try {
     if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+      await reportPaymentFailure({
+        provider: 'mercadopago',
+        stage: 'configuracao_recarga',
+        error: 'MERCADOPAGO_ACCESS_TOKEN não configurado',
+        requestUrl: request.url,
+      })
       return NextResponse.json({ error: 'Mercado Pago não configurado no servidor' }, { status: 500 })
     }
 
@@ -228,6 +235,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro ao processar pagamento embutido:', error)
+    await reportPaymentFailure({
+      provider: 'mercadopago',
+      stage: 'processamento_pagamento_recarga',
+      error,
+      requestUrl: request.url,
+      composerId: getComposerFromRequest(request)?.composerId,
+    })
     return NextResponse.json(
       { error: error.message || 'Erro ao processar pagamento' },
       { status: 500 }

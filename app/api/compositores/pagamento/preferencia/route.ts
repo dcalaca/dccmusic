@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { preferenceClient, getReturnUrls } from '@/lib/mercadopago'
 import { supabaseAdmin } from '@/lib/supabase'
+import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 import * as db from '@/lib/db'
 import {
   buildMetaCapiMetadata,
@@ -13,6 +14,12 @@ export async function POST(request: Request) {
     // Verificar se token está configurado
     if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
       console.error('[PREFERENCIA] MERCADOPAGO_ACCESS_TOKEN não configurado!')
+      await reportPaymentFailure({
+        provider: 'mercadopago',
+        stage: 'configuracao_checkout_plano',
+        error: 'MERCADOPAGO_ACCESS_TOKEN não configurado',
+        requestUrl: request.url,
+      })
       return NextResponse.json(
         { error: 'Configuração do Mercado Pago não encontrada. Entre em contato com o suporte.' },
         { status: 500 }
@@ -465,6 +472,12 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('[PREFERENCIA] Erro ao criar preferência de pagamento:', error)
+    await reportPaymentFailure({
+      provider: 'mercadopago',
+      stage: 'criacao_checkout_plano',
+      error,
+      requestUrl: request.url,
+    })
     console.error('[PREFERENCIA] Stack:', error.stack)
     console.error('[PREFERENCIA] Detalhes:', {
       message: error.message,

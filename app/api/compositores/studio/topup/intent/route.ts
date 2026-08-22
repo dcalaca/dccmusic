@@ -6,6 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { buildMetaCapiMetadata, sendMetaInitiateCheckoutEvent } from '@/lib/meta-conversions'
 import { isStripeConfigured } from '@/lib/stripe'
 import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
+import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +29,12 @@ export async function POST(request: NextRequest) {
           : null
 
     if (!provider) {
+      await reportPaymentFailure({
+        provider: 'checkout',
+        stage: 'configuracao_recarga',
+        error: 'Nenhum provedor de pagamento está configurado',
+        requestUrl: request.url,
+      })
       return NextResponse.json({ error: 'Nenhum meio de pagamento está configurado no servidor.' }, { status: 500 })
     }
 
@@ -124,6 +131,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro ao criar intenção de recarga:', error)
+    await reportPaymentFailure({
+      provider: 'checkout',
+      stage: 'preparacao_recarga',
+      error,
+      requestUrl: request.url,
+      composerId: getComposerFromRequest(request)?.composerId,
+    })
     return NextResponse.json(
       { error: error.message || 'Erro ao preparar recarga avulsa' },
       { status: 500 }

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 import { startStudioVideoGeneration } from '@/lib/studio-video'
 import { creditStudioTopupOnce, revokeStudioTopupCreditOnce } from '@/lib/studio'
 import {
@@ -149,6 +150,14 @@ export async function POST(request: Request) {
 
         if (videoRequestError) {
           console.error('[WEBHOOK] Erro ao atualizar vídeo com letra:', videoRequestError)
+          await reportPaymentFailure({
+            provider: 'mercadopago',
+            stage: 'confirmacao_pagamento_video',
+            error: videoRequestError,
+            requestUrl: request.url,
+            paymentId,
+            orderId: externalReference,
+          })
           return NextResponse.json({ error: 'Erro ao atualizar vídeo com letra' }, { status: 500 })
         }
 
@@ -220,6 +229,15 @@ export async function POST(request: Request) {
 
           if (topupUpdateError) {
             console.error('[WEBHOOK] Erro ao atualizar recarga Studio IA:', topupUpdateError)
+            await reportPaymentFailure({
+              provider: 'mercadopago',
+              stage: 'atualizacao_recarga_webhook',
+              error: topupUpdateError,
+              requestUrl: request.url,
+              paymentId,
+              orderId: currentTopup.id,
+              composerId: currentTopup.composer_id,
+            })
             return NextResponse.json({ error: 'Erro ao atualizar recarga Studio IA' }, { status: 500 })
           }
 
@@ -557,6 +575,12 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('[WEBHOOK] Erro ao processar webhook:', error)
+    await reportPaymentFailure({
+      provider: 'mercadopago',
+      stage: 'processamento_webhook',
+      error,
+      requestUrl: request.url,
+    })
     return NextResponse.json(
       { 
         error: error.message || 'Erro ao processar webhook',

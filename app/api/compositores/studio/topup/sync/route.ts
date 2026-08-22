@@ -5,6 +5,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { creditStudioTopupOnce, revokeStudioTopupCreditOnce } from '@/lib/studio'
 import { sanitizeStripeObject, stripeRequest } from '@/lib/stripe'
 import { sendApprovedStudioTopupSideEffects } from '@/lib/studio-topup-side-effects'
+import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
 export const dynamic = 'force-dynamic'
 
@@ -81,6 +82,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
+      await reportPaymentFailure({
+        provider: 'mercadopago',
+        stage: 'configuracao_sincronizacao_recarga',
+        error: 'MERCADOPAGO_ACCESS_TOKEN não configurado',
+        requestUrl: request.url,
+      })
       return NextResponse.json({ error: 'Mercado Pago não configurado no servidor' }, { status: 500 })
     }
 
@@ -164,6 +171,13 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro ao sincronizar recarga:', error)
+    await reportPaymentFailure({
+      provider: 'checkout',
+      stage: 'sincronizacao_pagamento_recarga',
+      error,
+      requestUrl: request.url,
+      composerId: getComposerFromRequest(request)?.composerId,
+    })
     return NextResponse.json(
       { error: error.message || 'Erro ao sincronizar recarga' },
       { status: 500 }
