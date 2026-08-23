@@ -12,6 +12,20 @@ const improvementOptions = [
   { id: 'instruments', label: 'Melhorar instrumentos', description: 'Dá mais corpo ao arranjo e à produção.' },
 ]
 
+const voiceOptions = [
+  { id: 'same', label: 'Manter voz original', description: 'Tenta preservar o perfil vocal do áudio enviado.' },
+  { id: 'male', label: 'Voz masculina', description: 'Pede uma nova interpretação com voz principal masculina.' },
+  { id: 'female', label: 'Voz feminina', description: 'Pede uma nova interpretação com voz principal feminina.' },
+]
+
+const voiceStyleOptions = [
+  { id: 'natural', label: 'Natural' },
+  { id: 'soft', label: 'Suave' },
+  { id: 'powerful', label: 'Potente' },
+  { id: 'deep', label: 'Grave' },
+  { id: 'bright', label: 'Aguda' },
+]
+
 const MAX_AUDIO_DURATION_SECONDS = 270
 
 async function readApiResponse(response: Response) {
@@ -89,6 +103,8 @@ export default function ImproveReadyMusicPage() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [selectedImprovement, setSelectedImprovement] = useState('similar')
+  const [selectedVoice, setSelectedVoice] = useState('same')
+  const [selectedVoiceStyle, setSelectedVoiceStyle] = useState('natural')
   const [lyric, setLyric] = useState('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
 
@@ -175,6 +191,8 @@ export default function ImproveReadyMusicPage() {
           title,
           style,
           improvement: selectedImprovement,
+          voice: selectedVoice,
+          voiceStyle: selectedVoiceStyle,
           lyric: lyric.trim(),
           ...uploaded,
         }),
@@ -271,6 +289,43 @@ export default function ImproveReadyMusicPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-gray-800 bg-black/20 p-4">
+              <p className="mb-1 text-sm font-bold text-gray-200">Voz principal</p>
+              <p className="mb-3 text-xs text-gray-400">Escolha se quer preservar a voz do áudio ou pedir uma nova interpretação.</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {voiceOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setSelectedVoice(option.id)}
+                    className={`rounded-2xl border p-3 text-left transition ${selectedVoice === option.id ? 'border-primary-400 bg-primary-950/40 text-white' : 'border-gray-800 bg-black/30 text-gray-300 hover:border-purple-500'}`}
+                  >
+                    <span className="block font-black">{option.label}</span>
+                    <span className="mt-1 block text-xs text-gray-400">{option.description}</span>
+                  </button>
+                ))}
+              </div>
+
+              <p className="mb-3 mt-5 text-sm font-bold text-gray-300">Estilo da voz</p>
+              <div className="flex flex-wrap gap-2">
+                {voiceStyleOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setSelectedVoiceStyle(option.id)}
+                    className={`rounded-xl border px-4 py-2 text-sm font-bold transition ${selectedVoiceStyle === option.id ? 'border-primary-400 bg-primary-950/40 text-white' : 'border-gray-800 bg-black/30 text-gray-300 hover:border-purple-500'}`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              {selectedVoice !== 'same' && (
+                <p className="mt-3 text-xs text-amber-200">
+                  Ao trocar o tipo de voz, a IA recebe um pouco mais de liberdade para mudar a interpretação sem perder a composição original.
+                </p>
+              )}
             </div>
 
             <div className="mt-5">
