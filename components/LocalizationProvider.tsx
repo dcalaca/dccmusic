@@ -38,27 +38,48 @@ function translatePriceText(value: string, country: DccCountry) {
   })
 }
 
+const translatableAttributes = ['placeholder', 'title', 'aria-label'] as const
+const skippedTranslationTags = new Set(['SCRIPT', 'STYLE', 'CODE', 'PRE', 'NOSCRIPT', 'TEXTAREA'])
+
+function translateTextNode(node: Node, country: DccCountry) {
+  if (node.nodeType !== Node.TEXT_NODE) return
+
+  const parent = node.parentElement
+  if (
+    !parent ||
+    skippedTranslationTags.has(parent.tagName) ||
+    parent.closest('[data-no-translate], [translate="no"], [contenteditable="true"]')
+  ) {
+    return
+  }
+
+  const current = node.nodeValue || ''
+  const next = translatePriceText(translateToParaguayanSpanish(current), country)
+  if (next !== current) node.nodeValue = next
+}
+
+function translateElementAttributes(element: Element, country: DccCountry) {
+  if (element.closest('[data-no-translate], [translate="no"]')) return
+
+  for (const attribute of translatableAttributes) {
+    const current = element.getAttribute(attribute)
+    if (!current) continue
+    const next = translatePriceText(translateToParaguayanSpanish(current), country)
+    if (next !== current) element.setAttribute(attribute, next)
+  }
+}
+
 function translateDom(root: ParentNode, country: DccCountry) {
-  const skipped = new Set(['SCRIPT', 'STYLE', 'CODE', 'PRE', 'NOSCRIPT'])
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
   let node = walker.nextNode()
   while (node) {
-    const parent = node.parentElement
-    if (parent && !skipped.has(parent.tagName) && !parent.closest('[data-no-translate]')) {
-      const current = node.nodeValue || ''
-      const next = translatePriceText(translateToParaguayanSpanish(current), country)
-      if (next !== current) node.nodeValue = next
-    }
+    translateTextNode(node, country)
     node = walker.nextNode()
   }
 
+  if (root instanceof Element) translateElementAttributes(root, country)
   root.querySelectorAll?.<HTMLElement>('[placeholder], [title], [aria-label]').forEach((element) => {
-    for (const attribute of ['placeholder', 'title', 'aria-label']) {
-      const current = element.getAttribute(attribute)
-      if (!current) continue
-      const next = translatePriceText(translateToParaguayanSpanish(current), country)
-      if (next !== current) element.setAttribute(attribute, next)
-    }
+    translateElementAttributes(element, country)
   })
 }
 
@@ -87,19 +108,38 @@ export default function LocalizationProvider({
     // faz parte do produto e, portanto, também recebe a localização paraguaia.
     if (country === 'BR' || pathname.startsWith('/admin')) return
 
+    document.title = translateToParaguayanSpanish(document.title)
     translateDom(document.body, country)
+
     const observer = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
+        if (mutation.type === 'characterData') {
+          translateTextNode(mutation.target, country)
+          continue
+        }
+
+        if (mutation.type === 'attributes') {
+          translateElementAttributes(mutation.target as Element, country)
+          continue
+        }
+
         mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.TEXT_NODE && node.parentNode) {
-            translateDom(node.parentNode as ParentNode, country)
+          if (node.nodeType === Node.TEXT_NODE) {
+            translateTextNode(node, country)
           } else if (node.nodeType === Node.ELEMENT_NODE) {
             translateDom(node as ParentNode, country)
           }
         })
       }
     })
-    observer.observe(document.body, { childList: true, subtree: true })
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: [...translatableAttributes],
+    })
     return () => observer.disconnect()
   }, [config.locale, country, pathname])
 
