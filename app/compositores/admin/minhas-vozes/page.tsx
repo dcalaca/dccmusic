@@ -103,6 +103,7 @@ async function uploadVoiceFileDirectly(token: string, file: File, kind: 'source'
 export default function ComposerVoicesPage() {
   const router = useRouter()
   const [voices, setVoices] = useState<any[]>([])
+  const [recoverableVoices, setRecoverableVoices] = useState<any[]>([])
   const [limit, setLimit] = useState(5)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -138,7 +139,7 @@ export default function ComposerVoicesPage() {
     setLoading(true)
     setError('')
     try {
-      const response = await fetch('/api/compositores/studio/voices', {
+      const response = await fetch('/api/compositores/studio/voices?includeRecoverable=true', {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       })
@@ -150,6 +151,7 @@ export default function ComposerVoicesPage() {
       }
       if (!response.ok) throw new Error(data.error || 'Erro ao carregar vozes')
       setVoices(data.voices || [])
+      setRecoverableVoices(data.recoverableVoices || [])
       setLimit(data.limit || 5)
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar vozes')
@@ -304,7 +306,7 @@ export default function ComposerVoicesPage() {
       })
       const data = await readResponseJson(response)
       if (!response.ok) throw new Error(data.error || 'Erro ao reativar voz')
-      setMessage('Reativação iniciada sem cobrança. Aguarde alguns segundos e clique em Atualizar status. Se aparecer uma nova frase, grave a frase para recriar a voz.')
+      setMessage('Reativação iniciada sem cobrança. O áudio original foi reaproveitado. Aguarde a nova frase e grave-a para voltar a usar sua voz.')
       await loadVoices()
     } catch (err: any) {
       setError(err.message || 'Erro ao reativar voz')
@@ -702,7 +704,7 @@ export default function ComposerVoicesPage() {
                   )}
 
                   <div className="flex flex-col gap-3 sm:flex-row">
-                    {voice.status === 'failed' && voice.sourceAudioUrl && voice.verifyAudioUrl && String(voice.errorMessage || '').toLowerCase().includes('expir') && (
+                    {voice.status === 'failed' && voice.sourceAudioUrl && String(voice.errorMessage || '').toLowerCase().includes('expir') && (
                       <button onClick={() => reactivateExpiredVoice(voice.id)} disabled={refreshingId === voice.id} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-3 font-bold text-white disabled:opacity-60">
                         {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
                         Reativar voz sem cobrança
@@ -728,6 +730,40 @@ export default function ComposerVoicesPage() {
                 </article>
               ))}
             </div>
+          )}
+
+          {!loading && recoverableVoices.length > 0 && (
+            <section className="mt-8 rounded-3xl border border-purple-800/60 bg-purple-950/20 p-5 sm:p-6">
+              <div className="mb-5">
+                <h2 className="text-xl font-black text-white">Vozes expiradas que podem ser recuperadas</h2>
+                <p className="mt-2 text-sm text-purple-100/80">
+                  Seu áudio original continua salvo. Reative a voz sem cobrança e grave apenas a nova frase de verificação.
+                </p>
+                {voices.length >= limit && (
+                  <p className="mt-3 rounded-xl border border-yellow-800 bg-yellow-950/30 p-3 text-sm text-yellow-100">
+                    Exclua uma voz cadastrada para liberar espaço antes de recuperar uma voz expirada.
+                  </p>
+                )}
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                {recoverableVoices.map((voice) => (
+                  <article key={voice.id} className="rounded-2xl border border-purple-800/60 bg-black/40 p-4">
+                    <h3 className="text-lg font-black text-white">{voice.displayName}</h3>
+                    <p className="mt-1 text-sm text-purple-100/70">Voz expirada · áudio original salvo</p>
+                    {voice.sourceAudioUrl && <audio controls src={voice.sourceAudioUrl} className="mt-4 w-full" />}
+                    <button
+                      onClick={() => reactivateExpiredVoice(voice.id)}
+                      disabled={refreshingId === voice.id || voices.length >= limit}
+                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-3 font-bold text-white disabled:opacity-60"
+                    >
+                      {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
+                      Reativar voz sem cobrança
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </section>
           )}
         </div>
       </div>

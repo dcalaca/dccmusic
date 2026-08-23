@@ -1,5 +1,5 @@
 export const VOICE_PROCESSING_ERROR_MESSAGE = 'Não conseguimos processar essa voz. Tente enviar um áudio mais limpo, com voz clara e sem instrumental.'
-export const VOICE_EXPIRED_ERROR_MESSAGE = 'Essa voz cadastrada expirou e não pode mais ser usada. Envie/grave a voz novamente ou crie a música sem usar voz cadastrada.'
+export const VOICE_EXPIRED_ERROR_MESSAGE = 'Essa voz expirou. Reative-a sem cobrança e grave uma nova frase de verificação para voltar a usá-la.'
 export const STUDIO_AUDIO_CATALOG_MATCH_MESSAGE = 'Não foi possível usar esse áudio como inspiração porque o fornecedor identificou semelhança com uma gravação já existente no catálogo. Para continuar, crie uma nova versão usando a letra e o estilo, sem reaproveitar o áudio como referência.'
 
 export function isStudioVoiceExpiredError(value?: string | null) {
@@ -7,7 +7,9 @@ export function isStudioVoiceExpiredError(value?: string | null) {
   return normalized.includes('voice has expired') ||
     normalized.includes('voice expired') ||
     normalized.includes('recreate the voice') ||
-    normalized.includes('switch to a new voice')
+    normalized.includes('switch to a new voice') ||
+    normalized.includes('voz cadastrada expirou') ||
+    normalized.includes('voz expirou')
 }
 
 export function translateStudioVoiceError(value?: string | null) {

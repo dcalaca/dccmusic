@@ -8,6 +8,7 @@ import { isStudioVoiceExpiredError, translateStudioVoiceError, VOICE_PROCESSING_
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+const MAX_ACTIVE_VOICES = 5
 
 function extractValidateInfo(payload: any) {
   return payload?.data?.validateInfo ||
@@ -27,14 +28,18 @@ function extractVoiceId(payload: any) {
     null
 }
 
-async function getVoice(id: string, composerId: string) {
-  const { data, error } = await supabaseAdmin
+async function getVoice(id: string, composerId: string, includeArchived = false) {
+  let query = supabaseAdmin
     .from('studio_voice_profiles')
     .select('*')
     .eq('id', id)
     .eq('composer_id', composerId)
-    .neq('status', 'archived')
-    .maybeSingle()
+
+  if (!includeArchived) {
+    query = query.neq('status', 'archived')
+  }
+
+  const { data, error } = await query.maybeSingle()
 
   if (error) throw error
   return data
@@ -72,12 +77,12 @@ export async function PATCH(
     if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
     const { action } = await request.json().catch(() => ({ action: 'refresh' }))
-    const voice = await getVoice(params.id, composer.composerId)
-    if (!voice) return NextResponse.json({ error: 'Voz não encontrada' }, { status: 404 })
-
     if (!['refresh', 'regenerate-validation', 'reactivate-expired'].includes(action)) {
       return NextResponse.json({ error: 'Ação inválida' }, { status: 400 })
     }
+
+    const voice = await getVoice(params.id, composer.composerId, action === 'reactivate-expired')
+    if (!voice) return NextResponse.json({ error: 'Voz não encontrada' }, { status: 404 })
 
     let updatePayload: any = {
       updated_at: new Date().toISOString(),
@@ -93,6 +98,36 @@ export async function PATCH(
       if (!voice.source_audio_path) {
         return NextResponse.json({ error: 'Áudio base não encontrado para reativar essa voz.' }, { status: 400 })
       }
+
+      if (voice.status === 'archived') {
+        if (!voice.voice_id || !expiredVoiceError) {
+          return NextResponse.json({ error: 'Somente vozes expiradas já criadas podem ser recuperadas.' }, { status: 400 })
+        }
+
+        const { data: activeVoices, error: activeVoicesError } = await supabaseAdmin
+          .from('studio_voice_profiles')
+          .select('id, display_name')
+          .eq('composer_id', composer.composerId)
+          .neq('status', 'archived')
+
+        if (activeVoicesError) throw activeVoicesError
+        if ((activeVoices || []).length >= MAX_ACTIVE_VOICES) {
+          return NextResponse.json({ error: 'Você já tem 5 vozes cadastradas. Exclua uma voz antes de recuperar esta.' }, { status: 400 })
+        }
+
+        const duplicateVoice = (activeVoices || []).find((activeVoice: any) => (
+          String(activeVoice.display_name || '').trim().toLocaleLowerCase('pt-BR') ===
+          String(voice.display_name || '').trim().toLocaleLowerCase('pt-BR')
+        ))
+
+        if (duplicateVoice) {
+          return NextResponse.json(
+            { error: `Você já tem uma voz ativa chamada "${voice.display_name}". Exclua a voz ativa antes de recuperar a arquivada.` },
+            { status: 409 }
+          )
+        }
+      }
+
       const voiceUrl = await createStudioVoiceAssetUrl(voice.source_audio_path, voice.source_audio_storage_provider)
       if (!voiceUrl) throw new Error('Não foi possível preparar o áudio salvo da voz.')
 

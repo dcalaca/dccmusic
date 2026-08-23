@@ -76,6 +76,7 @@ export async function GET(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
     if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    const includeRecoverable = request.nextUrl.searchParams.get('includeRecoverable') === 'true'
 
     const { data, error } = await supabaseAdmin
       .from('studio_voice_profiles')
@@ -86,7 +87,26 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error
     const voices = await Promise.all((data || []).map(mapVoice))
-    return NextResponse.json({ voices, limit: MAX_ACTIVE_VOICES })
+
+    if (!includeRecoverable) {
+      return NextResponse.json({ voices, limit: MAX_ACTIVE_VOICES })
+    }
+
+    const { data: archivedVoices, error: archivedError } = await supabaseAdmin
+      .from('studio_voice_profiles')
+      .select('*')
+      .eq('composer_id', composer.composerId)
+      .eq('status', 'archived')
+      .ilike('error_message', '%expir%')
+      .not('source_audio_path', 'is', null)
+      .not('voice_id', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(20)
+
+    if (archivedError) throw archivedError
+    const recoverableVoices = await Promise.all((archivedVoices || []).map(mapVoice))
+
+    return NextResponse.json({ voices, recoverableVoices, limit: MAX_ACTIVE_VOICES })
   } catch (error: any) {
     console.error('[Studio Voice] Erro listar vozes:', error)
     return NextResponse.json({ error: error.message || 'Erro ao listar vozes' }, { status: 500 })

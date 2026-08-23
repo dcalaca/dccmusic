@@ -33,13 +33,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, processed: false, error: 'taskId ausente' })
     }
 
+    const { data: voice, error: voiceError } = await supabaseAdmin
+      .from('studio_voice_profiles')
+      .select('provider_payload')
+      .eq('validation_task_id', taskId)
+      .maybeSingle()
+
+    if (voiceError) throw voiceError
+
     const { error } = await supabaseAdmin
       .from('studio_voice_profiles')
       .update({
         status: validateInfo ? 'awaiting_verification' : 'failed',
         validate_info: validateInfo,
         error_message: validateInfo ? null : errorMessage,
-        provider_payload: body,
+        provider_payload: {
+          ...(voice?.provider_payload || {}),
+          validationCallback: body,
+        },
         updated_at: new Date().toISOString(),
       })
       .eq('validation_task_id', taskId)
