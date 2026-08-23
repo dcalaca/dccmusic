@@ -35,16 +35,47 @@ const improvementPrompts: Record<string, string> = {
   instruments: 'Melhore os instrumentos e o arranjo, deixando a produção mais cheia e profissional, sem mudar a essência da música.',
 }
 
+const voicePrompts: Record<string, string> = {
+  same: 'preserve o perfil vocal do áudio original',
+  male: 'voz principal masculina, natural e expressiva, male lead vocal',
+  female: 'voz principal feminina, natural e expressiva, female lead vocal',
+}
+
+const voiceStylePrompts: Record<string, string> = {
+  natural: 'interpretação vocal natural e equilibrada',
+  soft: 'voz suave, íntima e delicada, soft vocal delivery',
+  powerful: 'voz potente, firme e emocional, powerful vocal delivery',
+  deep: 'voz mais grave e encorpada, warm deep vocal tone',
+  bright: 'voz mais aguda, clara e brilhante, bright clear vocal tone',
+}
+
 function getImprovementPrompt(value: any) {
   const key = String(value || 'similar')
   return improvementPrompts[key] || improvementPrompts.similar
 }
 
-function getStyle(input: { style?: string | null; improvement?: string | null }) {
+function getVoicePrompt(value: any) {
+  const key = String(value || 'same')
+  return voicePrompts[key] || voicePrompts.same
+}
+
+function getVoiceStylePrompt(value: any) {
+  const key = String(value || 'natural')
+  return voiceStylePrompts[key] || voiceStylePrompts.natural
+}
+
+function getStyle(input: {
+  style?: string | null
+  improvement?: string | null
+  voice?: string | null
+  voiceStyle?: string | null
+}) {
   const style = String(input.style || '').trim()
   const improvement = getImprovementPrompt(input.improvement)
   return [
     style || 'produção musical brasileira profissional',
+    getVoicePrompt(input.voice),
+    getVoiceStylePrompt(input.voiceStyle),
     'melhor qualidade de áudio',
     'voz clara',
     'dicção natural sem atropelar palavras',
@@ -90,6 +121,8 @@ export async function POST(request: NextRequest) {
     let rawTitle = 'Música melhorada'
     let style = ''
     let improvement = 'similar'
+    let voice = 'same'
+    let voiceStyle = 'natural'
     let lyric = ''
     let uploaded: {
       path: string
@@ -104,6 +137,8 @@ export async function POST(request: NextRequest) {
       rawTitle = String(body?.title || '').trim().slice(0, MAX_TITLE_LENGTH) || 'Música melhorada'
       style = String(body?.style || '').trim()
       improvement = String(body?.improvement || 'similar')
+      voice = String(body?.voice || 'same')
+      voiceStyle = String(body?.voiceStyle || 'natural')
       lyric = String(body?.lyric || '').trim()
 
       validateStudioInputUploadedAsset({
@@ -130,6 +165,8 @@ export async function POST(request: NextRequest) {
       rawTitle = String(formData.get('title') || '').trim().slice(0, MAX_TITLE_LENGTH) || 'Música melhorada'
       style = String(formData.get('style') || '').trim()
       improvement = String(formData.get('improvement') || 'similar')
+      voice = String(formData.get('voice') || 'same')
+      voiceStyle = String(formData.get('voiceStyle') || 'natural')
       lyric = String(formData.get('lyric') || '').trim()
       uploaded = await uploadStudioInputAudio({
         composerId: composer.composerId,
@@ -181,6 +218,8 @@ export async function POST(request: NextRequest) {
           'Projeto criado pela função Melhorar minha música.',
           'A IA deve tentar manter melodia, letra e essência do áudio original.',
           getImprovementPrompt(improvement),
+          `Preferência de voz: ${getVoicePrompt(voice)}.`,
+          `Estilo vocal: ${getVoiceStylePrompt(voiceStyle)}.`,
           lyricSource === 'whisper' ? 'Letra obtida por transcrição automática do áudio enviado.' : null,
         ].filter(Boolean).join('\n'),
       })
@@ -202,28 +241,36 @@ export async function POST(request: NextRequest) {
     }
 
     const improvementPrompt = getImprovementPrompt(improvement)
+    const explicitVoiceChange = voice === 'male' || voice === 'female'
+    const audioWeight = explicitVoiceChange ? 0.72 : 0.85
+    const styleWeight = explicitVoiceChange ? 0.52 : 0.38
+
     const payload: any = lyric ? {
       uploadUrl,
       customMode: true,
       instrumental: false,
       prompt: lyric.slice(0, 5000),
-      style: getStyle({ style, improvement }),
+      style: getStyle({ style, improvement, voice, voiceStyle }),
       title,
       model: 'V5_5',
       callBackUrl: getStudioCallbackUrl('/api/studio/suno/callback'),
-      audioWeight: 0.85,
-      styleWeight: 0.38,
+      audioWeight,
+      styleWeight,
       weirdnessConstraint: 0.28,
       negativeTags: MAX_STUDIO_MUSIC_NEGATIVE_TAGS,
     } : {
       uploadUrl,
       customMode: false,
       instrumental: false,
-      prompt: improvementPrompt.slice(0, 500),
+      prompt: [
+        improvementPrompt,
+        getVoicePrompt(voice),
+        getVoiceStylePrompt(voiceStyle),
+      ].join('. ').slice(0, 500),
       model: 'V5_5',
       callBackUrl: getStudioCallbackUrl('/api/studio/suno/callback'),
-      audioWeight: 0.85,
-      styleWeight: 0.38,
+      audioWeight,
+      styleWeight,
       weirdnessConstraint: 0.28,
       negativeTags: MAX_STUDIO_MUSIC_NEGATIVE_TAGS,
     }
@@ -265,6 +312,8 @@ export async function POST(request: NextRequest) {
           },
           feature: 'enhance_music',
           lyricSource,
+          voice,
+          voiceStyle,
         },
         response_payload: result,
       })
@@ -279,7 +328,7 @@ export async function POST(request: NextRequest) {
       action: isFreeGeneration ? 'free_music_generation' : 'music_generation',
       amount: isFreeGeneration ? 0 : STUDIO_MUSIC_CREDITS,
       description: isFreeGeneration ? 'Melhoria de música grátis no DCC Studio IA' : 'Melhoria de música no DCC Studio IA',
-      metadata: { taskId, free: isFreeGeneration, feature: 'enhance_music', lyricSource },
+      metadata: { taskId, free: isFreeGeneration, feature: 'enhance_music', lyricSource, voice, voiceStyle },
     })
 
     return NextResponse.json({
