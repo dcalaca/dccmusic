@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     const timedLyrics = lyrics?.trim() ? buildLyriaTimedLyrics(lyrics.trim(), bpmValue, durationValue) : ''
     const text = lyrics?.trim()
-      ? `${creativeDirection}\n\n${controls}\n\nTIMED LYRICS PLAN: Sing every lyric line only inside its assigned time interval. Longer phrases intentionally receive more time. Respect instrumental gaps, breathing room, section boundaries and the exact fixed BPM. Use the provided words exactly: do not rewrite, omit, duplicate, reorder or add lyrics. Preserve the pronunciation of the selected language.\n\n${timedLyrics}`
+      ? `${creativeDirection}\n\n${controls}\n\nTIMED LYRICS PLAN: Sing every lyric line only inside its assigned time interval. Longer phrases intentionally receive more time. Respect instrumental gaps, breathing room, section boundaries and the exact fixed BPM. Every bracketed section label such as [Verso], [Pré-Refrão], [Refrão], [Ponte], [Chorus], [Bridge] or [Final] is a SILENT structural instruction, NEVER a lyric: do not sing, speak, whisper or announce any section name. Sing only the actual lyric phrases after timestamp ranges. Use the provided words exactly: do not rewrite, omit, duplicate, reorder or add lyrics. Preserve the pronunciation of the selected language.\n\n${timedLyrics}`
       : `${creativeDirection}\n\n${controls}`
 
     const response = await fetch(`https://aiplatform.googleapis.com/v1beta1/projects/${PROJECT_ID}/locations/global/interactions`, {

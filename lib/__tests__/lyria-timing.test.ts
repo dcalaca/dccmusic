@@ -35,6 +35,43 @@ describe('buildLyriaTimedLyrics', () => {
     expect(plan).toContain('Na brisa suave, eu sinto seu perfume')
   })
 
+  it('transforma nomes soltos das partes em seções que nunca recebem tempo de canto', () => {
+    const lyric = 'Verso 1\nA gente conversa todo dia\n\nPré-Refrão\nCalma, não complica a vida\n\nRefrão:\nBora de motelzinho\n\nPonte\nSem drama, sem maldade\n\nFinal\nSó pra matar a vontade'
+    const clean = sanitizeLyriaLyrics(lyric)
+    const plan = buildLyriaTimedLyrics(clean, 100, 150)
+
+    expect(clean).toContain('[Verso 1]')
+    expect(clean).toContain('[Pré-Refrão]')
+    expect(clean).toContain('[Refrão]')
+    expect(clean).toContain('[Ponte]')
+    expect(clean).toContain('[Final]')
+    expect(plan).not.toMatch(/\[\d{2}:\d{2}-\d{2}:\d{2}] (?:Verso 1|Pré-Refrão|Refrão|Ponte|Final)/)
+    expect(plan).toContain('Bora de motelzinho')
+    expect(estimateLyriaSongDuration(clean, 100).phraseCount).toBe(5)
+  })
+
+  it('preserva palavras estruturais quando fazem parte de uma frase cantada', () => {
+    const lyric = 'Eu canto esse refrão pra você\nNossa ponte ainda não caiu\nNo final eu volto pra casa\nEsse verso é todo seu'
+    const clean = sanitizeLyriaLyrics(lyric)
+    const plan = buildLyriaTimedLyrics(clean, 100, 120)
+
+    expect(clean).toBe(lyric)
+    expect(plan).toContain('Eu canto esse refrão pra você')
+    expect(plan).toContain('Nossa ponte ainda não caiu')
+    expect(plan).toContain('No final eu volto pra casa')
+    expect(estimateLyriaSongDuration(clean, 100).phraseCount).toBe(4)
+  })
+
+  it('reconhece marcações em português, espanhol e inglês com pequenas variações', () => {
+    const clean = sanitizeLyriaLyrics('(Introdução)\nSom de viola\nPRE REFRAO\nChega mais perto\nEstribillo\nDime que sí\nBridge\nNever let me go\nChorus 2x\nCanta comigo')
+
+    expect(clean).toContain('[Introdução]')
+    expect(clean).toContain('[PRE REFRAO]')
+    expect(clean).toContain('[Estribillo]')
+    expect(clean).toContain('[Bridge]')
+    expect(clean).toContain('[Chorus 2x]')
+  })
+
   it('calcula a duração naturalmente a partir das frases e do BPM', () => {
     const shortLyric = '[Verso]\nEu volto para casa\nVocê me espera na varanda'
     const longerLyric = Array.from({ length: 32 }, (_, index) => `Na memória da nossa história eu reencontro você ${index}`).join('\n')

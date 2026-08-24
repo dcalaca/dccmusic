@@ -15,6 +15,25 @@ function phraseWeight(text: string) {
   return Math.max(1, vowelGroups + words * 0.35)
 }
 
+function normalizeSectionHeading(line: string) {
+  if (!line || /^\[[^\]]+]$/.test(line)) return line
+
+  const label = line
+    .replace(/^\((.+)\)$/, '$1')
+    .replace(/\s*[:：;]+\s*$/, '')
+    .trim()
+  const normalized = label
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase('pt-BR')
+    .replace(/[–—-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const sectionPattern = /^(?:(?:pre\s*)?(?:refrao|refrain|chorus|estribillo|coro)|(?:verso|verse|estrofe|stanza|ponte|bridge|introducao|intro|abertura|final|outro|encerramento|interludio|interlude|instrumental|solo|parte)(?:\s+(?:\d{1,2}|[ivx]{1,4}|[abc]|final))?|(?:primeiro|segundo|terceiro|quarto)\s+verso|refrao\s+final)(?:\s*(?:\(?\d+\s*x\)?|bis))?$/i
+
+  return sectionPattern.test(normalized) ? `[${label}]` : line
+}
+
 export function sanitizeLyriaLyrics(lyrics: string, title = '') {
   const normalizedTitle = title.trim().toLocaleLowerCase('pt-BR')
   let foundContent = false
@@ -22,7 +41,7 @@ export function sanitizeLyriaLyrics(lyrics: string, title = '') {
   return lyrics.split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => !/^```(?:\w+)?$/.test(line))
-    .map((line) => line.replace(/^#{1,6}\s*/, '').replace(/\*\*|__/g, '').trim())
+    .map((line) => normalizeSectionHeading(line.replace(/^#{1,6}\s*/, '').replace(/\*\*|__/g, '').trim()))
     .filter((line) => {
       if (!line) return foundContent
       if (/^(?:t[ií]tulo|title|nome(?:\s+da\s+m[uú]sica)?|artista|artist|g[eê]nero|genre|estilo|style|bpm|dura[cç][aã]o|duration)\s*:/i.test(line)) return false
