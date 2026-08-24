@@ -121,7 +121,7 @@ function buildStudioRoutes(projects: StudioProjectForSitemap[]): MetadataRoute.S
     .filter((project) => Boolean(project.public_slug))
     .map((project) => ({
       url: `${baseUrl}/studio/${project.public_slug}`,
-      lastModified: project.published_at ? new Date(project.published_at) : undefined,
+      ...(project.published_at ? { lastModified: new Date(project.published_at) } : {}),
       changeFrequency: 'monthly' as const,
       priority: 0.65,
     }))
@@ -144,13 +144,21 @@ async function buildComposerRoutes(
     const composerIdsWithContent = new Set<string>()
 
     for (const relation of musicRelations) {
-      if (relation.composer_id && validMusicIds.has(relation.music_id)) {
+      if (
+        relation.composer_id &&
+        relation.music_id &&
+        validMusicIds.has(relation.music_id)
+      ) {
         composerIdsWithContent.add(relation.composer_id)
       }
     }
 
     for (const relation of videoRelations) {
-      if (relation.composer_id && validVideoIds.has(relation.video_id)) {
+      if (
+        relation.composer_id &&
+        relation.video_id &&
+        validVideoIds.has(relation.video_id)
+      ) {
         composerIdsWithContent.add(relation.composer_id)
       }
     }
