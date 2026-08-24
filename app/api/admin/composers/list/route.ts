@@ -14,6 +14,13 @@ type ComposerExportStats = {
   studioMusicCount: number
 }
 
+const ADMIN_COMPOSER_STATUSES = new Set(['all', 'active', 'inactive', 'studio', 'pending'])
+
+function normalizeCountry(value: string | null) {
+  const code = String(value || '').trim().toUpperCase()
+  return /^[A-Z]{2}$/.test(code) ? code : ''
+}
+
 function createEmptyStats(): ComposerExportStats {
   return {
     videoCount: 0,
@@ -43,6 +50,86 @@ function chunk<T>(items: T[], size: number) {
     chunks.push(items.slice(index, index + size))
   }
   return chunks
+}
+
+async function collectStudioComposerIds() {
+  const [lyrics, generations] = await Promise.all([
+    safeRows('compositores com letras Studio', supabaseAdmin.from('studio_lyrics').select('composer_id')),
+    safeRows('compositores com músicas Studio', supabaseAdmin.from('studio_generations').select('composer_id').neq('status', 'failed')),
+  ])
+
+  return Array.from(new Set([
+    ...lyrics.map((row: any) => row.composer_id),
+    ...generations.map((row: any) => row.composer_id),
+  ].filter(Boolean)))
+}
+
+function applyStatusFilter(query: any, status: db.AdminComposerStatusFilter, studioComposerIds?: string[]) {
+  const now = new Date().toISOString()
+
+  if (status === 'active') {
+    return query
+      .eq('has_active_subscription', true)
+      .eq('is_premium', true)
+      .or(`subscription_expires_at.is.null,subscription_expires_at.gt.${now}`)
+  }
+
+  if (status === 'inactive') {
+    return query.or(
+      `has_active_subscription.eq.false,is_premium.eq.false,and(subscription_expires_at.not.is.null,subscription_expires_at.lt.${now})`
+    )
+  }
+
+  if (status === 'pending') {
+    return query.not('email', 'is', null).eq('email_verified', false)
+  }
+
+  if (status === 'studio') {
+    const ids = studioComposerIds || []
+    if (ids.length === 0) return query.in('id', ['00000000-0000-0000-0000-000000000000'])
+    return query.in('id', ids)
+  }
+
+  return query
+}
+
+async function listComposersByCountry(options: {
+  page: number
+  limit: number
+  search: string
+  status: db.AdminComposerStatusFilter
+  country: string
+}) {
+  const page = Math.max(1, options.page)
+  const limit = Math.min(100, Math.max(1, options.limit))
+  const from = (page - 1) * limit
+  const to = from + limit - 1
+  const studioComposerIds = options.status === 'studio' ? await collectStudioComposerIds() : undefined
+
+  let query = supabaseAdmin
+    .from('dccmusic_composers')
+    .select('*', { count: 'exact' })
+    .ilike('country', options.country)
+    .order('created_at', { ascending: false })
+
+  if (options.search) {
+    const safeSearch = options.search.replace(/[%_,]/g, '')
+    const pattern = `%${safeSearch}%`
+    query = query.or(`name.ilike.${pattern},email.ilike.${pattern},slug.ilike.${pattern}`)
+  }
+
+  query = applyStatusFilter(query, options.status, studioComposerIds)
+  query = query.range(from, to)
+
+  const { data, error, count } = await query
+  if (error) throw error
+
+  return {
+    items: (data || []).map(db.mapComposer),
+    total: count || 0,
+    page,
+    limit,
+  }
 }
 
 async function buildStatsForComposers(composers: db.Composer[]) {
@@ -113,17 +200,19 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const shouldExport = searchParams.get('export') === '1'
+    const country = normalizeCountry(searchParams.get('country'))
 
     if (!shouldExport) {
       const page = Math.max(1, Number(searchParams.get('page') || 1))
       const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit') || 100)))
       const search = String(searchParams.get('search') || '').trim()
       const status = (searchParams.get('status') || 'all') as db.AdminComposerStatusFilter
-      const allowedStatuses = new Set(['all', 'active', 'inactive', 'studio', 'pending'])
-      const safeStatus = allowedStatuses.has(status) ? status : 'all'
+      const safeStatus = ADMIN_COMPOSER_STATUSES.has(status) ? status : 'all'
 
       const [listed, summary] = await Promise.all([
-        db.listAdminComposers({ page, limit, search, status: safeStatus }),
+        country
+          ? listComposersByCountry({ page, limit, search, status: safeStatus, country })
+          : db.listAdminComposers({ page, limit, search, status: safeStatus }),
         db.getAdminComposersSummary(),
       ])
 
@@ -148,24 +237,30 @@ export async function GET(request: Request) {
     const offset = Math.max(0, Number(searchParams.get('offset') || 0))
     const requestedLimit = Number(searchParams.get('limit') || 20)
     const limit = Math.min(50, Math.max(1, Number.isFinite(requestedLimit) ? requestedLimit : 20))
-    const { data, error, count } = await supabaseAdmin
+
+    let exportQuery = supabaseAdmin
       .from('dccmusic_composers')
       .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
+    if (country) {
+      exportQuery = exportQuery.ilike('country', country)
+    }
+
+    const { data, error, count } = await exportQuery
     if (error) throw error
 
-    const chunk = (data || []).map(db.mapComposer)
-    const statsByComposer = await buildStatsForComposers(chunk)
-    const composersWithExportStats = chunk.map((composer) => ({
+    const exportChunk = (data || []).map(db.mapComposer)
+    const statsByComposer = await buildStatsForComposers(exportChunk)
+    const composersWithExportStats = exportChunk.map((composer) => ({
       ...emptyExportStats(composer),
       ...(statsByComposer.get(composer.id) || createEmptyStats()),
       ...composer,
     }))
 
-    const total = count || offset + chunk.length
-    const nextOffset = offset + chunk.length
+    const total = count || offset + exportChunk.length
+    const nextOffset = offset + exportChunk.length
 
     return NextResponse.json({
       items: composersWithExportStats,
@@ -173,7 +268,7 @@ export async function GET(request: Request) {
       offset,
       limit,
       nextOffset,
-      done: nextOffset >= total || chunk.length === 0,
+      done: nextOffset >= total || exportChunk.length === 0,
     })
   } catch (error: any) {
     console.error('Erro ao buscar compositores:', error)
