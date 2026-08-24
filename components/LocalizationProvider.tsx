@@ -23,6 +23,8 @@ type LocalizationContextValue = {
 }
 
 const LocalizationContext = createContext<LocalizationContextValue | null>(null)
+const translatedTextValues = new WeakMap<Node, string>()
+const translatedAttributeValues = new WeakMap<Element, Map<string, string>>()
 
 function translateCopy(value: string, country: DccCountry) {
   if (country === 'PT') return translateToEuropeanPortuguese(value)
@@ -56,17 +58,28 @@ function translateTextNode(node: Node, country: DccCountry) {
   }
 
   const current = node.nodeValue || ''
+  if (translatedTextValues.get(node) === current) return
+
   const next = translatePriceText(translateCopy(current, country), country)
+  translatedTextValues.set(node, next)
   if (next !== current) node.nodeValue = next
 }
 
 function translateElementAttributes(element: Element, country: DccCountry) {
   if (element.closest('[data-no-translate], [translate="no"]')) return
 
+  let translatedValues = translatedAttributeValues.get(element)
+  if (!translatedValues) {
+    translatedValues = new Map<string, string>()
+    translatedAttributeValues.set(element, translatedValues)
+  }
+
   for (const attribute of translatableAttributes) {
     const current = element.getAttribute(attribute)
-    if (!current) continue
+    if (!current || translatedValues.get(attribute) === current) continue
+
     const next = translatePriceText(translateCopy(current, country), country)
+    translatedValues.set(attribute, next)
     if (next !== current) element.setAttribute(attribute, next)
   }
 }
