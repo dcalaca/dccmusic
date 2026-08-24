@@ -5,10 +5,20 @@ import { FiChevronDown, FiGlobe } from 'react-icons/fi'
 import { COUNTRY_CONFIG, type DccCountry } from '@/lib/localization'
 import { useLocalization } from '@/components/LocalizationProvider'
 
+function selectorLanguage(country: DccCountry) {
+  if (country === 'PY' || country === 'CO') return 'Español'
+  return 'Português'
+}
+
+function selectorCurrency(country: DccCountry) {
+  return COUNTRY_CONFIG[country].currency
+}
+
 export default function CountrySelector({ compact = false }: { compact?: boolean }) {
   const { country, setCountry } = useLocalization()
   const [open, setOpen] = useState(false)
   const current = COUNTRY_CONFIG[country]
+  const isSpanish = country === 'PY' || country === 'CO'
 
   return (
     <div className="relative" data-no-translate>
@@ -18,7 +28,7 @@ export default function CountrySelector({ compact = false }: { compact?: boolean
         className={compact
           ? 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-gray-700 bg-gray-950 text-sm font-semibold text-gray-200 transition hover:border-primary-500 hover:text-white'
           : 'inline-flex h-10 items-center gap-1.5 rounded-xl border border-gray-700 bg-gray-950 px-2.5 text-sm font-semibold text-gray-200 transition hover:border-primary-500 hover:text-white sm:gap-2 sm:px-3'}
-        aria-label={country === 'BR' ? 'Mudar país' : 'Cambiar país'}
+        aria-label={isSpanish ? 'Cambiar país' : 'Mudar país'}
         aria-expanded={open}
         aria-haspopup="menu"
       >
@@ -32,7 +42,7 @@ export default function CountrySelector({ compact = false }: { compact?: boolean
       {open ? (
         <div role="menu" className="absolute right-0 top-12 z-[80] w-56 overflow-hidden rounded-2xl border border-gray-700 bg-gray-950 p-2 shadow-2xl shadow-black/70">
           <p className="px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">
-            {country === 'BR' ? 'Escolha seu país' : 'Elige tu país'}
+            {isSpanish ? 'Elige tu país' : 'Escolha o seu país'}
           </p>
           {(Object.keys(COUNTRY_CONFIG) as DccCountry[]).map((code) => {
             const item = COUNTRY_CONFIG[code]
@@ -54,7 +64,7 @@ export default function CountrySelector({ compact = false }: { compact?: boolean
                 <span>
                   <strong className="block">{item.label}</strong>
                   <span className="text-xs opacity-70">
-                    {code === 'BR' ? 'Português · BRL' : code === 'PY' ? 'Español · PYG' : 'Español · COP'}
+                    {selectorLanguage(code)} · {selectorCurrency(code)}
                   </span>
                 </span>
               </button>
