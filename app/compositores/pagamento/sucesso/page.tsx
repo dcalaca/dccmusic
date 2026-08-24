@@ -68,6 +68,29 @@ function PaymentSuccessContent() {
         ...(typeof value === 'number' ? { value } : {}),
         ...blogAttributionEventPayload(),
       })
+
+      const oaiq = (window as any).oaiq
+      if (typeof oaiq === 'function' && transactionId !== 'composer_plan') {
+        const amount = typeof value === 'number' && value > 0 ? Math.round(value * 100) : undefined
+        const eventData: Record<string, any> = {
+          type: 'contents',
+          contents: [
+            {
+              id: 'composer_plan',
+              name: 'Plano de compositor',
+              content_type: 'product',
+              quantity: 1,
+            },
+          ],
+        }
+        if (typeof amount === 'number') {
+          eventData.amount = amount
+          eventData.currency = currency.toUpperCase()
+        }
+        oaiq('measure', 'order_created', eventData, {
+          event_id: `dcc_order_${transactionId}`,
+        })
+      }
     }
 
     const token = localStorage.getItem('composer_token')
