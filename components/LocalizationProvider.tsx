@@ -7,16 +7,16 @@ import {
   COUNTRY_COOKIE,
   type DccCountry,
   type DccLocale,
-  brlToPygDisplay,
-  brlToCopDisplay,
+  formatLocalizedMoney,
   normalizeCountry,
 } from '@/lib/localization'
 import { translateToParaguayanSpanish } from '@/lib/i18n-es-py'
+import { translateToEuropeanPortuguese } from '@/lib/i18n-pt-pt'
 
 type LocalizationContextValue = {
   country: DccCountry
   locale: DccLocale
-  currency: 'BRL' | 'PYG' | 'COP'
+  currency: 'BRL' | 'PYG' | 'COP' | 'EUR'
   paymentProvider: 'mercadopago' | 'stripe'
   setCountry: (country: DccCountry) => void
   formatMoney: (brlValue: number) => string
@@ -24,17 +24,19 @@ type LocalizationContextValue = {
 
 const LocalizationContext = createContext<LocalizationContextValue | null>(null)
 
+function translateCopy(value: string, country: DccCountry) {
+  if (country === 'PT') return translateToEuropeanPortuguese(value)
+  if (country === 'PY' || country === 'CO') return translateToParaguayanSpanish(value)
+  return value
+}
+
 function translatePriceText(value: string, country: DccCountry) {
+  if (country === 'BR') return value
   return value.replace(/R\$\s*([\d.]+(?:,\d{1,2})?)/g, (_match, raw) => {
     const brl = Number(String(raw).replace(/\./g, '').replace(',', '.'))
     if (!Number.isFinite(brl)) return _match
-    const isColombia = country === 'CO'
-    const formatted = new Intl.NumberFormat(isColombia ? 'es-CO' : 'es-PY', {
-      style: 'currency',
-      currency: isColombia ? 'COP' : 'PYG',
-      maximumFractionDigits: 0,
-    }).format(isColombia ? brlToCopDisplay(brl) : brlToPygDisplay(brl))
-    return isColombia ? `COP ${formatted}` : formatted
+    const formatted = formatLocalizedMoney(brl, country)
+    return country === 'CO' ? `COP ${formatted}` : formatted
   })
 }
 
@@ -54,7 +56,7 @@ function translateTextNode(node: Node, country: DccCountry) {
   }
 
   const current = node.nodeValue || ''
-  const next = translatePriceText(translateToParaguayanSpanish(current), country)
+  const next = translatePriceText(translateCopy(current, country), country)
   if (next !== current) node.nodeValue = next
 }
 
@@ -64,7 +66,7 @@ function translateElementAttributes(element: Element, country: DccCountry) {
   for (const attribute of translatableAttributes) {
     const current = element.getAttribute(attribute)
     if (!current) continue
-    const next = translatePriceText(translateToParaguayanSpanish(current), country)
+    const next = translatePriceText(translateCopy(current, country), country)
     if (next !== current) element.setAttribute(attribute, next)
   }
 }
@@ -104,11 +106,11 @@ export default function LocalizationProvider({
   useEffect(() => {
     document.documentElement.lang = config.locale
     document.documentElement.dataset.country = country
-    // O painel operacional interno continua em português. O Studio do compositor
-    // faz parte do produto e, portanto, também recebe a localização paraguaia.
+    // O painel operacional interno permanece em português do Brasil.
+    // Todo o produto público e a área do compositor recebem a localização selecionada.
     if (country === 'BR' || pathname.startsWith('/admin')) return
 
-    document.title = translateToParaguayanSpanish(document.title)
+    document.title = translateCopy(document.title, country)
     translateDom(document.body, country)
 
     const observer = new MutationObserver((mutations) => {
@@ -143,24 +145,7 @@ export default function LocalizationProvider({
     return () => observer.disconnect()
   }, [config.locale, country, pathname])
 
-  const formatMoney = useCallback((brlValue: number) => {
-    if (country === 'PY') {
-      return new Intl.NumberFormat('es-PY', {
-        style: 'currency',
-        currency: 'PYG',
-        maximumFractionDigits: 0,
-      }).format(brlToPygDisplay(brlValue))
-    }
-    if (country === 'CO') {
-      const formatted = new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        maximumFractionDigits: 0,
-      }).format(brlToCopDisplay(brlValue))
-      return `COP ${formatted}`
-    }
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(brlValue)
-  }, [country])
+  const formatMoney = useCallback((brlValue: number) => formatLocalizedMoney(brlValue, country), [country])
 
   const value = useMemo<LocalizationContextValue>(() => ({
     country,
