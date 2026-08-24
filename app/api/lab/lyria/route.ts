@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { buildLyriaTimedLyrics } from '@/lib/lyria-timing'
+import { buildLyriaCreativeDirection, buildLyriaLyricPrompt, normalizeLyriaStudioSettings } from '@/lib/lyria-studio'
 
 export const runtime = 'nodejs'
 export const maxDuration = 300
@@ -28,14 +29,37 @@ async function getServiceAccountAccessToken() {
   return d.access_token as string
 }
 
+async function generateStudioLyric(prompt: string, songLanguage: string) {
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) throw new Error('OPENAI_API_KEY não configurada para criar a letra do laboratório.')
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST', headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: process.env.OPENAI_TEXT_MODEL || 'gpt-4o-mini', temperature: 0.85, messages: [
+      { role: 'system', content: `Você é compositor profissional. Escreva exclusivamente no idioma ${songLanguage}, com identidade cultural autêntica e frases realmente cantáveis.` },
+      { role: 'user', content: prompt },
+    ] }), cache: 'no-store',
+  })
+  const data = await response.json()
+  const lyric = data?.choices?.[0]?.message?.content?.trim()
+  if (!response.ok || !lyric) throw new Error(data?.error?.message || 'A IA não conseguiu criar uma letra válida para a música.')
+  return String(lyric)
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { prompt, lyrics, bpm = '100', duration = '150', naturalProsody = true } = await req.json()
-    if (!prompt || typeof prompt !== 'string') return NextResponse.json({ error: 'Informe uma descrição para a música.' }, { status: 400 })
+    const body = await req.json()
+    const { bpm = '100', duration = '150', naturalProsody = true } = body
+    const settings = normalizeLyriaStudioSettings(body)
+    const ownLyrics = typeof body.lyrics === 'string' ? body.lyrics.trim().slice(0, 12000) : ''
+    const legacyPrompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
+    if (!settings.title && !legacyPrompt) return NextResponse.json({ error: 'Informe o nome da música.' }, { status: 400 })
+    if (!ownLyrics && !settings.idea && !legacyPrompt) return NextResponse.json({ error: 'Descreva sua ideia ou cole a letra completa.' }, { status: 400 })
     const bpmValue = Number(bpm)
     const durationValue = Number(duration)
     if (![90, 100, 110, 120].includes(bpmValue)) return NextResponse.json({ error: 'Escolha um BPM válido.' }, { status: 400 })
     if (![120, 150, 180].includes(durationValue)) return NextResponse.json({ error: 'Escolha uma duração válida.' }, { status: 400 })
+    const lyrics = ownLyrics || (settings.idea ? await generateStudioLyric(buildLyriaLyricPrompt(settings, durationValue), settings.songLanguage) : '')
+    const creativeDirection = legacyPrompt || buildLyriaCreativeDirection(settings)
     const accessToken = await getServiceAccountAccessToken()
 
     const controls = [
@@ -46,8 +70,8 @@ export async function POST(req: NextRequest) {
 
     const timedLyrics = lyrics?.trim() ? buildLyriaTimedLyrics(lyrics.trim(), bpmValue, durationValue) : ''
     const text = lyrics?.trim()
-      ? `${prompt.trim()}\n\n${controls}\n\nTIMED LYRICS PLAN: Sing every lyric line only inside its assigned time interval. Longer phrases intentionally receive more time. Respect instrumental gaps, breathing room, section boundaries and the exact fixed BPM. Use the user-provided words exactly: do not rewrite, omit, duplicate, reorder or add lyrics. Preserve Portuguese pronunciation.\n\n${timedLyrics}`
-      : `${prompt.trim()}\n\n${controls}`
+      ? `${creativeDirection}\n\n${controls}\n\nTIMED LYRICS PLAN: Sing every lyric line only inside its assigned time interval. Longer phrases intentionally receive more time. Respect instrumental gaps, breathing room, section boundaries and the exact fixed BPM. Use the provided words exactly: do not rewrite, omit, duplicate, reorder or add lyrics. Preserve the pronunciation of the selected language.\n\n${timedLyrics}`
+      : `${creativeDirection}\n\n${controls}`
 
     const response = await fetch(`https://aiplatform.googleapis.com/v1beta1/projects/${PROJECT_ID}/locations/global/interactions`, {
       method: 'POST', headers: { 'Content-Type': 'application/json; charset=utf-8', Authorization: `Bearer ${accessToken}` },
@@ -60,7 +84,7 @@ export async function POST(req: NextRequest) {
     const audio = outputs.find((o: any) => o?.type === 'audio' && o?.data)
     const texts = outputs.filter((o: any) => o?.type === 'text' && o?.text).map((o: any) => o.text)
     if (!audio?.data) return NextResponse.json({ error: 'O Lyria respondeu, mas não encontrei áudio na resposta.', details: JSON.stringify(data, null, 2).slice(0, 8000) }, { status: 502 })
-    return NextResponse.json({ audio: `data:${audio.mime_type || 'audio/mpeg'};base64,${audio.data}`, lyrics: texts[0] || '', description: texts[1] || '', timingPlan: timedLyrics, model: data?.model || MODEL })
+    return NextResponse.json({ audio: `data:${audio.mime_type || 'audio/mpeg'};base64,${audio.data}`, lyrics: lyrics || texts[0] || '', description: texts[1] || '', timingPlan: timedLyrics, creativeDirection, generatedLyrics: !ownLyrics && Boolean(lyrics), model: data?.model || MODEL })
   } catch (err) {
     return NextResponse.json({ error: 'Erro interno no laboratório do Lyria.', details: err instanceof Error ? err.message : String(err) }, { status: 500 })
   }
