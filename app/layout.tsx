@@ -107,26 +107,91 @@ export const metadata: Metadata = {
   },
 }
 
-const organizationSchema = {
+const entityGraphSchema = {
   '@context': 'https://schema.org',
-  '@type': 'Organization',
-  name: 'DCC Music',
-  url: 'https://www.dccmusic.online',
-  logo: {
-    '@type': 'ImageObject',
-    url: 'https://www.dccmusic.online/logopng.png',
-    width: 1200,
-    height: 630,
-  },
-  image: 'https://www.dccmusic.online/logopng.png',
-  description: 'Plataforma DCC Music: Studio IA para criar músicas com inteligência artificial, Partitura e Cifra para gerar PDF, MusicXML e letra cifrada, além de catálogo de músicas e vídeos para compositores.',
-  contactPoint: {
-    '@type': 'ContactPoint',
-    email: 'suporte@dccmusic.online',
-    contactType: 'Suporte',
-  },
-  sameAs: [
-    // Adicione aqui links das redes sociais quando disponíveis
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': 'https://www.dccmusic.online/#organization',
+      name: 'DCC Music',
+      alternateName: 'DCC Music - Studio IA',
+      url: 'https://www.dccmusic.online',
+      logo: {
+        '@type': 'ImageObject',
+        '@id': 'https://www.dccmusic.online/#logo',
+        url: 'https://www.dccmusic.online/logopng.png',
+        width: 1200,
+        height: 630,
+      },
+      image: { '@id': 'https://www.dccmusic.online/#logo' },
+      description: 'Plataforma brasileira para criar músicas com inteligência artificial, gerar partitura, MusicXML e letra cifrada, organizar projetos e divulgar obras de compositores.',
+      email: 'suporte@dccmusic.online',
+      contactPoint: {
+        '@type': 'ContactPoint',
+        email: 'suporte@dccmusic.online',
+        contactType: 'customer support',
+        availableLanguage: ['Portuguese', 'Spanish'],
+      },
+      areaServed: [
+        { '@type': 'Country', name: 'Brazil' },
+        { '@type': 'Country', name: 'Paraguay' },
+        { '@type': 'Country', name: 'Colombia' },
+      ],
+      knowsAbout: [
+        'music creation with artificial intelligence',
+        'songwriting',
+        'musical transcription',
+        'sheet music',
+        'MusicXML',
+        'chorded lyrics',
+        'independent composers',
+      ],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': 'https://www.dccmusic.online/#website',
+      url: 'https://www.dccmusic.online',
+      name: 'DCC Music',
+      description: 'Plataforma de criação musical com IA, transcrição musical, músicas, vídeos e perfis públicos de compositores.',
+      publisher: { '@id': 'https://www.dccmusic.online/#organization' },
+      about: { '@id': 'https://www.dccmusic.online/#organization' },
+      inLanguage: ['pt-BR', 'es-PY', 'es-CO'],
+    },
+    {
+      '@type': 'WebApplication',
+      '@id': 'https://www.dccmusic.online/studio-ia#application',
+      name: 'DCC Studio IA',
+      alternateName: 'Studio IA da DCC Music',
+      url: 'https://www.dccmusic.online/studio-ia',
+      applicationCategory: 'MultimediaApplication',
+      operatingSystem: 'Any',
+      browserRequirements: 'Requires a modern web browser',
+      description: 'Ambiente web da DCC Music para transformar ideias e letras em projetos musicais com apoio de inteligência artificial, incluindo letra, áudio, versões, capas e publicação pública.',
+      publisher: { '@id': 'https://www.dccmusic.online/#organization' },
+      inLanguage: ['pt-BR', 'es-PY', 'es-CO'],
+      featureList: [
+        'Criação de letras com IA',
+        'Geração de música',
+        'Versões de música',
+        'Capas para projetos',
+        'Projetos salvos',
+        'Publicação e compartilhamento',
+      ],
+    },
+    {
+      '@type': 'Service',
+      '@id': 'https://www.dccmusic.online/transcricao-musical#service',
+      name: 'Partitura e Cifra - DCC Music',
+      url: 'https://www.dccmusic.online/transcricao-musical',
+      serviceType: 'Musical transcription',
+      description: 'Serviço da DCC Music que transforma áudio compatível em materiais musicais como partitura em PDF, MusicXML e letra cifrada, com metadados musicais quando disponíveis.',
+      provider: { '@id': 'https://www.dccmusic.online/#organization' },
+      areaServed: [
+        { '@type': 'Country', name: 'Brazil' },
+        { '@type': 'Country', name: 'Paraguay' },
+        { '@type': 'Country', name: 'Colombia' },
+      ],
+    },
   ],
 }
 
@@ -195,10 +260,10 @@ export default function RootLayout({
       </head>
       <body className={inter.className}>
         <Script
-          id="dccmusic-organization-jsonld"
+          id="dccmusic-entity-graph-jsonld"
           type="application/ld+json"
           strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(entityGraphSchema) }}
         />
         {/* Google tag (gtag.js) — IDs ativos do Analytics e Google Ads */}
         <Script id="google-gtag-stub" strategy="beforeInteractive">
