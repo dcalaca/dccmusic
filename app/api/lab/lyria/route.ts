@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
-import { buildLyriaTimedLyrics } from '@/lib/lyria-timing'
+import { buildLyriaTimedLyrics, estimateLyriaSongDuration, LYRIA_MAX_DURATION_SECONDS, sanitizeLyriaLyrics } from '@/lib/lyria-timing'
 import { buildLyriaCreativeDirection, buildLyriaLyricPrompt, normalizeLyriaStudioSettings } from '@/lib/lyria-studio'
 
 export const runtime = 'nodejs'
@@ -48,17 +48,28 @@ async function generateStudioLyric(prompt: string, songLanguage: string) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { bpm = '100', duration = '150', naturalProsody = true } = body
+    const { bpm = '100', naturalProsody = true } = body
     const settings = normalizeLyriaStudioSettings(body)
-    const ownLyrics = typeof body.lyrics === 'string' ? body.lyrics.trim().slice(0, 12000) : ''
+    const ownLyrics = typeof body.lyrics === 'string' ? sanitizeLyriaLyrics(body.lyrics.slice(0, 12000), settings.title) : ''
     const legacyPrompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
     if (!settings.title && !legacyPrompt) return NextResponse.json({ error: 'Informe o nome da música.' }, { status: 400 })
     if (!ownLyrics && !settings.idea && !legacyPrompt) return NextResponse.json({ error: 'Descreva sua ideia ou cole a letra completa.' }, { status: 400 })
     const bpmValue = Number(bpm)
-    const durationValue = Number(duration)
     if (![90, 100, 110, 120].includes(bpmValue)) return NextResponse.json({ error: 'Escolha um BPM válido.' }, { status: 400 })
-    if (![120, 150, 180].includes(durationValue)) return NextResponse.json({ error: 'Escolha uma duração válida.' }, { status: 400 })
-    const lyrics = ownLyrics || (settings.idea ? await generateStudioLyric(buildLyriaLyricPrompt(settings, durationValue), settings.songLanguage) : '')
+    const lyricTargetSeconds = settings.lineCount === 'curta' ? 120 : settings.lineCount === 'longa' ? 180 : 150
+    const generatedLyric = !ownLyrics && settings.idea ? await generateStudioLyric(buildLyriaLyricPrompt(settings, lyricTargetSeconds), settings.songLanguage) : ''
+    const lyrics = sanitizeLyriaLyrics(ownLyrics || generatedLyric, settings.title)
+    const timing = estimateLyriaSongDuration(lyrics, bpmValue)
+    if (timing.exceedsModelLimit) {
+      const requiredMinutes = Math.floor(timing.naturalDurationSeconds / 60)
+      const requiredSeconds = String(timing.naturalDurationSeconds % 60).padStart(2, '0')
+      return NextResponse.json({
+        error: `Essa letra precisaria de aproximadamente ${requiredMinutes}:${requiredSeconds} para ser cantada naturalmente. O Google Lyria aceita no máximo 3:04 por música.`,
+        requiredDuration: timing.naturalDurationSeconds,
+        maximumDuration: LYRIA_MAX_DURATION_SECONDS,
+      }, { status: 422 })
+    }
+    const durationValue = timing.durationSeconds
     const creativeDirection = legacyPrompt || buildLyriaCreativeDirection(settings)
     const accessToken = await getServiceAccountAccessToken()
 
@@ -84,7 +95,7 @@ export async function POST(req: NextRequest) {
     const audio = outputs.find((o: any) => o?.type === 'audio' && o?.data)
     const texts = outputs.filter((o: any) => o?.type === 'text' && o?.text).map((o: any) => o.text)
     if (!audio?.data) return NextResponse.json({ error: 'O Lyria respondeu, mas não encontrei áudio na resposta.', details: JSON.stringify(data, null, 2).slice(0, 8000) }, { status: 502 })
-    return NextResponse.json({ audio: `data:${audio.mime_type || 'audio/mpeg'};base64,${audio.data}`, lyrics: lyrics || texts[0] || '', description: texts[1] || '', timingPlan: timedLyrics, creativeDirection, generatedLyrics: !ownLyrics && Boolean(lyrics), model: data?.model || MODEL })
+    return NextResponse.json({ audio: `data:${audio.mime_type || 'audio/mpeg'};base64,${audio.data}`, lyrics: lyrics || texts[0] || '', description: texts[1] || '', timingPlan: timedLyrics, creativeDirection, generatedLyrics: !ownLyrics && Boolean(lyrics), duration: durationValue, phraseCount: timing.phraseCount, model: data?.model || MODEL })
   } catch (err) {
     return NextResponse.json({ error: 'Erro interno no laboratório do Lyria.', details: err instanceof Error ? err.message : String(err) }, { status: 500 })
   }

@@ -23,5 +23,6 @@ describe('Lyria Studio creative direction', () => {
     expect(buildLyriaCreativeDirection(settings)).toContain('never modern universitário')
     expect(buildLyriaLyricPrompt(settings, 150)).toContain('sertanejo raiz tradicional')
     expect(buildLyriaLyricPrompt(settings, 150)).toContain('150 segundos')
+    expect(buildLyriaLyricPrompt(settings, 150)).toContain('Nunca escreva título')
   })
 })

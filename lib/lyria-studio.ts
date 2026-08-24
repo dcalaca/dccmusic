@@ -99,6 +99,7 @@ export function buildLyriaLyricPrompt(settings: LyriaStudioSettings, duration: n
     settings.extraInstructions ? `Orientações extras: ${settings.extraInstructions}.` : '',
     'Organize por seções como [Verso 1], [Pré-Refrão], [Refrão], [Verso 2] e [Final].',
     'Escreva linhas curtas ou médias, com respiração natural e sem atropelar sílabas. Não repita a música inteira.',
-    'Responda exclusivamente com a letra completa, sem explicações.',
+    'Nunca escreva título, nome da música, nome do artista, gênero, explicações, Markdown, asteriscos ou qualquer cabeçalho fora das seções da letra.',
+    'Comece diretamente com uma seção como [Verso 1] e responda exclusivamente com as frases que devem ser cantadas.',
   ].filter(Boolean).join('\n')
 }
