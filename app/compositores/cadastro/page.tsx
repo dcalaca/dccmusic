@@ -118,6 +118,13 @@ export default function ComposerSignupPage() {
           value: 0.01,
         }, data?.metaRegistrationEventId ? { eventID: data.metaRegistrationEventId } : undefined)
       }
+      if (typeof window !== 'undefined' && typeof (window as any).oaiq === 'function') {
+        ;(window as any).oaiq('measure', 'registration_completed', {
+          type: 'customer_action',
+          amount: 0,
+          currency: 'USD',
+        })
+      }
       router.push(
         `/compositores/login?cadastro=sucesso&email=${encodeURIComponent(formData.email)}&mensagem=${encodeURIComponent(successMessage)}`
       )
