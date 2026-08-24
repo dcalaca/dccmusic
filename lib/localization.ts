@@ -1,5 +1,5 @@
-export type DccCountry = 'BR' | 'PY' | 'CO'
-export type DccLocale = 'pt-BR' | 'es-PY' | 'es-CO'
+export type DccCountry = 'BR' | 'PY' | 'CO' | 'PT'
+export type DccLocale = 'pt-BR' | 'es-PY' | 'es-CO' | 'pt-PT'
 
 export const DEFAULT_COUNTRY: DccCountry = 'BR'
 export const DEFAULT_LOCALE: DccLocale = 'pt-BR'
@@ -9,7 +9,7 @@ export const COUNTRY_COOKIE = 'dcc_country'
 export const COUNTRY_CONFIG: Record<DccCountry, {
   country: DccCountry
   locale: DccLocale
-  currency: 'BRL' | 'PYG' | 'COP'
+  currency: 'BRL' | 'PYG' | 'COP' | 'EUR'
   label: string
   flag: string
   paymentProvider: 'mercadopago' | 'stripe'
@@ -38,11 +38,19 @@ export const COUNTRY_CONFIG: Record<DccCountry, {
     flag: '🇨🇴',
     paymentProvider: 'stripe',
   },
+  PT: {
+    country: 'PT',
+    locale: 'pt-PT',
+    currency: 'EUR',
+    label: 'Portugal',
+    flag: '🇵🇹',
+    paymentProvider: 'stripe',
+  },
 }
 
 export function normalizeCountry(value?: string | null): DccCountry {
   const normalized = String(value || '').toUpperCase()
-  return normalized === 'PY' || normalized === 'CO' ? normalized : 'BR'
+  return normalized === 'PY' || normalized === 'CO' || normalized === 'PT' ? normalized : 'BR'
 }
 
 /** Detect the signup country from trusted hosting/proxy geolocation headers. */
@@ -67,10 +75,11 @@ export function getLocaleForCountry(country: DccCountry): DccLocale {
   return COUNTRY_CONFIG[country].locale
 }
 
-// Cotação de referência usada apenas para antecipar o preço no site.
-// O valor definitivo em PYG é apresentado pelo Adaptive Pricing do Stripe.
+// Cotações de referência usadas apenas para antecipar o preço no site.
+// O valor definitivo nas moedas locais é apresentado pelo Adaptive Pricing do Stripe.
 export const BRL_TO_PYG_DISPLAY_RATE = 1160
 export const BRL_TO_COP_DISPLAY_RATE = 590
+export const BRL_TO_EUR_DISPLAY_RATE = 0.1662
 
 export function brlToPygDisplay(value: number) {
   const converted = Math.max(0, Number(value) || 0) * BRL_TO_PYG_DISPLAY_RATE
@@ -80,6 +89,11 @@ export function brlToPygDisplay(value: number) {
 export function brlToCopDisplay(value: number) {
   const converted = Math.max(0, Number(value) || 0) * BRL_TO_COP_DISPLAY_RATE
   return Math.round(converted / 100) * 100
+}
+
+export function brlToEurDisplay(value: number) {
+  const converted = Math.max(0, Number(value) || 0) * BRL_TO_EUR_DISPLAY_RATE
+  return Math.round(converted * 100) / 100
 }
 
 export function formatLocalizedMoney(valueInBrl: number, country: DccCountry) {
@@ -97,6 +111,15 @@ export function formatLocalizedMoney(valueInBrl: number, country: DccCountry) {
       currency: 'COP',
       maximumFractionDigits: 0,
     }).format(brlToCopDisplay(valueInBrl))
+  }
+
+  if (country === 'PT') {
+    return new Intl.NumberFormat('pt-PT', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(brlToEurDisplay(valueInBrl))
   }
 
   return new Intl.NumberFormat('pt-BR', {
