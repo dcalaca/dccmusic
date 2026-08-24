@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { FiArrowLeft } from 'react-icons/fi'
 import { requireAuth } from '@/lib/auth-helpers'
 import FinancePanel from '../FinancePanel'
+import FinancePanelCleanup from '../FinancePanelCleanup'
 
 export const dynamic = 'force-dynamic'
 
@@ -10,13 +11,10 @@ export default async function AdminFinanceiroPage() {
 
   return (
     <div className="min-h-screen py-8">
+      <FinancePanelCleanup />
       <style>{`
         .dcc-finance-no-cursor [class~="xl:grid-cols-4"] {
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-
-        .dcc-finance-no-cursor [class~="xl:grid-cols-4"] > :nth-child(4) {
-          display: none;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .dcc-finance-no-cursor p.text-xs.text-gray-500.mt-4 {
