@@ -25,6 +25,7 @@ function StudioTopupSuccessContent() {
     const value = Number(data?.amount) || 0
     const currency = data?.currency || 'BRL'
     const eventId = paymentId || topupId
+    const quantity = Math.max(1, Math.round(Number(data?.musicQuantity) || 1))
     if (value <= 0) return
 
     const fbq = (window as any).fbq
@@ -34,7 +35,7 @@ function StudioTopupSuccessContent() {
         content_type: 'product',
         contents: [{
           id: 'studio_topup',
-          quantity: Number(data?.musicQuantity) || 1,
+          quantity,
         }],
         currency,
         value,
@@ -50,7 +51,7 @@ function StudioTopupSuccessContent() {
       content_type: 'product',
       currency,
       event_id: eventId,
-      quantity: Number(data?.musicQuantity) || 1,
+      quantity,
       value,
     })
 
@@ -72,6 +73,25 @@ function StudioTopupSuccessContent() {
       value,
       currency,
     })
+
+    const oaiq = (window as any).oaiq
+    if (typeof oaiq === 'function') {
+      oaiq('measure', 'order_created', {
+        type: 'contents',
+        amount: Math.round(value * 100),
+        currency: String(currency).toUpperCase(),
+        contents: [
+          {
+            id: 'studio_topup',
+            name: 'Recarga Studio IA',
+            content_type: 'product',
+            quantity,
+          },
+        ],
+      }, {
+        event_id: `dcc_order_${eventId}`,
+      })
+    }
   }
 
   useEffect(() => {
