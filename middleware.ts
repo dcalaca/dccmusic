@@ -52,6 +52,12 @@ export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl
   const blogHost = isBlogHost(host)
 
+  if (!blogHost && pathname === '/api/admin/finance') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/api/admin/finance-adjusted'
+    return NextResponse.rewrite(url)
+  }
+
   if (!blogHost && (pathname === '/blog' || pathname.startsWith('/blog/'))) {
     const hostname = host.split(':')[0]
     if (hostname === 'www.dccmusic.online' || hostname === 'dccmusic.online') {
