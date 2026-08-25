@@ -37,7 +37,13 @@ const lineCounts = ['curta', 'média', 'longa']
 const voiceGenders = ['Deixar a IA escolher', 'Voz masculina', 'Voz feminina', 'Dueto masculino e feminino']
 const voiceTones = ['Deixar a IA escolher', 'Voz grave', 'Voz média', 'Voz aguda', 'Voz rouca', 'Voz suave', 'Voz forte']
 const studioMusicCredits = 10
-const songLanguages = ['Português (Brasil)', 'Español (Paraguay)', 'Español (Colombia)']
+const songLanguages = [
+  'Português (Brasil)',
+  'Português (Portugal)',
+  'Español (Paraguay)',
+  'Español (Colombia)',
+  'Español (México)',
+]
 const commonSpanishStyles = [
   'Pop latino',
   'Balada romántica',
@@ -67,8 +73,53 @@ const colombiaStyles = [
   'Porro colombiano',
   ...commonSpanishStyles,
 ]
+const portugalStyles = [
+  'Pop português',
+  'Fado',
+  'Música popular portuguesa',
+  'Pimba',
+  'Rock português',
+  'Hip-hop tuga',
+  'Folk português',
+  'Balada portuguesa',
+  'Música cristã',
+]
+const mexicoStyles = [
+  'Regional mexicano',
+  'Corridos tumbados',
+  'Corrido',
+  'Banda sinaloense',
+  'Norteño',
+  'Sierreño',
+  'Mariachi',
+  'Ranchera',
+  'Cumbia mexicana',
+  'Duranguense',
+  'Reggaetón',
+  ...commonSpanishStyles,
+  'Emo / Pop-punk',
+]
 const paraguayStyleOptions = [...paraguayStyles, customStyleOptionEs]
 const colombiaStyleOptions = [...colombiaStyles, customStyleOptionEs]
+const portugalStyleOptions = [...portugalStyles, customStyleOption]
+const mexicoStyleOptions = [...mexicoStyles, customStyleOptionEs]
+
+function getStudioCountryPreset(country: string) {
+  if (country === 'PY') {
+    return { language: 'Español (Paraguay)', defaultStyle: 'Guarania paraguaya', styleOptions: paraguayStyleOptions, isSpanish: true }
+  }
+  if (country === 'CO') {
+    return { language: 'Español (Colombia)', defaultStyle: 'Música popular colombiana', styleOptions: colombiaStyleOptions, isSpanish: true }
+  }
+  if (country === 'PT') {
+    return { language: 'Português (Portugal)', defaultStyle: 'Pop português', styleOptions: portugalStyleOptions, isSpanish: false }
+  }
+  if (country === 'MX') {
+    return { language: 'Español (México)', defaultStyle: 'Regional mexicano', styleOptions: mexicoStyleOptions, isSpanish: true }
+  }
+  return { language: 'Português (Brasil)', defaultStyle: 'Sertanejo', styleOptions: null as string[] | null, isSpanish: false }
+}
+
 const themeSuggestions = [
   { id: 'amor', label: 'Amor', text: 'Uma história de amor verdadeira, com carinho, desejo e a vontade de ficar juntos.' },
   { id: 'termino', label: 'Término', text: 'O fim de um relacionamento, a dor da despedida e a dificuldade de seguir em frente.' },
@@ -123,7 +174,10 @@ export default function NewStudioMusicPage() {
   const { country } = useLocalization()
   const isParaguay = country === 'PY'
   const isColombia = country === 'CO'
-  const isSpanish = isParaguay || isColombia
+  const isPortugal = country === 'PT'
+  const isMexico = country === 'MX'
+  const countryPreset = getStudioCountryPreset(country)
+  const isSpanish = countryPreset.isSpanish
   const localizedThemeSuggestions = isSpanish ? themeSuggestionsEsPy : themeSuggestions
   const localizedStructures = isSpanish
     ? ['Estándar', 'A/B/Estribillo/C/Estribillo', 'A/Estribillo/A/Estribillo']
@@ -144,10 +198,10 @@ export default function NewStudioMusicPage() {
   const [selectedTheme, setSelectedTheme] = useState('')
   const [form, setForm] = useState({
     title: '',
-    style: 'Sertanejo',
+    style: countryPreset.defaultStyle,
     customStyle: '',
     mood: 'Sofrência',
-    structure: 'Padrão',
+    structure: isSpanish ? 'Estándar' : 'Padrão',
     lineCount: 'média',
     wantInstruments: '',
     avoidInstruments: '',
@@ -162,23 +216,22 @@ export default function NewStudioMusicPage() {
     voiceTone: 'Deixar a IA escolher',
     voiceProfileId: '',
     extraInstructions: '',
-    songLanguage: country === 'PY' ? 'Español (Paraguay)' : country === 'CO' ? 'Español (Colombia)' : 'Português (Brasil)',
+    songLanguage: countryPreset.language,
   })
   const isCustomStyle = form.style === customStyleOption || form.style === customStyleOptionEs
 
   useEffect(() => {
-    if (country === 'BR') return
-    const countryStyles = country === 'CO' ? colombiaStyleOptions : paraguayStyleOptions
-    const defaultStyle = country === 'CO' ? 'Música popular colombiana' : 'Guarania paraguaya'
-    const defaultLanguage = country === 'CO' ? 'Español (Colombia)' : 'Español (Paraguay)'
-    setStyles(countryStyles)
+    const preset = getStudioCountryPreset(country)
+    if (preset.styleOptions) setStyles(preset.styleOptions)
     setForm((current) => ({
       ...current,
-      songLanguage: current.songLanguage !== defaultLanguage ? defaultLanguage : current.songLanguage,
-      style: !countryStyles.includes(current.style)
-        ? defaultStyle
+      songLanguage: preset.language,
+      style: preset.styleOptions && !preset.styleOptions.includes(current.style)
+        ? preset.defaultStyle
         : current.style,
-      structure: current.structure === 'Padrão' ? 'Estándar' : current.structure,
+      structure: preset.isSpanish
+        ? (current.structure === 'Padrão' ? 'Estándar' : current.structure)
+        : (current.structure === 'Estándar' ? 'Padrão' : current.structure),
     }))
   }, [country])
 
@@ -227,14 +280,14 @@ export default function NewStudioMusicPage() {
         const genreNames = (data || [])
           .map((genre: any) => String(genre.name || '').trim())
           .filter(Boolean)
+        const preset = getStudioCountryPreset(country)
 
-        if (country === 'CO' || country === 'PY') {
-          const styleOptions = country === 'CO' ? colombiaStyleOptions : paraguayStyleOptions
-          setStyles(styleOptions)
+        if (preset.styleOptions) {
+          setStyles(preset.styleOptions)
           setForm((currentForm) => (
-            styleOptions.includes(currentForm.style)
+            preset.styleOptions!.includes(currentForm.style)
               ? currentForm
-              : { ...currentForm, style: styleOptions[0] }
+              : { ...currentForm, style: preset.defaultStyle }
           ))
         } else if (genreNames.length > 0) {
           const styleOptions = [
@@ -297,7 +350,6 @@ export default function NewStudioMusicPage() {
       errorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }, 50)
   }
-
   const applyThemeSuggestion = (themeId: string) => {
     const theme = localizedThemeSuggestions.find((item) => item.id === themeId)
     if (!theme) return
@@ -387,8 +439,7 @@ export default function NewStudioMusicPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+          Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           projectId: projectData.project.id,
           ...form,
@@ -600,7 +651,7 @@ export default function NewStudioMusicPage() {
                           <input
                             value={form.customStyle}
                             onChange={(e) => setForm({ ...form, customStyle: e.target.value })}
-                            placeholder="Ex: piseiro romântico"
+                            placeholder={isMexico ? 'Ej.: corrido romántico con sierreño' : isPortugal ? 'Ex.: fado pop contemporâneo' : 'Ex: piseiro romântico'}
                             className="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/55"
                           />
                         </div>
@@ -774,7 +825,15 @@ export default function NewStudioMusicPage() {
                             <input
                               value={form.wantInstruments}
                               onChange={(e) => setForm({ ...form, wantInstruments: e.target.value })}
-                              placeholder={isParaguay ? 'Ej.: guitarra, arpa paraguaya, piano' : isColombia ? 'Ej.: acordeón, caja vallenata, guitarra' : 'Ex: viola, violão, piano'}
+                              placeholder={isParaguay
+                                ? 'Ej.: guitarra, arpa paraguaya, piano'
+                                : isColombia
+                                  ? 'Ej.: acordeón, caja vallenata, guitarra'
+                                  : isMexico
+                                    ? 'Ej.: acordeón, bajo sexto, trompeta, tololoche'
+                                    : isPortugal
+                                      ? 'Ex.: guitarra portuguesa, viola, piano'
+                                      : 'Ex: viola, violão, piano'}
                               className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/50"
                             />
                           </div>
