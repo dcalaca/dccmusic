@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { processDueEmailCampaigns } from '@/lib/admin-email-campaigns'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300
+export const maxDuration = 30
 
 function isAuthorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET
@@ -11,30 +10,19 @@ function isAuthorized(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  try {
-    if (!isAuthorized(request)) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
-    }
-
-    const campaignId = request.nextUrl.searchParams.get('campaignId') || undefined
-
-    const results = await processDueEmailCampaigns({
-      limitPerCampaign: 40,
-      maxBatchesPerCampaign: 8,
-      campaignId,
-    })
-
-    return NextResponse.json({
-      success: true,
-      processedCampaigns: results.length,
-      results,
-      timestamp: new Date().toISOString(),
-    })
-  } catch (error: any) {
-    console.error('[CRON EMAIL CAMPAIGNS] Erro:', error)
-    return NextResponse.json(
-      { error: error.message || 'Erro ao processar campanhas de e-mail' },
-      { status: 500 }
-    )
+  if (!isAuthorized(request)) {
+    return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
+
+  // Trava de segurança temporária: nenhum cron pode disparar campanhas automaticamente.
+  // Os envios devem ser iniciados/continuados manualmente pelo painel até a proteção
+  // de audiência e idempotência ser validada em produção.
+  return NextResponse.json({
+    success: true,
+    paused: true,
+    processedCampaigns: 0,
+    results: [],
+    reason: 'email_campaign_safety_lock',
+    timestamp: new Date().toISOString(),
+  })
 }
