@@ -36,24 +36,6 @@ const pendingEmailFetchPatch = `
     return response;
   }
 
-  async function continuePendingCampaign(id) {
-    try {
-      var response = await originalFetch('/api/admin/email-campaigns/pending', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: id, action: 'continue' })
-      });
-      var data = await response.clone().json().catch(function () { return {}; });
-      var remaining = Number(data && data.result && data.result.remaining || 0);
-      window.dispatchEvent(new CustomEvent('dcc-pending-email-progress', { detail: { id: id, remaining: remaining } }));
-      if (response.ok && remaining > 0) {
-        window.setTimeout(function () { continuePendingCampaign(id); }, 5000);
-      }
-    } catch (error) {
-      console.warn('[PENDING EMAIL CAMPAIGN] Continuação automática interrompida:', error);
-    }
-  }
-
   window.fetch = async function (input, init) {
     var rawUrl = typeof input === 'string' ? input : input && input.url;
     var method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
@@ -92,23 +74,13 @@ const pendingEmailFetchPatch = `
       }
 
       if (method === 'PATCH' && body && body.id && window.__dccPendingEmailCampaignIds.has(String(body.id))) {
-        var response = await originalFetch('/api/admin/email-campaigns/pending', Object.assign({}, init || {}, {
+        // Trava de segurança: cada clique manual processa no máximo um lote.
+        // Não existe mais recursão/continuação automática no navegador.
+        return originalFetch('/api/admin/email-campaigns/pending', Object.assign({}, init || {}, {
           method: 'PATCH',
           headers: Object.assign({ 'Content-Type': 'application/json' }, init && init.headers || {}),
           body: JSON.stringify(body)
         }));
-
-        if (response.ok && body.action === 'send') {
-          try {
-            var data = await response.clone().json();
-            var remaining = Number(data && data.result && data.result.remaining || 0);
-            if (remaining > 0) {
-              window.setTimeout(function () { continuePendingCampaign(String(body.id)); }, 5000);
-            }
-          } catch (_) {}
-        }
-
-        return response;
       }
     }
 
