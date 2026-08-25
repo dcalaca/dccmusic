@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FiCalendar, FiDownload, FiRefreshCw } from 'react-icons/fi'
 
+type Preset = 'yesterday' | 'today' | 'last30' | 'thisMonth' | 'lastMonth' | 'custom'
+
 type ComparisonItem = {
   key: 'new' | 'recurring'
   label: string
@@ -67,6 +69,15 @@ type PaymentTypesReport = {
   warnings: string[]
 }
 
+const presetLabels: Record<Preset, string> = {
+  yesterday: 'Ontem',
+  today: 'Hoje',
+  last30: 'Últimos 30 dias',
+  thisMonth: 'Este mês',
+  lastMonth: 'Mês passado',
+  custom: 'Personalizado',
+}
+
 function dateToInput(date: Date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -80,12 +91,30 @@ function addDays(date: Date, days: number) {
   return next
 }
 
-function getDefaultRange() {
+function getPresetRange(preset: Preset) {
   const now = new Date()
-  return {
-    startDate: dateToInput(addDays(now, -29)),
-    endDate: dateToInput(now),
+
+  if (preset === 'yesterday') {
+    const yesterday = addDays(now, -1)
+    return { startDate: dateToInput(yesterday), endDate: dateToInput(yesterday) }
   }
+
+  if (preset === 'today') {
+    return { startDate: dateToInput(now), endDate: dateToInput(now) }
+  }
+
+  if (preset === 'last30') {
+    return { startDate: dateToInput(addDays(now, -29)), endDate: dateToInput(now) }
+  }
+
+  if (preset === 'lastMonth') {
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const end = new Date(now.getFullYear(), now.getMonth(), 0)
+    return { startDate: dateToInput(start), endDate: dateToInput(end) }
+  }
+
+  const start = new Date(now.getFullYear(), now.getMonth(), 1)
+  return { startDate: dateToInput(start), endDate: dateToInput(now) }
 }
 
 function formatNumber(value: number) {
@@ -306,7 +335,8 @@ function DailyChart({ days }: { days: DayBucket[] }) {
 }
 
 export default function PaymentTypesPanel() {
-  const [range, setRange] = useState(getDefaultRange)
+  const [preset, setPreset] = useState<Preset>('thisMonth')
+  const [range, setRange] = useState(() => getPresetRange('thisMonth'))
   const [report, setReport] = useState<PaymentTypesReport | null>(null)
   const [loading, setLoading] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -366,7 +396,18 @@ export default function PaymentTypesPanel() {
     }
   }
 
-  const clearResult = (key: 'startDate' | 'endDate', value: string) => {
+  const selectPreset = (nextPreset: Preset) => {
+    setPreset(nextPreset)
+    setReport(null)
+    setError('')
+
+    if (nextPreset !== 'custom') {
+      setRange(getPresetRange(nextPreset))
+    }
+  }
+
+  const updateCustomDate = (key: 'startDate' | 'endDate', value: string) => {
+    setPreset('custom')
     setRange(prev => ({ ...prev, [key]: value }))
     setReport(null)
     setError('')
@@ -407,6 +448,23 @@ export default function PaymentTypesPanel() {
         </div>
       </div>
 
+      <div className="mb-4 flex flex-wrap gap-2">
+        {(Object.keys(presetLabels) as Preset[]).map(item => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => selectPreset(item)}
+            className={`text-sm underline-offset-4 transition-colors ${
+              preset === item
+                ? 'text-primary-300 underline'
+                : 'text-gray-400 hover:text-primary-300 hover:underline'
+            }`}
+          >
+            {presetLabels[item]}
+          </button>
+        ))}
+      </div>
+
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1 flex items-center gap-1 text-xs text-gray-500">
@@ -416,7 +474,7 @@ export default function PaymentTypesPanel() {
           <input
             type="date"
             value={range.startDate}
-            onChange={event => clearResult('startDate', event.target.value)}
+            onChange={event => updateCustomDate('startDate', event.target.value)}
             className="w-full rounded-lg border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-white focus:border-primary-500 focus:outline-none"
           />
         </label>
@@ -428,7 +486,7 @@ export default function PaymentTypesPanel() {
           <input
             type="date"
             value={range.endDate}
-            onChange={event => clearResult('endDate', event.target.value)}
+            onChange={event => updateCustomDate('endDate', event.target.value)}
             className="w-full rounded-lg border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-white focus:border-primary-500 focus:outline-none"
           />
         </label>
@@ -446,7 +504,7 @@ export default function PaymentTypesPanel() {
         </div>
       ) : !report ? (
         <div className="rounded-xl border border-gray-800 p-6 text-sm text-gray-400">
-          Escolha as datas e clique em Calcular. A página não consulta nada automaticamente.
+          Escolha um período e clique em Calcular. A página não consulta nada automaticamente.
         </div>
       ) : (
         <div className="space-y-5">
