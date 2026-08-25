@@ -120,6 +120,13 @@ function buildProjectDescription(body: any, fallbackDescription?: string | null)
   ].filter(Boolean).join('\n')
 }
 
+function normalizeLanguage(value?: string | null) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
 function buildPrompt(input: any, existingLyric?: string) {
   const avoid = [
     input.avoidCliches && 'evitar clichês',
@@ -131,27 +138,46 @@ function buildPrompt(input: any, existingLyric?: string) {
   ].filter(Boolean).join(', ')
 
   const actionInstruction = input.action ? actions[input.action] || input.action : ''
-  const selectedLanguage = String(input.songLanguage || '').toLowerCase()
+  const selectedLanguage = normalizeLanguage(input.songLanguage)
+  const mexicanSpanish = selectedLanguage.includes('mexico')
   const colombianSpanish = selectedLanguage.includes('colombia')
   const paraguayanSpanish = selectedLanguage.includes('paraguay')
-  const spanishLanguage = colombianSpanish || paraguayanSpanish || selectedLanguage.includes('espa')
-  const culturalInstruction = colombianSpanish
+  const europeanPortuguese = selectedLanguage.includes('portugal')
+  const spanishLanguage = mexicanSpanish || colombianSpanish || paraguayanSpanish || selectedLanguage.includes('espa')
+  const culturalInstruction = mexicanSpanish
     ? `
+Idioma e identidade cultural obrigatórios:
+- escrever toda a letra em espanhol natural do México;
+- usar vocabulário, construções e fraseado naturais para mexicanos, sem caricaturar o sotaque nem forçar gírias;
+- não usar português e não fazer tradução literal do português;
+- respeitar o gênero escolhido e, quando for regional mexicano, corrido, corridos tumbados, banda, norteño, sierreño, mariachi, ranchera ou cumbia mexicana, refletir de verdade a identidade musical do México;
+- em corridos, priorizar narrativa e imagens concretas; em ranchera/mariachi, priorizar interpretação emocional; em banda/norteño/sierreño, manter fraseado compatível com o gênero;
+- evitar regionalismos marcadamente colombianos, paraguaios, argentinos ou espanhóis quando não forem pedidos.`
+    : colombianSpanish
+      ? `
 Idioma e identidade cultural obrigatórios:
 - escrever toda a letra em espanhol natural da Colômbia;
 - usar vocabulário e construções compreensíveis para colombianos, sem caricaturar o sotaque;
 - não usar português brasileiro e não fazer tradução literal;
 - respeitar o gênero escolhido e, quando for vallenato, cumbia, salsa ou música popular colombiana, refletir a identidade musical da Colômbia;
 - evitar regionalismos de outros países quando não forem pedidos.`
-    : paraguayanSpanish || spanishLanguage
-    ? `
+      : paraguayanSpanish || spanishLanguage
+        ? `
 Idioma e identidade cultural obrigatórios:
 - escrever toda a letra em espanhol natural do Paraguai;
 - usar vocabulário, ritmo de fala e construções compreensíveis para paraguaios;
 - não usar português brasileiro e não usar espanhol artificial traduzido literalmente;
 - respeitar o gênero escolhido e, quando for guarania, polca ou cumbia paraguaia, refletir a identidade musical do Paraguai;
 - não inserir palavras em guarani, a menos que o usuário peça explicitamente.`
-    : `
+        : europeanPortuguese
+          ? `
+Idioma e identidade cultural obrigatórios:
+- escrever toda a letra em português europeu natural, próprio de Portugal;
+- usar vocabulário, construções, colocação pronominal e fraseado naturais em Portugal, sem converter automaticamente para português do Brasil;
+- não usar brasileirismos evidentes quando houver uma forma corrente em Portugal;
+- respeitar o género escolhido e, quando for fado, música popular portuguesa, pimba, pop português, rock português ou hip-hop tuga, refletir a identidade musical portuguesa sem caricatura;
+- manter a letra cantável e natural para um intérprete português.`
+          : `
 Idioma e identidade cultural obrigatórios:
 - escrever toda a letra em português brasileiro natural;
 - usar fraseado, vocabulário e pronúncia adequados ao Brasil.`
@@ -195,6 +221,23 @@ Responda somente com a letra completa, organizada por partes.
 `.trim()
 }
 
+function getSystemComposerInstruction(songLanguage?: string) {
+  const language = normalizeLanguage(songLanguage)
+  if (language.includes('mexico')) {
+    return 'Eres un compositor profesional mexicano. Escribes canciones naturales en español de México, con identidad local real, listas para radio y streaming, respetando con precisión el género seleccionado.'
+  }
+  if (language.includes('colombia')) {
+    return 'Eres un compositor profesional colombiano. Escribes canciones naturales en español colombiano, con identidad local, listas para radio y streaming.'
+  }
+  if (language.includes('paraguay') || language.includes('espa')) {
+    return 'Eres un compositor profesional paraguayo. Escribes canciones naturales en español paraguayo, con identidad local, listas para radio y streaming.'
+  }
+  if (language.includes('portugal')) {
+    return 'És um compositor profissional de Portugal. Escreves canções naturais em português europeu, com identidade musical portuguesa e linguagem própria de Portugal, prontas para rádio e streaming.'
+  }
+  return 'Você é um compositor profissional especializado em música brasileira popular, rádio e streaming.'
+}
+
 async function generateLyricWithOpenAI(prompt: string, songLanguage?: string) {
   const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error('A geração de letras não está configurada no servidor.')
@@ -211,11 +254,7 @@ async function generateLyricWithOpenAI(prompt: string, songLanguage?: string) {
       messages: [
         {
           role: 'system',
-          content: String(songLanguage || '').toLowerCase().includes('colombia')
-            ? 'Eres un compositor profesional colombiano. Escribes canciones naturales en español colombiano, con identidad local, listas para radio y streaming.'
-            : String(songLanguage || '').toLowerCase().includes('paraguay') || String(songLanguage || '').toLowerCase().includes('espa')
-              ? 'Eres un compositor profesional paraguayo. Escribes canciones naturales en español paraguayo, con identidad local, listas para radio y streaming.'
-            : 'Você é um compositor profissional especializado em música brasileira popular, rádio e streaming.',
+          content: getSystemComposerInstruction(songLanguage),
         },
         { role: 'user', content: prompt },
       ],
@@ -232,6 +271,16 @@ async function generateLyricWithOpenAI(prompt: string, songLanguage?: string) {
   const lyric = data.choices?.[0]?.message?.content?.trim()
   if (!lyric) throw new Error('A IA não retornou uma letra válida')
   return lyric
+}
+
+function inferProjectLanguage(projectDescription: string) {
+  const normalized = normalizeLanguage(projectDescription)
+  if (normalized.includes('mexico')) return 'Español (México)'
+  if (normalized.includes('colombia')) return 'Español (Colombia)'
+  if (normalized.includes('paraguay')) return 'Español (Paraguay)'
+  if (normalized.includes('portugal')) return 'Português (Portugal)'
+  if (normalized.includes('idioma da musica: espa')) return 'Español (Paraguay)'
+  return 'Português (Brasil)'
 }
 
 export async function POST(request: NextRequest) {
@@ -273,11 +322,7 @@ export async function POST(request: NextRequest) {
     if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
 
     const projectDescription = String(project.description || '')
-    const inferredLanguage = /colombia/i.test(projectDescription)
-      ? 'Español (Colombia)'
-      : /idioma da m[uú]sica:\s*espa|\(paraguay\)/i.test(projectDescription)
-        ? 'Español (Paraguay)'
-        : 'Português (Brasil)'
+    const inferredLanguage = inferProjectLanguage(projectDescription)
     const input = {
       ...body,
       songLanguage: String(body.songLanguage || inferredLanguage),
