@@ -152,9 +152,27 @@ export async function GET(request: NextRequest) {
       getCampaignRecipients('site_users'),
     ])
 
+    const livePendingCounts = new Map<string, number>()
+    await Promise.all(
+      campaigns.map(async (campaign: any) => {
+        if (
+          campaign.target_mode !== 'pending_email' ||
+          campaign.frozen_at ||
+          !campaign.target_from ||
+          !campaign.target_to
+        ) return
+
+        const recipients = await getPendingEmailRecipients(campaign.target_from, campaign.target_to)
+        livePendingCounts.set(campaign.id, recipients.length)
+      })
+    )
+
     return NextResponse.json({
       campaigns: campaigns.map((campaign: any) => ({
         ...campaign,
+        target_count: livePendingCounts.has(campaign.id)
+          ? livePendingCounts.get(campaign.id)
+          : campaign.target_count,
         deliveries: stats.get(campaign.id) || { sent: 0, failed: 0, skipped: 0, pending: 0 },
         clicks: clickStats.get(campaign.id) || { total: 0, human: 0, bot: 0, unknown: 0 },
       })),
