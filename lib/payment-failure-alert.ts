@@ -45,6 +45,27 @@ function sanitizeErrorMessage(error: unknown) {
     .slice(0, 800)
 }
 
+function isKnownDuplicateSubscriptionConstraint(error: unknown) {
+  const candidate = error as {
+    code?: unknown
+    message?: unknown
+    details?: unknown
+    constraint?: unknown
+  } | null
+
+  const code = String(candidate?.code || '')
+  const combined = [candidate?.message, candidate?.details, candidate?.constraint]
+    .filter((value) => value != null)
+    .map(String)
+    .join(' ')
+    .toLowerCase()
+
+  return (
+    code === '23505' &&
+    combined.includes('dccmusic_subscriptions_composer_id_plan_id_status_key')
+  )
+}
+
 function normalizeFailureFingerprint(message: string) {
   return message
     .toLowerCase()
@@ -68,6 +89,17 @@ function markErrorAsReported(error: unknown) {
 }
 
 export async function reportPaymentFailure(input: PaymentFailureAlertInput) {
+  if (isKnownDuplicateSubscriptionConstraint(input.error)) {
+    console.warn('[PAYMENT ALERT] E-mail suprimido para duplicidade conhecida de assinatura ativa.', {
+      provider: input.provider,
+      stage: input.stage,
+      paymentId: input.paymentId ?? null,
+      composerId: input.composerId ?? null,
+    })
+    markErrorAsReported(input.error)
+    return { sent: false, reason: 'known_duplicate_subscription_constraint' }
+  }
+
   if ((input.error as { __dccPaymentAlertReported?: boolean } | null)?.__dccPaymentAlertReported) {
     return { sent: false, reason: 'already_reported_for_request' }
   }
