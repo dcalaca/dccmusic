@@ -5,6 +5,15 @@ import { createPortal } from 'react-dom'
 import { FiClock, FiMail } from 'react-icons/fi'
 
 const STORAGE_KEY = 'dccPendingEmailTarget'
+const TARGET_PREFIX = 'pending-email|'
+
+type PendingCampaignCard = {
+  id: string
+  name: string
+  subject: string
+  targetCount: number
+  remaining: number
+}
 
 function dateValue(date: Date) {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
@@ -49,6 +58,45 @@ function uncheckByLabel(labelText: string) {
   input.click()
 }
 
+function decodeTarget(value: unknown) {
+  const raw = String(value || '')
+  if (!raw.startsWith(TARGET_PREFIX)) return null
+  const parts = raw.split('|')
+  if (parts.length < 3 || !parts[1] || !parts[2]) return null
+  return { from: parts[1], to: parts[2] }
+}
+
+function patchCampaignCards(cards: PendingCampaignCard[]) {
+  if (cards.length === 0) return
+  const articles = Array.from(document.querySelectorAll('article'))
+
+  for (const card of cards) {
+    const article = articles.find((item) => {
+      const title = item.querySelector('h3')?.textContent?.trim()
+      const texts = Array.from(item.querySelectorAll('p')).map((node) => node.textContent?.trim() || '')
+      return title === card.name && texts.includes(card.subject)
+    })
+    if (!article) continue
+
+    const statsLine = Array.from(article.querySelectorAll('p')).find((node) => node.textContent?.includes('Restantes estimados:'))
+    if (!statsLine?.textContent) continue
+
+    const nextText = statsLine.textContent.replace(/Restantes estimados:\s*\d+/i, `Restantes estimados: ${card.remaining}`)
+    if (nextText !== statsLine.textContent) statsLine.textContent = nextText
+
+    if (!article.querySelector('[data-pending-target-count="1"]')) {
+      const badges = article.querySelector('div.mb-2.flex.flex-wrap')
+      if (badges) {
+        const badge = document.createElement('span')
+        badge.dataset.pendingTargetCount = '1'
+        badge.className = 'rounded-full border border-amber-700 bg-amber-950/30 px-3 py-1 text-xs font-bold text-amber-100'
+        badge.textContent = `Filtro pendente: ${card.targetCount}`
+        badges.appendChild(badge)
+      }
+    }
+  }
+}
+
 export default function PendingEmailCampaignPortal() {
   const initialRange = useMemo(defaultRange, [])
   const [ideasPanel, setIdeasPanel] = useState<HTMLElement | null>(null)
@@ -58,6 +106,7 @@ export default function PendingEmailCampaignPortal() {
   const [to, setTo] = useState(initialRange.to)
   const [count, setCount] = useState<number | null>(null)
   const [countLoading, setCountLoading] = useState(false)
+  const [campaignCards, setCampaignCards] = useState<PendingCampaignCard[]>([])
 
   useEffect(() => {
     const resolveTargets = () => {
@@ -123,6 +172,60 @@ export default function PendingEmailCampaignPortal() {
     if (!enabled) return
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ from, to }))
   }, [enabled, from, to])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadPendingCards = async () => {
+      try {
+        const response = await fetch('/api/admin/email-campaigns', { cache: 'no-store' })
+        const data = await response.json()
+        if (!response.ok || cancelled) return
+
+        const pendingCampaigns = (data.campaigns || [])
+          .map((campaign: any) => ({ campaign, target: decodeTarget(campaign.created_by) }))
+          .filter((item: any) => item.target)
+
+        const nextCards = await Promise.all(pendingCampaigns.map(async ({ campaign, target }: any) => {
+          const params = new URLSearchParams({ from: target.from, to: target.to })
+          const targetResponse = await fetch(`/api/admin/email-campaigns/pending?${params.toString()}`, { cache: 'no-store' })
+          const targetData = await targetResponse.json().catch(() => ({}))
+          const targetCount = targetResponse.ok ? Number(targetData.count) || 0 : 0
+          const sent = Number(campaign.deliveries?.sent || campaign.sent_count || 0)
+          const skipped = Number(campaign.deliveries?.skipped || 0)
+          return {
+            id: String(campaign.id),
+            name: String(campaign.name || ''),
+            subject: String(campaign.subject || ''),
+            targetCount,
+            remaining: Math.max(0, targetCount - sent - skipped),
+          }
+        }))
+
+        if (!cancelled) setCampaignCards(nextCards)
+      } catch (error) {
+        console.warn('[PENDING EMAIL CAMPAIGN] Não foi possível corrigir a estimativa visual:', error)
+      }
+    }
+
+    void loadPendingCards()
+    const interval = window.setInterval(loadPendingCards, 15000)
+    const onProgress = () => void loadPendingCards()
+    window.addEventListener('dcc-pending-email-progress', onProgress)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+      window.removeEventListener('dcc-pending-email-progress', onProgress)
+    }
+  }, [])
+
+  useEffect(() => {
+    patchCampaignCards(campaignCards)
+    const observer = new MutationObserver(() => patchCampaignCards(campaignCards))
+    observer.observe(document.body, { childList: true, subtree: true })
+    return () => observer.disconnect()
+  }, [campaignCards])
 
   const activateIdea = () => {
     const range = defaultRange()
