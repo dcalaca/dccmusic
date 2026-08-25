@@ -34,6 +34,40 @@ function getClientIp(request: NextRequest) {
   )
 }
 
+function shortenGeneratedTitle(value: string) {
+  const clean = String(value || '')
+    .replace(/^[-–—"'“”‘’]+|[-–—"'“”‘’]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (!clean) return 'Nova Música'
+  if (clean.length <= STUDIO_TITLE_MAX_LENGTH) return formatMusicTitle(clean)
+
+  const preview = clean.slice(0, STUDIO_TITLE_MAX_LENGTH + 1)
+  const lastSpace = preview.lastIndexOf(' ')
+  const shortened = lastSpace >= 12
+    ? preview.slice(0, lastSpace)
+    : clean.slice(0, STUDIO_TITLE_MAX_LENGTH)
+
+  return formatMusicTitle(shortened.trim())
+}
+
+function deriveTitleFromLyric(lyric: string) {
+  const lines = String(lyric || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+
+  const sectionLine = /^\[[^\]]+\]$/
+  const chorusLine = /^\[(refr[aã]o|coro|estribillo|chorus)\]$/i
+  const chorusIndex = lines.findIndex((line) => chorusLine.test(line))
+  const candidate = chorusIndex >= 0
+    ? lines.slice(chorusIndex + 1).find((line) => !sectionLine.test(line))
+    : lines.find((line) => !sectionLine.test(line))
+
+  return shortenGeneratedTitle(candidate || 'Nova Música')
+}
+
 function normalizeStyleName(style?: string | null) {
   return String(style || '')
     .normalize('NFD')
@@ -65,7 +99,7 @@ Instrução obrigatória para MODA DE VIOLA / SERTANEJO RAIZ:
 - evitar gírias urbanas modernas e imagens de balada/caminhonete/luxo;
 - criar versos com cara de moda antiga, história bem contada e refrão natural.
 `.trim()
-  }
+}
 
 function buildProjectDescription(body: any, fallbackDescription?: string | null) {
   const idea = typeof body.idea === 'string' ? body.idea.trim() : ''
@@ -252,6 +286,12 @@ export async function POST(request: NextRequest) {
     const prompt = buildPrompt(input, existingLyric)
     const lyric = await generateLyricWithOpenAI(prompt, input.songLanguage)
 
+    const incomingTitle = typeof body.title === 'string' ? body.title.trim() : ''
+    const shouldGenerateTitle = !incomingTitle || /^nova m[uú]sica$/i.test(incomingTitle)
+    const finalTitle = shouldGenerateTitle
+      ? deriveTitleFromLyric(lyric)
+      : formatMusicTitle(incomingTitle.slice(0, STUDIO_TITLE_MAX_LENGTH))
+
     await supabaseAdmin
       .from('studio_lyrics')
       .update({ is_current: false, updated_at: new Date().toISOString() })
@@ -291,7 +331,7 @@ export async function POST(request: NextRequest) {
     await supabaseAdmin
       .from('studio_projects')
       .update({
-        title: typeof body.title === 'string' ? formatMusicTitle(body.title.trim().slice(0, STUDIO_TITLE_MAX_LENGTH) || project.title) : project.title,
+        title: finalTitle,
         style: body.style || project.style,
         mood: body.mood || project.mood,
         structure: body.structure || project.structure,
@@ -301,7 +341,7 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', project.id)
 
-    return NextResponse.json({ lyric: data.content })
+    return NextResponse.json({ lyric: data.content, title: finalTitle })
   } catch (error: any) {
     console.error('[Studio IA] Erro gerar letra:', error)
     return NextResponse.json({ error: error.message || 'Erro ao gerar letra' }, { status: 500 })
