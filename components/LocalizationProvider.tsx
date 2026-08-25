@@ -11,12 +11,13 @@ import {
   normalizeCountry,
 } from '@/lib/localization'
 import { translateToParaguayanSpanish } from '@/lib/i18n-es-py'
+import { translateToMexicanSpanish } from '@/lib/i18n-es-mx'
 import { translateToEuropeanPortuguese } from '@/lib/i18n-pt-pt'
 
 type LocalizationContextValue = {
   country: DccCountry
   locale: DccLocale
-  currency: 'BRL' | 'PYG' | 'COP' | 'EUR'
+  currency: 'BRL' | 'PYG' | 'COP' | 'EUR' | 'MXN'
   paymentProvider: 'mercadopago' | 'stripe'
   setCountry: (country: DccCountry) => void
   formatMoney: (brlValue: number) => string
@@ -28,6 +29,7 @@ const translatedAttributeValues = new WeakMap<Element, Map<string, string>>()
 
 function translateCopy(value: string, country: DccCountry) {
   if (country === 'PT') return translateToEuropeanPortuguese(value)
+  if (country === 'MX') return translateToMexicanSpanish(value)
   if (country === 'PY' || country === 'CO') return translateToParaguayanSpanish(value)
   return value
 }
