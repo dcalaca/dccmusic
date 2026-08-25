@@ -73,6 +73,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Compositor não encontrado' }, { status: 404 })
     }
 
+    // Proteção no backend: mesmo que o front-end seja burlado, atualizado tarde
+    // ou o usuário acesse o checkout por um link antigo, não abrimos um novo
+    // pagamento para o mesmo plano enquanto já houver assinatura ativa.
+    const { data: activeSubscription, error: activeSubscriptionError } = await supabaseAdmin
+      .from('dccmusic_subscriptions')
+      .select('id, end_date')
+      .eq('composer_id', composerData.id)
+      .eq('plan_id', plan.id)
+      .eq('status', 'active')
+      .order('end_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (activeSubscriptionError) {
+      console.error('[PLAN INTENT] Erro ao verificar assinatura ativa:', activeSubscriptionError)
+      return NextResponse.json(
+        { error: 'Não foi possível validar seu plano atual. Tente novamente.' },
+        { status: 500 }
+      )
+    }
+
+    if (activeSubscription) {
+      return NextResponse.json(
+        {
+          error: 'Você já possui este plano ativo.',
+          code: 'ACTIVE_PLAN_EXISTS',
+          activeSubscriptionId: activeSubscription.id,
+          expiresAt: activeSubscription.end_date || null,
+        },
+        { status: 409 }
+      )
+    }
+
     const subscription = await getOrCreatePendingSubscription(composerData.id, plan.id)
     const amount = Number(plan.price) || 0
     if (amount <= 0) {
