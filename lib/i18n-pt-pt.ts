@@ -35,9 +35,6 @@ const exact: Record<string, string> = {
   'Tags (separadas por vírgula)': 'Etiquetas (separadas por vírgulas)',
   'Data de Publicação': 'Data de publicação',
   'Será gerado automaticamente se vazio': 'Será gerado automaticamente se ficar vazio',
-  'Cole o iframe do Spotify, SoundCloud ou Apple Music. Para SoundCloud, pode colar o link da faixa.': 'Cole o iframe do Spotify, SoundCloud ou Apple Music. Para o SoundCloud, pode colar a ligação da faixa.',
-  'Cole o código iframe do Apple Music': 'Cole o código iframe do Apple Music',
-  'Cole o código do Spotify, SoundCloud, Apple Music ou outro player. Para SoundCloud, pode colar o link da faixa.': 'Cole o código do Spotify, SoundCloud, Apple Music ou de outro leitor. Para o SoundCloud, pode colar a ligação da faixa.',
   'Pagamentos e recargas': 'Pagamentos e carregamentos',
   'Aqui aparecem seus pagamentos, recargas e entradas ou saídas de créditos.': 'Aqui aparecem os seus pagamentos, carregamentos e movimentos de créditos.',
   'Créditos recebidos': 'Créditos recebidos',
@@ -46,16 +43,11 @@ const exact: Record<string, string> = {
   'Escolher foto': 'Escolher fotografia',
   'Salvar foto': 'Guardar fotografia',
   'Vídeos cadastrados': 'Vídeos registados',
-  'vídeos cadastrados': 'vídeos registados',
+  'vídeos cadastrados': 'Vídeos registados',
   'Ver minha página pública': 'Ver a minha página pública',
-  'Esta ação não pode ser desfeita. Depois da exclusão, você será desconectado automaticamente.': 'Esta ação não pode ser anulada. Depois da eliminação, a sua sessão será terminada automaticamente.',
-  'Você será redirecionado para a página inicial em alguns segundos.': 'Será redirecionado para a página inicial dentro de alguns segundos.',
   'Gerador de Capas IA': 'Gerador de capas com IA',
   'Adicionar texto na capa': 'Adicionar texto à capa',
-  'Use esse campo somente se quiser direcionar a imagem. Não é necessário escrever prompt técnico.': 'Utilize este campo apenas se quiser orientar a imagem. Não é necessário escrever um prompt técnico.',
-  'Você atingiu o limite mensal. Em breve teremos upgrades para ampliar gerações.': 'Atingiu o limite mensal. Em breve teremos opções para aumentar o número de gerações.',
   'Baixar PNG': 'Descarregar PNG',
-  'As capas geradas ficarão salvas aqui para baixar novamente.': 'As capas geradas ficam guardadas aqui para poder voltar a descarregá-las.',
   '🎵 Ouça Agora': '🎵 Ouvir agora',
   '▶️ Assista Agora': '▶️ Ver agora',
   'Área do Compositor': 'Área do compositor',
@@ -78,21 +70,9 @@ const exact: Record<string, string> = {
   'Preparando checkout...': 'A preparar o pagamento...',
   'Pagamento seguro': 'Pagamento seguro',
   'Para compositor — cadastre-se': 'Para compositores — registe-se',
-  'Publique suas composições, receba avaliações reais e conquiste novos ouvintes.': 'Publique as suas composições, receba avaliações reais e conquiste novos ouvintes.',
-  'compositores cadastrados': 'compositores registados',
   'Voltar para meus dados': 'Voltar aos meus dados',
   'Minhas vozes': 'As minhas vozes',
   'Minhas Vozes': 'As minhas vozes',
-  'A criação da voz só desconta 2 créditos se ela ficar pronta para uso. Tentativas que falharem não são cobradas.': 'A criação da voz só desconta 2 créditos se ficar pronta a utilizar. As tentativas que falharem não são cobradas.',
-  'Use apenas vozes suas ou autorizadas.': 'Utilize apenas vozes suas ou autorizadas.',
-  'Use um áudio com a voz clara, sem instrumentos, sem backing vocal e com pouco efeito. Assim a clonagem fica mais parecida.': 'Utilize um áudio com a voz clara, sem instrumentos, sem vozes de apoio e com poucos efeitos. Assim, a clonagem ficará mais fiel.',
-  'Custo: 2 créditos somente quando a voz for aprovada e ficar pronta.': 'Custo: 2 créditos apenas quando a voz for aprovada e ficar pronta.',
-  'Opção 1: gravar a voz agora': 'Opção 1: gravar a voz agora',
-  'Opção 2: escolher áudio pronto': 'Opção 2: escolher um áudio pronto',
-  'Grave você cantando ou falando exatamente essa frase e envie abaixo.': 'Grave-se a cantar ou a dizer exatamente esta frase e envie-a abaixo.',
-  'Essa frase pode ter expirado.': 'Esta frase pode ter expirado.',
-  'Grave a frase direto por aqui': 'Grave a frase diretamente aqui',
-  'Clique em gravar, fale ou cante a frase acima e depois pare para enviar automaticamente.': 'Clique em gravar, diga ou cante a frase acima e depois pare a gravação para a enviar automaticamente.',
   'Página anterior': 'Página anterior',
   'Próxima página': 'Página seguinte',
   'Última página': 'Última página',
@@ -127,6 +107,20 @@ const exact: Record<string, string> = {
   'Exclusão': 'Eliminação',
   'Acessar': 'Aceder',
   'Acesse': 'Aceda',
+
+  // Planos: manter apresentação consistente e profissional.
+  'salvar projetos musicais': 'Guardar projetos musicais',
+  'Salvar projetos musicais': 'Guardar projetos musicais',
+  'player premium': 'Leitor premium',
+  'Player premium': 'Leitor premium',
+  'Download MP3': 'Descarregar MP3',
+  'Downloads MP3': 'Descarregar MP3',
+  'capas rápidas ilimitadas': 'Capas rápidas ilimitadas',
+  'Capas rápidas ilimitadas': 'Capas rápidas ilimitadas',
+  'letras IA ilimitadas': 'Letras IA ilimitadas',
+  'Letras IA ilimitadas': 'Letras IA ilimitadas',
+  'projetos ilimitados': 'Projetos ilimitados',
+  'Projetos ilimitados': 'Projetos ilimitados',
 }
 
 type Replacement = string | ((...args: any[]) => string)
@@ -144,6 +138,7 @@ const phrases: Array<[RegExp, Replacement]> = [
   [/\barquivo(s)?\b/gi, (_match, plural) => plural ? 'ficheiros' : 'ficheiro'],
   [/\bcelular(es)?\b/gi, (_match, plural) => plural ? 'telemóveis' : 'telemóvel'],
   [/\btela(s)?\b/gi, (_match, plural) => plural ? 'ecrãs' : 'ecrã'],
+  [/\bdownload(s)?\b/gi, (_match, plural) => plural ? 'descarregamentos' : 'descarregar'],
   [/\bbaixar\b/gi, 'descarregar'],
   [/\bsalvar\b/gi, 'guardar'],
   [/\bsalvo(s|a|as)?\b/gi, (match) => match.toLowerCase().endsWith('as') ? 'guardadas' : match.toLowerCase().endsWith('a') ? 'guardada' : match.toLowerCase().endsWith('s') ? 'guardados' : 'guardado'],
@@ -151,7 +146,6 @@ const phrases: Array<[RegExp, Replacement]> = [
   [/\bgerencie\b/gi, 'faça a gestão de'],
   [/\bcompartilhar\b/gi, 'partilhar'],
   [/\bcompartilhe\b/gi, 'partilhe'],
-  [/\bcompartilhado(s|a|as)?\b/gi, (match) => match.toLowerCase().endsWith('as') ? 'partilhadas' : match.toLowerCase().endsWith('a') ? 'partilhada' : match.toLowerCase().endsWith('s') ? 'partilhados' : 'partilhado'],
   [/\bacessar\b/gi, 'aceder'],
   [/\bacesse\b/gi, 'aceda'],
   [/\bexcluir\b/gi, 'eliminar'],
@@ -162,24 +156,23 @@ const phrases: Array<[RegExp, Replacement]> = [
   [/\b link(s)?\b/gi, (_match, plural) => plural ? ' ligações' : ' ligação'],
   [/\bplayer\b/gi, 'leitor'],
   [/\bfoto\b/gi, 'fotografia'],
-  [/\bdireto no site\b/gi, 'diretamente no site'],
-  [/\bdireto na tela\b/gi, 'diretamente no ecrã'],
-  [/\bfaça login\b/gi, 'inicie sessão'],
-  [/\bfazer login\b/gi, 'iniciar sessão'],
-  [/\blogado(s|a|as)?\b/gi, 'com sessão iniciada'],
   [/\bgratuito para você\b/gi, 'gratuito para si'],
   [/\bpara você\b/gi, 'para si'],
-  [/\bseu perfil\b/gi, 'o seu perfil'],
-  [/\bsua conta\b/gi, 'a sua conta'],
-  [/\bseus dados\b/gi, 'os seus dados'],
-  [/\bsuas músicas\b/gi, 'as suas músicas'],
-  [/\bseus projetos\b/gi, 'os seus projetos'],
 ]
 
 function preserveOuterWhitespace(source: string, translated: string) {
   const leading = source.match(/^\s*/)?.[0] || ''
   const trailing = source.match(/\s*$/)?.[0] || ''
   return `${leading}${translated}${trailing}`
+}
+
+function preserveInitialCapitalization(source: string, translated: string) {
+  if (!source || !translated) return translated
+  const firstSource = source.charAt(0)
+  if (firstSource === firstSource.toUpperCase() && firstSource !== firstSource.toLowerCase()) {
+    return translated.charAt(0).toUpperCase() + translated.slice(1)
+  }
+  return translated
 }
 
 export function translateToEuropeanPortuguese(value: string) {
@@ -193,6 +186,7 @@ export function translateToEuropeanPortuguese(value: string) {
     for (const [pattern, replacement] of phrases) {
       translated = translated.replace(pattern, replacement as any)
     }
+    translated = preserveInitialCapitalization(trimmed, translated)
   }
 
   return preserveOuterWhitespace(value, translated)
