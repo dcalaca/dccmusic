@@ -6,7 +6,7 @@ import { COUNTRY_CONFIG, type DccCountry } from '@/lib/localization'
 import { useLocalization } from '@/components/LocalizationProvider'
 
 function selectorLanguage(country: DccCountry) {
-  if (country === 'PY' || country === 'CO') return 'Español'
+  if (country === 'PY' || country === 'CO' || country === 'MX') return 'Español'
   return 'Português'
 }
 
@@ -18,7 +18,7 @@ export default function CountrySelector({ compact = false }: { compact?: boolean
   const { country, setCountry } = useLocalization()
   const [open, setOpen] = useState(false)
   const current = COUNTRY_CONFIG[country]
-  const isSpanish = country === 'PY' || country === 'CO'
+  const isSpanish = country === 'PY' || country === 'CO' || country === 'MX'
 
   return (
     <div className="relative" data-no-translate>
