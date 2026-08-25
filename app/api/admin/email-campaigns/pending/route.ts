@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic'
 
 const TARGET_PREFIX = 'pending-email|'
 const BATCH_SIZE = 40
+const RETRYABLE_MARKETING_REASON = 'marketing_disabled_on_backup_provider'
 
 type Recipient = {
   id: string
@@ -18,6 +19,19 @@ type Recipient = {
 
 function cleanText(value: unknown, maxLength: number) {
   return String(value || '').trim().slice(0, maxLength)
+}
+
+function escapeHtml(value: unknown) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
+function nl2br(value: string) {
+  return escapeHtml(value).replace(/\n/g, '<br>')
 }
 
 function normalizeDateBoundary(value: unknown, endOfDay = false) {
@@ -45,6 +59,82 @@ function decodeTarget(value: unknown) {
   const to = parts[2]
   if (!from || !to) return null
   return { from, to }
+}
+
+function parseSender(value: string | undefined | null) {
+  const raw = String(value || '').trim()
+  if (!raw) return null
+  const match = raw.match(/^(.*?)\s*<([^>]+)>$/)
+  if (match) {
+    return { name: match[1].trim().replace(/^"|"$/g, '') || undefined, email: match[2].trim() }
+  }
+  return { email: raw }
+}
+
+async function sendPendingCampaignViaBrevo(input: {
+  to: string
+  name: string
+  subject: string
+  preview?: string | null
+  body: string
+  ctaLabel?: string | null
+  ctaUrl?: string | null
+  unsubscribeUrl?: string | null
+}) {
+  const apiKey = String(process.env.BREVO_API_KEY || '').trim()
+  const sender = parseSender(process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL)
+  const replyTo = parseSender(process.env.BREVO_REPLY_TO_EMAIL || process.env.SMTP_REPLY_TO_EMAIL)
+
+  if (!apiKey || !sender?.email) {
+    throw new Error('Brevo não configurado para campanhas')
+  }
+
+  const bodyStartsWithGreeting = /^\s*ol[áa][,!\s]/i.test(input.body)
+  const greeting = bodyStartsWithGreeting ? '' : `<p>Olá, ${escapeHtml(input.name || 'Compositor')}.</p>`
+  const cta = input.ctaLabel && input.ctaUrl
+    ? `<p style="margin:22px 0;"><a href="${escapeHtml(input.ctaUrl)}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;text-decoration:none;font-weight:700;border-radius:12px;padding:13px 18px;">${escapeHtml(input.ctaLabel)}</a></p>`
+    : ''
+  const unsubscribe = input.unsubscribeUrl
+    ? `<br><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#c4b5fd;text-decoration:underline;">Não quero mais receber estes e-mails</a>`
+    : ''
+
+  const htmlContent = `
+    <div style="display:none;max-height:0;overflow:hidden;color:transparent;">${escapeHtml(input.preview || input.subject)}</div>
+    <div style="background:#030712;color:#f9fafb;font-family:Arial,Helvetica,sans-serif;padding:24px;">
+      <div style="max-width:640px;margin:0 auto;background:#050816;border:1px solid #1f2937;border-radius:18px;overflow:hidden;">
+        <div style="padding:22px 24px;border-bottom:1px solid #1f2937;background:linear-gradient(135deg,#050816,#1e0b42);">
+          <p style="margin:0 0 8px;color:#c084fc;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">DCC Music</p>
+          <h1 style="margin:0;color:#fff;font-size:24px;line-height:1.2;">${escapeHtml(input.subject)}</h1>
+        </div>
+        <div style="padding:24px;color:#e5e7eb;font-size:15px;line-height:1.65;">
+          ${greeting}
+          <p>${nl2br(input.body)}</p>
+          ${cta}
+          <p style="margin-top:24px;font-size:12px;color:#9ca3af;">Você recebeu este e-mail porque tem cadastro na DCC Music.${unsubscribe}</p>
+        </div>
+      </div>
+    </div>`
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'api-key': apiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender,
+      to: [{ email: input.to }],
+      replyTo: replyTo || undefined,
+      subject: input.subject,
+      htmlContent,
+      tags: ['admin_email_campaign', 'pending_email'],
+    }),
+  })
+
+  const payload = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(payload?.message || 'Erro ao enviar e-mail pelo Brevo')
+  return { sent: true, id: payload?.messageId || null }
 }
 
 async function getTargetRecipients(from: string, to: string) {
@@ -77,11 +167,42 @@ async function getTargetRecipients(from: string, to: string) {
   return recipients
 }
 
+async function cleanupRetryableFailures(campaignId: string, currentFailedCount: number) {
+  const { data, error } = await supabaseAdmin
+    .from('admin_email_campaign_deliveries')
+    .select('id')
+    .eq('campaign_id', campaignId)
+    .eq('status', 'skipped')
+    .eq('error_message', RETRYABLE_MARKETING_REASON)
+
+  if (error) throw error
+  const retryableCount = (data || []).length
+  if (retryableCount === 0) return currentFailedCount
+
+  const ids = (data || []).map((row: any) => row.id).filter(Boolean)
+  if (ids.length > 0) {
+    const { error: deleteError } = await supabaseAdmin
+      .from('admin_email_campaign_deliveries')
+      .delete()
+      .in('id', ids)
+    if (deleteError) throw deleteError
+  }
+
+  const correctedFailedCount = Math.max(0, currentFailedCount - retryableCount)
+  await supabaseAdmin
+    .from('admin_email_campaigns')
+    .update({ failed_count: correctedFailedCount, updated_at: new Date().toISOString() })
+    .eq('id', campaignId)
+
+  return correctedFailedCount
+}
+
 async function getHandledEmails(campaignId: string) {
   const { data, error } = await supabaseAdmin
     .from('admin_email_campaign_deliveries')
-    .select('recipient_email')
+    .select('recipient_email, status')
     .eq('campaign_id', campaignId)
+    .in('status', ['sent', 'skipped'])
 
   if (error) throw error
   return new Set((data || []).map((row: any) => normalizeMarketingEmail(row.recipient_email)).filter(Boolean))
@@ -94,21 +215,23 @@ async function recordDelivery(input: {
   providerMessageId?: string | null
   errorMessage?: string | null
 }) {
+  const payload = {
+    campaign_id: input.campaignId,
+    recipient_type: 'composer',
+    recipient_id: input.recipient.id,
+    recipient_email: input.recipient.email,
+    recipient_name: input.recipient.name,
+    status: input.status,
+    provider_message_id: input.providerMessageId || null,
+    error_message: input.errorMessage || null,
+    sent_at: input.status === 'sent' ? new Date().toISOString() : null,
+  }
+
   const { error } = await supabaseAdmin
     .from('admin_email_campaign_deliveries')
-    .insert({
-      campaign_id: input.campaignId,
-      recipient_type: 'composer',
-      recipient_id: input.recipient.id,
-      recipient_email: input.recipient.email,
-      recipient_name: input.recipient.name,
-      status: input.status,
-      provider_message_id: input.providerMessageId || null,
-      error_message: input.errorMessage || null,
-      sent_at: input.status === 'sent' ? new Date().toISOString() : null,
-    })
+    .upsert(payload, { onConflict: 'campaign_id,recipient_email' })
 
-  if (error && !String(error.message || '').toLowerCase().includes('duplicate')) throw error
+  if (error) throw error
 }
 
 async function sendBatch(campaignId: string, requireSendingStatus: boolean) {
@@ -127,6 +250,8 @@ async function sendBatch(campaignId: string, requireSendingStatus: boolean) {
   if (requireSendingStatus && (campaign as any).status !== 'sending') {
     return { campaignId, totalRecipients: 0, attempted: 0, sent: 0, failed: 0, remaining: 0, paused: true }
   }
+
+  const baseFailedCount = await cleanupRetryableFailures(campaignId, Number((campaign as any).failed_count || 0))
 
   if (!requireSendingStatus) {
     const { error: updateError } = await supabaseAdmin
@@ -158,7 +283,14 @@ async function sendBatch(campaignId: string, requireSendingStatus: boolean) {
         })
         : null
 
-      const result = await sendMarketingCampaignEmail({
+      const unsubscribeUrl = getEmailOptOutUrl({
+        email: recipient.email,
+        recipientType: 'composer',
+        recipientId: recipient.id,
+        campaignId,
+      })
+
+      let result = await sendMarketingCampaignEmail({
         to: recipient.email,
         name: recipient.name,
         subject: (campaign as any).subject,
@@ -166,23 +298,31 @@ async function sendBatch(campaignId: string, requireSendingStatus: boolean) {
         body: (campaign as any).body,
         ctaLabel: (campaign as any).cta_label,
         ctaUrl: trackedCtaUrl || (campaign as any).cta_url,
-        unsubscribeUrl: getEmailOptOutUrl({
-          email: recipient.email,
-          recipientType: 'composer',
-          recipientId: recipient.id,
-          campaignId,
-        }),
+        unsubscribeUrl,
         campaignId,
         recipientType: 'composer',
         recipientId: recipient.id,
       })
+
+      if (!result.sent && result.reason === RETRYABLE_MARKETING_REASON) {
+        result = await sendPendingCampaignViaBrevo({
+          to: recipient.email,
+          name: recipient.name,
+          subject: (campaign as any).subject,
+          preview: (campaign as any).preview,
+          body: (campaign as any).body,
+          ctaLabel: (campaign as any).cta_label,
+          ctaUrl: trackedCtaUrl || (campaign as any).cta_url,
+          unsubscribeUrl,
+        })
+      }
 
       if (result.sent) {
         sent += 1
         await recordDelivery({ campaignId, recipient, status: 'sent', providerMessageId: result.id || null })
       } else {
         failed += 1
-        await recordDelivery({ campaignId, recipient, status: 'skipped', errorMessage: result.reason || 'Envio ignorado' })
+        await recordDelivery({ campaignId, recipient, status: 'failed', errorMessage: result.reason || 'Envio ignorado' })
       }
     } catch (sendError: any) {
       failed += 1
@@ -199,7 +339,7 @@ async function sendBatch(campaignId: string, requireSendingStatus: boolean) {
     .update({
       status: nextStatus,
       sent_count: Number((campaign as any).sent_count || 0) + sent,
-      failed_count: Number((campaign as any).failed_count || 0) + failed,
+      failed_count: baseFailedCount + failed,
       last_run_at: new Date().toISOString(),
       next_run_at: null,
       updated_at: new Date().toISOString(),
