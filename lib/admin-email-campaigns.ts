@@ -250,11 +250,12 @@ async function queueExists(campaignId: string) {
     .select('id', { count: 'exact', head: true })
     .eq('campaign_id', campaignId)
   if (error) throw error
-  return Number(count || 0) > 0
+  return Number(count || 0)
 }
 
 async function freezeCampaignAudience(campaign: EmailCampaign) {
-  if (await queueExists(campaign.id)) return Number(campaign.target_count || 0)
+  const existingCount = await queueExists(campaign.id)
+  if (existingCount > 0) return Math.max(Number(campaign.target_count || 0), existingCount)
 
   const recipients = await getRecipientsForCampaign(campaign)
   for (let index = 0; index < recipients.length; index += 400) {
@@ -360,12 +361,12 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
     if (!claimed) continue
 
     try {
-      const trackedCtaUrl = campaign.cta_label && campaign.cta_url
+      const trackedCtaUrl = campaign.cta_label && campaign.cta_url && row.recipient_id
         ? await createCampaignButtonUrl({
             campaignId,
             campaignName: campaign.name,
             recipientType: row.recipient_type,
-            recipientId: row.recipient_id || undefined,
+            recipientId: row.recipient_id,
             recipientEmail: row.recipient_email,
             recipientName: row.recipient_name || undefined,
             ctaLabel: campaign.cta_label,
@@ -384,7 +385,7 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
         unsubscribeUrl: getEmailOptOutUrl({
           email: row.recipient_email,
           recipientType: row.recipient_type,
-          recipientId: row.recipient_id || undefined,
+          recipientId: row.recipient_id,
           campaignId,
         }),
       })
