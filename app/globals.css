@@ -68,6 +68,46 @@ select:-webkit-autofill {
   transition: background-color 9999s ease-in-out 0s;
 }
 
+/* Ajuste cirúrgico para telemóveis muito estreitos na recarga do Studio IA.
+   Ecrãs normais (361px+) continuam exatamente com o layout atual. */
+@media (max-width: 360px) {
+  a[href="/compositores/admin/studio-ia"] + section {
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+  }
+
+  a[href="/compositores/admin/studio-ia"] + section h1 {
+    font-size: 1.75rem;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+
+  a[href="/compositores/admin/studio-ia"] + section h1 + p {
+    margin-top: 0.875rem;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+
+  a[href="/compositores/admin/studio-ia"] + section > div > div:last-child {
+    padding: 1rem;
+  }
+
+  a[href="/compositores/admin/studio-ia"] + section > div > div:last-child p:nth-child(2) {
+    font-size: 1.75rem;
+    line-height: 1.1;
+  }
+}
+
+@media (max-width: 320px) {
+  a[href="/compositores/admin/studio-ia"] + section {
+    padding: 1rem;
+  }
+
+  a[href="/compositores/admin/studio-ia"] + section h1 {
+    font-size: 1.625rem;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
