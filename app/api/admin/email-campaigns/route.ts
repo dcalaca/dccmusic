@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-helpers'
 import { supabaseAdmin } from '@/lib/supabase'
-import { calculateNextRunAt, CAMPAIGN_BATCH_SIZE, CAMPAIGN_MAX_BATCHES_PER_CRON, continueEmailCampaign, getCampaignRecipients } from '@/lib/admin-email-campaigns'
+import {
+  CAMPAIGN_BATCH_SIZE,
+  calculateNextRunAt,
+  getCampaignRecipients,
+  getPendingEmailRecipients,
+  sendEmailCampaign,
+} from '@/lib/admin-email-campaigns'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,10 +30,16 @@ function normalizeStatus(value: any) {
   return ['draft', 'scheduled', 'paused'].includes(value) ? value : 'draft'
 }
 
-function normalizeDateTime(value: any) {
+function normalizeDateTime(value: any, endOfDay = false) {
   if (!value) return null
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? null : date.toISOString()
+  const raw = String(value)
+  const date = new Date(raw)
+  if (Number.isNaN(date.getTime())) return null
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    if (endOfDay) date.setUTCHours(23, 59, 59, 999)
+    else date.setUTCHours(0, 0, 0, 0)
+  }
+  return date.toISOString()
 }
 
 function normalizeRecurringDay(value: any) {
@@ -37,24 +49,23 @@ function normalizeRecurringDay(value: any) {
 }
 
 async function getDeliveryStats(campaignIds: string[]) {
-  if (campaignIds.length === 0) return new Map()
+  const stats = new Map<string, { sent: number; failed: number; skipped: number; pending: number }>()
+  campaignIds.forEach((id) => stats.set(id, { sent: 0, failed: 0, skipped: 0, pending: 0 }))
+  if (campaignIds.length === 0) return stats
 
   const { data, error } = await supabaseAdmin
     .from('admin_email_campaign_deliveries')
-    .select('campaign_id, status')
+    .select('campaign_id, status, error_message')
     .in('campaign_id', campaignIds)
-
   if (error) throw error
-
-  const stats = new Map<string, { sent: number; failed: number; skipped: number }>()
-  campaignIds.forEach((id) => stats.set(id, { sent: 0, failed: 0, skipped: 0 }))
 
   for (const row of data || []) {
     const item = stats.get((row as any).campaign_id)
     if (!item) continue
     if ((row as any).status === 'sent') item.sent += 1
-    if ((row as any).status === 'failed') item.failed += 1
-    if ((row as any).status === 'skipped') item.skipped += 1
+    else if ((row as any).status === 'failed') item.failed += 1
+    else if ((row as any).status === 'pending') item.pending += 1
+    else if ((row as any).status === 'skipped' && (row as any).error_message !== '__reserved__') item.skipped += 1
   }
 
   return stats
@@ -63,7 +74,6 @@ async function getDeliveryStats(campaignIds: string[]) {
 async function getClickStats(campaignIds: string[]) {
   const emptyStats = new Map<string, { total: number; human: number; bot: number; unknown: number }>()
   campaignIds.forEach((id) => emptyStats.set(id, { total: 0, human: 0, bot: 0, unknown: 0 }))
-
   if (campaignIds.length === 0) return emptyStats
 
   try {
@@ -72,19 +82,15 @@ async function getClickStats(campaignIds: string[]) {
       .select('id, notes')
       .eq('created_by', 'admin_email_campaign')
       .limit(5000)
-
     if (linksError) throw linksError
 
     const linkCampaignMap = new Map<string, string>()
-
     for (const link of links || []) {
       try {
         const notes = JSON.parse((link as any).notes || '{}')
         if (!campaignIds.includes(notes.campaignId)) continue
         linkCampaignMap.set((link as any).id, notes.campaignId)
-      } catch {
-        continue
-      }
+      } catch {}
     }
 
     const linkIds = Array.from(linkCampaignMap.keys())
@@ -95,47 +101,52 @@ async function getClickStats(campaignIds: string[]) {
       .select('link_id, click_type')
       .in('link_id', linkIds)
       .limit(10000)
-
     if (clicksError) throw clicksError
 
     for (const click of clicks || []) {
       const campaignId = linkCampaignMap.get((click as any).link_id)
       if (!campaignId) continue
-
       const item = emptyStats.get(campaignId) || { total: 0, human: 0, bot: 0, unknown: 0 }
-      const clickType = (click as any).click_type
       item.total += 1
-      if (clickType === 'HUMAN_CLICK') item.human += 1
-      else if (clickType === 'BOT_PREVIEW') item.bot += 1
+      if ((click as any).click_type === 'HUMAN_CLICK') item.human += 1
+      else if ((click as any).click_type === 'BOT_PREVIEW') item.bot += 1
       else item.unknown += 1
       emptyStats.set(campaignId, item)
     }
-
-    return emptyStats
   } catch (error) {
     console.warn('[ADMIN EMAIL CAMPAIGNS] Não foi possível carregar cliques:', error)
-    return emptyStats
   }
+
+  return emptyStats
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await requireAuth()
+
+    if (request.nextUrl.searchParams.get('mode') === 'count') {
+      const targetMode = request.nextUrl.searchParams.get('targetMode')
+      if (targetMode === 'pending_email') {
+        const from = normalizeDateTime(request.nextUrl.searchParams.get('from'))
+        const to = normalizeDateTime(request.nextUrl.searchParams.get('to'), true)
+        if (!from || !to) return NextResponse.json({ count: 0 })
+        if (new Date(from) > new Date(to)) return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
+        const recipients = await getPendingEmailRecipients(from, to)
+        return NextResponse.json({ count: recipients.length })
+      }
+    }
 
     const { data, error } = await supabaseAdmin
       .from('admin_email_campaigns')
       .select('*')
       .order('created_at', { ascending: false })
-
     if (error) throw error
 
     const campaigns = data || []
     const campaignIds = campaigns.map((campaign: any) => campaign.id)
-    const [stats, clickStats] = await Promise.all([
+    const [stats, clickStats, allRecipients, composerRecipients, siteUserRecipients] = await Promise.all([
       getDeliveryStats(campaignIds),
       getClickStats(campaignIds),
-    ])
-    const [allRecipients, composerRecipients, siteUserRecipients] = await Promise.all([
       getCampaignRecipients('all'),
       getCampaignRecipients('composers'),
       getCampaignRecipients('site_users'),
@@ -144,7 +155,7 @@ export async function GET() {
     return NextResponse.json({
       campaigns: campaigns.map((campaign: any) => ({
         ...campaign,
-        deliveries: stats.get(campaign.id) || { sent: 0, failed: 0, skipped: 0 },
+        deliveries: stats.get(campaign.id) || { sent: 0, failed: 0, skipped: 0, pending: 0 },
         clicks: clickStats.get(campaign.id) || { total: 0, human: 0, bot: 0, unknown: 0 },
       })),
       audienceCounts: {
@@ -160,10 +171,8 @@ export async function GET() {
         campaigns: [],
         audienceCounts: { all: 0, composers: 0, site_users: 0 },
         setupRequired: true,
-        sqlFile: 'SQL-EMAIL-CAMPANHAS-ADMIN.sql',
       })
     }
-
     console.error('[ADMIN EMAIL CAMPAIGNS] Erro listar:', error)
     return NextResponse.json({ error: error.message || 'Erro ao listar campanhas' }, { status: 500 })
   }
@@ -173,10 +182,17 @@ export async function POST(request: NextRequest) {
   try {
     const session = await requireAuth()
     const body = await request.json()
-    const recurringDay = normalizeRecurringDay(body.recurringDay)
-    const recurringEnabled = Boolean(body.recurringEnabled && recurringDay)
-    const scheduledAt = normalizeDateTime(body.scheduledAt)
     const status = normalizeStatus(body.status)
+    const scheduledAt = normalizeDateTime(body.scheduledAt)
+    const recurringDay = normalizeRecurringDay(body.recurringDay)
+    const recurringEnabled = false
+    const targetMode = body.targetMode === 'pending_email' ? 'pending_email' : 'audience'
+    const targetFrom = targetMode === 'pending_email' ? normalizeDateTime(body.targetFrom) : null
+    const targetTo = targetMode === 'pending_email' ? normalizeDateTime(body.targetTo, true) : null
+
+    if (targetMode === 'pending_email' && (!targetFrom || !targetTo || new Date(targetFrom) > new Date(targetTo))) {
+      return NextResponse.json({ error: 'Informe um período válido para e-mails pendentes.' }, { status: 400 })
+    }
 
     const payload = {
       name: cleanText(body.name, 140),
@@ -185,12 +201,17 @@ export async function POST(request: NextRequest) {
       body: cleanText(body.body, 5000),
       cta_label: cleanText(body.ctaLabel, 80) || null,
       cta_url: cleanText(body.ctaUrl, 500) || null,
-      audience: normalizeAudience(body.audience),
+      audience: targetMode === 'pending_email' ? 'composers' : normalizeAudience(body.audience),
       status,
       scheduled_at: scheduledAt,
-      recurring_day: recurringDay,
+      recurring_day: recurringEnabled ? recurringDay : null,
       recurring_enabled: recurringEnabled,
-      next_run_at: recurringEnabled ? calculateNextRunAt(recurringDay) : scheduledAt,
+      next_run_at: status === 'scheduled' ? scheduledAt : null,
+      target_mode: targetMode,
+      target_from: targetFrom,
+      target_to: targetTo,
+      target_count: 0,
+      frozen_at: null,
       created_by: (session as any)?.user?.email || null,
       updated_at: new Date().toISOString(),
     }
@@ -198,9 +219,8 @@ export async function POST(request: NextRequest) {
     if (!payload.name || !payload.subject || !payload.body) {
       return NextResponse.json({ error: 'Informe nome, assunto e mensagem da campanha.' }, { status: 400 })
     }
-
-    if (status === 'scheduled' && !scheduledAt && !recurringEnabled) {
-      return NextResponse.json({ error: 'Para agendar, informe data/hora ou recorrência mensal.' }, { status: 400 })
+    if (status === 'scheduled' && !scheduledAt) {
+      return NextResponse.json({ error: 'Para agendar, informe data e hora.' }, { status: 400 })
     }
 
     const { data, error } = await supabaseAdmin
@@ -208,18 +228,10 @@ export async function POST(request: NextRequest) {
       .insert(payload)
       .select('*')
       .single()
-
     if (error) throw error
 
     return NextResponse.json({ campaign: data })
   } catch (error: any) {
-    if (isSetupError(error)) {
-      return NextResponse.json({
-        error: 'A tabela de campanhas ainda não existe. Execute SQL-EMAIL-CAMPANHAS-ADMIN.sql no Supabase.',
-        setupRequired: true,
-      }, { status: 400 })
-    }
-
     console.error('[ADMIN EMAIL CAMPAIGNS] Erro criar:', error)
     return NextResponse.json({ error: error.message || 'Erro ao criar campanha' }, { status: 500 })
   }
@@ -231,68 +243,41 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json()
     const id = cleanText(body.id, 80)
     const action = cleanText(body.action, 40)
-
     if (!id) return NextResponse.json({ error: 'Campanha não informada.' }, { status: 400 })
 
     if (action === 'send') {
-      const { error } = await supabaseAdmin
-        .from('admin_email_campaigns')
-        .update({
-          status: 'sending',
-          scheduled_at: new Date().toISOString(),
-          next_run_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id)
-
-      if (error) throw error
-
-      const result = await continueEmailCampaign(id, {
-        limitPerCampaign: CAMPAIGN_BATCH_SIZE,
-        maxBatches: CAMPAIGN_MAX_BATCHES_PER_CRON,
-      })
-
-      return NextResponse.json({
-        result,
-        autoContinue: result.remaining > 0,
-      })
+      const result = await sendEmailCampaign(id, { limit: CAMPAIGN_BATCH_SIZE })
+      return NextResponse.json({ result, autoContinue: false })
     }
 
     if (action === 'pause') {
       const { data, error } = await supabaseAdmin
         .from('admin_email_campaigns')
-        .update({ status: 'paused', updated_at: new Date().toISOString() })
+        .update({ status: 'paused', next_run_at: null, updated_at: new Date().toISOString() })
         .eq('id', id)
         .select('*')
         .single()
-
       if (error) throw error
       return NextResponse.json({ campaign: data })
     }
 
     if (action === 'schedule') {
-      const recurringDay = normalizeRecurringDay(body.recurringDay)
-      const recurringEnabled = Boolean(body.recurringEnabled && recurringDay)
       const scheduledAt = normalizeDateTime(body.scheduledAt)
-
-      if (!scheduledAt && !recurringEnabled) {
-        return NextResponse.json({ error: 'Informe data/hora ou recorrência para agendar.' }, { status: 400 })
-      }
+      if (!scheduledAt) return NextResponse.json({ error: 'Informe data e hora para agendar.' }, { status: 400 })
 
       const { data, error } = await supabaseAdmin
         .from('admin_email_campaigns')
         .update({
           status: 'scheduled',
           scheduled_at: scheduledAt,
-          recurring_day: recurringDay,
-          recurring_enabled: recurringEnabled,
-          next_run_at: recurringEnabled ? calculateNextRunAt(recurringDay) : scheduledAt,
+          recurring_day: null,
+          recurring_enabled: false,
+          next_run_at: scheduledAt,
           updated_at: new Date().toISOString(),
         })
         .eq('id', id)
         .select('*')
         .single()
-
       if (error) throw error
       return NextResponse.json({ campaign: data })
     }
