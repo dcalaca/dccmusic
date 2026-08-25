@@ -1,5 +1,5 @@
-export type DccCountry = 'BR' | 'PY' | 'CO' | 'PT'
-export type DccLocale = 'pt-BR' | 'es-PY' | 'es-CO' | 'pt-PT'
+export type DccCountry = 'BR' | 'PY' | 'CO' | 'PT' | 'MX'
+export type DccLocale = 'pt-BR' | 'es-PY' | 'es-CO' | 'pt-PT' | 'es-MX'
 
 export const DEFAULT_COUNTRY: DccCountry = 'BR'
 export const DEFAULT_LOCALE: DccLocale = 'pt-BR'
@@ -9,7 +9,7 @@ export const COUNTRY_COOKIE = 'dcc_country'
 export const COUNTRY_CONFIG: Record<DccCountry, {
   country: DccCountry
   locale: DccLocale
-  currency: 'BRL' | 'PYG' | 'COP' | 'EUR'
+  currency: 'BRL' | 'PYG' | 'COP' | 'EUR' | 'MXN'
   label: string
   flag: string
   paymentProvider: 'mercadopago' | 'stripe'
@@ -46,11 +46,19 @@ export const COUNTRY_CONFIG: Record<DccCountry, {
     flag: '🇵🇹',
     paymentProvider: 'stripe',
   },
+  MX: {
+    country: 'MX',
+    locale: 'es-MX',
+    currency: 'MXN',
+    label: 'México',
+    flag: '🇲🇽',
+    paymentProvider: 'stripe',
+  },
 }
 
 export function normalizeCountry(value?: string | null): DccCountry {
   const normalized = String(value || '').toUpperCase()
-  return normalized === 'PY' || normalized === 'CO' || normalized === 'PT' ? normalized : 'BR'
+  return normalized === 'PY' || normalized === 'CO' || normalized === 'PT' || normalized === 'MX' ? normalized : 'BR'
 }
 
 /** Detect the signup country from trusted hosting/proxy geolocation headers. */
@@ -80,6 +88,7 @@ export function getLocaleForCountry(country: DccCountry): DccLocale {
 export const BRL_TO_PYG_DISPLAY_RATE = 1160
 export const BRL_TO_COP_DISPLAY_RATE = 590
 export const BRL_TO_EUR_DISPLAY_RATE = 0.1662
+export const BRL_TO_MXN_DISPLAY_RATE = 3.29
 
 export function brlToPygDisplay(value: number) {
   const converted = Math.max(0, Number(value) || 0) * BRL_TO_PYG_DISPLAY_RATE
@@ -93,6 +102,11 @@ export function brlToCopDisplay(value: number) {
 
 export function brlToEurDisplay(value: number) {
   const converted = Math.max(0, Number(value) || 0) * BRL_TO_EUR_DISPLAY_RATE
+  return Math.round(converted * 100) / 100
+}
+
+export function brlToMxnDisplay(value: number) {
+  const converted = Math.max(0, Number(value) || 0) * BRL_TO_MXN_DISPLAY_RATE
   return Math.round(converted * 100) / 100
 }
 
@@ -120,6 +134,15 @@ export function formatLocalizedMoney(valueInBrl: number, country: DccCountry) {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(brlToEurDisplay(valueInBrl))
+  }
+
+  if (country === 'MX') {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(brlToMxnDisplay(valueInBrl))
   }
 
   return new Intl.NumberFormat('pt-BR', {
