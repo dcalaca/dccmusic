@@ -36,6 +36,8 @@ const MUREKA_LYRICS_MAX_CHARS = 3000
 const LONG_LYRIC_PREFER_MUREKA_CHARS_DEFAULT = Number(process.env.STUDIO_LONG_LYRIC_PREFER_MUREKA_CHARS || '1500') || 1500
 const STUDIO_LONG_LYRIC_SETTING_KEY = 'studio.long_lyric_prefer_mureka_chars'
 
+type StudioSongCountry = 'BR' | 'PT' | 'PY' | 'CO' | 'MX'
+
 const INSTRUMENT_TRANSLATIONS: Record<string, string> = {
   'acordeon': 'accordion',
   'acordeom': 'accordion',
@@ -202,40 +204,65 @@ function getSunoCreativeDirection(description?: string | null) {
   return getInspirationInstruction(description) || STUDIO_CREATIVE_VARIATION_INSTRUCTION
 }
 
-function getSpanishSongCountry(description?: string | null) {
-  const value = String(description || '').toLowerCase()
+function getSongCountry(description?: string | null): StudioSongCountry {
+  const value = String(description || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+
+  if (value.includes('mexico')) return 'MX'
   if (value.includes('colombia')) return 'CO'
-  if (value.includes('idioma da música: espa') || value.includes('idioma da musica: espa') || value.includes('(paraguay)')) return 'PY'
-  return null
+  if (value.includes('paraguay')) return 'PY'
+  if (value.includes('portugal')) return 'PT'
+  // Compatibilidade com projetos antigos que só gravavam "Español" sem o país.
+  if (value.includes('idioma da musica: espa')) return 'PY'
+  return 'BR'
 }
 
 function getVocalLanguageInstruction(description?: string | null) {
-  const spanishCountry = getSpanishSongCountry(description)
-  if (spanishCountry === 'CO') return 'vocal en español colombiano, pronunciación natural de Colombia'
-  if (spanishCountry === 'PY') return 'vocal en español paraguayo, pronunciación natural de Paraguay'
+  const country = getSongCountry(description)
+  if (country === 'MX') return 'vocal en español mexicano, pronunciación natural de México'
+  if (country === 'CO') return 'vocal en español colombiano, pronunciación natural de Colombia'
+  if (country === 'PY') return 'vocal en español paraguayo, pronunciación natural de Paraguay'
+  if (country === 'PT') return 'vocal em português europeu, pronúncia natural de Portugal'
   return 'vocal em português do Brasil'
 }
 
 function getMurekaLanguageInstructions(description?: string | null) {
-  const spanishCountry = getSpanishSongCountry(description)
-  if (spanishCountry === 'CO') {
+  const country = getSongCountry(description)
+  if (country === 'MX') {
+    return [
+      'Use natural Mexican Spanish vocal phrasing and pronunciation.',
+      'The lyrics are in Mexican Spanish; preserve their emotional meaning and section structure.',
+      'Use a polished production that respects the selected Mexican regional or Latin genre.',
+    ]
+  }
+  if (country === 'CO') {
     return [
       'Use natural Colombian Spanish vocal phrasing and pronunciation.',
       'The lyrics are in Colombian Spanish; preserve their emotional meaning and section structure.',
       'Use a polished production that respects the selected Colombian or Latin genre.',
     ]
   }
-  return spanishCountry === 'PY'
-    ? [
-        'Use natural Paraguayan Spanish vocal phrasing and pronunciation.',
-        'The lyrics are in Paraguayan Spanish; preserve their emotional meaning and section structure.',
-        'Use a polished production that respects the selected Paraguayan or Latin genre.',
-      ]
-    : [
-        'Use Brazilian Portuguese vocal phrasing and pronunciation.',
-        'The lyrics are in Brazilian Portuguese; preserve their emotional meaning and section structure.',
-        'Create a polished full song arrangement, radio-ready, modern mix, professional Brazilian production.',
-      ]
+  if (country === 'PY') {
+    return [
+      'Use natural Paraguayan Spanish vocal phrasing and pronunciation.',
+      'The lyrics are in Paraguayan Spanish; preserve their emotional meaning and section structure.',
+      'Use a polished production that respects the selected Paraguayan or Latin genre.',
+    ]
+  }
+  if (country === 'PT') {
+    return [
+      'Use natural European Portuguese vocal phrasing and pronunciation from Portugal.',
+      'The lyrics are in European Portuguese; preserve their emotional meaning and section structure.',
+      'Use a polished production that respects the selected Portuguese genre.',
+    ]
+  }
+  return [
+    'Use Brazilian Portuguese vocal phrasing and pronunciation.',
+    'The lyrics are in Brazilian Portuguese; preserve their emotional meaning and section structure.',
+    'Create a polished full song arrangement, radio-ready, modern mix, professional Brazilian production.',
+  ]
 }
 
 function getMurekaCreativeDirection(description?: string | null) {
@@ -248,7 +275,7 @@ function getMurekaCreativeDirection(description?: string | null) {
 function buildSunoStyle(style: string | null, mood: string | null, description?: string | null) {
   const forbiddenInstruments = getForbiddenInstruments(description)
   const desiredInstruments = getDesiredInstruments(description)
-  const stylePrompt = stripForbiddenInstrumentsFromStyle(getBrazilianStylePrompt(style), forbiddenInstruments)
+  const stylePrompt = stripForbiddenInstrumentsFromStyle(getBrazilianStylePrompt(style, description), forbiddenInstruments)
   const normalizedMood = String(mood || '').trim()
   const hasMood = normalizedMood && normalizedMood.toLowerCase() !== 'livre'
   const parts = [
@@ -315,11 +342,43 @@ function isModaDeViolaStyle(style?: string | null) {
 
 // Mantém apenas a IDENTIDADE do gênero (sem impor instrumentos ou arranjo fixo),
 // para não fazer todas as músicas saírem iguais e para respeitar o que o usuário escreve.
-function getBrazilianStylePrompt(style?: string | null) {
+function getBrazilianStylePrompt(style?: string | null, description?: string | null) {
   const normalized = normalizeStyleName(style)
   const userStyle = String(style || '').trim()
+  const country = getSongCountry(description)
 
-  if (!userStyle) return 'Brazilian popular music'
+  if (!userStyle) {
+    if (country === 'MX') return 'regional Mexican music'
+    if (country === 'PT') return 'Portuguese popular music'
+    if (country === 'CO') return 'Colombian popular music'
+    if (country === 'PY') return 'Paraguayan popular music'
+    return 'Brazilian popular music'
+  }
+
+  // Fora do Brasil, nunca converte "pop", "rock" ou "trap" para a versão brasileira.
+  // Isso evita o vazamento cultural que já aconteceu nas primeiras localizações.
+  if (country !== 'BR') {
+    if (country === 'MX') {
+      if (normalized.includes('regional mexicano')) return 'regional Mexican music, modern authentic Mexican production'
+      if (normalized.includes('corridos tumbados')) return 'corridos tumbados, modern regional Mexican, requinto and bass-driven groove'
+      if (normalized === 'corrido' || normalized.includes('corrido tradicional')) return 'Mexican corrido, narrative regional Mexican music'
+      if (normalized.includes('banda sinaloense')) return 'banda sinaloense, regional Mexican brass band'
+      if (normalized.includes('norteno')) return 'norteño, regional Mexican accordion and bajo sexto style'
+      if (normalized.includes('sierreno')) return 'sierreño, regional Mexican acoustic guitar style'
+      if (normalized.includes('mariachi')) return 'Mexican mariachi'
+      if (normalized.includes('ranchera')) return 'Mexican ranchera'
+      if (normalized.includes('cumbia mexicana')) return 'Mexican cumbia'
+      if (normalized.includes('duranguense')) return 'duranguense, regional Mexican dance music'
+    }
+    if (country === 'PT') {
+      if (normalized === 'fado' || normalized.includes('fado ')) return 'Portuguese fado'
+      if (normalized.includes('pop portugues')) return 'Portuguese pop from Portugal'
+      if (normalized.includes('rock portugues')) return 'Portuguese rock from Portugal'
+      if (normalized.includes('hip-hop tuga')) return 'Portuguese hip-hop, hip-hop tuga'
+      if (normalized.includes('pimba')) return 'Portuguese pimba music'
+    }
+    return userStyle
+  }
 
   if (isModaDeViolaStyle(style)) {
     return 'sertanejo raiz caipira, viola caipira, moda de viola'
@@ -458,13 +517,17 @@ function buildMurekaPromptForStyle(style: string | null, mood: string | null, de
 function buildMurekaPrompt(style: string | null, mood: string | null, description?: string | null) {
   const forbiddenInstruments = getForbiddenInstruments(description)
   const desiredInstruments = getDesiredInstruments(description)
-  const stylePrompt = stripForbiddenInstrumentsFromStyle(getBrazilianStylePrompt(style), forbiddenInstruments)
-  const spanishCountry = getSpanishSongCountry(description)
-  const countryStyleLabel = spanishCountry === 'CO'
-    ? 'Colombian or Latin music style'
-    : spanishCountry === 'PY'
-      ? 'Paraguayan or Latin music style'
-      : 'Brazilian music style'
+  const stylePrompt = stripForbiddenInstrumentsFromStyle(getBrazilianStylePrompt(style, description), forbiddenInstruments)
+  const country = getSongCountry(description)
+  const countryStyleLabel = country === 'MX'
+    ? 'Mexican regional or Latin music style'
+    : country === 'CO'
+      ? 'Colombian or Latin music style'
+      : country === 'PY'
+        ? 'Paraguayan or Latin music style'
+        : country === 'PT'
+          ? 'Portuguese music style from Portugal'
+          : 'Brazilian music style'
   const parts = [
     `${countryStyleLabel}: ${stylePrompt}.`,
     mood ? `Must express this mood clearly: ${mood}.` : 'Use an emotional, commercial and engaging mood.',
