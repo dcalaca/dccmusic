@@ -44,6 +44,44 @@ function translatePriceText(value: string, country: DccCountry) {
   })
 }
 
+function translateMexicanPriceTextNode(node: Node, value: string) {
+  const pattern = /R\$\s*([\d.]+(?:,\d{1,2})?)/g
+  let lastIndex = 0
+  let replaced = false
+  const fragment = document.createDocumentFragment()
+  let match: RegExpExecArray | null
+
+  while ((match = pattern.exec(value))) {
+    const brl = Number(String(match[1]).replace(/\./g, '').replace(',', '.'))
+    if (!Number.isFinite(brl)) continue
+
+    const before = value.slice(lastIndex, match.index)
+    if (before) fragment.appendChild(document.createTextNode(before))
+
+    fragment.appendChild(document.createTextNode(formatLocalizedMoney(brl, 'MX')))
+
+    const suffix = document.createElement('span')
+    suffix.textContent = ' MXN'
+    suffix.setAttribute('data-no-translate', 'true')
+    suffix.style.fontSize = '0.44em'
+    suffix.style.fontWeight = '700'
+    suffix.style.opacity = '0.72'
+    suffix.style.verticalAlign = '0.22em'
+    suffix.style.whiteSpace = 'nowrap'
+    fragment.appendChild(suffix)
+
+    lastIndex = pattern.lastIndex
+    replaced = true
+  }
+
+  if (!replaced) return false
+
+  const after = value.slice(lastIndex)
+  if (after) fragment.appendChild(document.createTextNode(after))
+  node.replaceWith(fragment)
+  return true
+}
+
 const translatableAttributes = ['placeholder', 'title', 'aria-label'] as const
 const skippedTranslationTags = new Set(['SCRIPT', 'STYLE', 'CODE', 'PRE', 'NOSCRIPT', 'TEXTAREA'])
 
@@ -62,7 +100,10 @@ function translateTextNode(node: Node, country: DccCountry) {
   const current = node.nodeValue || ''
   if (translatedTextValues.get(node) === current) return
 
-  const next = translatePriceText(translateCopy(current, country), country)
+  const localizedCopy = translateCopy(current, country)
+  if (country === 'MX' && translateMexicanPriceTextNode(node, localizedCopy)) return
+
+  const next = translatePriceText(localizedCopy, country)
   translatedTextValues.set(node, next)
   if (next !== current) node.nodeValue = next
 }
@@ -88,11 +129,13 @@ function translateElementAttributes(element: Element, country: DccCountry) {
 
 function translateDom(root: ParentNode, country: DccCountry) {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
+  const textNodes: Node[] = []
   let node = walker.nextNode()
   while (node) {
-    translateTextNode(node, country)
+    textNodes.push(node)
     node = walker.nextNode()
   }
+  textNodes.forEach((textNode) => translateTextNode(textNode, country))
 
   if (root instanceof Element) translateElementAttributes(root, country)
   root.querySelectorAll?.<HTMLElement>('[placeholder], [title], [aria-label]').forEach((element) => {
