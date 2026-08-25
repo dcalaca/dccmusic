@@ -1,4 +1,5 @@
 import CountryFilterPortal from './CountryFilterPortal'
+import AdminComposerPhotoPortal from './AdminComposerPhotoPortal'
 
 const countryFetchPatch = `
 (function () {
@@ -48,6 +49,7 @@ export default function AdminComposersLayout({ children }: { children: React.Rea
       <script dangerouslySetInnerHTML={{ __html: countryFetchPatch }} />
       {children}
       <CountryFilterPortal />
+      <AdminComposerPhotoPortal />
     </>
   )
 }
