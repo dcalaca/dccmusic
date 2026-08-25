@@ -1,6 +1,7 @@
 import * as db from '@/lib/db'
 import Link from 'next/link'
 import { FiCheck, FiCreditCard, FiZap } from 'react-icons/fi'
+import { PlanPurchaseLink } from '@/components/PlanPurchaseLink'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -144,12 +145,13 @@ export default async function PlansPage() {
                           ))}
                         </ul>
                       )}
-                      <Link
+                      <PlanPurchaseLink
                         href={`/compositores/checkout?plan=${plan.slug}`}
+                        planType="studio"
                         className="mt-auto block w-full rounded-2xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-4 text-center font-bold text-white hover:from-primary-700 hover:to-purple-700"
                       >
                         ✨ Assinar Studio IA
-                      </Link>
+                      </PlanPurchaseLink>
                     </div>
                   )
                 })}
@@ -215,12 +217,13 @@ export default async function PlansPage() {
                     </ul>
                   )}
 
-                  <Link
+                  <PlanPurchaseLink
                     href={`/compositores/checkout?plan=${plan.slug}`}
+                    planType="composer"
                     className="block w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium text-center mt-auto"
                   >
                     Assinar Agora
-                  </Link>
+                  </PlanPurchaseLink>
                   </div>
                 )
               })}
