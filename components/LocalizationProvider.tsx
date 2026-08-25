@@ -78,7 +78,7 @@ function translateMexicanPriceTextNode(node: Node, value: string) {
 
   const after = value.slice(lastIndex)
   if (after) fragment.appendChild(document.createTextNode(after))
-  node.replaceWith(fragment)
+  node.parentNode?.replaceChild(fragment, node)
   return true
 }
 
