@@ -22,27 +22,43 @@ function isBackupSchemaMissing(error: any) {
   )
 }
 
-/** Reabre falhas com path fantasma (claim antigo reservava path antes do upload). */
+function isTransientBackupError(value: unknown) {
+  const message = String(value || '').toLowerCase()
+  return (
+    message.includes('terminated') ||
+    message.includes('timeout') ||
+    message.includes('timed out') ||
+    message.includes('abort') ||
+    message.includes('fetch failed') ||
+    message.includes('econn') ||
+    message.includes('network') ||
+    /áudio externo \(5\d\d\)/.test(message) ||
+    /audio externo \(5\d\d\)/.test(message)
+  )
+}
+
+/** Reabre apenas falhas transitórias. HTTP 4xx/links expirados não entram em loop eterno. */
 async function reopenFailedBackups(limit: number) {
   const { data: failed, error } = await supabaseAdmin
     .from('studio_versions')
-    .select('id')
+    .select('id, audio_backup_error, updated_at')
     .eq('audio_backup_status', 'failed')
     .or('audio_url.not.is.null,stream_audio_url.not.is.null')
-    .order('created_at', { ascending: true })
-    .limit(limit)
+    .order('updated_at', { ascending: true })
+    .limit(Math.max(limit * 4, 8))
 
   if (error) throw error
-  if (!failed?.length) return 0
 
-  const ids = failed.map((row) => row.id)
+  const ids = (failed || [])
+    .filter((row: any) => isTransientBackupError(row.audio_backup_error))
+    .slice(0, limit)
+    .map((row: any) => row.id)
+
+  if (!ids.length) return 0
+
   const { error: updateError } = await supabaseAdmin
     .from('studio_versions')
     .update({
-      audio_path: null,
-      stream_audio_path: null,
-      audio_storage_provider: null,
-      stream_audio_storage_provider: null,
       audio_backup_status: 'pending',
       audio_backup_error: null,
       updated_at: new Date().toISOString(),
@@ -69,13 +85,13 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const limit = Math.max(1, Math.min(10, Number(searchParams.get('limit')) || 5))
+    // Downloads de áudio são pesados. Lotes pequenos evitam estourar os 60s da função.
+    const limit = Math.max(1, Math.min(3, Number(searchParams.get('limit')) || 2))
 
     const reopened = await reopenFailedBackups(limit)
-
     let versions = await claimBackupBatch(limit)
 
-    // Fallback se a fila SQL não achar nada: pega pending direto.
+    // Fallback se a função SQL não achar nada: pega apenas pending.
     if (!versions.length) {
       const { data: pending, error } = await supabaseAdmin
         .from('studio_versions')
