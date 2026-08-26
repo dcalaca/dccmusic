@@ -4,10 +4,7 @@ import { getCurrentProjectAssets, getProjectForComposer, mapStudioProject } from
 import { mapStudioVideoRequest, studioVideoCanRegenerate } from '@/lib/studio-video'
 import { supabaseAdmin } from '@/lib/supabase'
 import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
-import {
-  getStudioVersionAudioUrls,
-  repairStudioVersionFullAudioBackup,
-} from '@/lib/studio-audio-backup'
+import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { formatMusicTitle } from '@/lib/normalize'
 import {
@@ -70,9 +67,7 @@ async function syncMurekaGenerationIfReady(project: any, composerId: string) {
   const needsTwoTracks = versionCount < MUREKA_TRACKS_PER_GENERATION
   const isOpen = ['pending', 'processing', 'first_ready'].includes(generation.status)
 
-  // Já tem 2 e está complete: nada a fazer.
   if (!needsTwoTracks && generation.status === 'completed') return
-  // Sem áudio ainda e sem status aberto: só segue se for incomplete.
   if (!isOpen && !needsTwoTracks) return
 
   if (isOpen && isStudioGenerationTimedOut(generation) && versionCount === 0) {
@@ -80,13 +75,22 @@ async function syncMurekaGenerationIfReady(project: any, composerId: string) {
     return
   }
 
-  const response = await fetch(`https://api.mureka.ai/v1/song/query/${encodeURIComponent(generation.provider_task_id)}`, {
-    headers: {
-      Authorization: `Bearer ${process.env.MUREKA_API_KEY}`,
-    },
-    cache: 'no-store',
-  })
-  const result = await response.json().catch(() => null)
+  let result: any = null
+  try {
+    const response = await fetch(`https://api.mureka.ai/v1/song/query/${encodeURIComponent(generation.provider_task_id)}`, {
+      headers: {
+        Authorization: `Bearer ${process.env.MUREKA_API_KEY}`,
+      },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(10_000),
+    })
+    result = await response.json().catch(() => null)
+    if (!response.ok) return
+  } catch (error) {
+    console.warn('[Studio IA] Consulta Mureka indisponível ao abrir projeto; mantendo estado atual.', error)
+    return
+  }
+
   const status = result?.status || result?.data?.status
 
   if (status !== 'succeeded' && status !== 'streaming') {
@@ -271,57 +275,15 @@ export async function GET(
       }
     }
 
-    // Remove 3ª+ faixa criada por corrida callback/polling na mesma geração.
-    const versionsByGeneration = new Map<string, any[]>()
-    for (const item of versions || []) {
-      if (!item.generation_id) continue
-      const list = versionsByGeneration.get(item.generation_id) || []
-      list.push(item)
-      versionsByGeneration.set(item.generation_id, list)
-    }
-    const duplicateIds: string[] = []
-    for (const list of versionsByGeneration.values()) {
-      if (list.length <= 2) continue
-      const sorted = [...list].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
-      duplicateIds.push(...sorted.slice(2).map((item) => item.id))
-    }
-    if (duplicateIds.length > 0) {
-      await supabaseAdmin
-        .from('studio_versions')
-        .delete()
-        .in('id', duplicateIds)
-        .eq('project_id', project.id)
-    }
+    // A rota de leitura nunca faz download, reparo ou deduplicação de áudio.
+    // Essas operações pertencem ao callback/fila/cron, para que abrir um projeto
+    // continue rápido mesmo quando um fornecedor externo estiver lento ou fora.
+    const availableVersions = versions || []
 
-    // Tenta corrigir backups antigos em que o stream parcial foi salvo como áudio final.
-    const versionsAfterDedupe = duplicateIds.length > 0
-      ? (versions || []).filter((item: any) => !duplicateIds.includes(item.id))
-      : (versions || [])
-
-    await Promise.allSettled(
-      versionsAfterDedupe
-        .filter((item: any) => item.audio_url && item.stream_audio_url && item.audio_url !== item.stream_audio_url)
-        .map((item: any) => repairStudioVersionFullAudioBackup({
-          ...item,
-          composer_id: item.composer_id || composer.composerId,
-        }))
-    )
-
-    const repairedVersions = versionsAfterDedupe.length
-      ? (
-          await supabaseAdmin
-            .from('studio_versions')
-            .select('*')
-            .eq('project_id', project.id)
-            .eq('composer_id', composer.composerId)
-            .order('created_at', { ascending: false })
-        ).data || versionsAfterDedupe
-      : versionsAfterDedupe
-
-    const currentVersion = (repairedVersions || []).find((item: any) => item.is_current) || repairedVersions?.[0] || version
+    const currentVersion = availableVersions.find((item: any) => item.is_current) || availableVersions[0] || version
     const versionAudio = currentVersion ? await getStudioVersionAudioUrls(currentVersion) : null
     const coverImageUrl = cover ? await getStudioCoverImageUrl(cover) : null
-    const versionsWithAudio = await Promise.all((repairedVersions || []).map(async (item: any) => {
+    const versionsWithAudio = await Promise.all(availableVersions.map(async (item: any) => {
       const audio = await getStudioVersionAudioUrls(item)
       return {
         id: item.id,
