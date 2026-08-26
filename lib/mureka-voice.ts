@@ -1,15 +1,7 @@
-import { randomUUID } from 'node:crypto'
-import { execFile } from 'node:child_process'
-import { readFile, unlink, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
-import { promisify } from 'node:util'
 import { supabaseAdmin } from './supabase'
 import { createStudioVoiceAssetUrl } from './studio-voice-assets'
 
-const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg') as { path: string }
 const MUREKA_VOICE_MAX_BYTES = 10 * 1024 * 1024
-const execFileAsync = promisify(execFile)
 
 function getMurekaApiKey() {
   const apiKey = process.env.MUREKA_API_KEY?.trim()
@@ -59,7 +51,7 @@ function voiceAsset(voice: any, kind: 'verify' | 'source') {
     return {
       path: voice.verify_audio_path,
       provider: voice.verify_audio_storage_provider,
-      contentType: voice.verify_audio_content_type || 'audio/mpeg',
+      contentType: voice.verify_audio_content_type || '',
       sizeBytes: Number(voice.verify_audio_size_bytes) || 0,
       kind,
     }
@@ -68,67 +60,19 @@ function voiceAsset(voice: any, kind: 'verify' | 'source') {
   return {
     path: voice.source_audio_path,
     provider: voice.source_audio_storage_provider,
-    contentType: voice.source_audio_content_type || 'audio/mpeg',
+    contentType: voice.source_audio_content_type || '',
     sizeBytes: Number(voice.source_audio_size_bytes) || 0,
     kind,
   }
 }
 
-function pickVoiceAsset(voice: any) {
+function pickCompatibleVoiceAsset(voice: any) {
   const verify = voiceAsset(voice, 'verify')
   const source = voiceAsset(voice, 'source')
 
   if (verify.path && isMurekaCompatibleAudio(verify.contentType)) return verify
   if (source.path && isMurekaCompatibleAudio(source.contentType)) return source
-  if (verify.path) return verify
-  return source
-}
-
-async function convertToMurekaMp3(buffer: Buffer) {
-  const id = randomUUID()
-  const inputPath = join(tmpdir(), `dcc-mureka-voice-${id}.input`)
-  const outputPath = join(tmpdir(), `dcc-mureka-voice-${id}.mp3`)
-
-  try {
-    await writeFile(inputPath, buffer)
-    await execFileAsync(
-      ffmpegInstaller.path,
-      [
-        '-y',
-        '-i', inputPath,
-        '-vn',
-        '-ac', '1',
-        '-ar', '44100',
-        '-b:a', '128k',
-        '-t', '30',
-        outputPath,
-      ],
-      { timeout: 25_000, maxBuffer: 1024 * 1024 }
-    )
-    return await readFile(outputPath)
-  } finally {
-    await Promise.allSettled([unlink(inputPath), unlink(outputPath)])
-  }
-}
-
-async function prepareMurekaAudio(arrayBuffer: ArrayBuffer, contentType: string) {
-  const original = Buffer.from(arrayBuffer)
-  if (isMurekaCompatibleAudio(contentType)) {
-    return {
-      buffer: original,
-      contentType: mimeTypeForMureka(contentType),
-      extension: extensionFromContentType(contentType),
-      converted: false,
-    }
-  }
-
-  const converted = await convertToMurekaMp3(original)
-  return {
-    buffer: converted,
-    contentType: 'audio/mpeg',
-    extension: 'mp3',
-    converted: true,
-  }
+  return null
 }
 
 export async function ensureMurekaVocalClone(voice: any) {
@@ -141,9 +85,11 @@ export async function ensureMurekaVocalClone(voice: any) {
     }
   }
 
-  const asset = pickVoiceAsset(voice)
-  if (!asset.path) {
-    throw new Error('Áudio da voz não encontrado para preparar fallback no Mureka.')
+  const asset = pickCompatibleVoiceAsset(voice)
+  if (!asset) {
+    throw new Error(
+      'Esta voz foi gravada em um formato que o fallback de voz não aceita. Regrave a voz para habilitar o fallback.'
+    )
   }
   if (asset.sizeBytes > MUREKA_VOICE_MAX_BYTES) {
     throw new Error('Áudio da voz maior que 10 MB; o Mureka não aceita essa amostra para clonagem.')
@@ -160,27 +106,17 @@ export async function ensureMurekaVocalClone(voice: any) {
     throw new Error('Não foi possível baixar o áudio da voz para enviar ao Mureka.')
   }
 
-  const contentType = audioResponse.headers.get('content-type') || asset.contentType || 'audio/mpeg'
   const arrayBuffer = await audioResponse.arrayBuffer()
   if (arrayBuffer.byteLength > MUREKA_VOICE_MAX_BYTES) {
     throw new Error('Áudio da voz maior que 10 MB; o Mureka não aceita essa amostra para clonagem.')
   }
 
-  const prepared = await prepareMurekaAudio(arrayBuffer, contentType)
-  if (prepared.buffer.byteLength > MUREKA_VOICE_MAX_BYTES) {
-    throw new Error('Áudio convertido da voz maior que 10 MB; não foi possível preparar a clonagem.')
-  }
-
-  const blobBytes = prepared.buffer.buffer.slice(
-    prepared.buffer.byteOffset,
-    prepared.buffer.byteOffset + prepared.buffer.byteLength
-  ) as ArrayBuffer
-
+  const contentType = mimeTypeForMureka(asset.contentType)
   const formData = new FormData()
   formData.append(
     'file',
-    new Blob([blobBytes], { type: prepared.contentType }),
-    `dcc-voice-${voice.id}.${prepared.extension}`
+    new Blob([arrayBuffer], { type: contentType }),
+    `dcc-voice-${voice.id}.${extensionFromContentType(asset.contentType)}`
   )
   formData.append('description', String(voice.display_name || 'Voz DCC Music').slice(0, 1024))
 
@@ -205,7 +141,6 @@ export async function ensureMurekaVocalClone(voice: any) {
     clone: payload,
     clonedAt: new Date().toISOString(),
     sourceAssetKind: asset.kind,
-    sourceConvertedToMp3: prepared.converted,
   }
 
   const { error: updateError } = await supabaseAdmin
