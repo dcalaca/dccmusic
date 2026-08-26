@@ -1,5 +1,4 @@
 import { supabaseAdmin } from './supabase'
-import { backupStudioVersionAudio } from './studio-audio-backup'
 
 export const MUREKA_TRACKS_PER_GENERATION = 2
 
@@ -20,6 +19,10 @@ function normalizeDurationSeconds(value: any) {
   const duration = Number(value) || 0
   if (!duration) return null
   return duration > 1000 ? Math.round(duration / 1000) : Math.round(duration)
+}
+
+function isMurekaLiveStreamUrl(value?: string | null) {
+  return String(value || '').includes('/v1/live/stream/')
 }
 
 function choiceKey(choice: any) {
@@ -48,19 +51,25 @@ export async function fetchMurekaTaskChoices(taskId: string) {
   const apiKey = process.env.MUREKA_API_KEY?.trim()
   if (!apiKey || !taskId) return []
 
-  const response = await fetch(
-    `https://api.mureka.ai/v1/song/query/${encodeURIComponent(taskId)}`,
-    {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      cache: 'no-store',
+  try {
+    const response = await fetch(
+      `https://api.mureka.ai/v1/song/query/${encodeURIComponent(taskId)}`,
+      {
+        headers: { Authorization: `Bearer ${apiKey}` },
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10_000),
+      }
+    )
+    const result = await response.json().catch(() => null)
+    if (!response.ok) {
+      console.warn('[Studio IA] Falha ao buscar faixas Mureka:', result)
+      return []
     }
-  )
-  const result = await response.json().catch(() => null)
-  if (!response.ok) {
-    console.error('[Studio IA] Falha ao buscar faixas Mureka:', result)
+    return extractMurekaChoicesFromPayload(result)
+  } catch (error) {
+    console.warn('[Studio IA] Timeout/rede ao consultar faixas Mureka:', error)
     return []
   }
-  return extractMurekaChoicesFromPayload(result)
 }
 
 function findMatchingVersion(
@@ -109,8 +118,8 @@ export async function countGenerationVersions(generationId: string) {
 }
 
 /**
- * Persiste choices Mureka.
- * Regra: no máximo 2. No complete, só limpa órfãos se já salvamos exatamente 2.
+ * Persiste no máximo duas faixas do Mureka.
+ * O request/callback só registra o áudio; a cópia durável é feita pelo cron.
  */
 export async function saveMurekaGenerationTracks(input: {
   generation: any
@@ -135,7 +144,7 @@ export async function saveMurekaGenerationTracks(input: {
 
   const { data: existingVersions } = await supabaseAdmin
     .from('studio_versions')
-    .select('id, audio_url, stream_audio_url, provider_payload')
+    .select('id, audio_url, stream_audio_url, audio_path, stream_audio_path, audio_storage_provider, stream_audio_storage_provider, audio_backup_status, provider_payload')
     .eq('generation_id', input.generation.id)
     .order('created_at', { ascending: true })
 
@@ -148,8 +157,11 @@ export async function saveMurekaGenerationTracks(input: {
     null
 
   for (const [index, choice] of validChoices.entries()) {
-    const audioUrl = getMurekaChoiceAudioUrl(choice)
-    const streamAudioUrl = getMurekaChoiceStreamAudioUrl(choice)
+    const choiceAudioUrl = getMurekaChoiceAudioUrl(choice)
+    const choiceStreamAudioUrl = getMurekaChoiceStreamAudioUrl(choice)
+    const audioUrl = choiceAudioUrl || null
+    // Depois de concluída a música, não precisamos manter o live stream expirável.
+    const streamAudioUrl = input.isComplete && audioUrl ? audioUrl : choiceStreamAudioUrl
     const isCurrent = index === validChoices.length - 1
     const existingVersion = findMatchingVersion(
       existingVersions || [],
@@ -163,15 +175,47 @@ export async function saveMurekaGenerationTracks(input: {
     let savedVersionId = existingVersion?.id || null
     if (savedVersionId) claimedIds.add(savedVersionId)
 
+    const finalAudioUrl = audioUrl || existingVersion?.audio_url || null
+    const oldWasLiveStream = isMurekaLiveStreamUrl(existingVersion?.audio_url)
+    const sourceChanged = Boolean(
+      finalAudioUrl && existingVersion?.audio_url && finalAudioUrl !== existingVersion.audio_url
+    ) || oldWasLiveStream
+    const alreadyBackedUp = Boolean(
+      input.isComplete &&
+      existingVersion?.audio_backup_status === 'backed_up' &&
+      existingVersion?.audio_path &&
+      !sourceChanged
+    )
+
+    const backupState = input.isComplete
+      ? alreadyBackedUp
+        ? {}
+        : {
+            audio_backup_status: 'pending',
+            audio_backup_error: null,
+            ...(sourceChanged ? {
+              audio_path: null,
+              stream_audio_path: null,
+              audio_storage_provider: null,
+              stream_audio_storage_provider: null,
+            } : {}),
+          }
+      : {
+          // Não faça backup de live stream parcial; aguarde o resultado final.
+          audio_backup_status: null,
+          audio_backup_error: null,
+        }
+
     const versionPayload = {
       version_name: `Música gerada #${index + 1}`,
       style: input.generation.request_payload?.prompt || null,
-      audio_url: audioUrl || existingVersion?.audio_url || null,
-      stream_audio_url: streamAudioUrl || existingVersion?.stream_audio_url || null,
+      audio_url: finalAudioUrl,
+      stream_audio_url: streamAudioUrl || existingVersion?.stream_audio_url || finalAudioUrl,
       duration: normalizeDurationSeconds(choice.duration),
       model,
       provider_payload: choice,
       is_current: isCurrent,
+      ...backupState,
       updated_at: new Date().toISOString(),
     }
 
@@ -205,29 +249,15 @@ export async function saveMurekaGenerationTracks(input: {
       if (savedVersionId) claimedIds.add(savedVersionId)
     }
 
-    if (savedVersionId) {
-      await backupStudioVersionAudio({
-        versionId: savedVersionId,
-        composerId: input.generation.composer_id,
-        audioUrl: audioUrl || (input.isComplete ? versionPayload.audio_url : null),
-        streamAudioUrl,
-        forceFullAudioUpgrade: input.isComplete && Boolean(audioUrl || versionPayload.audio_url),
-      }).catch((backupError) => {
-        console.error('[Studio IA] Erro no backup interno do áudio Mureka:', backupError)
-      })
-    }
-
     savedVersions.push({
       id: savedVersionId,
       choice,
-      audioUrl: audioUrl || versionPayload.audio_url || null,
-      streamAudioUrl,
+      audioUrl: finalAudioUrl,
+      streamAudioUrl: streamAudioUrl || finalAudioUrl,
     })
   }
 
   const keepIds = savedVersions.map((item) => item.id).filter(Boolean) as string[]
-  const versionCount = await countGenerationVersions(input.generation.id)
-  const hasExactTwo = versionCount === MUREKA_TRACKS_PER_GENERATION
 
   if (input.isComplete && keepIds.length === MUREKA_TRACKS_PER_GENERATION) {
     const { data: allForGeneration } = await supabaseAdmin
@@ -248,15 +278,14 @@ export async function saveMurekaGenerationTracks(input: {
     }
   }
 
+  const versionCount = await countGenerationVersions(input.generation.id)
   return {
     savedVersions,
-    hasExactTwo: hasExactTwo || keepIds.length === MUREKA_TRACKS_PER_GENERATION,
+    hasExactTwo: versionCount === MUREKA_TRACKS_PER_GENERATION || keepIds.length === MUREKA_TRACKS_PER_GENERATION,
   }
 }
 
-/**
- * Garante 2 faixas no complete: se o poll vier com 1, busca de novo na Mureka.
- */
+/** Garante duas faixas no complete: se o poll vier com uma, consulta o Mureka novamente. */
 export async function saveMurekaGenerationTracksEnsuringTwo(input: {
   generation: any
   choices: any[]
