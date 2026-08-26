@@ -3,6 +3,7 @@ import { supabaseAdmin } from './supabase'
 
 const STUDIO_COVER_BUCKET = 'studio-assets'
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 // 24h
+const SIGN_RETRY_DELAYS_MS = [0, 150, 500]
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -30,6 +31,22 @@ function isExpiredSupabaseSignedUrl(url: string) {
   } catch {
     return false
   }
+}
+
+function isTransientStorageError(error: any) {
+  const message = String(error?.message || error || '').toLowerCase()
+  return (
+    message.includes('too many connections') ||
+    message.includes('timeout') ||
+    message.includes('timed out') ||
+    message.includes('fetch') ||
+    message.includes('network') ||
+    message.includes('temporarily unavailable')
+  )
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /** Recupera o path do arquivo a partir de uma signed URL antiga do Supabase. */
@@ -61,16 +78,22 @@ function extractPathFromSignedUrl(url: string): string | null {
 }
 
 async function createStudioCoverSignedUrl(path: string) {
-  const { data, error } = await supabaseAdmin.storage
-    .from(STUDIO_COVER_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS)
+  let lastError: any = null
 
-  if (error || !data?.signedUrl) {
-    console.error('[studio-cover-url] falha ao assinar capa:', error?.message || error, path)
-    return null
+  for (const delay of SIGN_RETRY_DELAYS_MS) {
+    if (delay) await sleep(delay)
+
+    const { data, error } = await supabaseAdmin.storage
+      .from(STUDIO_COVER_BUCKET)
+      .createSignedUrl(path, SIGNED_URL_TTL_SECONDS)
+
+    if (!error && data?.signedUrl) return data.signedUrl
+    lastError = error || new Error('URL assinada vazia')
+    if (!isTransientStorageError(lastError)) break
   }
 
-  return data.signedUrl
+  console.warn('[studio-cover-url] falha ao assinar capa após retry:', lastError?.message || lastError, path)
+  return null
 }
 
 export async function getStudioCoverImageUrl(cover: any) {

@@ -26,30 +26,53 @@ function extractMurekaVocalId(payload: any) {
     null
 }
 
+function isMurekaCompatibleAudio(contentType: string) {
+  const normalized = String(contentType || '').toLowerCase()
+  return normalized.includes('mpeg') ||
+    normalized.includes('mp3') ||
+    normalized.includes('mp4') ||
+    normalized.includes('m4a')
+}
+
 function extensionFromContentType(contentType: string) {
-  if (contentType.includes('mp4')) return 'm4a'
-  if (contentType.includes('mpeg') || contentType.includes('mp3')) return 'mp3'
+  const normalized = String(contentType || '').toLowerCase()
+  if (normalized.includes('mp4') || normalized.includes('m4a')) return 'm4a'
   return 'mp3'
 }
 
-function pickVoiceAsset(voice: any) {
-  if (voice.verify_audio_path) {
+function mimeTypeForMureka(contentType: string) {
+  const normalized = String(contentType || '').toLowerCase()
+  if (normalized.includes('mp4') || normalized.includes('m4a')) return 'audio/mp4'
+  return 'audio/mpeg'
+}
+
+function voiceAsset(voice: any, kind: 'verify' | 'source') {
+  if (kind === 'verify') {
     return {
       path: voice.verify_audio_path,
       provider: voice.verify_audio_storage_provider,
-      contentType: voice.verify_audio_content_type || 'audio/mpeg',
+      contentType: voice.verify_audio_content_type || '',
       sizeBytes: Number(voice.verify_audio_size_bytes) || 0,
-      kind: 'verify',
+      kind,
     }
   }
 
   return {
     path: voice.source_audio_path,
     provider: voice.source_audio_storage_provider,
-    contentType: voice.source_audio_content_type || 'audio/mpeg',
+    contentType: voice.source_audio_content_type || '',
     sizeBytes: Number(voice.source_audio_size_bytes) || 0,
-    kind: 'source',
+    kind,
   }
+}
+
+function pickCompatibleVoiceAsset(voice: any) {
+  const verify = voiceAsset(voice, 'verify')
+  const source = voiceAsset(voice, 'source')
+
+  if (verify.path && isMurekaCompatibleAudio(verify.contentType)) return verify
+  if (source.path && isMurekaCompatibleAudio(source.contentType)) return source
+  return null
 }
 
 export async function ensureMurekaVocalClone(voice: any) {
@@ -62,9 +85,11 @@ export async function ensureMurekaVocalClone(voice: any) {
     }
   }
 
-  const asset = pickVoiceAsset(voice)
-  if (!asset.path) {
-    throw new Error('Áudio da voz não encontrado para preparar fallback no Mureka.')
+  const asset = pickCompatibleVoiceAsset(voice)
+  if (!asset) {
+    throw new Error(
+      'Esta voz foi gravada em um formato que o fallback de voz não aceita. Regrave a voz para habilitar o fallback.'
+    )
   }
   if (asset.sizeBytes > MUREKA_VOICE_MAX_BYTES) {
     throw new Error('Áudio da voz maior que 10 MB; o Mureka não aceita essa amostra para clonagem.')
@@ -73,22 +98,25 @@ export async function ensureMurekaVocalClone(voice: any) {
   const voiceUrl = await createStudioVoiceAssetUrl(asset.path, asset.provider)
   if (!voiceUrl) throw new Error('Não foi possível preparar o áudio da voz para o Mureka.')
 
-  const audioResponse = await fetch(voiceUrl, { cache: 'no-store' })
+  const audioResponse = await fetch(voiceUrl, {
+    cache: 'no-store',
+    signal: AbortSignal.timeout(15_000),
+  })
   if (!audioResponse.ok) {
     throw new Error('Não foi possível baixar o áudio da voz para enviar ao Mureka.')
   }
 
-  const contentType = audioResponse.headers.get('content-type') || asset.contentType || 'audio/mpeg'
   const arrayBuffer = await audioResponse.arrayBuffer()
   if (arrayBuffer.byteLength > MUREKA_VOICE_MAX_BYTES) {
     throw new Error('Áudio da voz maior que 10 MB; o Mureka não aceita essa amostra para clonagem.')
   }
 
+  const contentType = mimeTypeForMureka(asset.contentType)
   const formData = new FormData()
   formData.append(
     'file',
     new Blob([arrayBuffer], { type: contentType }),
-    `dcc-voice-${voice.id}.${extensionFromContentType(contentType)}`
+    `dcc-voice-${voice.id}.${extensionFromContentType(asset.contentType)}`
   )
   formData.append('description', String(voice.display_name || 'Voz DCC Music').slice(0, 1024))
 
@@ -99,6 +127,7 @@ export async function ensureMurekaVocalClone(voice: any) {
     },
     body: formData,
     cache: 'no-store',
+    signal: AbortSignal.timeout(30_000),
   })
   const payload = await response.json().catch(() => null)
   const vocalId = extractMurekaVocalId(payload)
@@ -114,7 +143,7 @@ export async function ensureMurekaVocalClone(voice: any) {
     sourceAssetKind: asset.kind,
   }
 
-  await supabaseAdmin
+  const { error: updateError } = await supabaseAdmin
     .from('studio_voice_profiles')
     .update({
       provider_payload: {
@@ -124,6 +153,10 @@ export async function ensureMurekaVocalClone(voice: any) {
       updated_at: new Date().toISOString(),
     })
     .eq('id', voice.id)
+
+  if (updateError) {
+    throw new Error(`Voz criada no Mureka, mas não foi possível salvar o vocal_id: ${updateError.message}`)
+  }
 
   return {
     vocalId,
