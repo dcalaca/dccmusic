@@ -5,6 +5,7 @@ import { studioMonthKey } from './studio'
 const SIMPLE_COVER_MODEL = process.env.OPENAI_SIMPLE_COVER_IMAGE_MODEL || 'gpt-image-2'
 const SIMPLE_COVER_SIZE = process.env.OPENAI_SIMPLE_COVER_SIZE || '1024x1024'
 const SIMPLE_COVER_QUALITY = process.env.OPENAI_SIMPLE_COVER_QUALITY || 'low'
+const coverJobs = new Map<string, Promise<any>>()
 
 async function createSignedUrl(path: string) {
   const { data } = await supabaseAdmin.storage
@@ -49,11 +50,18 @@ async function generateSimpleCoverImage(prompt: string) {
       quality: SIMPLE_COVER_QUALITY,
       n: 1,
     }),
+    signal: AbortSignal.timeout(45_000),
   })
 
   if (!response.ok) {
     const text = await response.text().catch(() => '')
-    console.error('[Studio IA] Erro capa simples:', text)
+    if (response.status === 429) {
+      console.warn('[Studio IA] Capa simples aguardando limite da OpenAI; será tentada novamente depois:', text)
+    } else if (response.status === 402 || response.status === 429 || text.includes('insufficient_quota')) {
+      console.warn('[Studio IA] Capa simples indisponível temporariamente:', text)
+    } else {
+      console.error('[Studio IA] Erro capa simples:', text)
+    }
     return null
   }
 
@@ -61,7 +69,7 @@ async function generateSimpleCoverImage(prompt: string) {
   return data.data?.[0]?.b64_json || null
 }
 
-export async function ensureSimpleStudioCover(input: {
+async function ensureSimpleStudioCoverInternal(input: {
   projectId: string
   composerId: string
   title: string
@@ -122,4 +130,22 @@ export async function ensureSimpleStudioCover(input: {
 
   if (error) throw error
   return cover
+}
+
+export async function ensureSimpleStudioCover(input: {
+  projectId: string
+  composerId: string
+  title: string
+  style?: string | null
+  mood?: string | null
+  description?: string | null
+  replaceCurrent?: boolean
+}) {
+  const existingJob = coverJobs.get(input.projectId)
+  if (existingJob) return existingJob
+
+  const job = ensureSimpleStudioCoverInternal(input)
+    .finally(() => coverJobs.delete(input.projectId))
+  coverJobs.set(input.projectId, job)
+  return job
 }
