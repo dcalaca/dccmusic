@@ -3,6 +3,8 @@ import crypto from 'crypto'
 
 // Configuração do Mercado Pago
 const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+const MERCADOPAGO_API_BASE_URL = 'https://api.mercadopago.com'
+const MERCADOPAGO_TIMEOUT_MS = 10_000
 
 if (!accessToken) {
   console.error('[MERCADOPAGO] ⚠️ MERCADOPAGO_ACCESS_TOKEN não configurado!')
@@ -11,14 +13,127 @@ if (!accessToken) {
 const client = new MercadoPagoConfig({
   accessToken: accessToken || '',
   options: {
-    timeout: 10000, // Aumentado para produção
-    idempotencyKey: 'dccmusic-' + Date.now(), // Único por requisição
+    timeout: MERCADOPAGO_TIMEOUT_MS,
+    idempotencyKey: 'dccmusic-' + Date.now(),
   },
 })
 
+function responseHeadersRecord(headers: Headers) {
+  const result: Record<string, string[]> = {}
+  headers.forEach((value, key) => {
+    result[key] = [value]
+  })
+  return result
+}
+
+async function mercadoPagoNativeRequest(input: {
+  path: string
+  method?: 'GET' | 'POST'
+  body?: unknown
+  idempotencyKey?: string
+  timeout?: number
+}) {
+  if (!accessToken) {
+    throw new Error('MERCADOPAGO_ACCESS_TOKEN não configurado')
+  }
+  if (!input.path.startsWith('/')) {
+    throw new Error('Caminho inválido da API Mercado Pago')
+  }
+
+  const url = new URL(input.path, MERCADOPAGO_API_BASE_URL)
+  if (url.origin !== MERCADOPAGO_API_BASE_URL) {
+    throw new Error('Destino inválido da API Mercado Pago')
+  }
+
+  const controller = new AbortController()
+  const timeoutMs = Math.max(1_000, Number(input.timeout) || MERCADOPAGO_TIMEOUT_MS)
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/json',
+    }
+    if (input.body !== undefined) headers['Content-Type'] = 'application/json'
+    if (input.idempotencyKey) headers['X-Idempotency-Key'] = input.idempotencyKey
+
+    const response = await fetch(url, {
+      method: input.method || 'GET',
+      headers,
+      body: input.body !== undefined ? JSON.stringify(input.body) : undefined,
+      signal: controller.signal,
+      cache: 'no-store',
+    })
+
+    const payload = await response.json().catch(() => null)
+    const apiResponse = {
+      status: response.status,
+      headers: responseHeadersRecord(response.headers),
+    }
+
+    if (!response.ok) {
+      const message =
+        payload?.message ||
+        payload?.error ||
+        payload?.cause?.[0]?.description ||
+        `Mercado Pago retornou HTTP ${response.status}`
+      const error: any = new Error(String(message))
+      if (payload && typeof payload === 'object') Object.assign(error, payload)
+      error.status = response.status
+      error.api_response = apiResponse
+      throw error
+    }
+
+    if (payload && typeof payload === 'object') {
+      payload.api_response = apiResponse
+    }
+    return payload
+  } catch (error: any) {
+    if (error?.name === 'AbortError') {
+      const timeoutError: any = new Error('Tempo limite ao consultar o Mercado Pago')
+      timeoutError.status = 504
+      throw timeoutError
+    }
+    throw error
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+/**
+ * O SDK 2.x do Mercado Pago usa node-fetch antigo internamente, que aciona
+ * DEP0169 (`url.parse()`) nas versões atuais do Node. Mantemos o SDK para as
+ * demais operações, mas GET/CREATE de pagamentos — justamente os caminhos
+ * usados por checkout, sync e webhook — usam o fetch nativo do Node.
+ */
+class NativeFetchPaymentClient extends Payment {
+  get(input: any): any {
+    const paymentId = String(input?.id ?? '').trim()
+    if (!paymentId) throw new Error('Payment ID obrigatório')
+
+    return mercadoPagoNativeRequest({
+      path: `/v1/payments/${encodeURIComponent(paymentId)}`,
+      method: 'GET',
+      timeout: input?.requestOptions?.timeout,
+    })
+  }
+
+  create(input: any): any {
+    return mercadoPagoNativeRequest({
+      path: '/v1/payments',
+      method: 'POST',
+      body: input?.body,
+      idempotencyKey:
+        input?.requestOptions?.idempotencyKey ||
+        `dccmusic-${crypto.randomUUID()}`,
+      timeout: input?.requestOptions?.timeout,
+    })
+  }
+}
+
 export const mercadoPagoClient = client
 export const preferenceClient = new Preference(client)
-export const paymentClient = new Payment(client)
+export const paymentClient = new NativeFetchPaymentClient(client)
 
 export interface MercadoPagoWebhookVerification {
   ok: boolean
