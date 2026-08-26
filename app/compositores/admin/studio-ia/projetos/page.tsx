@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FiArrowLeft, FiChevronLeft, FiChevronRight, FiDownload, FiFileText, FiHeart, FiInfo, FiLoader, FiLogIn, FiMic, FiMoreVertical, FiMusic, FiPlus, FiTrash2, FiX, FiZap } from 'react-icons/fi'
+import { FiArrowLeft, FiChevronLeft, FiChevronRight, FiDownload, FiFileText, FiHeadphones, FiHeart, FiInfo, FiLoader, FiLogIn, FiMic, FiMoreVertical, FiMusic, FiPlus, FiTrash2, FiX, FiZap } from 'react-icons/fi'
 
 const filters = [
   { id: 'all', label: 'Todos' },
@@ -50,6 +50,7 @@ function StudioProjectsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentFilter = searchParams.get('filter') || 'all'
+  const choosingPlayback = searchParams.get('acao') === 'playback'
   const [projects, setProjects] = useState<any[]>([])
   const [transcriptions, setTranscriptions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -331,6 +332,16 @@ function StudioProjectsContent() {
             </h1>
             <p className="text-gray-400">Organize suas músicas por rascunhos, publicadas e favoritas.</p>
           </div>
+
+          {choosingPlayback && (
+            <div className="mb-6 flex items-start gap-3 rounded-2xl border border-cyan-400/30 bg-cyan-950/25 p-4 text-cyan-50 sm:p-5">
+              <FiHeadphones className="mt-0.5 h-6 w-6 shrink-0 text-cyan-300" />
+              <div>
+                <p className="font-black">Escolha a música para criar o playback</p>
+                <p className="mt-1 text-sm text-cyan-100/75">Abra um projeto, ouça as versões e clique em “Criar playback desta versão”. O custo é de 10 créditos.</p>
+              </div>
+            </div>
+          )}
 
           {message && <div className="mb-6 rounded-xl border border-green-800 bg-green-950/50 p-4 text-green-200">{message}</div>}
           {error && <div className="mb-6 rounded-xl border border-red-800 bg-red-950/50 p-4 text-red-200">{error}</div>}

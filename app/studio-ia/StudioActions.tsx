@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FiArrowRight, FiCreditCard, FiFolder, FiGift, FiImage, FiLoader, FiMusic, FiX, FiZap } from 'react-icons/fi'
+import { FiArrowRight, FiCreditCard, FiFolder, FiGift, FiHeadphones, FiImage, FiLoader, FiMusic, FiX, FiZap } from 'react-icons/fi'
 import { trackTikTokEvent } from '@/components/TikTokEvents'
 
 const PROJECTS_URL = '/compositores/admin/studio-ia/projetos'
@@ -102,6 +102,12 @@ export function StudioHeroActions() {
     router.push(token ? improveUrl : loginUrl(improveUrl))
   }
 
+  const goToPlayback = () => {
+    const token = localStorage.getItem('composer_token')
+    const playbackUrl = '/compositores/admin/studio-ia/projetos?acao=playback'
+    router.push(token ? playbackUrl : loginUrl(playbackUrl))
+  }
+
   const createMusic = async () => {
     const token = localStorage.getItem('composer_token')
     if (token) {
@@ -134,6 +140,13 @@ export function StudioHeroActions() {
   return (
     <>
       <div className="mx-auto flex w-full max-w-md flex-col justify-center gap-2 sm:max-w-none sm:flex-row">
+        <button
+          type="button"
+          onClick={goToPlayback}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-500/60 bg-cyan-950/35 px-5 py-3 text-sm font-semibold text-white transition hover:border-cyan-300 sm:w-auto sm:px-6 sm:text-base"
+        >
+          <FiHeadphones /> Criar Playback
+        </button>
         <button
           type="button"
           onClick={createMusic}

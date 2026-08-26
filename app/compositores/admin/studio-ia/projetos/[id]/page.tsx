@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { FiArrowLeft, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiCloud, FiCode, FiCreditCard, FiDownload, FiExternalLink, FiEyeOff, FiFileText, FiHeart, FiLoader, FiLock, FiMic, FiMusic, FiPause, FiPlay, FiSave, FiShield, FiVideo, FiX, FiZap } from 'react-icons/fi'
+import { FiArrowLeft, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiCloud, FiCode, FiCreditCard, FiDownload, FiExternalLink, FiEyeOff, FiFileText, FiHeadphones, FiHeart, FiLoader, FiLock, FiMic, FiMusic, FiPause, FiPlay, FiSave, FiShield, FiVideo, FiX, FiZap } from 'react-icons/fi'
 import CopyButton from '@/components/CopyButton'
 
 const refineActions = [
@@ -1951,14 +1951,22 @@ export default function StudioProjectDetailPage() {
                             <p className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4 text-sm text-gray-500">Áudio sem URL registrada.</p>
                           )}
                           {versionAudioUrl && (
-                            <button
-                              type="button"
-                              onClick={() => openInspirationPickerForVersion(version.id)}
-                              disabled={Boolean(processing) || !canReuseLyric}
-                              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-purple-500/50 bg-purple-950/30 px-4 py-3 text-sm font-bold text-purple-100 transition hover:border-purple-300 hover:bg-purple-900/40 disabled:opacity-60 sm:w-auto"
-                            >
-                              <FiMusic /> Criar nova versão usando esta como inspiração
-                            </button>
+                            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                              <Link
+                                href={`/compositores/admin/studio-ia/playback?projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(version.id)}`}
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-primary-600 px-4 py-3 text-sm font-black text-white transition hover:scale-[1.01] sm:w-auto"
+                              >
+                                <FiHeadphones /> Criar playback desta versão
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => openInspirationPickerForVersion(version.id)}
+                                disabled={Boolean(processing) || !canReuseLyric}
+                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-purple-500/50 bg-purple-950/30 px-4 py-3 text-sm font-bold text-purple-100 transition hover:border-purple-300 hover:bg-purple-900/40 disabled:opacity-60 sm:w-auto"
+                              >
+                                <FiMusic /> Criar nova versão usando esta como inspiração
+                              </button>
+                            </div>
                           )}
                         </article>
                       )

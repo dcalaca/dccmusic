@@ -149,14 +149,14 @@ async function extractPlayback(zipUrl: string) {
   return extension === 'mp3' ? raw : convertToMp3(raw, extension)
 }
 
-export async function createAdminPlayback(input: { sourceUrl: string; title?: string | null }) {
+export async function createStudioPlayback(input: { sourceUrl: string; title?: string | null; composerId: string }) {
   let playback: Buffer
   let separationProvider: 'suno' | 'mureka' = 'suno'
   try {
     const instrumentalUrl = await requestSunoPlayback(input.sourceUrl)
     playback = (await downloadBuffer(instrumentalUrl)).buffer
   } catch (sunoError: any) {
-    console.error('[Admin Playback] Suno falhou; usando Mureka:', sunoError?.message || sunoError)
+    console.error('[Studio Playback] Suno falhou; usando Mureka:', sunoError?.message || sunoError)
     separationProvider = 'mureka'
     const zipUrl = await requestPlaybackZip(input.sourceUrl)
     playback = await extractPlayback(zipUrl)
@@ -170,11 +170,15 @@ export async function createAdminPlayback(input: { sourceUrl: string; title?: st
     .slice(0, 60) || 'musica'
 
   const uploaded = await uploadStudioAudioBuffer({
-    composerId: 'admin-playback',
+    composerId: input.composerId,
     folder: 'exports',
     fileName: `${cleanTitle}-playback-${randomUUID().slice(0, 8)}.mp3`,
     buffer: playback,
     contentType: 'audio/mpeg',
   })
   return { ...uploaded, separationProvider }
+}
+
+export async function createAdminPlayback(input: { sourceUrl: string; title?: string | null }) {
+  return createStudioPlayback({ ...input, composerId: 'admin-playback' })
 }
