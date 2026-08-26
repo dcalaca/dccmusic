@@ -9,7 +9,11 @@ import {
   getStudioCreditUsage,
   STUDIO_MUSIC_CREDITS,
 } from '@/lib/studio'
-import { createStudioAudioSignedUrl, getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
+import {
+  createStudioAudioSignedUrl,
+  getStudioVersionAudioUrls,
+  validateStudioInputUploadedAsset,
+} from '@/lib/studio-audio-backup'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
@@ -27,26 +31,43 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     projectId = typeof body.projectId === 'string' ? body.projectId.trim() : ''
     const versionId = typeof body.versionId === 'string' ? body.versionId.trim() : ''
-    if (!projectId || !versionId) {
-      return NextResponse.json({ error: 'Escolha um projeto e uma versão.' }, { status: 400 })
+    let sourceUrl = ''
+    let title = typeof body.title === 'string' ? body.title.trim() : ''
+
+    if (projectId && versionId) {
+      const project = await getProjectForComposer(projectId, composer.composerId)
+      if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
+
+      const { data: version, error: versionError } = await supabaseAdmin
+        .from('studio_versions')
+        .select('*')
+        .eq('id', versionId)
+        .eq('project_id', project.id)
+        .eq('composer_id', composer.composerId)
+        .maybeSingle()
+      if (versionError) throw versionError
+      if (!version) return NextResponse.json({ error: 'Versão não encontrada neste projeto.' }, { status: 404 })
+
+      const audio = await getStudioVersionAudioUrls(version)
+      sourceUrl = audio?.audioUrl || audio?.streamAudioUrl || ''
+      title = project.title || version.version_name || title
+    } else if (body.upload?.path) {
+      const upload = body.upload
+      const sizeBytes = Number(upload.sizeBytes) || 0
+      if (sizeBytes > 10 * 1024 * 1024) {
+        return NextResponse.json({ error: 'Para criar o playback, o áudio precisa ter no máximo 10 MB.' }, { status: 400 })
+      }
+      validateStudioInputUploadedAsset({
+        composerId: composer.composerId,
+        path: String(upload.path),
+        provider: String(upload.provider),
+        contentType: String(upload.contentType || 'audio/mpeg'),
+        sizeBytes,
+      })
+      sourceUrl = await createStudioAudioSignedUrl(String(upload.path), String(upload.provider)) || ''
     }
 
-    const project = await getProjectForComposer(projectId, composer.composerId)
-    if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
-
-    const { data: version, error: versionError } = await supabaseAdmin
-      .from('studio_versions')
-      .select('*')
-      .eq('id', versionId)
-      .eq('project_id', project.id)
-      .eq('composer_id', composer.composerId)
-      .maybeSingle()
-    if (versionError) throw versionError
-    if (!version) return NextResponse.json({ error: 'Versão não encontrada neste projeto.' }, { status: 404 })
-
-    const audio = await getStudioVersionAudioUrls(version)
-    const sourceUrl = audio?.audioUrl || audio?.streamAudioUrl
-    if (!sourceUrl) return NextResponse.json({ error: 'Essa versão ainda não possui áudio disponível.' }, { status: 422 })
+    if (!sourceUrl) return NextResponse.json({ error: 'Escolha uma versão ou envie uma música.' }, { status: 400 })
 
     const access = await getStudioAccess(composer.composerId)
     const usage = await getStudioCreditUsage(composer.composerId, access.limits)
@@ -60,7 +81,7 @@ export async function POST(request: NextRequest) {
 
     await addStudioCreditTransaction({
       composerId: composer.composerId,
-      projectId: project.id,
+      projectId: projectId || null,
       action: 'stem_separation',
       amount: STUDIO_MUSIC_CREDITS,
       description: 'Criação de playback (retirada de voz)',
@@ -70,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     const playback = await createStudioPlayback({
       sourceUrl,
-      title: project.title || version.version_name || 'musica',
+      title: title || 'musica',
       composerId: composer.composerId,
     })
     const playbackUrl = await createStudioAudioSignedUrl(playback.path, playback.provider)

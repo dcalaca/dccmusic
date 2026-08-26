@@ -1,9 +1,9 @@
 'use client'
 
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FiArrowLeft, FiCheckCircle, FiDownload, FiHeadphones, FiLoader, FiRefreshCw } from 'react-icons/fi'
+import { FiArrowLeft, FiCheckCircle, FiDownload, FiFolder, FiHeadphones, FiLoader, FiMusic, FiRefreshCw, FiUploadCloud } from 'react-icons/fi'
 
 const PLAYBACK_CREDITS = 10
 
@@ -15,8 +15,12 @@ function PlaybackCreator() {
   const [project, setProject] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [uploadedAudio, setUploadedAudio] = useState<any>(null)
+  const [uploadedFileName, setUploadedFileName] = useState('')
   const [error, setError] = useState('')
   const [result, setResult] = useState<any>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const token = localStorage.getItem('composer_token')
@@ -26,7 +30,7 @@ function PlaybackCreator() {
       return
     }
     if (!projectId || !versionId) {
-      router.replace('/compositores/admin/studio-ia/projetos?acao=playback')
+      setLoading(false)
       return
     }
 
@@ -55,6 +59,51 @@ function PlaybackCreator() {
   )
   const versionNumber = version ? (project?.versions || []).length - (project?.versions || []).findIndex((item: any) => item.id === version.id) : 0
 
+  const uploadFile = async (file: File) => {
+    const token = localStorage.getItem('composer_token')
+    if (!token) return
+    if (!file.type.startsWith('audio/')) {
+      setError('Escolha um arquivo de áudio válido.')
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setError('O áudio precisa ter no máximo 10 MB.')
+      return
+    }
+
+    setUploading(true)
+    setError('')
+    setResult(null)
+    try {
+      const prepareResponse = await fetch('/api/compositores/studio/input-upload-url', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentType: file.type || 'audio/mpeg',
+          sizeBytes: file.size,
+          fileName: file.name,
+          kind: 'enhance-source',
+        }),
+      })
+      const prepareData = await prepareResponse.json()
+      if (!prepareResponse.ok) throw new Error(prepareData.error || 'Não foi possível preparar o envio.')
+
+      const upload = prepareData.upload
+      const putResponse = await fetch(upload.uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': upload.contentType || file.type || 'audio/mpeg' },
+        body: file,
+      })
+      if (!putResponse.ok) throw new Error('Falha ao enviar o áudio. Tente novamente.')
+      setUploadedAudio(upload)
+      setUploadedFileName(file.name)
+    } catch (uploadError: any) {
+      setError(uploadError?.message || 'Erro ao enviar a música.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const createPlayback = async () => {
     const token = localStorage.getItem('composer_token')
     if (!token) return
@@ -65,7 +114,9 @@ function PlaybackCreator() {
       const response = await fetch('/api/compositores/studio/playback', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ projectId, versionId }),
+        body: JSON.stringify(projectId && versionId
+          ? { projectId, versionId }
+          : { upload: uploadedAudio, title: uploadedFileName.replace(/\.[^.]+$/, '') }),
       })
       const data = await response.json()
       if (!response.ok) {
@@ -85,8 +136,8 @@ function PlaybackCreator() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-black via-gray-950 to-cyan-950/20 px-4 py-8 text-white sm:px-6">
       <div className="mx-auto max-w-3xl">
-        <Link href={projectId ? `/compositores/admin/studio-ia/projetos/${projectId}` : '/compositores/admin/studio-ia/projetos'} className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-cyan-200 hover:text-white">
-          <FiArrowLeft /> Voltar ao projeto
+        <Link href={projectId ? `/compositores/admin/studio-ia/projetos/${projectId}` : '/studio-ia'} className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-cyan-200 hover:text-white">
+          <FiArrowLeft /> {projectId ? 'Voltar ao projeto' : 'Voltar ao Studio IA'}
         </Link>
 
         <section className="overflow-hidden rounded-3xl border border-cyan-400/25 bg-gray-950/90 shadow-2xl shadow-cyan-950/30">
@@ -117,7 +168,64 @@ function PlaybackCreator() {
                   {processing ? <><FiLoader className="animate-spin" /> Retirando a voz...</> : <><FiHeadphones /> Criar playback por 10 créditos</>}
                 </button>}
               </>
-            ) : null}
+            ) : (
+              <>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading || processing}
+                    className="flex min-h-36 flex-col items-center justify-center rounded-2xl border border-cyan-400/35 bg-cyan-950/20 p-5 text-center transition hover:border-cyan-300 hover:bg-cyan-950/35 disabled:opacity-60"
+                  >
+                    {uploading ? <FiLoader className="mb-3 h-8 w-8 animate-spin text-cyan-300" /> : <FiUploadCloud className="mb-3 h-8 w-8 text-cyan-300" />}
+                    <span className="font-black">Enviar minha música</span>
+                    <span className="mt-1 text-xs text-gray-400">MP3, WAV, M4A ou outro áudio · até 10 MB</span>
+                  </button>
+                  <Link
+                    href="/compositores/admin/studio-ia/projetos?acao=playback"
+                    className="flex min-h-36 flex-col items-center justify-center rounded-2xl border border-purple-400/35 bg-purple-950/20 p-5 text-center transition hover:border-purple-300 hover:bg-purple-950/35"
+                  >
+                    <FiFolder className="mb-3 h-8 w-8 text-purple-300" />
+                    <span className="font-black">Escolher música do DCC</span>
+                    <span className="mt-1 text-xs text-gray-400">Selecione uma versão já produzida</span>
+                  </Link>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*,.mp3,.wav,.m4a,.ogg"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) void uploadFile(file)
+                    event.target.value = ''
+                  }}
+                />
+
+                {uploadedAudio && (
+                  <div className="rounded-2xl border border-green-400/30 bg-green-950/20 p-5">
+                    <div className="flex items-center gap-3">
+                      <FiMusic className="h-6 w-6 text-green-300" />
+                      <div className="min-w-0">
+                        <p className="font-black text-green-100">Música enviada</p>
+                        <p className="truncate text-sm text-green-100/70">{uploadedFileName}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-amber-400/30 bg-amber-950/20 p-5">
+                  <p className="font-black text-amber-100">Custo: {PLAYBACK_CREDITS} créditos</p>
+                  <p className="mt-1 text-sm leading-relaxed text-amber-100/75">Os créditos só serão debitados quando você iniciar. Se a Suno e a Mureka não conseguirem concluir, o valor será estornado automaticamente.</p>
+                </div>
+
+                {!result && (
+                  <button type="button" onClick={createPlayback} disabled={processing || uploading || !uploadedAudio} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-600 via-primary-600 to-purple-600 px-6 py-4 text-lg font-black shadow-xl transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50">
+                    {processing ? <><FiLoader className="animate-spin" /> Retirando a voz...</> : <><FiHeadphones /> Criar playback por 10 créditos</>}
+                  </button>
+                )}
+              </>
+            )}
 
             {processing && <p className="text-center text-sm text-gray-400">Isso pode levar alguns minutos. Mantenha esta página aberta.</p>}
             {error && <div className="rounded-2xl border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-100">{error}</div>}
@@ -126,7 +234,7 @@ function PlaybackCreator() {
                 <div className="flex items-center gap-2 font-black text-green-200"><FiCheckCircle /> Playback pronto!</div>
                 <audio className="mt-4 w-full" controls src={result.playbackUrl} />
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                  <a href={result.playbackUrl} download={`${project?.title || 'musica'} - Playback.mp3`} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 font-black text-white hover:bg-green-500"><FiDownload /> Baixar playback</a>
+                  <a href={result.playbackUrl} download={`${project?.title || uploadedFileName.replace(/\.[^.]+$/, '') || 'musica'} - Playback.mp3`} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 font-black text-white hover:bg-green-500"><FiDownload /> Baixar playback</a>
                   <button type="button" onClick={() => setResult(null)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3 font-bold hover:bg-white/5"><FiRefreshCw /> Criar novamente</button>
                 </div>
               </div>

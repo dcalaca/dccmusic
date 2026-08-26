@@ -99,7 +99,7 @@ export function StudioHeroActions() {
 
   const goToPlayback = () => {
     const token = localStorage.getItem('composer_token')
-    const playbackUrl = '/compositores/admin/studio-ia/projetos?acao=playback'
+    const playbackUrl = '/compositores/admin/studio-ia/playback'
     router.push(token ? playbackUrl : loginUrl(playbackUrl))
   }
 
