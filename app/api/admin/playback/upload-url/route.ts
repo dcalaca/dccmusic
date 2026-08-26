@@ -12,8 +12,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const sizeBytes = Number(body.sizeBytes)
-    if (sizeBytes > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'O áudio precisa ter no máximo 10 MB.' }, { status: 400 })
+    if (sizeBytes > 20 * 1024 * 1024) {
+      return NextResponse.json({ error: 'O áudio precisa ter no máximo 20 MB.' }, { status: 400 })
     }
     const upload = await createStudioInputDirectUpload({
       composerId: 'admin-playback',

@@ -6,12 +6,21 @@ import { promisify } from 'util'
 import { randomUUID } from 'crypto'
 import JSZip from 'jszip'
 import { uploadStudioAudioBuffer } from '@/lib/studio-audio-backup'
+import { getStudioCallbackUrl } from '@/lib/studio'
 
 const execFileAsync = promisify(execFile)
 const MAX_MUREKA_INLINE_BYTES = 10 * 1024 * 1024
 
 function getMurekaApiKey() {
   return process.env.MUREKA_API_KEY?.trim() || ''
+}
+
+function getSunoApiKey() {
+  return process.env.SUNOAPI_KEY?.trim() || process.env.SUNO_API_KEY?.trim() || ''
+}
+
+function wait(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds))
 }
 
 async function downloadBuffer(url: string) {
@@ -75,6 +84,54 @@ async function requestPlaybackZip(sourceUrl: string) {
   return String(zipUrl)
 }
 
+async function requestSunoPlayback(sourceUrl: string) {
+  const apiKey = getSunoApiKey()
+  if (!apiKey) throw new Error('SUNOAPI_KEY não configurada.')
+
+  const createResponse = await fetch('https://api.sunoapi.org/api/v1/vocal-removal/generate', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      audioUrl: sourceUrl,
+      type: 'separate_vocal',
+      callBackUrl: getStudioCallbackUrl('/api/admin/playback/suno-callback'),
+    }),
+    cache: 'no-store',
+  })
+  const createPayload = await createResponse.json().catch(() => ({}))
+  if (!createResponse.ok || Number(createPayload?.code) !== 200) {
+    throw new Error(createPayload?.msg || createPayload?.error || `Suno não iniciou a separação (${createResponse.status}).`)
+  }
+
+  const taskId = createPayload?.data?.taskId || createPayload?.data?.task_id
+  if (!taskId) throw new Error('Suno não retornou o código da separação.')
+
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    if (attempt > 0) await wait(3000)
+    const statusResponse = await fetch(
+      `https://api.sunoapi.org/api/v1/vocal-removal/record-info?taskId=${encodeURIComponent(String(taskId))}`,
+      { headers: { Authorization: `Bearer ${apiKey}` }, cache: 'no-store' }
+    )
+    const statusPayload = await statusResponse.json().catch(() => ({}))
+    if (!statusResponse.ok || Number(statusPayload?.code) !== 200) {
+      throw new Error(statusPayload?.msg || statusPayload?.error || `Erro ao consultar a separação Suno (${statusResponse.status}).`)
+    }
+
+    const data = statusPayload?.data || {}
+    const status = String(data?.successFlag || '').toUpperCase()
+    const instrumentalUrl = data?.response?.instrumentalUrl || data?.response?.instrumental_url
+    if (status === 'SUCCESS' && instrumentalUrl) return String(instrumentalUrl)
+    if (status && !['PENDING', 'PROCESSING'].includes(status)) {
+      throw new Error(data?.errorMessage || `A separação Suno falhou (${status}).`)
+    }
+  }
+
+  throw new Error('A Suno demorou demais para concluir a separação.')
+}
+
 async function extractPlayback(zipUrl: string) {
   const downloaded = await downloadBuffer(zipUrl)
   const zip = await JSZip.loadAsync(downloaded.buffer)
@@ -93,8 +150,17 @@ async function extractPlayback(zipUrl: string) {
 }
 
 export async function createAdminPlayback(input: { sourceUrl: string; title?: string | null }) {
-  const zipUrl = await requestPlaybackZip(input.sourceUrl)
-  const playback = await extractPlayback(zipUrl)
+  let playback: Buffer
+  let separationProvider: 'suno' | 'mureka' = 'suno'
+  try {
+    const instrumentalUrl = await requestSunoPlayback(input.sourceUrl)
+    playback = (await downloadBuffer(instrumentalUrl)).buffer
+  } catch (sunoError: any) {
+    console.error('[Admin Playback] Suno falhou; usando Mureka:', sunoError?.message || sunoError)
+    separationProvider = 'mureka'
+    const zipUrl = await requestPlaybackZip(input.sourceUrl)
+    playback = await extractPlayback(zipUrl)
+  }
   const cleanTitle = String(input.title || 'musica')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -103,11 +169,12 @@ export async function createAdminPlayback(input: { sourceUrl: string; title?: st
     .toLowerCase()
     .slice(0, 60) || 'musica'
 
-  return uploadStudioAudioBuffer({
+  const uploaded = await uploadStudioAudioBuffer({
     composerId: 'admin-playback',
     folder: 'exports',
     fileName: `${cleanTitle}-playback-${randomUUID().slice(0, 8)}.mp3`,
     buffer: playback,
     contentType: 'audio/mpeg',
   })
+  return { ...uploaded, separationProvider }
 }

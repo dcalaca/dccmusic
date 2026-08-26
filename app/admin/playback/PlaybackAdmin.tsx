@@ -54,7 +54,7 @@ export default function PlaybackAdmin() {
       let body: any
       if (mode === 'upload') {
         if (!file) throw new Error('Escolha uma música para enviar.')
-        if (file.size > 10 * 1024 * 1024) throw new Error('O áudio precisa ter no máximo 10 MB.')
+        if (file.size > 20 * 1024 * 1024) throw new Error('O áudio precisa ter no máximo 20 MB.')
         setMessage('Enviando a música...')
         const prepared = await readJson(await fetch('/api/admin/playback/upload-url', {
           method: 'POST',
@@ -109,7 +109,7 @@ export default function PlaybackAdmin() {
             <button type="button" onClick={() => setMode('upload')} className={`rounded-2xl border p-4 text-left transition ${mode === 'upload' ? 'border-primary-400 bg-primary-950/40' : 'border-gray-800 bg-black/30 hover:border-purple-600'}`}>
               <FiUploadCloud className="mb-2 h-6 w-6 text-primary-300" />
               <strong className="block text-white">Subir uma música</strong>
-              <span className="mt-1 block text-xs text-gray-400">MP3, WAV, M4A ou outro áudio, até 10 MB.</span>
+              <span className="mt-1 block text-xs text-gray-400">MP3, WAV, M4A ou outro áudio, até 20 MB.</span>
             </button>
             <button type="button" onClick={() => setMode('dcc')} className={`rounded-2xl border p-4 text-left transition ${mode === 'dcc' ? 'border-primary-400 bg-primary-950/40' : 'border-gray-800 bg-black/30 hover:border-purple-600'}`}>
               <FiMusic className="mb-2 h-6 w-6 text-primary-300" />

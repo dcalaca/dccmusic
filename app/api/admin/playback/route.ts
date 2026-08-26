@@ -82,11 +82,15 @@ export async function POST(request: NextRequest) {
     const downloadUrl = await createStudioAudioSignedUrl(output.path, output.provider)
     if (!downloadUrl) throw new Error('Playback criado, mas não foi possível gerar o link de download.')
 
+    const usedFallback = output.separationProvider === 'mureka'
     return NextResponse.json({
       success: true,
       downloadUrl,
       fileName: `${title || 'musica'} - Playback.mp3`,
-      message: 'Voz retirada! O playback está pronto para ouvir e baixar.',
+      provider: output.separationProvider,
+      message: usedFallback
+        ? 'Voz retirada! A Suno falhou e a Mureka concluiu o playback automaticamente.'
+        : 'Voz retirada pela Suno! O playback está pronto para ouvir e baixar.',
     })
   } catch (error: any) {
     console.error('[Admin Playback] create error:', error)
