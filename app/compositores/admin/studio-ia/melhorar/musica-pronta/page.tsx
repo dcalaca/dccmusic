@@ -3,13 +3,14 @@
 import { FormEvent, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { FiArrowLeft, FiEdit3, FiLoader, FiMusic, FiUploadCloud, FiZap } from 'react-icons/fi'
+import { FiArrowLeft, FiEdit3, FiGlobe, FiLoader, FiMusic, FiUploadCloud, FiZap } from 'react-icons/fi'
 
 const improvementOptions = [
   { id: 'similar', label: 'Manter o mais parecido possível', description: 'Tenta preservar letra, melodia, ritmo e essência.' },
   { id: 'professional', label: 'Deixar mais profissional', description: 'Melhora produção, mixagem, voz e instrumentos.' },
   { id: 'vocal', label: 'Destacar a voz', description: 'Busca uma voz mais clara e presente.' },
   { id: 'instruments', label: 'Melhorar instrumentos', description: 'Dá mais corpo ao arranjo e à produção.' },
+  { id: 'language_adaptation', label: 'Adaptar para outro idioma', description: 'Mantém melodia, ritmo e essência e usa a nova letra informada.' },
 ]
 
 const voiceOptions = [
@@ -105,8 +106,11 @@ export default function ImproveReadyMusicPage() {
   const [selectedImprovement, setSelectedImprovement] = useState('similar')
   const [selectedVoice, setSelectedVoice] = useState('same')
   const [selectedVoiceStyle, setSelectedVoiceStyle] = useState('natural')
+  const [additionalInstructions, setAdditionalInstructions] = useState('')
   const [lyric, setLyric] = useState('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
+
+  const isLanguageAdaptation = selectedImprovement === 'language_adaptation'
 
   const ensureToken = () => {
     const token = localStorage.getItem('composer_token')
@@ -168,6 +172,10 @@ export default function ImproveReadyMusicPage() {
       setError('Escolha o áudio da música que deseja melhorar.')
       return
     }
+    if (isLanguageAdaptation && !lyric.trim()) {
+      setError('Para adaptar para outro idioma, cole a letra já traduzida ou adaptada no campo “Letra da música”.')
+      return
+    }
     const duration = await getAudioDurationSeconds(audioFile)
     if (duration && duration > MAX_AUDIO_DURATION_SECONDS) {
       setError('Esse áudio passou de 4 minutos e 30 segundos. Envie uma versão mais curta para a IA trabalhar melhor.')
@@ -193,6 +201,7 @@ export default function ImproveReadyMusicPage() {
           improvement: selectedImprovement,
           voice: selectedVoice,
           voiceStyle: selectedVoiceStyle,
+          additionalInstructions: additionalInstructions.trim(),
           lyric: lyric.trim(),
           ...uploaded,
         }),
@@ -281,14 +290,37 @@ export default function ImproveReadyMusicPage() {
                   <button
                     key={option.id}
                     type="button"
-                    onClick={() => setSelectedImprovement(option.id)}
+                    onClick={() => {
+                      setSelectedImprovement(option.id)
+                      setError('')
+                    }}
                     className={`rounded-2xl border p-4 text-left transition ${selectedImprovement === option.id ? 'border-primary-400 bg-primary-950/40 text-white' : 'border-gray-800 bg-black/30 text-gray-300 hover:border-purple-500'}`}
                   >
-                    <span className="block font-black">{option.label}</span>
+                    <span className="flex items-center gap-2 font-black">
+                      {option.id === 'language_adaptation' && <FiGlobe className="text-primary-300" />}
+                      {option.label}
+                    </span>
                     <span className="mt-1 block text-xs text-gray-400">{option.description}</span>
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-gray-800 bg-black/20 p-4">
+              <p className="mb-2 text-sm font-bold text-gray-200">Instruções adicionais <span className="font-normal text-gray-500">(opcional)</span></p>
+              <p className="mb-3 text-xs leading-relaxed text-gray-400">
+                Diga o que deseja mudar ou preservar. Essas instruções são enviadas separadas da letra e não serão tratadas como parte da música.
+              </p>
+              <textarea
+                name="additionalInstructions"
+                value={additionalInstructions}
+                onChange={(event) => setAdditionalInstructions(event.target.value)}
+                rows={3}
+                maxLength={500}
+                placeholder="Ex.: mantenha a melodia, o ritmo e o instrumental da música original e use uma interpretação mais suave."
+                className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500"
+              />
+              <div className="mt-2 flex justify-end text-xs text-gray-500">{additionalInstructions.length}/500</div>
             </div>
 
             <div className="mt-5 rounded-2xl border border-gray-800 bg-black/20 p-4">
@@ -330,30 +362,42 @@ export default function ImproveReadyMusicPage() {
 
             <div className="mt-5">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-sm font-bold text-gray-300">Letra da música</span>
-                <button
-                  type="button"
-                  onClick={transcribeAudio}
-                  disabled={transcribing || submitting || !audioFile}
-                  className="inline-flex items-center gap-2 rounded-xl border border-emerald-600/50 bg-emerald-950/40 px-3 py-2 text-xs font-bold text-emerald-100 transition hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {transcribing ? <FiLoader className="animate-spin" /> : <FiEdit3 />}
-                  {transcribing ? 'Entendendo letra...' : 'Entender letra (1 crédito)'}
-                </button>
+                <span className="text-sm font-bold text-gray-300">Letra da música {isLanguageAdaptation && <span className="text-amber-300">*</span>}</span>
+                {!isLanguageAdaptation && (
+                  <button
+                    type="button"
+                    onClick={transcribeAudio}
+                    disabled={transcribing || submitting || !audioFile}
+                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-600/50 bg-emerald-950/40 px-3 py-2 text-xs font-bold text-emerald-100 transition hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {transcribing ? <FiLoader className="animate-spin" /> : <FiEdit3 />}
+                    {transcribing ? 'Entendendo letra...' : 'Entender letra (1 crédito)'}
+                  </button>
+                )}
               </div>
+
+              {isLanguageAdaptation && (
+                <div className="mb-3 rounded-2xl border border-sky-700/50 bg-sky-950/25 p-3 text-sm leading-relaxed text-sky-100">
+                  <strong>Adaptar para outro idioma:</strong> cole abaixo a letra já traduzida ou adaptada para o idioma desejado. A IA tentará preservar melodia, ritmo, andamento, estrutura e instrumental da música original. Pequenos ajustes de encaixe podem acontecer para a letra caber naturalmente na melodia.
+                </div>
+              )}
+
               <textarea
                 name="lyric"
                 value={lyric}
                 onChange={(event) => setLyric(event.target.value)}
                 rows={8}
-                placeholder="Opcional: cole a letra, ou deixe em branco que a IA transcreve do áudio ao melhorar. Também pode clicar em “Entender letra do áudio”."
+                required={isLanguageAdaptation}
+                placeholder={isLanguageAdaptation
+                  ? 'Cole aqui a letra já traduzida ou adaptada para o novo idioma.'
+                  : 'Opcional: cole a letra, ou deixe em branco que a IA transcreve do áudio ao melhorar. Também pode clicar em “Entender letra do áudio”.'}
                 className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500"
               />
             </div>
 
             <button type="submit" disabled={submitting || transcribing} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-4 font-black text-white transition hover:scale-[1.01] disabled:opacity-60">
               {submitting ? <FiLoader className="animate-spin" /> : <FiMusic />}
-              {submitting ? 'Enviando música...' : 'Melhorar minha música'}
+              {submitting ? 'Enviando música...' : isLanguageAdaptation ? 'Adaptar minha música' : 'Melhorar minha música'}
             </button>
           </form>
         </div>

@@ -25,6 +25,7 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 120
 
 const MAX_TITLE_LENGTH = 30
+const MAX_ADDITIONAL_INSTRUCTIONS_LENGTH = 500
 const MAX_STUDIO_MUSIC_DURATION_INSTRUCTION = 'duração máxima obrigatória de 4 minutos e 30 segundos, música objetiva, uma única versão completa em cada faixa, encerrar depois do final, sem recomeçar a música dentro do mesmo áudio, sem repetir a música inteira dentro do mesmo áudio, sem final longo, sem solo extenso, sem repetições para alongar'
 const MAX_STUDIO_MUSIC_NEGATIVE_TAGS = 'different song, noisy audio, extended outro, long instrumental solo, repeated loop, duplicate song, restart song, repeat entire song, multiple versions in one audio, over 4 minutes 30 seconds, rushed vocals, mumbled vocals, unclear pronunciation, words too fast'
 
@@ -33,6 +34,7 @@ const improvementPrompts: Record<string, string> = {
   professional: 'Transforme em uma versão mais profissional, com mixagem melhor, voz mais clara e instrumentos mais bem produzidos, mantendo a composição original.',
   vocal: 'Destaque a voz principal, deixando a interpretação mais clara e presente, mantendo letra, melodia e estrutura.',
   instruments: 'Melhore os instrumentos e o arranjo, deixando a produção mais cheia e profissional, sem mudar a essência da música.',
+  language_adaptation: 'Adapte a música para outro idioma usando exatamente a nova letra fornecida como letra principal. Preserve o máximo possível a melodia, o ritmo, o andamento, a estrutura, o arranjo, a instrumentação e a essência do áudio original. Faça somente pequenos ajustes de prosódia, sílabas e fraseado quando forem necessários para encaixar a nova letra naturalmente na melodia. Não reescreva a letra por completo e não traduza por conta própria.',
 }
 
 const voicePrompts: Record<string, string> = {
@@ -69,11 +71,15 @@ function getStyle(input: {
   improvement?: string | null
   voice?: string | null
   voiceStyle?: string | null
+  additionalInstructions?: string | null
 }) {
   const style = String(input.style || '').trim()
   const improvement = getImprovementPrompt(input.improvement)
+  const additionalInstructions = String(input.additionalInstructions || '').trim()
   return [
     style || 'produção musical brasileira profissional',
+    improvement,
+    additionalInstructions ? `INSTRUÇÕES ADICIONAIS: ${additionalInstructions}` : null,
     getVoicePrompt(input.voice),
     getVoiceStylePrompt(input.voiceStyle),
     'melhor qualidade de áudio',
@@ -83,8 +89,7 @@ function getStyle(input: {
     'instrumentos bem mixados',
     'masterização moderna',
     MAX_STUDIO_MUSIC_DURATION_INSTRUCTION,
-    improvement,
-  ].join(', ').slice(0, 1000)
+  ].filter(Boolean).join(', ').slice(0, 1000)
 }
 
 export async function POST(request: NextRequest) {
@@ -123,6 +128,7 @@ export async function POST(request: NextRequest) {
     let improvement = 'similar'
     let voice = 'same'
     let voiceStyle = 'natural'
+    let additionalInstructions = ''
     let lyric = ''
     let uploaded: {
       path: string
@@ -139,6 +145,7 @@ export async function POST(request: NextRequest) {
       improvement = String(body?.improvement || 'similar')
       voice = String(body?.voice || 'same')
       voiceStyle = String(body?.voiceStyle || 'natural')
+      additionalInstructions = String(body?.additionalInstructions || '').trim().slice(0, MAX_ADDITIONAL_INSTRUCTIONS_LENGTH)
       lyric = String(body?.lyric || '').trim()
 
       validateStudioInputUploadedAsset({
@@ -167,6 +174,7 @@ export async function POST(request: NextRequest) {
       improvement = String(formData.get('improvement') || 'similar')
       voice = String(formData.get('voice') || 'same')
       voiceStyle = String(formData.get('voiceStyle') || 'natural')
+      additionalInstructions = String(formData.get('additionalInstructions') || '').trim().slice(0, MAX_ADDITIONAL_INSTRUCTIONS_LENGTH)
       lyric = String(formData.get('lyric') || '').trim()
       uploaded = await uploadStudioInputAudio({
         composerId: composer.composerId,
@@ -177,6 +185,13 @@ export async function POST(request: NextRequest) {
 
     if (!uploaded) {
       return NextResponse.json({ error: 'Envie o áudio da música que deseja melhorar.' }, { status: 400 })
+    }
+
+    if (improvement === 'language_adaptation' && !lyric) {
+      return NextResponse.json(
+        { error: 'Para adaptar para outro idioma, envie a letra já traduzida ou adaptada para o idioma desejado.' },
+        { status: 400 }
+      )
     }
 
     const title = formatMusicTitle(rawTitle)
@@ -218,6 +233,7 @@ export async function POST(request: NextRequest) {
           'Projeto criado pela função Melhorar minha música.',
           'A IA deve tentar manter melodia, letra e essência do áudio original.',
           getImprovementPrompt(improvement),
+          additionalInstructions ? `Instruções adicionais: ${additionalInstructions}` : null,
           `Preferência de voz: ${getVoicePrompt(voice)}.`,
           `Estilo vocal: ${getVoiceStylePrompt(voiceStyle)}.`,
           lyricSource === 'whisper' ? 'Letra obtida por transcrição automática do áudio enviado.' : null,
@@ -249,8 +265,9 @@ export async function POST(request: NextRequest) {
       uploadUrl,
       customMode: true,
       instrumental: false,
+      // Em customMode, o campo prompt é exclusivamente a letra. Instruções ficam em style para não serem cantadas.
       prompt: lyric.slice(0, 5000),
-      style: getStyle({ style, improvement, voice, voiceStyle }),
+      style: getStyle({ style, improvement, voice, voiceStyle, additionalInstructions }),
       title,
       model: 'V5_5',
       callBackUrl: getStudioCallbackUrl('/api/studio/suno/callback'),
@@ -264,9 +281,10 @@ export async function POST(request: NextRequest) {
       instrumental: false,
       prompt: [
         improvementPrompt,
+        additionalInstructions ? `INSTRUÇÕES ADICIONAIS: ${additionalInstructions}` : null,
         getVoicePrompt(voice),
         getVoiceStylePrompt(voiceStyle),
-      ].join('. ').slice(0, 500),
+      ].filter(Boolean).join('. ').slice(0, 500),
       model: 'V5_5',
       callBackUrl: getStudioCallbackUrl('/api/studio/suno/callback'),
       audioWeight,
@@ -312,6 +330,8 @@ export async function POST(request: NextRequest) {
           },
           feature: 'enhance_music',
           lyricSource,
+          improvement,
+          additionalInstructions: additionalInstructions || null,
           voice,
           voiceStyle,
         },
@@ -328,7 +348,7 @@ export async function POST(request: NextRequest) {
       action: isFreeGeneration ? 'free_music_generation' : 'music_generation',
       amount: isFreeGeneration ? 0 : STUDIO_MUSIC_CREDITS,
       description: isFreeGeneration ? 'Melhoria de música grátis no DCC Studio IA' : 'Melhoria de música no DCC Studio IA',
-      metadata: { taskId, free: isFreeGeneration, feature: 'enhance_music', lyricSource, voice, voiceStyle },
+      metadata: { taskId, free: isFreeGeneration, feature: 'enhance_music', lyricSource, improvement, additionalInstructions: additionalInstructions || null, voice, voiceStyle },
     })
 
     return NextResponse.json({
