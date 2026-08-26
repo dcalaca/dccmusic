@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FiArrowRight, FiCreditCard, FiFolder, FiGift, FiHeadphones, FiImage, FiLoader, FiMusic, FiX, FiZap } from 'react-icons/fi'
+import { FiArrowRight, FiCreditCard, FiGift, FiHeadphones, FiImage, FiLoader, FiMusic, FiX, FiZap } from 'react-icons/fi'
 import { trackTikTokEvent } from '@/components/TikTokEvents'
 
 const PROJECTS_URL = '/compositores/admin/studio-ia/projetos'
@@ -85,11 +85,6 @@ export function StudioHeroActions() {
   const [checkingCreate, setCheckingCreate] = useState(false)
   const [showUsedFreeModal, setShowUsedFreeModal] = useState(false)
 
-  const goToProjects = () => {
-    const token = localStorage.getItem('composer_token')
-    router.push(token ? PROJECTS_URL : loginUrl(PROJECTS_URL))
-  }
-
   const goToCoverArt = () => {
     const token = localStorage.getItem('composer_token')
     const coverUrl = '/compositores/admin/studio-ia/criar-capa'
@@ -142,13 +137,6 @@ export function StudioHeroActions() {
       <div className="mx-auto flex w-full max-w-md flex-col justify-center gap-2 sm:max-w-none sm:flex-row">
         <button
           type="button"
-          onClick={goToPlayback}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-500/60 bg-cyan-950/35 px-5 py-3 text-sm font-semibold text-white transition hover:border-cyan-300 sm:w-auto sm:px-6 sm:text-base"
-        >
-          <FiHeadphones /> Criar Playback
-        </button>
-        <button
-          type="button"
           onClick={createMusic}
           disabled={checkingCreate}
           className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-600 via-purple-600 to-fuchsia-600 px-5 py-3 text-sm font-black text-white shadow-2xl shadow-purple-950/40 transition hover:scale-[1.02] sm:w-auto sm:px-6 sm:text-base"
@@ -159,30 +147,30 @@ export function StudioHeroActions() {
             </>
           ) : (
             <>
-              Criar música <FiArrowRight />
+              Criar músicas <FiArrowRight />
             </>
           )}
+        </button>
+        <button
+          type="button"
+          onClick={goToPlayback}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-500/60 bg-cyan-950/35 px-5 py-3 text-sm font-semibold text-white transition hover:border-cyan-300 sm:w-auto sm:px-6 sm:text-base"
+        >
+          <FiHeadphones /> Criar Playback
         </button>
         <button
           type="button"
           onClick={goToImproveMusic}
           className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-purple-500/70 bg-purple-950/45 px-5 py-3 text-sm font-semibold text-white transition hover:border-purple-300 sm:w-auto sm:px-6 sm:text-base"
         >
-          <FiZap /> Melhorar música
+          <FiZap /> Melhorar músicas
         </button>
         <button
           type="button"
           onClick={goToCoverArt}
           className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-fuchsia-500/70 bg-fuchsia-950/45 px-5 py-3 text-sm font-semibold text-white transition hover:border-fuchsia-300 sm:w-auto sm:px-6 sm:text-base"
         >
-          <FiImage /> Criar Capa
-        </button>
-        <button
-          type="button"
-          onClick={goToProjects}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-purple-500/60 bg-purple-950/50 px-5 py-3 text-sm font-semibold text-white transition hover:border-purple-300 sm:w-auto sm:px-6 sm:text-base"
-        >
-          <FiFolder /> Meus Projetos
+          <FiImage /> Criar Capas
         </button>
         <a href="#planos" className="inline-flex w-full items-center justify-center rounded-2xl border border-gray-700 bg-gray-950 px-5 py-3 text-sm font-semibold text-white transition hover:border-purple-400 sm:w-auto sm:px-6 sm:text-base">
           Ver Planos
