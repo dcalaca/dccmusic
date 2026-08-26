@@ -18,6 +18,7 @@ import {
   getStudioMusicGenerationFailureMessage,
   releaseStudioProjectFromFailedGeneration,
 } from '@/lib/studio-generation-timeout'
+import { startMurekaFallbackForSunoGeneration } from '@/lib/studio-music-provider-fallback'
 
 export const dynamic = 'force-dynamic'
 
@@ -159,11 +160,30 @@ export async function POST(request: Request) {
     const first = Array.isArray(tracks) ? tracks[0] : null
     const hasAudio = Boolean(first && (getTrackAudioUrl(first) || getTrackStreamAudioUrl(first)))
     const callbackStatus = body?.data?.status || body?.status || null
-    const providerError = getStudioGenerationProviderError(body)
+    let providerError = getStudioGenerationProviderError(body)
     const hasFailure = Boolean(callbackStatus && (String(callbackStatus).includes('FAILED') || callbackStatus === 'SENSITIVE_WORD_ERROR'))
 
     if (hasFailure) {
       await markExpiredVoiceFromGeneration(generation, body)
+
+      const fallback = await startMurekaFallbackForSunoGeneration({
+        generation,
+        sunoFailurePayload: body,
+        reason: 'callback_failure',
+      })
+      if (fallback.started) {
+        return NextResponse.json({
+          received: true,
+          processed: true,
+          fallback: 'mureka',
+        })
+      }
+      if ('result' in fallback && fallback.result) {
+        providerError = getStudioGenerationProviderError(fallback.result) ||
+          fallback.result?.msg ||
+          fallback.result?.message ||
+          providerError
+      }
     }
 
     const failureMessage = hasFailure
