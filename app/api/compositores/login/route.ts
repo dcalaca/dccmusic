@@ -48,11 +48,22 @@ export async function POST(request: Request) {
       requiresPasswordChange: result.requiresPasswordChange || false,
     })
   } catch (error: any) {
-    console.error('[LOGIN-API] Erro ao fazer login:', {
-      message: error.message,
-      code: error.code,
-      details: error.details
-    })
+    const expectedAuthFailure =
+      error?.code === 'EMAIL_NOT_VERIFIED' ||
+      /email ou senha incorretos/i.test(String(error?.message || ''))
+
+    const logPayload = {
+      message: error?.message,
+      code: error?.code,
+      details: error?.details,
+    }
+
+    if (expectedAuthFailure) {
+      console.info('[LOGIN-API] Login recusado:', logPayload)
+    } else {
+      console.warn('[LOGIN-API] Falha ao autenticar:', logPayload)
+    }
+
     return NextResponse.json(
       {
         error: error.message || 'Erro ao fazer login',
