@@ -71,6 +71,15 @@ alter table public.admin_email_campaigns enable row level security;
 alter table public.admin_email_campaign_deliveries enable row level security;
 alter table public.admin_email_opt_outs enable row level security;
 
+-- Estas tabelas são internas. Somente o backend, via service_role, pode acessá-las.
+revoke all on table public.admin_email_campaigns from anon, authenticated;
+revoke all on table public.admin_email_campaign_deliveries from anon, authenticated;
+revoke all on table public.admin_email_opt_outs from anon, authenticated;
+
+grant select, insert, update, delete on table public.admin_email_campaigns to service_role;
+grant select, insert, update, delete on table public.admin_email_campaign_deliveries to service_role;
+grant select, insert, update, delete on table public.admin_email_opt_outs to service_role;
+
 do $$
 begin
   if not exists (
