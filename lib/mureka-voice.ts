@@ -4,10 +4,10 @@ import { readFile, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
-import ffmpegInstaller from '@ffmpeg-installer/ffmpeg'
 import { supabaseAdmin } from './supabase'
 import { createStudioVoiceAssetUrl } from './studio-voice-assets'
 
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg') as { path: string }
 const MUREKA_VOICE_MAX_BYTES = 10 * 1024 * 1024
 const execFileAsync = promisify(execFile)
 
@@ -78,8 +78,6 @@ function pickVoiceAsset(voice: any) {
   const verify = voiceAsset(voice, 'verify')
   const source = voiceAsset(voice, 'source')
 
-  // O Mureka aceita MP3/M4A. Se uma das amostras já estiver nesses formatos,
-  // evitamos conversão e priorizamos a amostra de verificação.
   if (verify.path && isMurekaCompatibleAudio(verify.contentType)) return verify
   if (source.path && isMurekaCompatibleAudio(source.contentType)) return source
   if (verify.path) return verify
@@ -173,10 +171,15 @@ export async function ensureMurekaVocalClone(voice: any) {
     throw new Error('Áudio convertido da voz maior que 10 MB; não foi possível preparar a clonagem.')
   }
 
+  const blobBytes = prepared.buffer.buffer.slice(
+    prepared.buffer.byteOffset,
+    prepared.buffer.byteOffset + prepared.buffer.byteLength
+  ) as ArrayBuffer
+
   const formData = new FormData()
   formData.append(
     'file',
-    new Blob([prepared.buffer], { type: prepared.contentType }),
+    new Blob([blobBytes], { type: prepared.contentType }),
     `dcc-voice-${voice.id}.${prepared.extension}`
   )
   formData.append('description', String(voice.display_name || 'Voz DCC Music').slice(0, 1024))
