@@ -21,8 +21,8 @@ import {
   isStudioGenerationTimedOut,
   markStudioGenerationAsCommunicationFailure,
   releaseStudioProjectFromFailedGeneration,
-  STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR,
 } from '@/lib/studio-generation-timeout'
+import { startMurekaFallbackForSunoGeneration } from '@/lib/studio-music-provider-fallback'
 
 export const dynamic = 'force-dynamic'
 
@@ -244,7 +244,14 @@ export async function GET(request: NextRequest) {
     const hasAudioBeforePoll = Boolean(existingVersionBeforePoll?.audio_url || existingVersionBeforePoll?.stream_audio_url)
 
     if (!hasAudioBeforePoll && isStudioGenerationTimedOut(generation)) {
-      await markStudioGenerationAsCommunicationFailure(generation)
+      const fallback = await startMurekaFallbackForSunoGeneration({
+        generation,
+        sunoFailurePayload: generation.response_payload,
+        reason: 'timeout',
+      })
+      if (!fallback.started) {
+        await markStudioGenerationAsCommunicationFailure(generation)
+      }
     } else if (needsPolling && generation.provider === 'sunoapi' && generation.provider_task_id && process.env.SUNOAPI_KEY) {
       const response = await fetch(`https://api.sunoapi.org/api/v1/generate/record-info?taskId=${encodeURIComponent(generation.provider_task_id)}`, {
         headers: {
@@ -261,18 +268,25 @@ export async function GET(request: NextRequest) {
         await saveSunoTrack(generation, sunoData, status)
       } else if (status?.includes('FAILED') || status === 'SENSITIVE_WORD_ERROR') {
         await markExpiredVoiceFromGeneration(generation, result)
-        const providerError = getStudioGenerationProviderError(result) || result?.msg || status
-        const friendlyError = getStudioMusicGenerationFailureMessage(providerError)
-        await supabaseAdmin
-          .from('studio_generations')
-          .update({
-            status: 'failed',
-            error_message: friendlyError,
-            response_payload: result,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', generation.id)
-        await releaseStudioProjectFromFailedGeneration(generation.project_id)
+        const fallback = await startMurekaFallbackForSunoGeneration({
+          generation,
+          sunoFailurePayload: result,
+          reason: 'poll_failure',
+        })
+        if (!fallback.started) {
+          const providerError = getStudioGenerationProviderError(result) || result?.msg || status
+          const friendlyError = getStudioMusicGenerationFailureMessage(providerError)
+          await supabaseAdmin
+            .from('studio_generations')
+            .update({
+              status: 'failed',
+              error_message: friendlyError,
+              response_payload: result,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', generation.id)
+          await releaseStudioProjectFromFailedGeneration(generation.project_id)
+        }
       } else if (result) {
         await supabaseAdmin
           .from('studio_generations')
@@ -297,11 +311,12 @@ export async function GET(request: NextRequest) {
       if (Array.isArray(choices) && choices.length > 0 && (status === 'succeeded' || status === 'streaming')) {
         await saveMurekaTrack(generation, choices, status)
       } else if (['failed', 'timeouted', 'cancelled'].includes(status)) {
+        const providerError = getStudioGenerationProviderError(result) || result?.msg || result?.message || status
         await supabaseAdmin
           .from('studio_generations')
           .update({
             status: 'failed',
-            error_message: STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR,
+            error_message: getStudioMusicGenerationFailureMessage(providerError),
             response_payload: result,
             updated_at: new Date().toISOString(),
           })

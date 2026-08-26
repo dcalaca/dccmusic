@@ -13,6 +13,40 @@ export const STUDIO_MUSIC_GENERATION_TIMEOUT_SECONDS = Math.floor(STUDIO_MUSIC_G
 export const STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR =
   'Houve uma falha na comunicação para geração da sua música. Fica tranquilo: não foi descontado do seu saldo. Favor gerar a música novamente.'
 
+const NO_CREDIT_SUFFIX = ' Nenhum crédito foi descontado.'
+
+function normalizeProviderError(providerError?: string | null) {
+  return String(providerError || '')
+    .replace(/suno(?:api)?/gi, 'sistema de criação')
+    .replace(/mureka/gi, 'sistema de criação')
+    .replace(/provider/gi, 'sistema de criação')
+    .replace(/upstream service/gi, 'serviço de criação')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Mensagem transparente para o usuário, sem revelar a infraestrutura utilizada. */
+export function getTransparentStudioGenerationError(providerError?: string | null) {
+  const error = normalizeProviderError(providerError)
+  const lower = error.toLowerCase()
+
+  if (!error) return STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR
+  if (lower.includes('copyright') || lower.includes('copyrighted material') || lower.includes('direitos autorais')) {
+    return `A letra enviada contém trechos identificados como pertencentes a uma música já existente. Altere esses trechos e tente novamente.${NO_CREDIT_SUFFIX}`
+  }
+  if (lower.includes('sensitive') || lower.includes('prohibited') || lower.includes('policy violation')) {
+    return `A letra contém um trecho que não pôde ser processado pelas regras de conteúdo. Revise a letra e tente novamente.${NO_CREDIT_SUFFIX}`
+  }
+  if (lower.includes('timeout') || lower.includes('timed out')) {
+    return `A criação demorou mais do que o esperado e não pôde ser concluída. Tente novamente.${NO_CREDIT_SUFFIX}`
+  }
+  if (lower.includes('temporarily unavailable') || lower.includes('unavailable') || lower.includes('overloaded')) {
+    return `O serviço de criação está temporariamente indisponível. Tente novamente em alguns minutos.${NO_CREDIT_SUFFIX}`
+  }
+
+  return `Não conseguimos concluir a criação da música. Motivo informado pelo sistema: ${error}.${NO_CREDIT_SUFFIX}`
+}
+
 const ACTIVE_WITHOUT_AUDIO_STATUSES = new Set(['pending', 'processing'])
 
 export function getStudioMusicGenerationFailureMessage(providerError?: string | null) {
@@ -25,7 +59,7 @@ export function getStudioMusicGenerationFailureMessage(providerError?: string | 
     return translated
   }
 
-  return STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR
+  return getTransparentStudioGenerationError(providerError)
 }
 
 export function isStudioGenerationTimedOut(
