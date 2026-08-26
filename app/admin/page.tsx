@@ -18,6 +18,7 @@ import {
   FiTrendingUp,
   FiUser,
   FiUsers,
+  FiVolumeX,
   FiZap,
 } from 'react-icons/fi'
 import AdminOnlineCard from './AdminOnlineCard'
@@ -177,6 +178,13 @@ const adminGroups = [
         title: 'Abuso no Grátis',
         description: 'Ver IPs usando letras grátis com várias contas',
         icon: FiAlertTriangle,
+        accent: 'purple',
+      },
+      {
+        href: '/admin/playback',
+        title: 'Retirar Voz (Playback)',
+        description: 'Enviar uma música ou escolher uma produção e baixar o instrumental',
+        icon: FiVolumeX,
         accent: 'purple',
       },
       {

@@ -9,6 +9,7 @@ const nextConfig = {
     outputFileTracingIncludes: {
       '/blog': ['./content/blog/**/*'],
       '/blog/**/*': ['./content/blog/**/*'],
+      '/api/admin/playback': ['./node_modules/@ffmpeg-installer/ffmpeg/**/*'],
     },
   },
 }
