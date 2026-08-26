@@ -96,11 +96,15 @@ export async function POST(request: NextRequest) {
     })
     const playbackUrl = await createStudioAudioSignedUrl(playback.path, playback.provider)
     if (!playbackUrl) throw new Error('Playback criado, mas não foi possível gerar o link para baixar.')
+    const vocalUrl = playback.vocal
+      ? await createStudioAudioSignedUrl(playback.vocal.path, playback.vocal.provider)
+      : null
 
     const usageAfter = await getStudioCreditUsage(composer.composerId, access.limits)
     return NextResponse.json({
       success: true,
       playbackUrl,
+      vocalUrl,
       provider: playback.separationProvider,
       creditsCharged: STUDIO_MUSIC_CREDITS,
       creditsRemaining: usageAfter.remaining,

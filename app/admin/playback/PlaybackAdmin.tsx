@@ -22,7 +22,7 @@ export default function PlaybackAdmin() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
-  const [result, setResult] = useState<{ downloadUrl: string; fileName: string } | null>(null)
+  const [result, setResult] = useState<{ downloadUrl: string; vocalUrl?: string | null; fileName: string } | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -79,7 +79,7 @@ export default function PlaybackAdmin() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       }))
-      setResult({ downloadUrl: data.downloadUrl, fileName: data.fileName })
+      setResult({ downloadUrl: data.downloadUrl, vocalUrl: data.vocalUrl, fileName: data.fileName })
       setMessage(data.message)
     } catch (err: any) {
       setError(err.message || 'Erro ao criar playback.')
@@ -148,11 +148,25 @@ export default function PlaybackAdmin() {
 
           {result && (
             <div className="mt-6 rounded-2xl border border-green-500/40 bg-green-950/20 p-5">
-              <h2 className="text-xl font-black text-green-100">Playback pronto!</h2>
-              <audio controls src={result.downloadUrl} className="mt-4 w-full" />
-              <a href={result.downloadUrl} download={result.fileName} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 font-black text-white hover:bg-green-500">
-                <FiDownload /> Baixar playback em MP3
-              </a>
+              <h2 className="text-xl font-black text-green-100">Separação concluída!</h2>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-cyan-700/40 bg-black/25 p-4">
+                  <p className="font-black text-cyan-100">Playback</p>
+                  <audio controls src={result.downloadUrl} className="mt-3 w-full" />
+                  <a href={result.downloadUrl} download={result.fileName} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 font-black text-white hover:bg-cyan-500">
+                    <FiDownload /> Baixar playback
+                  </a>
+                </div>
+                <div className="rounded-xl border border-purple-700/40 bg-black/25 p-4">
+                  <p className="font-black text-purple-100">Voz isolada</p>
+                  {result.vocalUrl ? <>
+                    <audio controls src={result.vocalUrl} className="mt-3 w-full" />
+                    <a href={result.vocalUrl} download={result.fileName.replace(/playback/i, 'voz')} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 font-black text-white hover:bg-purple-500">
+                      <FiDownload /> Baixar voz
+                    </a>
+                  </> : <p className="mt-3 text-sm text-gray-400">Voz não disponibilizada pelo provedor.</p>}
+                </div>
+              </div>
             </div>
           )}
         </section>

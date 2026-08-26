@@ -81,11 +81,15 @@ export async function POST(request: NextRequest) {
     const output = await createAdminPlayback({ sourceUrl, title })
     const downloadUrl = await createStudioAudioSignedUrl(output.path, output.provider)
     if (!downloadUrl) throw new Error('Playback criado, mas não foi possível gerar o link de download.')
+    const vocalUrl = output.vocal
+      ? await createStudioAudioSignedUrl(output.vocal.path, output.vocal.provider)
+      : null
 
     const usedFallback = output.separationProvider === 'mureka'
     return NextResponse.json({
       success: true,
       downloadUrl,
+      vocalUrl,
       fileName: `${title || 'musica'} - Playback.mp3`,
       provider: output.separationProvider,
       message: usedFallback

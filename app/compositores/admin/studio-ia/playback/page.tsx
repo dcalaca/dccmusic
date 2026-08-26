@@ -231,11 +231,28 @@ function PlaybackCreator() {
             {error && <div className="rounded-2xl border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-100">{error}</div>}
             {result?.playbackUrl && (
               <div className="rounded-2xl border border-green-400/35 bg-green-950/20 p-5">
-                <div className="flex items-center gap-2 font-black text-green-200"><FiCheckCircle /> Playback pronto!</div>
-                <audio className="mt-4 w-full" controls src={result.playbackUrl} />
-                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                  <a href={result.playbackUrl} download={`${project?.title || uploadedFileName.replace(/\.[^.]+$/, '') || 'musica'} - Playback.mp3`} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-green-600 px-5 py-3 font-black text-white hover:bg-green-500"><FiDownload /> Baixar playback</a>
-                  <button type="button" onClick={() => setResult(null)} className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3 font-bold hover:bg-white/5"><FiRefreshCw /> Criar novamente</button>
+                <div className="flex items-center gap-2 text-lg font-black text-green-200"><FiCheckCircle /> Separação concluída!</div>
+                <p className="mt-1 text-sm text-green-100/70">Seu playback e a voz isolada estão prontos.</p>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-cyan-400/25 bg-black/30 p-4">
+                    <p className="font-black text-cyan-200">Playback / instrumental</p>
+                    <audio className="mt-3 w-full" controls src={result.playbackUrl} />
+                    <a href={result.playbackUrl} download={`${project?.title || uploadedFileName.replace(/\.[^.]+$/, '') || 'musica'} - Playback.mp3`} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 font-black text-white hover:bg-cyan-500"><FiDownload /> Baixar playback</a>
+                  </div>
+                  <div className="rounded-2xl border border-purple-400/25 bg-black/30 p-4">
+                    <p className="font-black text-purple-200">Voz isolada</p>
+                    {result.vocalUrl ? (
+                      <>
+                        <audio className="mt-3 w-full" controls src={result.vocalUrl} />
+                        <a href={result.vocalUrl} download={`${project?.title || uploadedFileName.replace(/\.[^.]+$/, '') || 'musica'} - Voz.mp3`} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 font-black text-white hover:bg-purple-500"><FiDownload /> Baixar voz</a>
+                      </>
+                    ) : (
+                      <p className="mt-3 rounded-xl bg-black/30 p-3 text-sm text-gray-400">O provedor concluiu o playback, mas não disponibilizou a voz separada.</p>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <button type="button" onClick={() => setResult(null)} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3 font-bold hover:bg-white/5"><FiRefreshCw /> Separar outra música</button>
                 </div>
               </div>
             )}

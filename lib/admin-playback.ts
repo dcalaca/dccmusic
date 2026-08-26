@@ -123,7 +123,13 @@ async function requestSunoPlayback(sourceUrl: string) {
     const data = statusPayload?.data || {}
     const status = String(data?.successFlag || '').toUpperCase()
     const instrumentalUrl = data?.response?.instrumentalUrl || data?.response?.instrumental_url
-    if (status === 'SUCCESS' && instrumentalUrl) return String(instrumentalUrl)
+    const vocalUrl = data?.response?.vocalUrl || data?.response?.vocal_url
+    if (status === 'SUCCESS' && instrumentalUrl) {
+      return {
+        instrumentalUrl: String(instrumentalUrl),
+        vocalUrl: vocalUrl ? String(vocalUrl) : null,
+      }
+    }
     if (status && !['PENDING', 'PROCESSING'].includes(status)) {
       throw new Error(data?.errorMessage || `A separação Suno falhou (${status}).`)
     }
@@ -132,7 +138,14 @@ async function requestSunoPlayback(sourceUrl: string) {
   throw new Error('A Suno demorou demais para concluir a separação.')
 }
 
-async function extractPlayback(zipUrl: string) {
+async function extractStemFile(entry: [string, JSZip.JSZipObject]) {
+  const [fileName, file] = entry
+  const raw = Buffer.from(await file.async('nodebuffer'))
+  const extension = path.extname(fileName).slice(1).toLowerCase() || 'wav'
+  return extension === 'mp3' ? raw : convertToMp3(raw, extension)
+}
+
+async function extractStemPair(zipUrl: string) {
   const downloaded = await downloadBuffer(zipUrl)
   const zip = await JSZip.loadAsync(downloaded.buffer)
   const audioFiles = Object.entries(zip.files).filter(([name, file]) =>
@@ -141,25 +154,35 @@ async function extractPlayback(zipUrl: string) {
   const accompaniment = audioFiles.find(([name]) =>
     /accompaniment|instrumental|music|no.?vocal|karaoke/i.test(name)
   ) || audioFiles.find(([name]) => !/vocal|voice|sing/i.test(name))
+  const vocal = audioFiles.find(([name]) => /vocal|voice|sing/i.test(name) && !/no.?vocal/i.test(name))
 
   if (!accompaniment) throw new Error('A separação terminou, mas o playback não foi encontrado.')
-  const [fileName, file] = accompaniment
-  const raw = Buffer.from(await file.async('nodebuffer'))
-  const extension = path.extname(fileName).slice(1).toLowerCase() || 'wav'
-  return extension === 'mp3' ? raw : convertToMp3(raw, extension)
+  const [playback, vocals] = await Promise.all([
+    extractStemFile(accompaniment),
+    vocal ? extractStemFile(vocal) : Promise.resolve(null),
+  ])
+  return { playback, vocals }
 }
 
 export async function createStudioPlayback(input: { sourceUrl: string; title?: string | null; composerId: string }) {
   let playback: Buffer
+  let vocals: Buffer | null = null
   let separationProvider: 'suno' | 'mureka' = 'suno'
   try {
-    const instrumentalUrl = await requestSunoPlayback(input.sourceUrl)
-    playback = (await downloadBuffer(instrumentalUrl)).buffer
+    const separated = await requestSunoPlayback(input.sourceUrl)
+    const downloaded = await Promise.all([
+      downloadBuffer(separated.instrumentalUrl),
+      separated.vocalUrl ? downloadBuffer(separated.vocalUrl) : Promise.resolve(null),
+    ])
+    playback = downloaded[0].buffer
+    vocals = downloaded[1]?.buffer || null
   } catch (sunoError: any) {
     console.error('[Studio Playback] Suno falhou; usando Mureka:', sunoError?.message || sunoError)
     separationProvider = 'mureka'
     const zipUrl = await requestPlaybackZip(input.sourceUrl)
-    playback = await extractPlayback(zipUrl)
+    const extracted = await extractStemPair(zipUrl)
+    playback = extracted.playback
+    vocals = extracted.vocals
   }
   const cleanTitle = String(input.title || 'musica')
     .normalize('NFD')
@@ -169,14 +192,23 @@ export async function createStudioPlayback(input: { sourceUrl: string; title?: s
     .toLowerCase()
     .slice(0, 60) || 'musica'
 
-  const uploaded = await uploadStudioAudioBuffer({
-    composerId: input.composerId,
-    folder: 'exports',
-    fileName: `${cleanTitle}-playback-${randomUUID().slice(0, 8)}.mp3`,
-    buffer: playback,
-    contentType: 'audio/mpeg',
-  })
-  return { ...uploaded, separationProvider }
+  const [uploaded, uploadedVocals] = await Promise.all([
+    uploadStudioAudioBuffer({
+      composerId: input.composerId,
+      folder: 'exports',
+      fileName: `${cleanTitle}-playback-${randomUUID().slice(0, 8)}.mp3`,
+      buffer: playback,
+      contentType: 'audio/mpeg',
+    }),
+    vocals ? uploadStudioAudioBuffer({
+      composerId: input.composerId,
+      folder: 'exports',
+      fileName: `${cleanTitle}-voz-${randomUUID().slice(0, 8)}.mp3`,
+      buffer: vocals,
+      contentType: 'audio/mpeg',
+    }) : Promise.resolve(null),
+  ])
+  return { ...uploaded, vocal: uploadedVocals, separationProvider }
 }
 
 export async function createAdminPlayback(input: { sourceUrl: string; title?: string | null }) {
