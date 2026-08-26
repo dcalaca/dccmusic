@@ -1,6 +1,7 @@
 import { supabaseAdmin } from './supabase'
 import { getEmailOptOutUrl, getOptedOutEmailSet, normalizeMarketingEmail } from './email-opt-outs'
 import { createCampaignButtonUrl } from './email-magic-login'
+import { buildDccEmailHtml, dccEmailButton } from './dcc-email-template'
 
 export type EmailCampaign = {
   id: string
@@ -92,28 +93,23 @@ async function sendCampaignViaBrevo(input: {
   const bodyStartsWithGreeting = /^\s*ol[áa][,!\s]/i.test(input.body)
   const greeting = bodyStartsWithGreeting ? '' : `<p>Olá, ${escapeHtml(input.name || 'Compositor')}.</p>`
   const cta = input.ctaLabel && input.ctaUrl
-    ? `<p style="margin:22px 0;"><a href="${escapeHtml(input.ctaUrl)}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;text-decoration:none;font-weight:700;border-radius:12px;padding:13px 18px;">${escapeHtml(input.ctaLabel)}</a></p>`
+    ? dccEmailButton(input.ctaLabel, input.ctaUrl)
     : ''
   const unsubscribe = input.unsubscribeUrl
-    ? `<br><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#c4b5fd;text-decoration:underline;">Não quero mais receber estes e-mails</a>`
+    ? `<br><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#7C16F8;text-decoration:underline;">Não quero mais receber estes e-mails</a>`
     : ''
 
-  const htmlContent = `
-    <div style="display:none;max-height:0;overflow:hidden;color:transparent;">${escapeHtml(input.preview || input.subject)}</div>
-    <div style="background:#030712;color:#f9fafb;font-family:Arial,Helvetica,sans-serif;padding:24px;">
-      <div style="max-width:640px;margin:0 auto;background:#050816;border:1px solid #1f2937;border-radius:18px;overflow:hidden;">
-        <div style="padding:22px 24px;border-bottom:1px solid #1f2937;background:linear-gradient(135deg,#050816,#1e0b42);">
-          <p style="margin:0 0 8px;color:#c084fc;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">DCC Music</p>
-          <h1 style="margin:0;color:#fff;font-size:24px;line-height:1.2;">${escapeHtml(input.subject)}</h1>
-        </div>
-        <div style="padding:24px;color:#e5e7eb;font-size:15px;line-height:1.65;">
-          ${greeting}
-          <p>${nl2br(input.body)}</p>
-          ${cta}
-          <p style="margin-top:24px;font-size:12px;color:#9ca3af;">Você recebeu este e-mail porque tem cadastro na DCC Music.${unsubscribe}</p>
-        </div>
-      </div>
-    </div>`
+  const htmlContent = buildDccEmailHtml({
+    subject: input.subject,
+    title: input.subject,
+    preview: input.preview,
+    contentHtml: `
+      ${greeting}
+      <p>${nl2br(input.body)}</p>
+      ${cta}
+      <p style="margin-top:24px;font-size:12px;color:#777080;">Você recebeu este e-mail porque tem cadastro na DCC Music.${unsubscribe}</p>
+    `,
+  })
 
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',

@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import jwt from 'jsonwebtoken'
 import { supabaseAdmin } from './supabase'
 import { sendAdminNewComposerEmail, sendComposerWelcomeEmail, sendDccEmail } from './dcc-emails'
+import { dccEmailButton, escapeEmailHtml } from './dcc-email-template'
 import { recordConfirmedPartnerSignup } from './partners'
 import { sendTikTokCompleteRegistrationEvent } from './tiktok-events'
 
@@ -19,54 +20,28 @@ function hashToken(token: string) {
 
 function verificationEmailHtml(input: { name: string; verificationUrl: string }) {
   return `
-    <div style="font-family: Arial, sans-serif; background:#050505; color:#ffffff; padding:32px;">
-      <div style="max-width:560px; margin:0 auto; background:#111827; border:1px solid #312e81; border-radius:18px; padding:28px;">
-        <h1 style="margin:0 0 12px; font-size:26px; color:#c084fc;">Confirme seu e-mail</h1>
-        <p style="font-size:16px; line-height:1.6; color:#e5e7eb;">
-          Olá, ${input.name}. Clique no botão abaixo para confirmar seu e-mail e ativar sua conta de compositor na DCC Music.
-        </p>
-        <p style="text-align:center; margin:30px 0;">
-          <a href="${input.verificationUrl}" style="display:inline-block; background:linear-gradient(90deg,#7c3aed,#9333ea); color:#ffffff; text-decoration:none; padding:14px 22px; border-radius:12px; font-weight:bold;">
-            Confirmar meu e-mail
-          </a>
-        </p>
-        <p style="font-size:13px; line-height:1.5; color:#9ca3af;">
-          Se o botão não funcionar, copie e cole este link no navegador:<br />
-          <span style="word-break:break-all;">${input.verificationUrl}</span>
-        </p>
-        <p style="font-size:12px; color:#6b7280; margin-top:26px;">
-          Este link expira em 24 horas. Se você não criou essa conta, ignore este e-mail.
-        </p>
-      </div>
-    </div>
+    <p>Olá, ${escapeEmailHtml(input.name)}.</p>
+    <p>Clique no botão abaixo para confirmar seu e-mail e ativar sua conta de compositor na DCC Music.</p>
+    ${dccEmailButton('Confirmar meu e-mail', input.verificationUrl)}
+    <p style="font-size:13px;line-height:1.5;color:#777080;">
+      Se o botão não funcionar, copie e cole este link no navegador:<br>
+      <span style="word-break:break-all;">${escapeEmailHtml(input.verificationUrl)}</span>
+    </p>
+    <p style="font-size:12px;color:#777080;margin-top:24px;">Este link expira em 24 horas. Se você não criou essa conta, ignore este e-mail.</p>
   `
 }
 
 function activationReminderEmailHtml(input: { name: string; verificationUrl: string }) {
   return `
-    <div style="font-family: Arial, sans-serif; background:#050505; color:#ffffff; padding:32px;">
-      <div style="max-width:560px; margin:0 auto; background:#111827; border:1px solid #312e81; border-radius:18px; padding:28px;">
-        <h1 style="margin:0 0 12px; font-size:26px; color:#c084fc;">Ative sua conta na DCC Music</h1>
-        <p style="font-size:16px; line-height:1.6; color:#e5e7eb;">
-          Olá, ${input.name}. Você ainda não ativou sua conta de compositor na DCC Music.
-        </p>
-        <p style="font-size:16px; line-height:1.6; color:#e5e7eb;">
-          Ative sua conta para acessar o painel e usar sua música grátis no DCC Studio IA.
-        </p>
-        <p style="text-align:center; margin:30px 0;">
-          <a href="${input.verificationUrl}" style="display:inline-block; background:linear-gradient(90deg,#7c3aed,#9333ea); color:#ffffff; text-decoration:none; padding:14px 22px; border-radius:12px; font-weight:bold;">
-            Ativar minha conta
-          </a>
-        </p>
-        <p style="font-size:13px; line-height:1.5; color:#9ca3af;">
-          Se o botão não funcionar, copie e cole este link no navegador:<br />
-          <span style="word-break:break-all;">${input.verificationUrl}</span>
-        </p>
-        <p style="font-size:12px; color:#6b7280; margin-top:26px;">
-          Este link expira em 24 horas.
-        </p>
-      </div>
-    </div>
+    <p>Olá, ${escapeEmailHtml(input.name)}.</p>
+    <p>Você ainda não ativou sua conta de compositor na DCC Music.</p>
+    <p>Ative sua conta para acessar o painel e usar sua música grátis no DCC Studio IA.</p>
+    ${dccEmailButton('Ativar minha conta', input.verificationUrl)}
+    <p style="font-size:13px;line-height:1.5;color:#777080;">
+      Se o botão não funcionar, copie e cole este link no navegador:<br>
+      <span style="word-break:break-all;">${escapeEmailHtml(input.verificationUrl)}</span>
+    </p>
+    <p style="font-size:12px;color:#777080;margin-top:24px;">Este link expira em 24 horas.</p>
   `
 }
 

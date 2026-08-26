@@ -1,5 +1,6 @@
 import { notifyMusicReady } from './notifications'
 import { supabaseAdmin } from './supabase'
+import { buildDccEmailHtml, dccEmailButton } from './dcc-email-template'
 
 type EmailResult = {
   sent: boolean
@@ -78,30 +79,11 @@ function nl2br(value: string) {
 }
 
 function button(label: string, href: string) {
-  return `
-    <p style="margin:22px 0;">
-      <a href="${escapeHtml(href)}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;text-decoration:none;font-weight:700;border-radius:12px;padding:13px 18px;">
-        ${escapeHtml(label)}
-      </a>
-    </p>
-  `
+  return dccEmailButton(label, href)
 }
 
 function emailLayout(input: DccEmailInput) {
-  return `
-    <div style="display:none;max-height:0;overflow:hidden;color:transparent;">${escapeHtml(input.preview || input.subject)}</div>
-    <div style="background:#030712;color:#f9fafb;font-family:Arial,Helvetica,sans-serif;padding:24px;">
-      <div style="max-width:640px;margin:0 auto;background:#050816;border:1px solid #1f2937;border-radius:18px;overflow:hidden;">
-        <div style="padding:22px 24px;border-bottom:1px solid #1f2937;background:linear-gradient(135deg,#050816,#1e0b42);">
-          <p style="margin:0 0 8px;color:#c084fc;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;">DCC Music</p>
-          <h1 style="margin:0;color:#fff;font-size:24px;line-height:1.2;">${escapeHtml(input.title)}</h1>
-        </div>
-        <div style="padding:24px;color:#e5e7eb;font-size:15px;line-height:1.65;">
-          ${input.contentHtml}
-        </div>
-      </div>
-    </div>
-  `
+  return buildDccEmailHtml(input)
 }
 
 function isUniqueViolation(error: any) {
@@ -389,9 +371,9 @@ export async function sendMarketingCampaignEmail(input: {
       ${greeting}
       <p>${nl2br(input.body)}</p>
       ${campaignButton}
-      <p style="margin-top:24px;font-size:12px;color:#9ca3af;">
+      <p style="margin-top:24px;font-size:12px;color:#777080;">
         Você recebeu este e-mail porque tem cadastro na DCC Music.
-        ${input.unsubscribeUrl ? `<br><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#c4b5fd;text-decoration:underline;">Não quero mais receber estes e-mails</a>` : ''}
+        ${input.unsubscribeUrl ? `<br><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#7C16F8;text-decoration:underline;">Não quero mais receber estes e-mails</a>` : ''}
       </p>
     `,
   })
@@ -501,7 +483,7 @@ export async function sendStudioMusicCommentEmail(input: ComposerEmailInput & {
     metadata: { composerId: input.composerId, commentId: input.commentId },
     contentHtml: `
       <p>${escapeHtml(input.commenterName)} comentou em <strong>${escapeHtml(input.projectTitle)}</strong>:</p>
-      <p style="background:#111827;border-radius:12px;padding:12px;">${nl2br(input.comment)}</p>
+      <p style="background:#F8F4FC;border-left:3px solid #A53CF4;border-radius:0 10px 10px 0;padding:12px;color:#5E5868;">${nl2br(input.comment)}</p>
       ${button('Ver música', `${getSiteUrl()}/studio/${input.projectSlug}`)}
     `,
   })
@@ -668,7 +650,7 @@ export async function sendPartnerWelcomeEmail(input: {
           </ol>
         `}
 
-      <div style="background:#030712; border:1px solid #374151; border-radius:14px; padding:16px; margin-top:18px;">
+      <div style="background:#F8F4FC; border:1px solid #E8E3EE; border-radius:12px; padding:16px; margin-top:18px; color:#5E5868;">
         <p><strong>E-mail de acesso:</strong> ${escapeHtml(input.email)}</p>
         ${hasTemporaryPassword ? `<p><strong>Senha temporária:</strong> ${escapeHtml(input.temporaryPassword)}</p>` : ''}
         <p><strong>Comissão:</strong> ${escapeHtml(commissionDescription)}</p>
@@ -677,10 +659,10 @@ export async function sendPartnerWelcomeEmail(input: {
         ${input.commissionPaymentScope === 'first_purchase'
           ? ''
           : `<p><strong>LT do cliente:</strong> ${escapeHtml(String(input.customerLifetimeMonths))} meses</p>`}
-        <p style="margin-top:16px;"><strong>Link exclusivo para divulgação:</strong><br><a href="${escapeHtml(input.partnerLink)}" style="color:#c084fc;">${escapeHtml(input.partnerLink)}</a></p>
+        <p style="margin-top:16px;"><strong>Link exclusivo para divulgação:</strong><br><a href="${escapeHtml(input.partnerLink)}" style="color:#7C16F8;">${escapeHtml(input.partnerLink)}</a></p>
       </div>
 
-      <p style="font-size:13px; color:#9ca3af;">
+      <p style="font-size:13px; color:#777080;">
         Importante: seu link é exclusivo. Use sempre esse link nas campanhas para que os cadastros e compras sejam atribuídos corretamente.
       </p>
     `,
