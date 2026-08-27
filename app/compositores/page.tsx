@@ -1,4 +1,5 @@
 import * as db from '@/lib/db'
+import { supabaseAdmin } from '@/lib/supabase'
 import { unstable_noStore as noStore } from 'next/cache'
 import { FaCrown } from 'react-icons/fa'
 import { FiMusic, FiSearch, FiStar, FiUsers } from 'react-icons/fi'
@@ -10,7 +11,28 @@ export const revalidate = 0
 export default async function CompositorsPage() {
   noStore()
 
-  const composers = await db.getPremiumComposers()
+  const premiumComposers = await db.getPremiumComposers()
+  const composerIds = premiumComposers.map((composer) => composer.id)
+  let composers = premiumComposers
+
+  if (composerIds.length > 0) {
+    const { data: visibilityRows, error: visibilityError } = await supabaseAdmin
+      .from('dccmusic_composers')
+      .select('id')
+      .in('id', composerIds)
+      .eq('show_in_premium_directory', true)
+
+    if (visibilityError) {
+      console.error('[COMPOSITORES PREMIUM] Erro ao aplicar preferência de visibilidade:', visibilityError)
+      // Privacidade em primeiro lugar: se não for possível confirmar a preferência,
+      // não exibimos perfis até a consulta voltar a funcionar.
+      composers = []
+    } else {
+      const visibleComposerIds = new Set((visibilityRows || []).map((row: any) => row.id))
+      composers = premiumComposers.filter((composer) => visibleComposerIds.has(composer.id))
+    }
+  }
+
   const totalPublishedMusics = composers.reduce(
     (total, composer) => total + (Number(composer.publishedMusicCount) || 0),
     0
