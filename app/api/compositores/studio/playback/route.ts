@@ -19,6 +19,79 @@ import { supabaseAdmin } from '@/lib/supabase'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
+async function validateProjectVersion(projectId: string, versionId: string, composerId: string) {
+  const project = await getProjectForComposer(projectId, composerId)
+  if (!project) return { project: null, version: null }
+
+  const { data: version, error } = await supabaseAdmin
+    .from('studio_versions')
+    .select('*')
+    .eq('id', versionId)
+    .eq('project_id', project.id)
+    .eq('composer_id', composerId)
+    .maybeSingle()
+
+  if (error) throw error
+  return { project, version }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const composer = getComposerFromRequest(request)
+    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+
+    const projectId = request.nextUrl.searchParams.get('projectId')?.trim() || ''
+    const versionId = request.nextUrl.searchParams.get('versionId')?.trim() || ''
+    if (!projectId || !versionId) {
+      return NextResponse.json({ saved: false })
+    }
+
+    const { project, version } = await validateProjectVersion(projectId, versionId, composer.composerId)
+    if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
+    if (!version) return NextResponse.json({ error: 'Versão não encontrada neste projeto.' }, { status: 404 })
+
+    const { data: assets, error } = await supabaseAdmin
+      .from('studio_credit_transactions')
+      .select('id, metadata, created_at')
+      .eq('composer_id', composer.composerId)
+      .eq('project_id', projectId)
+      .eq('action', 'stem_separation_asset')
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (error) throw error
+
+    const savedAsset = (assets || []).find((item: any) => String(item?.metadata?.versionId || '') === versionId)
+    if (!savedAsset?.metadata?.playbackPath || !savedAsset?.metadata?.vocalPath) {
+      return NextResponse.json({ saved: false })
+    }
+
+    const playbackUrl = await createStudioAudioSignedUrl(
+      String(savedAsset.metadata.playbackPath),
+      String(savedAsset.metadata.playbackProvider || 'supabase')
+    )
+    const vocalUrl = await createStudioAudioSignedUrl(
+      String(savedAsset.metadata.vocalPath),
+      String(savedAsset.metadata.vocalProvider || savedAsset.metadata.playbackProvider || 'supabase')
+    )
+
+    if (!playbackUrl || !vocalUrl) {
+      return NextResponse.json({ saved: false })
+    }
+
+    return NextResponse.json({
+      saved: true,
+      playbackUrl,
+      vocalUrl,
+      provider: savedAsset.metadata.separationProvider || null,
+      createdAt: savedAsset.created_at || null,
+    })
+  } catch (error: any) {
+    console.error('[Studio Playback] Erro ao buscar arquivos salvos:', error)
+    return NextResponse.json({ error: error?.message || 'Erro ao buscar playback salvo.' }, { status: 500 })
+  }
+}
+
 export async function POST(request: NextRequest) {
   const composer = getComposerFromRequest(request)
   if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
@@ -35,17 +108,8 @@ export async function POST(request: NextRequest) {
     let title = typeof body.title === 'string' ? body.title.trim() : ''
 
     if (projectId && versionId) {
-      const project = await getProjectForComposer(projectId, composer.composerId)
+      const { project, version } = await validateProjectVersion(projectId, versionId, composer.composerId)
       if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
-
-      const { data: version, error: versionError } = await supabaseAdmin
-        .from('studio_versions')
-        .select('*')
-        .eq('id', versionId)
-        .eq('project_id', project.id)
-        .eq('composer_id', composer.composerId)
-        .maybeSingle()
-      if (versionError) throw versionError
       if (!version) return NextResponse.json({ error: 'Versão não encontrada neste projeto.' }, { status: 404 })
 
       const audio = await getStudioVersionAudioUrls(version)
@@ -99,10 +163,32 @@ export async function POST(request: NextRequest) {
     const vocalUrl = playback.vocal
       ? await createStudioAudioSignedUrl(playback.vocal.path, playback.vocal.provider)
       : null
+    if (!playback.vocal || !vocalUrl) throw new Error('A voz foi criada, mas não foi possível salvar o acesso para baixar.')
+
+    if (projectId && versionId) {
+      await addStudioCreditTransaction({
+        composerId: composer.composerId,
+        projectId,
+        action: 'stem_separation_asset',
+        amount: 0,
+        description: 'Playback e voz isolada salvos no projeto',
+        metadata: {
+          requestId,
+          versionId,
+          feature: 'playback',
+          playbackPath: playback.path,
+          playbackProvider: playback.provider,
+          vocalPath: playback.vocal.path,
+          vocalProvider: playback.vocal.provider,
+          separationProvider: playback.separationProvider,
+        },
+      })
+    }
 
     const usageAfter = await getStudioCreditUsage(composer.composerId, access.limits)
     return NextResponse.json({
       success: true,
+      saved: Boolean(projectId && versionId),
       playbackUrl,
       vocalUrl,
       provider: playback.separationProvider,
