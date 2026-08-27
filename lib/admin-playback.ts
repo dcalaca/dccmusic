@@ -125,9 +125,12 @@ async function requestSunoPlayback(sourceUrl: string) {
     const instrumentalUrl = data?.response?.instrumentalUrl || data?.response?.instrumental_url
     const vocalUrl = data?.response?.vocalUrl || data?.response?.vocal_url
     if (status === 'SUCCESS' && instrumentalUrl) {
+      if (!vocalUrl) {
+        throw new Error('A Suno concluiu a separação, mas não retornou a voz isolada.')
+      }
       return {
         instrumentalUrl: String(instrumentalUrl),
-        vocalUrl: vocalUrl ? String(vocalUrl) : null,
+        vocalUrl: String(vocalUrl),
       }
     }
     if (status && !['PENDING', 'PROCESSING'].includes(status)) {
@@ -157,27 +160,28 @@ async function extractStemPair(zipUrl: string) {
   const vocal = audioFiles.find(([name]) => /vocal|voice|sing/i.test(name) && !/no.?vocal/i.test(name))
 
   if (!accompaniment) throw new Error('A separação terminou, mas o playback não foi encontrado.')
+  if (!vocal) throw new Error('A separação terminou, mas a voz isolada não foi encontrada.')
   const [playback, vocals] = await Promise.all([
     extractStemFile(accompaniment),
-    vocal ? extractStemFile(vocal) : Promise.resolve(null),
+    extractStemFile(vocal),
   ])
   return { playback, vocals }
 }
 
 export async function createStudioPlayback(input: { sourceUrl: string; title?: string | null; composerId: string }) {
   let playback: Buffer
-  let vocals: Buffer | null = null
+  let vocals: Buffer
   let separationProvider: 'suno' | 'mureka' = 'suno'
   try {
     const separated = await requestSunoPlayback(input.sourceUrl)
     const downloaded = await Promise.all([
       downloadBuffer(separated.instrumentalUrl),
-      separated.vocalUrl ? downloadBuffer(separated.vocalUrl) : Promise.resolve(null),
+      downloadBuffer(separated.vocalUrl),
     ])
     playback = downloaded[0].buffer
-    vocals = downloaded[1]?.buffer || null
+    vocals = downloaded[1].buffer
   } catch (sunoError: any) {
-    console.error('[Studio Playback] Suno falhou; usando Mureka:', sunoError?.message || sunoError)
+    console.error('[Studio Playback] Suno falhou ou retornou separação incompleta; usando Mureka:', sunoError?.message || sunoError)
     separationProvider = 'mureka'
     const zipUrl = await requestPlaybackZip(input.sourceUrl)
     const extracted = await extractStemPair(zipUrl)
@@ -200,13 +204,13 @@ export async function createStudioPlayback(input: { sourceUrl: string; title?: s
       buffer: playback,
       contentType: 'audio/mpeg',
     }),
-    vocals ? uploadStudioAudioBuffer({
+    uploadStudioAudioBuffer({
       composerId: input.composerId,
       folder: 'exports',
       fileName: `${cleanTitle}-voz-${randomUUID().slice(0, 8)}.mp3`,
       buffer: vocals,
       contentType: 'audio/mpeg',
-    }) : Promise.resolve(null),
+    }),
   ])
   return { ...uploaded, vocal: uploadedVocals, separationProvider }
 }
