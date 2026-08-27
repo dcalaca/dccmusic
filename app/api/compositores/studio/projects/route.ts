@@ -179,16 +179,7 @@ export async function POST(request: NextRequest) {
 
     if (typeof body.lyric === 'string' && body.lyric.trim()) {
       const rawLyric = body.lyric.trim()
-      const improveStructureForAi = body.improveStructureForAi !== false
-      const lyricNormalization = improveStructureForAi
-        ? normalizeStudioLyricStructure(rawLyric)
-        : {
-            lyric: rawLyric,
-            changed: false,
-            usedOriginal: true,
-            linesBefore: rawLyric.split(/\r?\n/).filter((line: string) => line.trim()).length,
-            linesAfter: rawLyric.split(/\r?\n/).filter((line: string) => line.trim()).length,
-          }
+      const lyricNormalization = normalizeStudioLyricStructure(rawLyric)
 
       const { error: lyricError } = await supabaseAdmin
         .from('studio_lyrics')
@@ -199,7 +190,8 @@ export async function POST(request: NextRequest) {
           is_current: true,
           prompt: {
             source: 'own_lyric',
-            improveStructureForAi,
+            improveStructureForAi: true,
+            structureNormalizationRequired: true,
             lyricNormalized: lyricNormalization.changed,
             linesBefore: lyricNormalization.linesBefore,
             linesAfter: lyricNormalization.linesAfter,
