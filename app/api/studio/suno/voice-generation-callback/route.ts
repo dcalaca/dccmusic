@@ -31,8 +31,9 @@ export async function POST(request: Request) {
     const providerCode = Number(body?.code)
     const providerMessage = body?.data?.errorMessage || body?.errorMessage || (providerCode && providerCode !== 200 ? body?.msg : null)
     const errorMessage = translateStudioVoiceError(providerMessage)
-    const success = providerCode === 200 || status === 'success'
-    const failed = !success && (status === 'fail' || status === 'processing_validate_fail' || Boolean(errorMessage && !voiceId))
+    const explicitlyFailed = status === 'fail' || status === 'processing_validate_fail'
+    const success = !explicitlyFailed && (providerCode === 200 || status === 'success')
+    const failed = explicitlyFailed || (!success && Boolean(errorMessage && !voiceId))
 
     if (!taskId) {
       return NextResponse.json({ received: true, processed: false, error: 'taskId ausente' })
@@ -54,7 +55,13 @@ export async function POST(request: Request) {
         voice_id: voiceId,
         is_available: Boolean(success && voiceId),
         error_message: failed ? errorMessage : null,
-        provider_payload: body,
+        provider_payload: {
+          ...(voice?.provider_payload || {}),
+          recordInfo: body,
+          ...(voice?.provider_payload?.autoReactivation ? {
+            autoReactivationCompletedAt: nextStatus === 'ready' ? new Date().toISOString() : null,
+          } : {}),
+        },
         updated_at: new Date().toISOString(),
       })
       .eq('voice_generation_task_id', taskId)
