@@ -41,6 +41,13 @@ function projectTitleFromPage() {
   return ''
 }
 
+function versionFromName(value: string) {
+  const text = safePart(value)
+  const explicit = text.match(/(?:vers[aã]o|vs|musica gerada|música gerada)[\s#_-]*(\d+)/i)
+  if (explicit?.[1]) return Number(explicit[1])
+  return 0
+}
+
 function versionFromPage() {
   const candidates = Array.from(document.querySelectorAll('p, span, h3'))
     .map((item) => safePart(item.textContent || ''))
@@ -48,9 +55,9 @@ function versionFromPage() {
 
   for (const text of candidates) {
     const match = text.match(/\bVersão\s+(\d+)\b/i)
-    if (match) return `Versão ${match[1]}`
+    if (match) return Number(match[1])
   }
-  return ''
+  return 0
 }
 
 function friendlyFilename(currentName: string) {
@@ -59,7 +66,7 @@ function friendlyFilename(currentName: string) {
   const extension = extensionMatch?.[1] || '.mp3'
   const base = safePart(raw.replace(/\.[a-z0-9]{2,5}$/i, ''))
   const title = projectTitleFromPage()
-  const version = versionFromPage()
+  const version = versionFromName(base) || versionFromPage()
 
   const lower = base.toLowerCase()
   const isPlayback = lower.includes('playback') || lower.includes('instrumental')
@@ -68,7 +75,7 @@ function friendlyFilename(currentName: string) {
 
   const parts: string[] = []
   if (title) parts.push(title)
-  if (version && !title.toLowerCase().includes(version.toLowerCase())) parts.push(version)
+  if (version) parts.push(`vs ${version}`)
   if (suffix) parts.push(suffix)
 
   if (parts.length === 0) return `${base || 'Música'}${extension}`
