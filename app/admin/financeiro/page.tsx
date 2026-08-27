@@ -3,6 +3,7 @@ import { FiArrowLeft } from 'react-icons/fi'
 import { requireAuth } from '@/lib/auth-helpers'
 import FinancePanel from '../FinancePanel'
 import FinancePanelCleanup from '../FinancePanelCleanup'
+import FinanceChartTapDetails from '../FinanceChartTapDetails'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +21,10 @@ export default async function AdminFinanceiroPage() {
         .dcc-finance-no-cursor p.text-xs.text-gray-500.mt-4 {
           display: none;
         }
+
+        .dcc-finance-no-cursor svg g:has(> title) {
+          cursor: pointer;
+        }
       `}</style>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-[1600px]">
@@ -28,6 +33,7 @@ export default async function AdminFinanceiroPage() {
           </Link>
           <div className="dcc-finance-no-cursor">
             <FinancePanel />
+            <FinanceChartTapDetails />
           </div>
         </div>
       </div>
