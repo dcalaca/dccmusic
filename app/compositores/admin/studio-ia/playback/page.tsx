@@ -45,6 +45,15 @@ function PlaybackCreator() {
         const exists = (data.project?.versions || []).some((item: any) => item.id === versionId)
         if (!exists) throw new Error('Essa versão não pertence ao projeto escolhido.')
         setProject(data.project)
+
+        const savedResponse = await fetch(`/api/compositores/studio/playback?projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        })
+        const savedData = await savedResponse.json().catch(() => null)
+        if (savedResponse.ok && savedData?.saved && savedData?.playbackUrl && savedData?.vocalUrl) {
+          setResult(savedData)
+        }
       } catch (loadError: any) {
         setError(loadError?.message || 'Erro ao carregar a música.')
       } finally {
@@ -144,7 +153,7 @@ function PlaybackCreator() {
           <div className="border-b border-white/10 bg-gradient-to-r from-cyan-950/70 via-primary-950/60 to-purple-950/60 p-6 sm:p-8">
             <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-400/15 text-cyan-200"><FiHeadphones className="h-7 w-7" /></div>
             <h1 className="text-3xl font-black sm:text-4xl">Criar Playback</h1>
-            <p className="mt-2 text-sm text-gray-300">Retire a voz principal e receba o instrumental pronto para ouvir e baixar.</p>
+            <p className="mt-2 text-sm text-gray-300">Retire a voz principal e receba o instrumental e a voz isolada para ouvir e baixar quando quiser.</p>
           </div>
 
           <div className="space-y-5 p-5 sm:p-8">
@@ -159,10 +168,12 @@ function PlaybackCreator() {
                   {(version.audioUrl || version.streamAudioUrl) && <audio className="mt-4 w-full" controls src={version.audioUrl || version.streamAudioUrl} />}
                 </div>
 
-                <div className="rounded-2xl border border-amber-400/30 bg-amber-950/20 p-5">
-                  <p className="font-black text-amber-100">Custo: {PLAYBACK_CREDITS} créditos</p>
-                  <p className="mt-1 text-sm leading-relaxed text-amber-100/75">O valor é o mesmo da criação de uma música. Se a Suno e a Mureka não conseguirem concluir, os créditos serão estornados automaticamente.</p>
-                </div>
+                {!result && (
+                  <div className="rounded-2xl border border-amber-400/30 bg-amber-950/20 p-5">
+                    <p className="font-black text-amber-100">Custo: {PLAYBACK_CREDITS} créditos</p>
+                    <p className="mt-1 text-sm leading-relaxed text-amber-100/75">O valor é o mesmo da criação de uma música. Depois de concluído, o playback e a voz ficam salvos neste projeto. Se a Suno e a Mureka não conseguirem concluir, os créditos serão estornados automaticamente.</p>
+                  </div>
+                )}
 
                 {!result && <button type="button" onClick={createPlayback} disabled={processing} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-600 via-primary-600 to-purple-600 px-6 py-4 text-lg font-black shadow-xl transition hover:scale-[1.01] disabled:cursor-wait disabled:opacity-70">
                   {processing ? <><FiLoader className="animate-spin" /> Retirando a voz...</> : <><FiHeadphones /> Criar playback por 10 créditos</>}
@@ -231,8 +242,8 @@ function PlaybackCreator() {
             {error && <div className="rounded-2xl border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-100">{error}</div>}
             {result?.playbackUrl && (
               <div className="rounded-2xl border border-green-400/35 bg-green-950/20 p-5">
-                <div className="flex items-center gap-2 text-lg font-black text-green-200"><FiCheckCircle /> Separação concluída!</div>
-                <p className="mt-1 text-sm text-green-100/70">Seu playback e a voz isolada estão prontos.</p>
+                <div className="flex items-center gap-2 text-lg font-black text-green-200"><FiCheckCircle /> {result.saved ? 'Arquivos salvos no projeto' : 'Separação concluída!'}</div>
+                <p className="mt-1 text-sm text-green-100/70">{result.saved ? 'Seu playback e a voz isolada ficam disponíveis aqui para você ouvir e baixar novamente quando quiser.' : 'Seu playback e a voz isolada estão prontos.'}</p>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-cyan-400/25 bg-black/30 p-4">
                     <p className="font-black text-cyan-200">Playback / instrumental</p>
@@ -252,7 +263,7 @@ function PlaybackCreator() {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <button type="button" onClick={() => setResult(null)} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3 font-bold hover:bg-white/5"><FiRefreshCw /> Separar outra música</button>
+                  <button type="button" onClick={() => setResult(null)} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3 font-bold hover:bg-white/5"><FiRefreshCw /> Criar uma nova separação</button>
                 </div>
               </div>
             )}
