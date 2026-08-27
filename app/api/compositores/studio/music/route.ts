@@ -692,7 +692,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Gere ou escreva uma letra antes de criar a música.' }, { status: 400 })
     }
 
-    const improveStructureForAi = body.improveStructureForAi !== false
+    // Proteção de backend: a estrutura da letra é sempre normalizada antes da geração.
+    // O cliente não pode desativar esta etapa, inclusive em chamadas antigas/diretas à API.
+    const improveStructureForAi = true
     const lyricNormalization = improveStructureForAi
       ? normalizeStudioLyricStructure(lyricContent)
       : {
