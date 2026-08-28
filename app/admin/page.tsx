@@ -13,7 +13,6 @@ import {
   FiMusic,
   FiPlayCircle,
   FiSettings,
-  FiStar,
   FiTag,
   FiTrendingUp,
   FiUser,
@@ -164,13 +163,13 @@ const adminGroups = [
   },
   {
     title: 'Studio IA',
-    description: 'Planos e monitoramento do Studio IA.',
+    description: 'Preços, planos e monitoramento do Studio IA.',
     items: [
       {
-        href: '/admin/studio-planos',
-        title: 'Planos Studio IA',
-        description: 'Administrar planos separados do DCC Studio IA',
-        icon: FiZap,
+        href: '/admin/precos',
+        title: 'Preços e Planos',
+        description: 'Alterar recargas e preços dos planos por país direto no Supabase',
+        icon: FiDollarSign,
         accent: 'purple',
       },
       {
@@ -186,12 +185,6 @@ const adminGroups = [
         description: 'Enviar uma música ou escolher uma produção e baixar o instrumental',
         icon: FiVolumeX,
         accent: 'purple',
-      },
-      {
-        href: '/admin/planos',
-        title: 'Planos DCC Music',
-        description: 'Criar e gerenciar planos de assinatura',
-        icon: FiStar,
       },
     ],
   },
