@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { requireAuth } from '@/lib/auth-helpers'
 import { supabaseAdmin } from '@/lib/supabase'
 import { FiArrowLeft, FiDollarSign, FiSave } from 'react-icons/fi'
+import PriceUpdatedToast from './PriceUpdatedToast'
 
 const countries = [
   { code: 'BR', label: 'Brasil', flag: '🇧🇷' },
@@ -19,10 +21,16 @@ function priceStep(currency: string) {
   return currency === 'PYG' || currency === 'COP' ? '100' : '0.01'
 }
 
+function redirectAfterSave(country: string) {
+  const safeCountry = countries.some((item) => item.code === country) ? country : 'BR'
+  redirect(`/admin/precos?pais=${safeCountry}&updated=1`)
+}
+
 async function updateTopupPrice(formData: FormData) {
   'use server'
   await requireAuth()
   const id = String(formData.get('id') || '')
+  const country = String(formData.get('country') || 'BR').toUpperCase()
   const price = Number(formData.get('price'))
   if (!id || !Number.isFinite(price) || price <= 0) return
 
@@ -34,6 +42,8 @@ async function updateTopupPrice(formData: FormData) {
 
   revalidatePath('/admin/precos')
   revalidatePath('/studio-ia')
+  revalidatePath('/compositores/planos')
+  redirectAfterSave(country)
 }
 
 async function updateCountryPlanPrice(formData: FormData) {
@@ -41,7 +51,7 @@ async function updateCountryPlanPrice(formData: FormData) {
   await requireAuth()
   const id = String(formData.get('id') || '')
   const slug = String(formData.get('slug') || '')
-  const country = String(formData.get('country') || '')
+  const country = String(formData.get('country') || 'BR').toUpperCase()
   const price = Number(formData.get('price'))
   if (!id || !slug || !Number.isFinite(price) || price <= 0) return
 
@@ -61,6 +71,8 @@ async function updateCountryPlanPrice(formData: FormData) {
 
   revalidatePath('/admin/precos')
   revalidatePath('/studio-ia')
+  revalidatePath('/compositores/planos')
+  redirectAfterSave(country)
 }
 
 async function updateBasePlanPrice(formData: FormData) {
@@ -77,12 +89,14 @@ async function updateBasePlanPrice(formData: FormData) {
   if (error) throw error
 
   revalidatePath('/admin/precos')
+  revalidatePath('/compositores/planos')
+  redirectAfterSave('BR')
 }
 
 export default async function AdminPricingPage({
   searchParams,
 }: {
-  searchParams?: { pais?: string }
+  searchParams?: { pais?: string; updated?: string }
 }) {
   await requireAuth()
 
@@ -90,6 +104,7 @@ export default async function AdminPricingPage({
   const selectedCountry = countries.some((country) => country.code === requestedCountry)
     ? requestedCountry
     : 'BR'
+  const showUpdatedToast = searchParams?.updated === '1'
 
   const [{ data: topups, error: topupError }, { data: countryPlans, error: countryPlanError }, { data: plans, error: plansError }] = await Promise.all([
     supabaseAdmin
@@ -124,6 +139,7 @@ export default async function AdminPricingPage({
 
   return (
     <div className="min-h-screen py-8">
+      <PriceUpdatedToast show={showUpdatedToast} />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <Link href="/admin" className="mb-6 inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white">
           <FiArrowLeft /> Voltar ao Admin
@@ -181,6 +197,7 @@ export default async function AdminPricingPage({
                     <td className="p-3">
                       <form action={updateTopupPrice} className="flex items-center gap-2">
                         <input type="hidden" name="id" value={row.id} />
+                        <input type="hidden" name="country" value={selectedCountry} />
                         <input name="price" type="number" min="0.01" step={priceStep(row.currency)} defaultValue={Number(row.unit_price)} className="w-40 rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 font-bold text-white" />
                         <button className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 font-bold text-white hover:bg-purple-500"><FiSave /> Salvar</button>
                       </form>
