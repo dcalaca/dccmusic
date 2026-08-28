@@ -6,9 +6,23 @@ import { getOrCreatePendingSubscription } from '@/lib/composer-plan-access'
 import { buildMetaCapiMetadata, sendMetaInitiateCheckoutEvent } from '@/lib/meta-conversions'
 import { isStripeConfigured } from '@/lib/stripe'
 import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
+import { getStudioPlanPriceQuote } from '@/lib/studio-topups'
 import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
 export const dynamic = 'force-dynamic'
+
+function isStudioPlan(plan: db.Plan) {
+  const identity = `${plan.name || ''} ${plan.slug || ''}`.toLowerCase()
+  return ['studio-start', 'studio-pro', 'studio-elite', 'dcc-studio-ia'].includes(plan.slug) || identity.includes('studio ia') || identity.includes('dcc studio')
+}
+
+function getCustomerLocale(country: string) {
+  if (country === 'PY') return 'es-PY'
+  if (country === 'CO') return 'es-CO'
+  if (country === 'MX') return 'es-MX'
+  if (country === 'PT') return 'pt-PT'
+  return 'pt-BR'
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,9 +58,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const planId = String(body.planId || '').trim()
-    if (!planId) {
-      return NextResponse.json({ error: 'Plano é obrigatório' }, { status: 400 })
-    }
+    if (!planId) return NextResponse.json({ error: 'Plano é obrigatório' }, { status: 400 })
 
     let plan = await db.getPlanBySlug(planId)
     if (!plan) {
@@ -58,10 +70,7 @@ export async function POST(request: NextRequest) {
         .maybeSingle()
       if (planData) plan = db.mapPlan(planData)
     }
-
-    if (!plan) {
-      return NextResponse.json({ error: 'Plano não encontrado' }, { status: 404 })
-    }
+    if (!plan) return NextResponse.json({ error: 'Plano não encontrado' }, { status: 404 })
 
     const { data: composerData, error: composerError } = await supabaseAdmin
       .from('dccmusic_composers')
@@ -73,9 +82,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Compositor não encontrado' }, { status: 404 })
     }
 
-    // Proteção no backend: mesmo que o front-end seja burlado, atualizado tarde
-    // ou o usuário acesse o checkout por um link antigo, não abrimos um novo
-    // pagamento para o mesmo plano enquanto já houver assinatura ativa.
     const { data: activeSubscription, error: activeSubscriptionError } = await supabaseAdmin
       .from('dccmusic_subscriptions')
       .select('id, end_date')
@@ -88,29 +94,24 @@ export async function POST(request: NextRequest) {
 
     if (activeSubscriptionError) {
       console.error('[PLAN INTENT] Erro ao verificar assinatura ativa:', activeSubscriptionError)
-      return NextResponse.json(
-        { error: 'Não foi possível validar seu plano atual. Tente novamente.' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Não foi possível validar seu plano atual. Tente novamente.' }, { status: 500 })
     }
 
     if (activeSubscription) {
-      return NextResponse.json(
-        {
-          error: 'Você já possui este plano ativo.',
-          code: 'ACTIVE_PLAN_EXISTS',
-          activeSubscriptionId: activeSubscription.id,
-          expiresAt: activeSubscription.end_date || null,
-        },
-        { status: 409 }
-      )
+      return NextResponse.json({
+        error: 'Você já possui este plano ativo.',
+        code: 'ACTIVE_PLAN_EXISTS',
+        activeSubscriptionId: activeSubscription.id,
+        expiresAt: activeSubscription.end_date || null,
+      }, { status: 409 })
     }
 
     const subscription = await getOrCreatePendingSubscription(composerData.id, plan.id)
-    const amount = Number(plan.price) || 0
-    if (amount <= 0) {
-      return NextResponse.json({ error: 'Este plano não tem valor de pagamento configurado.' }, { status: 400 })
-    }
+    const priceQuote = isStudioPlan(plan)
+      ? getStudioPlanPriceQuote(Number(plan.price) || 0, requestCountry)
+      : { amount: Number(plan.price) || 0, currency: 'BRL' as const }
+    const amount = priceQuote.amount
+    if (amount <= 0) return NextResponse.json({ error: 'Este plano não tem valor de pagamento configurado.' }, { status: 400 })
 
     const metaCapi = buildMetaCapiMetadata(request, {
       email: composerData.email || null,
@@ -126,7 +127,9 @@ export async function POST(request: NextRequest) {
           meta_capi: metaCapi,
           checkout_type: provider === 'stripe' ? 'stripe_embedded' : 'payment_brick',
           customer_country: requestCountry,
-          customer_locale: requestCountry === 'PY' ? 'es-PY' : requestCountry === 'CO' ? 'es-CO' : 'pt-BR',
+          customer_locale: getCustomerLocale(requestCountry),
+          checkout_currency: priceQuote.currency,
+          checkout_amount: amount,
         },
       })
       .eq('id', subscription.id)
@@ -139,7 +142,7 @@ export async function POST(request: NextRequest) {
       email: composerData.email || null,
       externalId: composerData.id,
       value: amount,
-      currency: 'BRL',
+      currency: priceQuote.currency,
       contentName: plan.name,
       contentId: plan.id,
       quantity: 1,
@@ -156,6 +159,7 @@ export async function POST(request: NextRequest) {
       planName: plan.name,
       planPrice: amount,
       amount,
+      currency: priceQuote.currency,
       composerEmail: composerData.email || null,
       metaInitiateCheckoutEventId,
       country: requestCountry,
@@ -169,9 +173,6 @@ export async function POST(request: NextRequest) {
       requestUrl: request.url,
       composerId: getComposerFromRequest(request)?.composerId,
     })
-    return NextResponse.json(
-      { error: error.message || 'Erro ao preparar pagamento do plano' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error.message || 'Erro ao preparar pagamento do plano' }, { status: 500 })
   }
 }
