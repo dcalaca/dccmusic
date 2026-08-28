@@ -4,6 +4,7 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { getStudioTopupQuote } from '@/lib/studio-topups'
 import { isStripeConfigured, stripeRequest } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase'
+import { normalizeCountry } from '@/lib/localization'
 import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
 export const dynamic = 'force-dynamic'
@@ -32,8 +33,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Já existe um pagamento Mercado Pago em andamento. Aguarde a confirmação antes de tentar outra forma.' }, { status: 409 })
     }
 
-    const quote = getStudioTopupQuote(Number(topup.music_quantity) || 0)
+    const customerCountry = normalizeCountry(String(topup.metadata?.customer_country || 'BR'))
+    const quote = getStudioTopupQuote(Number(topup.music_quantity) || 0, customerCountry)
     if (Math.abs(Number(topup.amount) - quote.totalPrice) > 0.01) return NextResponse.json({ error: 'Valor da recarga não confere' }, { status: 400 })
+    if (String(topup.currency || 'BRL').toUpperCase() !== quote.currency) return NextResponse.json({ error: 'Moeda da recarga não confere' }, { status: 400 })
+
     const { data: composerData } = await supabaseAdmin.from('dccmusic_composers').select('email').eq('id', composer.composerId).maybeSingle()
     const params = new URLSearchParams()
     params.set('mode', 'payment')
@@ -44,17 +48,17 @@ export async function POST(request: NextRequest) {
       .toString('hex').replace(/[0-9]/g, (digit) => String.fromCharCode(97 + Number(digit)))
       .slice(0, 8)
     params.set('integration_identifier', `dccmusic_${integrationSuffix}`)
-    params.set('line_items[0][price_data][currency]', 'brl')
+    params.set('line_items[0][price_data][currency]', quote.currency.toLowerCase())
     params.set('line_items[0][price_data][unit_amount]', String(Math.round(quote.totalPrice * 100)))
-    const customerCountry = String(topup.metadata?.customer_country || 'BR')
-    const isInternational = customerCountry === 'PY' || customerCountry === 'CO'
+    const isSpanish = customerCountry === 'PY' || customerCountry === 'CO' || customerCountry === 'MX'
     params.set(
       'line_items[0][price_data][product_data][name]',
-      isInternational
+      isSpanish
         ? `Recarga DCC Music - ${topup.music_quantity} canción(es)`
         : topup.metadata?.package_name || `Recarga DCC Music - ${topup.music_quantity} música(s)`
     )
-    if (isInternational) params.set('locale', 'es')
+    if (isSpanish) params.set('locale', 'es')
+    if (customerCountry === 'PT') params.set('locale', 'pt')
     params.set('line_items[0][quantity]', '1')
     params.set('metadata[topup_id]', topup.id)
     params.set('metadata[external_reference]', topup.external_reference)
