@@ -40,6 +40,7 @@ export async function POST(request: Request) {
       await supabaseAdmin
         .from('studio_video_requests')
         .update({
+          status: 'failed',
           response_payload: body,
           error_message: body?.msg || 'Callback sem URL de vídeo.',
           updated_at: new Date().toISOString(),
