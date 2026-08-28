@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
-import { getStripeMinorUnitAmount, getStudioTopupQuote } from '@/lib/studio-topups'
+import { getStripeMinorUnitAmount, type StudioTopupCurrency } from '@/lib/studio-topups'
 import { isStripeConfigured, stripeRequest } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase'
 import { normalizeCountry } from '@/lib/localization'
@@ -12,12 +12,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     if (!isStripeConfigured()) {
-      await reportPaymentFailure({
-        provider: 'stripe',
-        stage: 'configuracao_recarga',
-        error: 'Stripe não configurada no servidor',
-        requestUrl: request.url,
-      })
+      await reportPaymentFailure({ provider: 'stripe', stage: 'configuracao_recarga', error: 'Stripe não configurada no servidor', requestUrl: request.url })
       return NextResponse.json({ error: 'Stripe não configurada no servidor' }, { status: 503 })
     }
     const composer = getComposerFromRequest(request)
@@ -34,9 +29,10 @@ export async function POST(request: NextRequest) {
     }
 
     const customerCountry = normalizeCountry(String(topup.metadata?.customer_country || 'BR'))
-    const quote = getStudioTopupQuote(Number(topup.music_quantity) || 0, customerCountry)
-    if (Math.abs(Number(topup.amount) - quote.totalPrice) > 0.01) return NextResponse.json({ error: 'Valor da recarga não confere' }, { status: 400 })
-    if (String(topup.currency || 'BRL').toUpperCase() !== quote.currency) return NextResponse.json({ error: 'Moeda da recarga não confere' }, { status: 400 })
+    const amount = Number(topup.amount)
+    const currency = String(topup.currency || '').toUpperCase() as StudioTopupCurrency
+    if (!(amount > 0)) return NextResponse.json({ error: 'Valor da recarga inválido' }, { status: 400 })
+    if (!['BRL','PYG','COP','EUR','MXN'].includes(currency)) return NextResponse.json({ error: 'Moeda da recarga inválida' }, { status: 400 })
 
     const { data: composerData } = await supabaseAdmin.from('dccmusic_composers').select('email').eq('id', composer.composerId).maybeSingle()
     const params = new URLSearchParams()
@@ -45,18 +41,14 @@ export async function POST(request: NextRequest) {
     params.set('redirect_on_completion', 'never')
     params.set('adaptive_pricing[enabled]', 'true')
     const integrationSuffix = crypto.createHash('sha256').update(topup.id).digest().subarray(0, 8)
-      .toString('hex').replace(/[0-9]/g, (digit) => String.fromCharCode(97 + Number(digit)))
-      .slice(0, 8)
+      .toString('hex').replace(/[0-9]/g, (digit) => String.fromCharCode(97 + Number(digit))).slice(0, 8)
     params.set('integration_identifier', `dccmusic_${integrationSuffix}`)
-    params.set('line_items[0][price_data][currency]', quote.currency.toLowerCase())
-    params.set('line_items[0][price_data][unit_amount]', String(getStripeMinorUnitAmount(quote.totalPrice, quote.currency)))
+    params.set('line_items[0][price_data][currency]', currency.toLowerCase())
+    params.set('line_items[0][price_data][unit_amount]', String(getStripeMinorUnitAmount(amount, currency)))
     const isSpanish = customerCountry === 'PY' || customerCountry === 'CO' || customerCountry === 'MX'
-    params.set(
-      'line_items[0][price_data][product_data][name]',
-      isSpanish
-        ? `Recarga DCC Music - ${topup.music_quantity} canción(es)`
-        : topup.metadata?.package_name || `Recarga DCC Music - ${topup.music_quantity} música(s)`
-    )
+    params.set('line_items[0][price_data][product_data][name]', isSpanish
+      ? `Recarga DCC Music - ${topup.music_quantity} canción(es)`
+      : topup.metadata?.package_name || `Recarga DCC Music - ${topup.music_quantity} música(s)`)
     if (isSpanish) params.set('locale', 'es')
     if (customerCountry === 'PT') params.set('locale', 'pt')
     params.set('line_items[0][quantity]', '1')
@@ -77,21 +69,10 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     }).eq('id', topup.id)
 
-    return NextResponse.json({
-      success: true,
-      sessionId: session.id,
-      clientSecret: session.client_secret,
-      publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-    })
+    return NextResponse.json({ success: true, sessionId: session.id, clientSecret: session.client_secret, publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY })
   } catch (error: any) {
     console.error('[Studio IA] Erro ao criar sessão Stripe:', error?.message)
-    await reportPaymentFailure({
-      provider: 'stripe',
-      stage: 'criacao_checkout_recarga',
-      error,
-      requestUrl: request.url,
-      composerId: getComposerFromRequest(request)?.composerId,
-    })
+    await reportPaymentFailure({ provider: 'stripe', stage: 'criacao_checkout_recarga', error, requestUrl: request.url, composerId: getComposerFromRequest(request)?.composerId })
     return NextResponse.json({ error: error?.message || 'Erro ao abrir pagamento alternativo' }, { status: 500 })
   }
 }
