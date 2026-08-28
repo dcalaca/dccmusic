@@ -430,9 +430,19 @@ export async function getStudioVersionAudioUrls(version: any) {
     providerFullUrl && providerStreamUrl && providerFullUrl !== providerStreamUrl
   )
   const internalAudioIsStreamOnly = isStreamBackupPath(version?.audio_path)
+  const hasConfirmedInternalFull = Boolean(
+    audioSignedUrl &&
+    version?.audio_path &&
+    version?.audio_backup_status === 'backed_up' &&
+    !internalAudioIsStreamOnly
+  )
   // Backup antigo pode ter gravado stream com nome "-audio"; enquanto houver URL completa
-  // do provedor, preferimos ela para não cortar o final.
-  const preferProviderFull = internalAudioIsStreamOnly || providerHasDistinctFull
+  // do provedor, preferimos ela para não cortar o final. Quando o backup interno já foi
+  // confirmado como completo, ele tem prioridade sobre links externos temporários.
+  const preferProviderFull = internalAudioIsStreamOnly || Boolean(
+    providerHasDistinctFull &&
+    !(hasConfirmedInternalFull && isTemporaryProviderAudioUrl(providerFullUrl))
+  )
 
   const fullAudioUrl = preferProviderFull
     ? (providerFullUrl || audioSignedUrl || null)
