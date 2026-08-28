@@ -10,7 +10,7 @@ import { trackTikTokEvent } from '@/components/TikTokEvents'
 import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
 import { isMercadoPagoInSiteCheckoutEnabled } from '@/lib/mp-in-site-checkout'
 import { StripePaymentOverlay } from '@/components/StripeCheckout'
-import { brlToCopDisplay, type DccCountry } from '@/lib/localization'
+import type { DccCountry } from '@/lib/localization'
 
 type TopupTier = {
   maxMusicQuantity: number | null
@@ -18,29 +18,20 @@ type TopupTier = {
   label: string
 }
 
-function formatMoney(value: number) {
-  return value.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  })
-}
-
 function LocalizedMoney({ value, country }: { value: number; country: DccCountry }) {
-  if (country === 'PT') {
-    return <>{new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value)}</>
-  }
+  const config = {
+    BR: { locale: 'pt-BR', currency: 'BRL', maximumFractionDigits: 2 },
+    PY: { locale: 'es-PY', currency: 'PYG', maximumFractionDigits: 0 },
+    CO: { locale: 'es-CO', currency: 'COP', maximumFractionDigits: 0 },
+    PT: { locale: 'pt-PT', currency: 'EUR', maximumFractionDigits: 2 },
+    MX: { locale: 'es-MX', currency: 'MXN', maximumFractionDigits: 2 },
+  }[country]
 
-  if (country === 'CO') {
-    const amount = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(brlToCopDisplay(value))
-    return (
-      <>
-        <span className="mr-1 align-middle text-[0.42em] font-extrabold tracking-wide text-purple-200">COP</span>
-        <span>$ {amount}</span>
-      </>
-    )
-  }
-
-  return <>{formatMoney(value)}</>
+  return <>{new Intl.NumberFormat(config.locale, {
+    style: 'currency',
+    currency: config.currency,
+    maximumFractionDigits: config.maximumFractionDigits,
+  }).format(value)}</>
 }
 
 export default function StudioTopupPage() {
@@ -63,7 +54,11 @@ export default function StudioTopupPage() {
     stripeSessionId?: string
   } | null>(null)
   const paidRedirectRef = useRef(false)
-  const checkoutCurrency = country === 'PT' ? 'EUR' : 'BRL'
+  const checkoutCurrency = country === 'PT' ? 'EUR'
+    : country === 'PY' ? 'PYG'
+      : country === 'CO' ? 'COP'
+        : country === 'MX' ? 'MXN'
+          : 'BRL'
 
   const openStripeFallback = async (topupId: string, amount: number, email?: string | null) => {
     const token = localStorage.getItem('composer_token')
@@ -196,9 +191,15 @@ export default function StudioTopupPage() {
 
   const normalizedMusicQuantity = Math.max(1, Math.floor(Number(musicQuantity) || 1))
   const getCurrentTier = () => {
+    const fallbackUnitPrice = country === 'PT' ? 1.99
+      : country === 'PY' ? 5600
+        : country === 'CO' ? 3200
+          : country === 'MX' ? 17.68
+            : 2.99
+
     return tiers.find((tier) => tier.maxMusicQuantity === null || normalizedMusicQuantity <= tier.maxMusicQuantity) || {
       maxMusicQuantity: null,
-      unitPrice: country === 'PT' ? 1.99 : 2.99,
+      unitPrice: fallbackUnitPrice,
       label: 'Música avulsa',
     }
   }
