@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'A recarga avulsa permite no máximo 500 músicas por compra.' }, { status: 400 })
     }
 
-    const quote = getStudioTopupQuote(musicQuantity)
+    const quote = getStudioTopupQuote(musicQuantity, requestCountry)
     const packageName = `Recarga avulsa ${quote.musicQuantity} músicas`
 
     const { data: composerData } = await supabaseAdmin
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         music_quantity: quote.musicQuantity,
         credits: quote.credits,
         amount: quote.totalPrice,
-        currency: 'BRL',
+        currency: quote.currency,
         status: 'pending',
         payment_gateway: provider,
         external_reference: reference,
@@ -86,7 +86,15 @@ export async function POST(request: NextRequest) {
           composer_name: composerData?.name || null,
           checkout_type: provider === 'stripe' ? 'stripe_embedded' : 'payment_brick',
           customer_country: requestCountry,
-          customer_locale: requestCountry === 'PY' ? 'es-PY' : requestCountry === 'CO' ? 'es-CO' : 'pt-BR',
+          customer_locale: requestCountry === 'PY'
+            ? 'es-PY'
+            : requestCountry === 'CO'
+              ? 'es-CO'
+              : requestCountry === 'PT'
+                ? 'pt-PT'
+                : requestCountry === 'MX'
+                  ? 'es-MX'
+                  : 'pt-BR',
           meta_capi: metaCapi,
         },
       })
@@ -103,7 +111,7 @@ export async function POST(request: NextRequest) {
       email: composerData?.email || null,
       externalId: composer.composerId,
       value: quote.totalPrice,
-      currency: 'BRL',
+      currency: quote.currency,
       contentName: packageName,
       contentId: 'studio_topup',
       quantity: quote.musicQuantity,
@@ -119,7 +127,7 @@ export async function POST(request: NextRequest) {
       topupId: topup.id,
       externalReference: reference,
       amount: quote.totalPrice,
-      currency: 'BRL',
+      currency: quote.currency,
       credits: quote.credits,
       musicQuantity: quote.musicQuantity,
       unitPrice: quote.unitPrice,
