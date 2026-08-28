@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
-import { getStudioTopupQuote } from '@/lib/studio-topups'
+import { getStripeMinorUnitAmount, getStudioTopupQuote } from '@/lib/studio-topups'
 import { isStripeConfigured, stripeRequest } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase'
 import { normalizeCountry } from '@/lib/localization'
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       .slice(0, 8)
     params.set('integration_identifier', `dccmusic_${integrationSuffix}`)
     params.set('line_items[0][price_data][currency]', quote.currency.toLowerCase())
-    params.set('line_items[0][price_data][unit_amount]', String(Math.round(quote.totalPrice * 100)))
+    params.set('line_items[0][price_data][unit_amount]', String(getStripeMinorUnitAmount(quote.totalPrice, quote.currency)))
     const isSpanish = customerCountry === 'PY' || customerCountry === 'CO' || customerCountry === 'MX'
     params.set(
       'line_items[0][price_data][product_data][name]',
