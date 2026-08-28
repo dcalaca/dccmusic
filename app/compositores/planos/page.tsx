@@ -1,7 +1,11 @@
 import * as db from '@/lib/db'
 import Link from 'next/link'
+import { cookies, headers } from 'next/headers'
 import { FiCheck, FiCreditCard, FiZap } from 'react-icons/fi'
 import { PlanPurchaseLink } from '@/components/PlanPurchaseLink'
+import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
+import { getStudioPlanPriceFromPricing, getStudioTopupTiersFromPricing } from '@/lib/studio-pricing-server'
+import type { StudioTopupCurrency } from '@/lib/studio-topups'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -31,10 +35,19 @@ function getPlanFeatures(plan: db.Plan) {
   return features
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('pt-BR', {
+function formatCurrency(value: number, currency: StudioTopupCurrency = 'BRL') {
+  const config = {
+    BRL: { locale: 'pt-BR', maximumFractionDigits: 2 },
+    PYG: { locale: 'es-PY', maximumFractionDigits: 0 },
+    COP: { locale: 'es-CO', maximumFractionDigits: 0 },
+    EUR: { locale: 'pt-PT', maximumFractionDigits: 2 },
+    MXN: { locale: 'es-MX', maximumFractionDigits: 2 },
+  }[currency]
+
+  return new Intl.NumberFormat(config.locale, {
     style: 'currency',
-    currency: 'BRL',
+    currency,
+    maximumFractionDigits: config.maximumFractionDigits,
   }).format(value)
 }
 
@@ -49,6 +62,28 @@ export default async function PlansPage() {
   const allPlans = await db.getPlans()
   const studioPlans = allPlans.filter(isStudioPlan)
   const composerPlans = allPlans.filter((plan) => !isStudioPlan(plan))
+  const requestHeaders = headers()
+  const country = normalizeCountry(
+    requestHeaders.get('x-dcc-country') ||
+    cookies().get(COUNTRY_COOKIE)?.value ||
+    requestHeaders.get('x-vercel-ip-country') ||
+    requestHeaders.get('cf-ipcountry')
+  )
+
+  const topupPricing = await getStudioTopupTiersFromPricing(country)
+  const topupTiers = topupPricing.tiers
+  const topupPresentation = [
+    ['1 música', topupTiers[0]],
+    ['2 a 8 músicas', topupTiers[1]],
+    ['9 a 29 músicas', topupTiers[2]],
+    ['A partir de 30', topupTiers[4]],
+  ] as const
+  const studioPlansWithPrices = await Promise.all(
+    studioPlans.map(async (plan) => ({
+      plan,
+      priceQuote: await getStudioPlanPriceFromPricing(plan.slug, plan.price, country),
+    }))
+  )
 
   return (
     <div className="min-h-screen py-6 sm:py-8">
@@ -80,15 +115,12 @@ export default async function PlansPage() {
             <div className="rounded-2xl border border-purple-700/60 bg-gradient-to-br from-purple-950/40 via-gray-950 to-black p-5 sm:rounded-3xl sm:p-6">
               <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                  {[
-                    ['1 música', 'R$ 2,99 por música'],
-                    ['2 a 8 músicas', 'R$ 2,49 por música'],
-                    ['9 a 29 músicas', 'R$ 2,34 por música'],
-                    ['A partir de 30', 'R$ 1,99 por música'],
-                  ].map(([label, price]) => (
+                  {topupPresentation.map(([label, tier]) => (
                     <div key={label} className="rounded-2xl border border-gray-800 bg-black/40 p-4">
                       <p className="text-xs text-gray-400">{label}</p>
-                      <p className="mt-1 text-lg font-black text-white">{price}</p>
+                      <p className="mt-1 text-lg font-black text-white" data-no-translate>
+                        {formatCurrency(tier.unitPrice, topupPricing.currency)} por música
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -112,13 +144,13 @@ export default async function PlansPage() {
               </div>
             </div>
 
-            {studioPlans.length === 0 ? (
+            {studioPlansWithPrices.length === 0 ? (
               <div className="rounded-2xl border border-gray-800 bg-gray-950/70 p-6 text-center text-gray-400">
                 Nenhum plano Studio IA ativo no momento.
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {studioPlans.map((plan) => {
+                {studioPlansWithPrices.map(({ plan, priceQuote }) => {
                   const features = Array.isArray(plan.features) ? plan.features : []
                   const identity = `${plan.name || ''} ${plan.slug || ''}`.toLowerCase()
 
@@ -130,8 +162,8 @@ export default async function PlansPage() {
                         </div>
                       )}
                       <h3 className="mb-2 text-2xl font-black">{plan.name}</h3>
-                      <div className="mb-6">
-                        <span className="text-3xl font-black text-white sm:text-4xl">{formatCurrency(plan.price)}</span>
+                      <div className="mb-6" data-no-translate>
+                        <span className="text-3xl font-black text-white sm:text-4xl">{formatCurrency(priceQuote.amount, priceQuote.currency)}</span>
                         <span className="text-gray-400">/{plan.durationMonths === 1 ? 'mês' : `${plan.durationMonths} meses`}</span>
                       </div>
                       {plan.description && <p className="mb-5 text-sm text-gray-400">{plan.description}</p>}
