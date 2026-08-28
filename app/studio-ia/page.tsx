@@ -3,7 +3,8 @@ import { cookies, headers } from 'next/headers'
 import { TikTokViewContent } from '@/components/TikTokEvents'
 import { FreeMusicPlanNotice, StudioCouponButton, StudioHeroActions, StudioPlanButton, StudioTopupButton } from './StudioActions'
 import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
-import { getStudioPlanPriceQuote, getStudioTopupTiers, type StudioTopupCurrency } from '@/lib/studio-topups'
+import { type StudioTopupCurrency } from '@/lib/studio-topups'
+import { getStudioPlanPriceFromPricing, getStudioTopupTiersFromPricing } from '@/lib/studio-pricing-server'
 import {
   FiCheck,
   FiCpu,
@@ -98,14 +99,19 @@ export default async function StudioIALandingPage() {
     requestHeaders.get('x-vercel-ip-country') ||
     requestHeaders.get('cf-ipcountry')
   )
-  const topupTiers = getStudioTopupTiers(country)
-  const topupCurrency = country === 'PY' ? 'PYG' : country === 'CO' ? 'COP' : country === 'MX' ? 'MXN' : country === 'PT' ? 'EUR' : 'BRL'
+  const topupPricing = await getStudioTopupTiersFromPricing(country)
+  const topupTiers = topupPricing.tiers
+  const topupCurrency = topupPricing.currency
   const topupPresentation = [
     ['1 música', topupTiers[0].unitPrice],
     ['2 a 8 músicas', topupTiers[1].unitPrice],
     ['9 a 29 músicas', topupTiers[2].unitPrice],
     ['A partir de 30', topupTiers[4].unitPrice],
   ] as const
+  const plansWithPrices = await Promise.all(plans.map(async (plan) => ({
+    plan,
+    priceQuote: await getStudioPlanPriceFromPricing(plan.slug, plan.price, country),
+  })))
 
   return (
     <div className="min-h-screen overflow-hidden bg-black">
@@ -266,17 +272,16 @@ export default async function StudioIALandingPage() {
             </div>
           </div>
 
-          {plans.length === 0 ? (
+          {plansWithPrices.length === 0 ? (
             <div className="rounded-[2rem] border border-gray-800 bg-gray-950/70 p-10 text-center">
               <p className="text-lg font-bold text-white">Nenhum plano Studio IA ativo no momento.</p>
               <p className="mt-2 text-sm text-gray-400">Ative ou cadastre os planos no painel administrativo.</p>
             </div>
           ) : (
             <div className="grid gap-4 lg:grid-cols-3">
-              {plans.map((plan) => {
+              {plansWithPrices.map(({ plan, priceQuote }) => {
                 const presentation = planPresentation[plan.slug] || planPresentation['dcc-studio-ia']
-                const features = Array.isArray(plan.features) ? plan.features : []
-                const planPrice = getStudioPlanPriceQuote(plan.price, country)
+                const planFeatures = Array.isArray(plan.features) ? plan.features : []
 
                 return (
                   <div key={plan.id} className={`relative rounded-[1.5rem] border p-5 sm:p-6 ${presentation.tone}`}>
@@ -286,12 +291,12 @@ export default async function StudioIALandingPage() {
                     <h3 className="mb-1 text-xl font-black sm:text-2xl">{plan.name}</h3>
                     <p className="mb-3 text-sm text-gray-400">Ideal para {presentation.ideal}</p>
                     <div className="mb-4">
-                      <span className="text-3xl font-black text-white">{formatCurrency(planPrice.amount, planPrice.currency)}</span>
+                      <span className="text-3xl font-black text-white">{formatCurrency(priceQuote.amount, priceQuote.currency)}</span>
                       <span className="text-gray-400">/{plan.durationMonths === 1 ? 'mês' : `${plan.durationMonths} meses`}</span>
                     </div>
-                    {features.length > 0 && (
+                    {planFeatures.length > 0 && (
                       <ul className="mb-5 space-y-2">
-                        {features.map((feature) => (
+                        {planFeatures.map((feature) => (
                           <li key={feature} className="flex items-start gap-2 text-sm leading-relaxed text-gray-300">
                             <FiCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-300" />
                             {feature}
