@@ -1,6 +1,5 @@
 import AutoMusicTitleHelper from './AutoMusicTitleHelper'
 import FriendlyAudioDownloads from './FriendlyAudioDownloads'
-import ProjectDeleteActions from './ProjectDeleteActions'
 
 export default function StudioIaAdminLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -8,7 +7,6 @@ export default function StudioIaAdminLayout({ children }: { children: React.Reac
       {children}
       <AutoMusicTitleHelper />
       <FriendlyAudioDownloads />
-      <ProjectDeleteActions />
     </>
   )
 }
