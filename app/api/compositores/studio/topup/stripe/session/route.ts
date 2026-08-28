@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
-import { getComposerFromRequest } from '@/lib/composer-middleware'
+import { getComposerFromRequest, resolveComposerToken } from '@/lib/composer-middleware'
 import { getStripeMinorUnitAmount, type StudioTopupCurrency } from '@/lib/studio-topups'
 import { isStripeConfigured, stripeRequest } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -15,8 +15,11 @@ export async function POST(request: NextRequest) {
       await reportPaymentFailure({ provider: 'stripe', stage: 'configuracao_recarga', error: 'Stripe não configurada no servidor', requestUrl: request.url })
       return NextResponse.json({ error: 'Stripe não configurada no servidor' }, { status: 503 })
     }
-    const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    const tokenComposer = getComposerFromRequest(request)
+    if (!tokenComposer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    const composer = await resolveComposerToken(tokenComposer)
+    if (!composer) return NextResponse.json({ error: 'Sua sessão está desatualizada. Entre novamente na sua conta.' }, { status: 401 })
+
     const { topupId } = await request.json()
     if (!topupId) return NextResponse.json({ error: 'topupId obrigatório' }, { status: 400 })
 
@@ -34,7 +37,6 @@ export async function POST(request: NextRequest) {
     if (!(amount > 0)) return NextResponse.json({ error: 'Valor da recarga inválido' }, { status: 400 })
     if (!['BRL','PYG','COP','EUR','MXN'].includes(currency)) return NextResponse.json({ error: 'Moeda da recarga inválida' }, { status: 400 })
 
-    const { data: composerData } = await supabaseAdmin.from('dccmusic_composers').select('email').eq('id', composer.composerId).maybeSingle()
     const params = new URLSearchParams()
     params.set('mode', 'payment')
     params.set('ui_mode', 'embedded_page')
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     params.set('metadata[external_reference]', topup.external_reference)
     params.set('payment_intent_data[metadata][topup_id]', topup.id)
     params.set('payment_intent_data[metadata][external_reference]', topup.external_reference)
-    if (composerData?.email) params.set('customer_email', composerData.email)
+    if (composer.email) params.set('customer_email', composer.email)
 
     const session = await stripeRequest<any>('/checkout/sessions', {
       method: 'POST',
