@@ -6,9 +6,23 @@ import { isStripeConfigured, stripeRequest } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase'
 import * as db from '@/lib/db'
 import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
+import { getStripeMinorUnitAmount, getStudioPlanPriceQuote } from '@/lib/studio-topups'
 import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
 export const dynamic = 'force-dynamic'
+
+function isStudioPlan(plan: db.Plan) {
+  const identity = `${plan.name || ''} ${plan.slug || ''}`.toLowerCase()
+  return ['studio-start', 'studio-pro', 'studio-elite', 'dcc-studio-ia'].includes(plan.slug) || identity.includes('studio ia') || identity.includes('dcc studio')
+}
+
+function getCustomerLocale(country: string) {
+  if (country === 'PT') return 'pt-PT'
+  if (country === 'MX') return 'es-MX'
+  if (country === 'CO') return 'es-CO'
+  if (country === 'PY') return 'es-PY'
+  return 'pt-BR'
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,12 +42,13 @@ export async function POST(request: NextRequest) {
     const customerCountry = normalizeCountry(
       request.cookies.get(COUNTRY_COOKIE)?.value ||
       request.headers.get('x-dcc-country') ||
-      request.headers.get('x-vercel-ip-country')
+      request.headers.get('x-vercel-ip-country') ||
+      request.headers.get('cf-ipcountry')
     )
     if (customerCountry === 'BR') {
       return NextResponse.json({ error: 'Stripe internacional disponível apenas fora do Brasil' }, { status: 400 })
     }
-    const customerLocale = customerCountry === 'CO' ? 'es-CO' : 'es-PY'
+    const customerLocale = getCustomerLocale(customerCountry)
 
     const body = await request.json()
     const planId = String(body.planId || '').trim()
@@ -59,7 +74,10 @@ export async function POST(request: NextRequest) {
     if (!composer) return NextResponse.json({ error: 'Compositor não encontrado' }, { status: 404 })
 
     const subscription = await getOrCreatePendingSubscription(composer.id, plan.id)
-    const amount = Number(plan.price) || 0
+    const priceQuote = isStudioPlan(plan)
+      ? getStudioPlanPriceQuote(Number(plan.price) || 0, customerCountry)
+      : { amount: Number(plan.price) || 0, currency: 'BRL' as const }
+    const amount = priceQuote.amount
     if (amount <= 0) return NextResponse.json({ error: 'Valor do plano inválido' }, { status: 400 })
 
     const params = new URLSearchParams()
@@ -67,12 +85,12 @@ export async function POST(request: NextRequest) {
     params.set('ui_mode', 'embedded_page')
     params.set('redirect_on_completion', 'never')
     params.set('adaptive_pricing[enabled]', 'true')
-    params.set('locale', 'es')
+    params.set('locale', customerCountry === 'PT' ? 'pt' : 'es')
     const suffix = crypto.createHash('sha256').update(subscription.id).digest('hex')
       .replace(/[0-9]/g, (digit) => String.fromCharCode(97 + Number(digit))).slice(0, 8)
     params.set('integration_identifier', `dccplan_${suffix}`)
-    params.set('line_items[0][price_data][currency]', 'brl')
-    params.set('line_items[0][price_data][unit_amount]', String(Math.round(amount * 100)))
+    params.set('line_items[0][price_data][currency]', priceQuote.currency.toLowerCase())
+    params.set('line_items[0][price_data][unit_amount]', String(getStripeMinorUnitAmount(amount, priceQuote.currency)))
     params.set('line_items[0][price_data][product_data][name]', plan.name || 'Plan DCC Music')
     if (plan.description) params.set('line_items[0][price_data][product_data][description]', plan.description.slice(0, 500))
     params.set('line_items[0][quantity]', '1')
@@ -98,6 +116,8 @@ export async function POST(request: NextRequest) {
           checkout_type: 'stripe_embedded',
           customer_country: customerCountry,
           customer_locale: customerLocale,
+          checkout_currency: priceQuote.currency,
+          checkout_amount: amount,
           stripe_session_id: session.id,
         },
         updated_at: new Date().toISOString(),
@@ -112,7 +132,7 @@ export async function POST(request: NextRequest) {
       publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
       sessionId: session.id,
       amount,
-      currency: 'BRL',
+      currency: priceQuote.currency,
     })
   } catch (error: any) {
     console.error('[PLAN STRIPE] Erro ao criar sessão:', error?.message)
