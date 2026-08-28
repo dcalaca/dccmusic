@@ -4,13 +4,16 @@ import { requireAuth } from '@/lib/auth-helpers'
 import { supabaseAdmin } from '@/lib/supabase'
 import { FiArrowLeft, FiDollarSign, FiSave } from 'react-icons/fi'
 
-const countryLabels: Record<string, string> = {
-  BR: 'Brasil',
-  PY: 'Paraguai',
-  CO: 'Colômbia',
-  PT: 'Portugal',
-  MX: 'México',
-}
+const countries = [
+  { code: 'BR', label: 'Brasil', flag: '🇧🇷' },
+  { code: 'PY', label: 'Paraguai', flag: '🇵🇾' },
+  { code: 'CO', label: 'Colômbia', flag: '🇨🇴' },
+  { code: 'MX', label: 'México', flag: '🇲🇽' },
+  { code: 'PT', label: 'Portugal', flag: '🇵🇹' },
+] as const
+
+const countryLabels: Record<string, string> = Object.fromEntries(countries.map((country) => [country.code, country.label]))
+const countryFlags: Record<string, string> = Object.fromEntries(countries.map((country) => [country.code, country.flag]))
 
 function priceStep(currency: string) {
   return currency === 'PYG' || currency === 'COP' ? '100' : '0.01'
@@ -48,7 +51,6 @@ async function updateCountryPlanPrice(formData: FormData) {
     .eq('id', id)
   if (error) throw error
 
-  // Mantém o preço-base do plano sincronizado para o fallback do Brasil.
   if (country === 'BR') {
     const { error: planError } = await supabaseAdmin
       .from('dccmusic_plans')
@@ -77,8 +79,17 @@ async function updateBasePlanPrice(formData: FormData) {
   revalidatePath('/admin/precos')
 }
 
-export default async function AdminPricingPage() {
+export default async function AdminPricingPage({
+  searchParams,
+}: {
+  searchParams?: { pais?: string }
+}) {
   await requireAuth()
+
+  const requestedCountry = String(searchParams?.pais || 'BR').toUpperCase()
+  const selectedCountry = countries.some((country) => country.code === requestedCountry)
+    ? requestedCountry
+    : 'BR'
 
   const [{ data: topups, error: topupError }, { data: countryPlans, error: countryPlanError }, { data: plans, error: plansError }] = await Promise.all([
     supabaseAdmin
@@ -106,6 +117,10 @@ export default async function AdminPricingPage() {
   const planNames = new Map((plans || []).map((plan: any) => [plan.slug, plan.name]))
   const studioSlugs = new Set((countryPlans || []).map((row: any) => row.plan_slug))
   const generalPlans = (plans || []).filter((plan: any) => !studioSlugs.has(plan.slug))
+  const filteredTopups = (topups || []).filter((row: any) => row.country === selectedCountry)
+  const filteredCountryPlans = (countryPlans || []).filter((row: any) => row.country === selectedCountry)
+  const selectedLabel = countryLabels[selectedCountry] || selectedCountry
+  const selectedFlag = countryFlags[selectedCountry] || ''
 
   return (
     <div className="min-h-screen py-8">
@@ -122,26 +137,54 @@ export default async function AdminPricingPage() {
           <p className="mt-2 max-w-3xl text-gray-400">Altere os valores cobrados no Studio IA e nos planos. As mudanças passam a valer sem novo deploy.</p>
         </div>
 
+        <section className="mb-8 rounded-3xl border border-gray-800 bg-gray-950/70 p-5 sm:p-6">
+          <div className="mb-4">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Filtrar país</p>
+            <h2 className="mt-1 text-xl font-black text-white">{selectedFlag} {selectedLabel}</h2>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {countries.map((country) => {
+              const active = country.code === selectedCountry
+              return (
+                <Link
+                  key={country.code}
+                  href={`/admin/precos?pais=${country.code}`}
+                  className={active
+                    ? 'inline-flex items-center gap-2 rounded-xl border border-purple-400 bg-purple-600 px-4 py-2.5 text-sm font-black text-white shadow-lg shadow-purple-950/40'
+                    : 'inline-flex items-center gap-2 rounded-xl border border-gray-700 bg-black px-4 py-2.5 text-sm font-bold text-gray-300 transition hover:border-purple-500 hover:text-white'}
+                >
+                  <span>{country.flag}</span>
+                  <span>{country.label}</span>
+                </Link>
+              )
+            })}
+          </div>
+          <p className="mt-4 text-xs text-gray-500">Abaixo aparecem somente recargas e planos do país selecionado.</p>
+        </section>
+
         <section className="mb-10 rounded-3xl border border-purple-800/60 bg-black/30 p-5 sm:p-7">
-          <h2 className="text-2xl font-black text-white">Recarga avulsa Studio IA</h2>
-          <p className="mt-1 text-sm text-gray-400">Preço por música, por país e faixa de quantidade.</p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-black text-white">Recarga avulsa · {selectedFlag} {selectedLabel}</h2>
+              <p className="mt-1 text-sm text-gray-400">Preço por música em cada faixa de quantidade.</p>
+            </div>
+            <span className="rounded-full border border-gray-800 bg-gray-950 px-3 py-1 text-xs font-bold text-gray-400">{filteredTopups.length} faixas</span>
+          </div>
           <div className="mt-6 overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-sm">
-              <thead className="text-gray-400"><tr className="border-b border-gray-800"><th className="p-3">País</th><th className="p-3">Faixa</th><th className="p-3">Moeda</th><th className="p-3">Preço por música</th><th className="p-3">Ação</th></tr></thead>
+            <table className="w-full min-w-[700px] text-left text-sm">
+              <thead className="text-gray-400"><tr className="border-b border-gray-800"><th className="p-3">Faixa</th><th className="p-3">Moeda</th><th className="p-3">Preço por música</th></tr></thead>
               <tbody>
-                {(topups || []).map((row: any) => (
+                {filteredTopups.map((row: any) => (
                   <tr key={row.id} className="border-b border-gray-900">
-                    <td className="p-3 font-bold text-white">{countryLabels[row.country] || row.country}</td>
-                    <td className="p-3 text-gray-300">{row.min_quantity}{row.max_quantity ? ` a ${row.max_quantity}` : '+'} músicas</td>
+                    <td className="p-3 font-bold text-white">{row.min_quantity}{row.max_quantity ? ` a ${row.max_quantity}` : '+'} músicas</td>
                     <td className="p-3 text-gray-400">{row.currency}</td>
                     <td className="p-3">
                       <form action={updateTopupPrice} className="flex items-center gap-2">
                         <input type="hidden" name="id" value={row.id} />
-                        <input name="price" type="number" min="0.01" step={priceStep(row.currency)} defaultValue={Number(row.unit_price)} className="w-36 rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 font-bold text-white" />
+                        <input name="price" type="number" min="0.01" step={priceStep(row.currency)} defaultValue={Number(row.unit_price)} className="w-40 rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 font-bold text-white" />
                         <button className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 font-bold text-white hover:bg-purple-500"><FiSave /> Salvar</button>
                       </form>
                     </td>
-                    <td />
                   </tr>
                 ))}
               </tbody>
@@ -150,16 +193,21 @@ export default async function AdminPricingPage() {
         </section>
 
         <section className="mb-10 rounded-3xl border border-purple-800/60 bg-black/30 p-5 sm:p-7">
-          <h2 className="text-2xl font-black text-white">Planos Studio IA por país</h2>
-          <p className="mt-1 text-sm text-gray-400">Valores usados na vitrine e no checkout internacional.</p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-2xl font-black text-white">Planos Studio IA · {selectedFlag} {selectedLabel}</h2>
+              <p className="mt-1 text-sm text-gray-400">Valores usados na vitrine e no checkout deste país.</p>
+            </div>
+            <span className="rounded-full border border-gray-800 bg-gray-950 px-3 py-1 text-xs font-bold text-gray-400">{filteredCountryPlans.length} planos</span>
+          </div>
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
-            {(countryPlans || []).map((row: any) => (
+            {filteredCountryPlans.map((row: any) => (
               <form key={row.id} action={updateCountryPlanPrice} className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4">
                 <input type="hidden" name="id" value={row.id} />
                 <input type="hidden" name="slug" value={row.plan_slug} />
                 <input type="hidden" name="country" value={row.country} />
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <div><p className="font-black text-white">{planNames.get(row.plan_slug) || row.plan_slug}</p><p className="text-xs text-gray-500">{countryLabels[row.country] || row.country} · {row.currency}</p></div>
+                  <div><p className="font-black text-white">{planNames.get(row.plan_slug) || row.plan_slug}</p><p className="text-xs text-gray-500">{selectedFlag} {selectedLabel} · {row.currency}</p></div>
                   <button className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-sm font-bold text-white hover:bg-purple-500"><FiSave /> Salvar</button>
                 </div>
                 <input name="price" type="number" min="0.01" step={priceStep(row.currency)} defaultValue={Number(row.price)} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3 text-xl font-black text-white" />
@@ -168,9 +216,9 @@ export default async function AdminPricingPage() {
           </div>
         </section>
 
-        {generalPlans.length > 0 ? (
+        {selectedCountry === 'BR' && generalPlans.length > 0 ? (
           <section className="mb-10 rounded-3xl border border-gray-800 bg-black/30 p-5 sm:p-7">
-            <h2 className="text-2xl font-black text-white">Outros planos DCC Music</h2>
+            <h2 className="text-2xl font-black text-white">Outros planos DCC Music · 🇧🇷 Brasil</h2>
             <p className="mt-1 text-sm text-gray-400">Preço-base dos planos que não usam a tabela internacional do Studio.</p>
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
               {generalPlans.map((plan: any) => (
