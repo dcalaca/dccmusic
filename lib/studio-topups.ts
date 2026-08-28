@@ -1,4 +1,7 @@
 import { STUDIO_MUSIC_CREDITS } from './studio'
+import type { DccCountry } from './localization'
+
+export type StudioTopupCurrency = 'BRL' | 'EUR'
 
 export type StudioTopupQuote = {
   musicQuantity: number
@@ -6,9 +9,16 @@ export type StudioTopupQuote = {
   unitPrice: number
   totalPrice: number
   tierLabel: string
+  currency: StudioTopupCurrency
 }
 
-export const STUDIO_TOPUP_TIERS = [
+type StudioTopupTier = {
+  maxMusicQuantity: number
+  unitPrice: number
+  label: string
+}
+
+export const STUDIO_TOPUP_TIERS: StudioTopupTier[] = [
   {
     maxMusicQuantity: 1,
     unitPrice: 2.99,
@@ -36,18 +46,32 @@ export const STUDIO_TOPUP_TIERS = [
   },
 ]
 
-export function getStudioTopupTiers() {
-  return STUDIO_TOPUP_TIERS
+const PORTUGAL_BASE_PRICE = 1.99
+const BRAZIL_BASE_PRICE = STUDIO_TOPUP_TIERS[0].unitPrice
+
+// Portugal usa a mesma curva percentual de desconto do Brasil,
+// mas com preço inicial próprio de €1,99 por música.
+export const STUDIO_TOPUP_TIERS_PT: StudioTopupTier[] = STUDIO_TOPUP_TIERS.map((tier) => ({
+  ...tier,
+  unitPrice: Number(((tier.unitPrice / BRAZIL_BASE_PRICE) * PORTUGAL_BASE_PRICE).toFixed(2)),
+}))
+
+export function getStudioTopupCurrency(country: DccCountry = 'BR'): StudioTopupCurrency {
+  return country === 'PT' ? 'EUR' : 'BRL'
 }
 
-export function getStudioTopupTier(musicQuantity: number) {
-  const tiers = getStudioTopupTiers()
+export function getStudioTopupTiers(country: DccCountry = 'BR') {
+  return country === 'PT' ? STUDIO_TOPUP_TIERS_PT : STUDIO_TOPUP_TIERS
+}
+
+export function getStudioTopupTier(musicQuantity: number, country: DccCountry = 'BR') {
+  const tiers = getStudioTopupTiers(country)
   return tiers.find((tier) => musicQuantity <= tier.maxMusicQuantity) || tiers[tiers.length - 1]
 }
 
-export function getStudioTopupQuote(inputQuantity: number): StudioTopupQuote {
+export function getStudioTopupQuote(inputQuantity: number, country: DccCountry = 'BR'): StudioTopupQuote {
   const musicQuantity = Math.max(1, Math.floor(Number(inputQuantity) || 0))
-  const tier = getStudioTopupTier(musicQuantity)
+  const tier = getStudioTopupTier(musicQuantity, country)
   const totalPrice = Number((musicQuantity * tier.unitPrice).toFixed(2))
 
   return {
@@ -56,5 +80,6 @@ export function getStudioTopupQuote(inputQuantity: number): StudioTopupQuote {
     unitPrice: tier.unitPrice,
     totalPrice,
     tierLabel: tier.label,
+    currency: getStudioTopupCurrency(country),
   }
 }
