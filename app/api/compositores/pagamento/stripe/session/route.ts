@@ -6,7 +6,8 @@ import { isStripeConfigured, stripeRequest } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase'
 import * as db from '@/lib/db'
 import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
-import { getStripeMinorUnitAmount, getStudioPlanPriceQuote } from '@/lib/studio-topups'
+import { getStripeMinorUnitAmount, type StudioTopupCurrency } from '@/lib/studio-topups'
+import { getStudioPlanPriceFromPricing } from '@/lib/studio-pricing-server'
 import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
 export const dynamic = 'force-dynamic'
@@ -27,12 +28,7 @@ function getCustomerLocale(country: string) {
 export async function POST(request: NextRequest) {
   try {
     if (!isStripeConfigured()) {
-      await reportPaymentFailure({
-        provider: 'stripe',
-        stage: 'configuracao_plano',
-        error: 'Stripe não configurada no servidor',
-        requestUrl: request.url,
-      })
+      await reportPaymentFailure({ provider: 'stripe', stage: 'configuracao_plano', error: 'Stripe não configurada no servidor', requestUrl: request.url })
       return NextResponse.json({ error: 'Stripe não configurado no servidor' }, { status: 503 })
     }
 
@@ -45,9 +41,7 @@ export async function POST(request: NextRequest) {
       request.headers.get('x-vercel-ip-country') ||
       request.headers.get('cf-ipcountry')
     )
-    if (customerCountry === 'BR') {
-      return NextResponse.json({ error: 'Stripe internacional disponível apenas fora do Brasil' }, { status: 400 })
-    }
+    if (customerCountry === 'BR') return NextResponse.json({ error: 'Stripe internacional disponível apenas fora do Brasil' }, { status: 400 })
     const customerLocale = getCustomerLocale(customerCountry)
 
     const body = await request.json()
@@ -56,27 +50,25 @@ export async function POST(request: NextRequest) {
 
     let plan = await db.getPlanBySlug(planId)
     if (!plan) {
-      const { data: planData } = await supabaseAdmin
-        .from('dccmusic_plans')
-        .select('*')
-        .eq('id', planId)
-        .eq('is_active', true)
-        .maybeSingle()
+      const { data: planData } = await supabaseAdmin.from('dccmusic_plans').select('*').eq('id', planId).eq('is_active', true).maybeSingle()
       if (planData) plan = db.mapPlan(planData)
     }
     if (!plan) return NextResponse.json({ error: 'Plano não encontrado' }, { status: 404 })
 
-    const { data: composer } = await supabaseAdmin
-      .from('dccmusic_composers')
-      .select('id, email, name')
-      .eq('id', composerToken.composerId)
-      .maybeSingle()
+    const { data: composer } = await supabaseAdmin.from('dccmusic_composers').select('id, email, name').eq('id', composerToken.composerId).maybeSingle()
     if (!composer) return NextResponse.json({ error: 'Compositor não encontrado' }, { status: 404 })
 
     const subscription = await getOrCreatePendingSubscription(composer.id, plan.id)
-    const priceQuote = isStudioPlan(plan)
-      ? getStudioPlanPriceQuote(Number(plan.price) || 0, customerCountry)
-      : { amount: Number(plan.price) || 0, currency: 'BRL' as const }
+    const snapshotAmount = Number(subscription.metadata?.checkout_amount)
+    const snapshotCurrency = String(subscription.metadata?.checkout_currency || '').toUpperCase() as StudioTopupCurrency
+    const hasValidSnapshot = snapshotAmount > 0 && ['BRL','PYG','COP','EUR','MXN'].includes(snapshotCurrency)
+
+    const priceQuote = hasValidSnapshot
+      ? { amount: snapshotAmount, currency: snapshotCurrency, source: String(subscription.metadata?.pricing_source || 'supabase') }
+      : isStudioPlan(plan)
+        ? await getStudioPlanPriceFromPricing(plan.slug, Number(plan.price) || 0, customerCountry)
+        : { amount: Number(plan.price) || 0, currency: 'BRL' as StudioTopupCurrency, source: 'fallback' }
+
     const amount = priceQuote.amount
     if (amount <= 0) return NextResponse.json({ error: 'Valor do plano inválido' }, { status: 400 })
 
@@ -86,8 +78,7 @@ export async function POST(request: NextRequest) {
     params.set('redirect_on_completion', 'never')
     params.set('adaptive_pricing[enabled]', 'true')
     params.set('locale', customerCountry === 'PT' ? 'pt' : 'es')
-    const suffix = crypto.createHash('sha256').update(subscription.id).digest('hex')
-      .replace(/[0-9]/g, (digit) => String.fromCharCode(97 + Number(digit))).slice(0, 8)
+    const suffix = crypto.createHash('sha256').update(subscription.id).digest('hex').replace(/[0-9]/g, (digit) => String.fromCharCode(97 + Number(digit))).slice(0, 8)
     params.set('integration_identifier', `dccplan_${suffix}`)
     params.set('line_items[0][price_data][currency]', priceQuote.currency.toLowerCase())
     params.set('line_items[0][price_data][unit_amount]', String(getStripeMinorUnitAmount(amount, priceQuote.currency)))
@@ -108,41 +99,24 @@ export async function POST(request: NextRequest) {
       headers: { 'Idempotency-Key': `composer-plan-stripe-${subscription.id}` },
     })
 
-    await supabaseAdmin
-      .from('dccmusic_subscriptions')
-      .update({
-        metadata: {
-          ...(subscription.metadata || {}),
-          checkout_type: 'stripe_embedded',
-          customer_country: customerCountry,
-          customer_locale: customerLocale,
-          checkout_currency: priceQuote.currency,
-          checkout_amount: amount,
-          stripe_session_id: session.id,
-        },
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', subscription.id)
+    await supabaseAdmin.from('dccmusic_subscriptions').update({
+      metadata: {
+        ...(subscription.metadata || {}),
+        checkout_type: 'stripe_embedded',
+        customer_country: customerCountry,
+        customer_locale: customerLocale,
+        checkout_currency: priceQuote.currency,
+        checkout_amount: amount,
+        pricing_source: priceQuote.source,
+        stripe_session_id: session.id,
+      },
+      updated_at: new Date().toISOString(),
+    }).eq('id', subscription.id)
 
-    return NextResponse.json({
-      success: true,
-      provider: 'stripe',
-      subscriptionId: subscription.id,
-      clientSecret: session.client_secret,
-      publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
-      sessionId: session.id,
-      amount,
-      currency: priceQuote.currency,
-    })
+    return NextResponse.json({ success: true, provider: 'stripe', subscriptionId: subscription.id, clientSecret: session.client_secret, publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY, sessionId: session.id, amount, currency: priceQuote.currency })
   } catch (error: any) {
     console.error('[PLAN STRIPE] Erro ao criar sessão:', error?.message)
-    await reportPaymentFailure({
-      provider: 'stripe',
-      stage: 'criacao_checkout_plano',
-      error,
-      requestUrl: request.url,
-      composerId: getComposerFromRequest(request)?.composerId,
-    })
+    await reportPaymentFailure({ provider: 'stripe', stage: 'criacao_checkout_plano', error, requestUrl: request.url, composerId: getComposerFromRequest(request)?.composerId })
     return NextResponse.json({ error: error?.message || 'Erro ao abrir pagamento Stripe' }, { status: 500 })
   }
 }
