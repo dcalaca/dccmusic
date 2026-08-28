@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
-import { getStudioTopupQuote } from '@/lib/studio-topups'
+import { getStudioTopupQuoteFromPricing } from '@/lib/studio-pricing-server'
 import { studioMonthKey } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
 import { buildMetaCapiMetadata, sendMetaInitiateCheckoutEvent } from '@/lib/meta-conversions'
@@ -42,16 +42,10 @@ export async function POST(request: NextRequest) {
     if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
     const musicQuantity = Math.floor(Number(body.musicQuantity) || 0)
+    if (musicQuantity <= 0) return NextResponse.json({ error: 'Informe uma quantidade válida de músicas.' }, { status: 400 })
+    if (musicQuantity > 500) return NextResponse.json({ error: 'A recarga avulsa permite no máximo 500 músicas por compra.' }, { status: 400 })
 
-    if (musicQuantity <= 0) {
-      return NextResponse.json({ error: 'Informe uma quantidade válida de músicas.' }, { status: 400 })
-    }
-
-    if (musicQuantity > 500) {
-      return NextResponse.json({ error: 'A recarga avulsa permite no máximo 500 músicas por compra.' }, { status: 400 })
-    }
-
-    const quote = getStudioTopupQuote(musicQuantity, requestCountry)
+    const quote = await getStudioTopupQuoteFromPricing(musicQuantity, requestCountry)
     const packageName = `Recarga avulsa ${quote.musicQuantity} músicas`
 
     const { data: composerData } = await supabaseAdmin
@@ -66,6 +60,7 @@ export async function POST(request: NextRequest) {
       externalId: composer.composerId,
       eventSourceUrl: request.headers.get('referer') || request.url,
     })
+
     const { data: topup, error: topupError } = await supabaseAdmin
       .from('studio_credit_topups')
       .insert({
@@ -83,6 +78,7 @@ export async function POST(request: NextRequest) {
           package_name: packageName,
           unit_price: quote.unitPrice,
           tier_label: quote.tierLabel,
+          pricing_source: quote.source,
           composer_name: composerData?.name || null,
           checkout_type: provider === 'stripe' ? 'stripe_embedded' : 'payment_brick',
           customer_country: requestCountry,
@@ -115,9 +111,7 @@ export async function POST(request: NextRequest) {
       contentName: packageName,
       contentId: 'studio_topup',
       quantity: quote.musicQuantity,
-    }).catch((metaError) => {
-      console.error('[Studio IA] Erro ao enviar início de checkout para Meta:', metaError)
-    })
+    }).catch((metaError) => console.error('[Studio IA] Erro ao enviar início de checkout para Meta:', metaError))
 
     return NextResponse.json({
       success: true,
@@ -132,6 +126,7 @@ export async function POST(request: NextRequest) {
       musicQuantity: quote.musicQuantity,
       unitPrice: quote.unitPrice,
       tierLabel: quote.tierLabel,
+      pricingSource: quote.source,
       packageName,
       composerEmail: composerData?.email || null,
       metaInitiateCheckoutEventId,
@@ -146,9 +141,6 @@ export async function POST(request: NextRequest) {
       requestUrl: request.url,
       composerId: getComposerFromRequest(request)?.composerId,
     })
-    return NextResponse.json(
-      { error: error.message || 'Erro ao preparar recarga avulsa' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: error.message || 'Erro ao preparar recarga avulsa' }, { status: 500 })
   }
 }
