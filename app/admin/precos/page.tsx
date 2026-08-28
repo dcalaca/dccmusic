@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth-helpers'
 import { supabaseAdmin } from '@/lib/supabase'
 import { FiArrowLeft, FiDollarSign, FiSave } from 'react-icons/fi'
 import PriceUpdatedToast from './PriceUpdatedToast'
+import CurrencyPriceInput from './CurrencyPriceInput'
 
 const countries = [
   { code: 'BR', label: 'Brasil', flag: '🇧🇷' },
@@ -16,10 +17,6 @@ const countries = [
 
 const countryLabels: Record<string, string> = Object.fromEntries(countries.map((country) => [country.code, country.label]))
 const countryFlags: Record<string, string> = Object.fromEntries(countries.map((country) => [country.code, country.flag]))
-
-function priceStep(currency: string) {
-  return currency === 'PYG' || currency === 'COP' ? '100' : '0.01'
-}
 
 function redirectAfterSave(country: string) {
   const safeCountry = countries.some((item) => item.code === country) ? country : 'BR'
@@ -198,7 +195,7 @@ export default async function AdminPricingPage({
                       <form action={updateTopupPrice} className="flex items-center gap-2">
                         <input type="hidden" name="id" value={row.id} />
                         <input type="hidden" name="country" value={selectedCountry} />
-                        <input name="price" type="number" min="0.01" step={priceStep(row.currency)} defaultValue={Number(row.unit_price)} className="w-40 rounded-lg border border-gray-700 bg-gray-950 px-3 py-2 font-bold text-white" />
+                        <CurrencyPriceInput value={Number(row.unit_price)} currency={row.currency} compact />
                         <button className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 font-bold text-white hover:bg-purple-500"><FiSave /> Salvar</button>
                       </form>
                     </td>
@@ -227,7 +224,7 @@ export default async function AdminPricingPage({
                   <div><p className="font-black text-white">{planNames.get(row.plan_slug) || row.plan_slug}</p><p className="text-xs text-gray-500">{selectedFlag} {selectedLabel} · {row.currency}</p></div>
                   <button className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-sm font-bold text-white hover:bg-purple-500"><FiSave /> Salvar</button>
                 </div>
-                <input name="price" type="number" min="0.01" step={priceStep(row.currency)} defaultValue={Number(row.price)} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3 text-xl font-black text-white" />
+                <CurrencyPriceInput value={Number(row.price)} currency={row.currency} />
               </form>
             ))}
           </div>
@@ -242,7 +239,7 @@ export default async function AdminPricingPage({
                 <form key={plan.id} action={updateBasePlanPrice} className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4">
                   <input type="hidden" name="id" value={plan.id} />
                   <div className="mb-3 flex items-center justify-between"><div><p className="font-black text-white">{plan.name}</p><p className="text-xs text-gray-500">{plan.slug} · BRL</p></div><button className="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-3 py-2 text-sm font-bold hover:bg-gray-700"><FiSave /> Salvar</button></div>
-                  <input name="price" type="number" min="0.01" step="0.01" defaultValue={Number(plan.price)} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3 text-xl font-black text-white" />
+                  <CurrencyPriceInput value={Number(plan.price)} currency="BRL" />
                 </form>
               ))}
             </div>
