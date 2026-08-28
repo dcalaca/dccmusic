@@ -462,6 +462,7 @@ export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
     contentHtml: `
       <p>Olá, ${escapeHtml(input.name)}.</p>
       <p>A música <strong>${escapeHtml(input.projectTitle)}</strong> já está disponível no seu Studio IA.</p>
+      ${input.projectId ? `<p style="margin-top:-8px;font-size:12px;line-height:1.5;color:#8b8794;word-break:break-all;">Código do projeto: <strong style="color:#6b6675;">${escapeHtml(input.projectId)}</strong></p>` : ''}
       ${button('Abrir Studio IA', `${getSiteUrl()}/compositores/admin/studio-ia/projetos${input.projectId ? `/${input.projectId}` : ''}`)}
     `,
   })
