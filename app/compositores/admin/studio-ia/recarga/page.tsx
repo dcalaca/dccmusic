@@ -26,6 +26,10 @@ function formatMoney(value: number) {
 }
 
 function LocalizedMoney({ value, country }: { value: number; country: DccCountry }) {
+  if (country === 'PT') {
+    return <>{new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value)}</>
+  }
+
   if (country === 'CO') {
     const amount = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 0 }).format(brlToCopDisplay(value))
     return (
@@ -59,6 +63,7 @@ export default function StudioTopupPage() {
     stripeSessionId?: string
   } | null>(null)
   const paidRedirectRef = useRef(false)
+  const checkoutCurrency = country === 'PT' ? 'EUR' : 'BRL'
 
   const openStripeFallback = async (topupId: string, amount: number, email?: string | null) => {
     const token = localStorage.getItem('composer_token')
@@ -193,7 +198,7 @@ export default function StudioTopupPage() {
   const getCurrentTier = () => {
     return tiers.find((tier) => tier.maxMusicQuantity === null || normalizedMusicQuantity <= tier.maxMusicQuantity) || {
       maxMusicQuantity: null,
-      unitPrice: 2.99,
+      unitPrice: country === 'PT' ? 1.99 : 2.99,
       label: 'Música avulsa',
     }
   }
@@ -213,7 +218,7 @@ export default function StudioTopupPage() {
       content_id: 'studio_topup',
       content_name: 'Recarga Studio IA',
       content_category: 'Studio IA',
-      currency: 'BRL',
+      currency: checkoutCurrency,
       event_id: eventId,
       price: currentTier.unitPrice,
       quantity: normalizedMusicQuantity,
@@ -260,8 +265,8 @@ export default function StudioTopupPage() {
               id: 'studio_topup',
               quantity: normalizedMusicQuantity,
             }],
-            currency: 'BRL',
-            value: totalPrice,
+            currency: intent.currency || checkoutCurrency,
+            value: Number(intent.amount) || totalPrice,
           }, {
             eventID: metaEventId,
           })
