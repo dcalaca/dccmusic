@@ -83,13 +83,13 @@ export function getLocaleForCountry(country: DccCountry): DccLocale {
   return COUNTRY_CONFIG[country].locale
 }
 
-// Multiplicadores de exibição para PY/CO/MX seguem a política comercial de
-// poder de compra: R$ 2,99 tem aproximadamente o mesmo peso sobre o salário
-// mínimo local. Portugal mantém sua regra própria atual.
-export const BRL_TO_PYG_DISPLAY_RATE = 5600 / 2.99
-export const BRL_TO_COP_DISPLAY_RATE = 3200 / 2.99
+// Cotações de referência usadas apenas para exibição genérica fora do Studio.
+// Os preços do Studio IA são definidos por país no Supabase e não dependem
+// destes multiplicadores.
+export const BRL_TO_PYG_DISPLAY_RATE = 1160
+export const BRL_TO_COP_DISPLAY_RATE = 590
 export const BRL_TO_EUR_DISPLAY_RATE = 0.1662
-export const BRL_TO_MXN_DISPLAY_RATE = 17.68 / 2.99
+export const BRL_TO_MXN_DISPLAY_RATE = 3.29
 
 export function brlToPygDisplay(value: number) {
   const converted = Math.max(0, Number(value) || 0) * BRL_TO_PYG_DISPLAY_RATE
