@@ -61,6 +61,7 @@ function StudioProjectsContent() {
   const [viewMode, setViewMode] = useState<'small' | 'large'>('small')
   const [sessionExpired, setSessionExpired] = useState(false)
   const [menuProjectId, setMenuProjectId] = useState('')
+  const [projectToDelete, setProjectToDelete] = useState<any>(null)
   const [inspiringId, setInspiringId] = useState('')
   const [inspirationProject, setInspirationProject] = useState<any>(null)
   const [selectedInspirationVariation, setSelectedInspirationVariation] = useState('similar')
@@ -201,6 +202,52 @@ function StudioProjectsContent() {
       loadProjects()
     } finally {
       setDeletingDrafts(false)
+    }
+  }
+
+  const openDeleteConfirmation = (project: any) => {
+    setMenuProjectId('')
+    setError('')
+    setMessage('')
+    setProjectToDelete(project)
+  }
+
+  const deleteProject = async () => {
+    if (!projectToDelete?.id) return
+
+    const token = localStorage.getItem('composer_token')
+    if (!token) {
+      setProjectToDelete(null)
+      showSessionExpired()
+      return
+    }
+
+    const projectId = projectToDelete.id
+    setDeletingId(projectId)
+    setError('')
+    setMessage('')
+
+    try {
+      const response = await fetch(`/api/compositores/studio/projects/${projectId}/delete`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await response.json().catch(() => ({}))
+
+      if (response.status === 401) {
+        setProjectToDelete(null)
+        showSessionExpired()
+        return
+      }
+      if (!response.ok) throw new Error(data.error || 'Não foi possível excluir o projeto.')
+
+      setProjects((currentProjects) => currentProjects.filter((project) => project.id !== projectId))
+      setProjectToDelete(null)
+      setMessage('Projeto excluído com sucesso.')
+    } catch (err: any) {
+      setError(err.message || 'Não foi possível excluir o projeto.')
+    } finally {
+      setDeletingId('')
     }
   }
 
@@ -345,6 +392,51 @@ function StudioProjectsContent() {
 
           {message && <div className="mb-6 rounded-xl border border-green-800 bg-green-950/50 p-4 text-green-200">{message}</div>}
           {error && <div className="mb-6 rounded-xl border border-red-800 bg-red-950/50 p-4 text-red-200">{error}</div>}
+          {projectToDelete && (
+            <div
+              className="fixed inset-0 z-[150] flex items-center justify-center bg-black/85 px-4 py-6 backdrop-blur-sm"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="delete-project-title"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget && !deletingId) setProjectToDelete(null)
+              }}
+            >
+              <div className="w-full max-w-md overflow-hidden rounded-3xl border border-red-400/25 bg-[radial-gradient(circle_at_top,rgba(127,29,29,0.28),transparent_48%),#08090f] shadow-2xl shadow-red-950/40">
+                <div className="p-6 sm:p-7">
+                  <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-red-400/25 bg-red-950/50 text-2xl text-red-300">
+                    <FiTrash2 />
+                  </div>
+                  <h2 id="delete-project-title" className="text-2xl font-black text-white">Excluir este projeto?</h2>
+                  <p className="mt-3 leading-relaxed text-gray-300">
+                    Você está prestes a excluir <strong className="text-white">“{projectToDelete.title}”</strong> e todas as músicas e versões deste projeto.
+                  </p>
+                  <div className="mt-5 rounded-2xl border border-red-900/60 bg-red-950/25 p-4 text-sm text-red-100">
+                    Esta ação é permanente e não poderá ser desfeita.
+                  </div>
+                </div>
+                <div className="flex flex-col-reverse gap-3 border-t border-white/10 bg-black/25 p-4 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setProjectToDelete(null)}
+                    disabled={Boolean(deletingId)}
+                    className="rounded-xl border border-gray-700 px-5 py-3 font-bold text-gray-200 transition hover:bg-gray-900 disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={deleteProject}
+                    disabled={Boolean(deletingId)}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-black text-white transition hover:bg-red-500 disabled:cursor-wait disabled:opacity-60"
+                  >
+                    {deletingId ? <FiLoader className="animate-spin" /> : <FiTrash2 />}
+                    {deletingId ? 'Excluindo...' : 'Sim, excluir projeto'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {inspirationProject && (
             <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/85 px-3 py-5 backdrop-blur-sm sm:px-6">
               <div className="relative max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-[2rem] border border-purple-400/30 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.28),transparent_34%),linear-gradient(135deg,#050816,#090b16,#18092c)] shadow-2xl shadow-purple-950/50">
@@ -668,6 +760,15 @@ function StudioProjectsContent() {
                             >
                               <FiZap />
                               Usar de inspiração
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openDeleteConfirmation(project)}
+                              disabled={deletingId === project.id}
+                              className="flex w-full items-center gap-2 border-t border-gray-800 px-4 py-3 text-left text-sm font-bold text-red-300 transition hover:bg-red-950/40 hover:text-red-200 disabled:opacity-60"
+                            >
+                              <FiTrash2 />
+                              Excluir projeto
                             </button>
                           </div>
                         )}
