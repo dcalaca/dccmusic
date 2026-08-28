@@ -10,20 +10,51 @@ function withSurface(response: NextResponse, surface: 'blog' | 'site') {
   return response
 }
 
-function nextWithSurface(request: NextRequest, surface: 'blog' | 'site') {
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set('x-dcc-surface', surface)
-  const country = normalizeCountry(
+function canonicalCookieHeader(request: NextRequest, country: string) {
+  const parts = (request.headers.get('cookie') || '')
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((part) => !part.toLowerCase().startsWith(`${COUNTRY_COOKIE.toLowerCase()}=`))
+
+  parts.push(`${COUNTRY_COOKIE}=${country}`)
+  return parts.join('; ')
+}
+
+function resolveCountry(request: NextRequest) {
+  return normalizeCountry(
     request.cookies.get(COUNTRY_COOKIE)?.value ||
     request.headers.get('x-vercel-ip-country') ||
     request.headers.get('cf-ipcountry')
   )
+}
+
+function applyCountryToRequest(request: NextRequest, requestHeaders: Headers, country: ReturnType<typeof normalizeCountry>) {
   requestHeaders.set('x-dcc-country', country)
   requestHeaders.set('x-dcc-locale', getLocaleForCountry(country))
+  // Garante que Server Components, APIs e middleware leiam o mesmo país,
+  // mesmo se o navegador tiver deixado cookies duplicados/antigos.
+  requestHeaders.set('cookie', canonicalCookieHeader(request, country))
+}
+
+function applyCountryToResponse(response: NextResponse, country: ReturnType<typeof normalizeCountry>) {
+  response.headers.set('x-dcc-country', country)
+  response.cookies.set(COUNTRY_COOKIE, country, {
+    path: '/',
+    maxAge: 60 * 60 * 24 * 365,
+    sameSite: 'lax',
+  })
+  return response
+}
+
+function nextWithSurface(request: NextRequest, surface: 'blog' | 'site') {
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-dcc-surface', surface)
+  const country = resolveCountry(request)
+  applyCountryToRequest(request, requestHeaders, country)
   const response = NextResponse.next({ request: { headers: requestHeaders } })
   response.headers.set('x-dcc-surface', surface)
-  response.headers.set('x-dcc-country', country)
-  return response
+  return applyCountryToResponse(response, country)
 }
 
 function rewriteWithSurface(request: NextRequest, pathname: string) {
@@ -31,16 +62,11 @@ function rewriteWithSurface(request: NextRequest, pathname: string) {
   url.pathname = pathname
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-dcc-surface', 'blog')
-  const country = normalizeCountry(
-    request.cookies.get(COUNTRY_COOKIE)?.value ||
-    request.headers.get('x-vercel-ip-country') ||
-    request.headers.get('cf-ipcountry')
-  )
-  requestHeaders.set('x-dcc-country', country)
-  requestHeaders.set('x-dcc-locale', getLocaleForCountry(country))
+  const country = resolveCountry(request)
+  applyCountryToRequest(request, requestHeaders, country)
   const response = NextResponse.rewrite(url, { request: { headers: requestHeaders } })
   response.headers.set('x-dcc-surface', 'blog')
-  return response
+  return applyCountryToResponse(response, country)
 }
 
 function isStaticAsset(pathname: string) {
