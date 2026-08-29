@@ -10,7 +10,7 @@ import {
 import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 180
+export const maxDuration = 300
 
 function getVersionNumber(versions: any[], versionId: string) {
   const sorted = [...versions].sort(

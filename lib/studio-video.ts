@@ -116,6 +116,23 @@ async function scheduleVideoStartRetry(videoRequest: any, result: any) {
   return data
 }
 
+async function tryInternalStudioVideoFallback(videoRequestId: string, providerResult: any) {
+  try {
+    console.warn('[Studio Video] Provedor recusou o MP4; iniciando gerador interno.', {
+      videoRequestId,
+      providerMessage: providerResult?.msg || providerResult?.message || null,
+    })
+    const { renderInternalStudioVideo } = await import('@/lib/studio-video-internal')
+    return await renderInternalStudioVideo(videoRequestId)
+  } catch (error: any) {
+    console.error('[Studio Video] Gerador interno também falhou.', {
+      videoRequestId,
+      error: error?.message || String(error),
+    })
+    return null
+  }
+}
+
 async function markVideoRequestCompleted(videoRequestId: string, input: {
   providerTaskId: string | null
   videoUrl: string
@@ -418,6 +435,9 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
         artistName,
       })
     }
+
+    const internalVideo = await tryInternalStudioVideoFallback(videoRequest.id, result)
+    if (internalVideo) return internalVideo
 
     if (isTransientVideoStartError(result, response)) {
       const scheduledRetry = await scheduleVideoStartRetry(videoRequest, result)

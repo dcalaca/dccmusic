@@ -9,9 +9,23 @@ const nextConfig = {
     outputFileTracingIncludes: {
       '/blog': ['./content/blog/**/*'],
       '/blog/**/*': ['./content/blog/**/*'],
-      '/api/admin/playback': ['./node_modules/@ffmpeg-installer/ffmpeg/**/*'],
-      '/api/cron/studio-video-backup': ['./node_modules/@ffmpeg-installer/ffmpeg/**/*'],
+      '/api/admin/playback': [
+        './node_modules/@ffmpeg-installer/ffmpeg/**/*',
+        './node_modules/@ffmpeg-installer/linux-x64/**/*',
+      ],
+      '/api/cron/studio-video-backup': [
+        './node_modules/@ffmpeg-installer/ffmpeg/**/*',
+        './node_modules/@ffmpeg-installer/linux-x64/**/*',
+      ],
+      '/api/compositores/studio/video/preferencia': [
+        './node_modules/@ffmpeg-installer/ffmpeg/**/*',
+        './node_modules/@ffmpeg-installer/linux-x64/**/*',
+      ],
     },
+    serverComponentsExternalPackages: [
+      '@ffmpeg-installer/ffmpeg',
+      '@ffmpeg-installer/linux-x64',
+    ],
   },
 }
 
