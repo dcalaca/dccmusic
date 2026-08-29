@@ -249,9 +249,9 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
   if (requestError) throw requestError
   if (!videoRequest) throw new Error('Solicitação de vídeo com letra não encontrada.')
 
-  // O vídeo com letra é uma entrega da DCC. Preferimos o renderizador próprio para que
-  // capa, crédito, letra e arquivo final não dependam da disponibilidade do provedor.
-  if (process.env.STUDIO_INTERNAL_VIDEO_RENDERER !== 'false') {
+  // Só habilitamos o renderizador próprio quando ele estiver explicitamente validado.
+  // Enquanto isso, o fluxo estável continua sendo o padrão para não entregar vídeo sem texto.
+  if (process.env.STUDIO_INTERNAL_VIDEO_RENDERER === 'true') {
     const internalVideo = await tryInternalStudioVideoFallback(videoRequest.id, {
       message: 'Renderização interna DCC selecionada.',
     })
@@ -452,8 +452,10 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
       })
     }
 
-    const internalVideo = await tryInternalStudioVideoFallback(videoRequest.id, result)
-    if (internalVideo) return internalVideo
+    if (process.env.STUDIO_INTERNAL_VIDEO_FALLBACK === 'true') {
+      const internalVideo = await tryInternalStudioVideoFallback(videoRequest.id, result)
+      if (internalVideo) return internalVideo
+    }
 
     if (isTransientVideoStartError(result, response)) {
       const scheduledRetry = await scheduleVideoStartRetry(videoRequest, result)
