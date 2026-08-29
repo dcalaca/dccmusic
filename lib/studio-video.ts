@@ -367,7 +367,7 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
     audioId,
     callBackUrl: getStudioCallbackUrl('/api/studio/suno/video-callback'),
     title: songTitle.slice(0, 50),
-    author: songTitle.slice(0, 50),
+    author: artistName.slice(0, 50),
     domainName: artistName.slice(0, 50),
   }
 
@@ -390,6 +390,15 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
     body: JSON.stringify(payload),
   })
   const result = await response.json().catch(() => null)
+
+  console.info('[Studio IA] Resposta Suno MP4:', {
+    httpStatus: response.status,
+    code: result?.code,
+    message: result?.msg || result?.message || null,
+    taskId,
+    audioId,
+    videoRequestId: videoRequest.id,
+  })
 
   if (isExistingMp4Conflict(result, response)) {
     const existingTaskId = getExistingVideoTaskId(result)
@@ -500,7 +509,7 @@ export async function startStudioVideoGenerationWithProviderIds(input: {
     audioId: input.audioId,
     callBackUrl: getStudioCallbackUrl('/api/studio/suno/video-callback'),
     title: songTitle.slice(0, 50),
-    author: songTitle.slice(0, 50),
+    author: artistName.slice(0, 50),
     domainName: artistName.slice(0, 50),
   }
 
@@ -523,6 +532,15 @@ export async function startStudioVideoGenerationWithProviderIds(input: {
     body: JSON.stringify(payload),
   })
   const result = await response.json().catch(() => null)
+
+  console.info('[Studio IA] Resposta Suno MP4 (provider IDs):', {
+    httpStatus: response.status,
+    code: result?.code,
+    message: result?.msg || result?.message || null,
+    taskId: input.taskId,
+    audioId: input.audioId,
+    videoRequestId: videoRequest.id,
+  })
 
   if (isExistingMp4Conflict(result, response)) {
     const existingTaskId = getExistingVideoTaskId(result)
