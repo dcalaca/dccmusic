@@ -5,6 +5,7 @@ import * as db from '@/lib/db'
 import { getComposerStatement } from '@/lib/composer-statement'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { createStudioVoiceAssetUrl } from '@/lib/studio-voice-assets'
+import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { FiArrowLeft, FiFileText, FiMusic, FiClock, FiImage, FiCreditCard, FiDollarSign, FiMic, FiVideo, FiDownload } from 'react-icons/fi'
 import CopyButton from '@/components/CopyButton'
 
@@ -184,6 +185,10 @@ export default async function AdminComposerStudioPage({
   const coverUrlById = new Map<string, string | null>()
   await Promise.all((coversResult.data || []).map(async (cover: any) => {
     coverUrlById.set(cover.id, await getStudioCoverImageUrl(cover))
+  }))
+  const versionAudioUrlById = new Map<string, { audioUrl: string | null; streamAudioUrl: string | null }>()
+  await Promise.all((versionsResult.data || []).map(async (version: any) => {
+    versionAudioUrlById.set(version.id, await getStudioVersionAudioUrls(version))
   }))
   const voices = await Promise.all((voicesResult.data || []).map(async (voice: any) => ({
     ...voice,
@@ -583,7 +588,8 @@ export default async function AdminComposerStudioPage({
                           ) : (
                             <div className="space-y-5">
                               {versions.map((version: any, index: number) => {
-                                const audioUrl = version.audio_url || version.stream_audio_url
+                                const resolvedAudio = versionAudioUrlById.get(version.id)
+                                const audioUrl = resolvedAudio?.audioUrl || resolvedAudio?.streamAudioUrl || null
                                 const duration = formatDuration(version.duration)
                                 const versionNumber = versions.length - index
                                 return (
