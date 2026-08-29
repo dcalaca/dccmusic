@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
         success: true,
         message: 'Este vídeo com letra já estava pronto para esta versão. Use o botão abaixo para assistir ou baixar.',
         videoRequest: {
-          ...mapStudioVideoRequest(completedForVersion),
+          ...(await mapStudioVideoRequest(completedForVersion)),
           canRegenerate: studioVideoCanRegenerate(completedForVersion, project),
         },
       })
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
       message: readyNow
         ? 'Vídeo com letra recuperado com sucesso.'
         : 'Vídeo com letra em produção.',
-      videoRequest: mapStudioVideoRequest(startedVideoRequest),
+      videoRequest: await mapStudioVideoRequest(startedVideoRequest),
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro gerar vídeo com letra:', error)

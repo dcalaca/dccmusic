@@ -211,15 +211,15 @@ export async function GET(
       .order('created_at', { ascending: false })
       .limit(30)
 
-    const mappedVideoRequests = (videoRequests || [])
-      .map((item: any) => {
-        const mapped = mapStudioVideoRequest(item)
+    const mappedVideoRequests = (await Promise.all((videoRequests || [])
+      .map(async (item: any) => {
+        const mapped = await mapStudioVideoRequest(item)
         if (!mapped) return null
         return {
           ...mapped,
           canRegenerate: studioVideoCanRegenerate(item, project),
         }
-      })
+      })))
       .filter(Boolean)
     const completedVideoRequest = mappedVideoRequests.find((item: any) => item.status === 'completed' && item.videoUrl) || null
     const videoRequest = completedVideoRequest || mappedVideoRequests[0] || null

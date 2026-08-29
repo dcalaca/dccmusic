@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { getStudioCallbackUrl } from '@/lib/studio'
 import { formatMusicTitle } from '@/lib/normalize'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
+import { backupStudioVideoRequest, resolveStudioVideoUrl } from '@/lib/studio-video-backup'
 import {
   buildMurekaLyricsVideoPayload,
   extractMurekaLyricsVideoUrl,
@@ -19,7 +20,7 @@ export function getStudioVideoRequestVersionId(videoRequest: any): string | null
   return versionId ? String(versionId) : null
 }
 
-export function mapStudioVideoRequest(videoRequest: any) {
+export async function mapStudioVideoRequest(videoRequest: any) {
   if (!videoRequest) return null
   return {
     id: videoRequest.id,
@@ -29,7 +30,7 @@ export function mapStudioVideoRequest(videoRequest: any) {
     paymentPreferenceId: videoRequest.payment_preference_id,
     paymentId: videoRequest.payment_id,
     providerTaskId: videoRequest.provider_task_id,
-    videoUrl: videoRequest.video_url,
+    videoUrl: await resolveStudioVideoUrl(videoRequest),
     errorMessage: videoRequest.error_message
       ? translateStudioVideoProviderError(videoRequest.error_message)
       : videoRequest.error_message,
@@ -77,6 +78,8 @@ async function markVideoRequestCompleted(videoRequestId: string, input: {
       status: 'completed',
       provider_task_id: input.providerTaskId,
       video_url: input.videoUrl,
+      video_backup_status: 'pending',
+      video_backup_error: null,
       response_payload: input.responsePayload || null,
       error_message: null,
       completed_at: new Date().toISOString(),
@@ -87,7 +90,8 @@ async function markVideoRequestCompleted(videoRequestId: string, input: {
     .single()
 
   if (error) throw error
-  return data
+  const backup = await backupStudioVideoRequest(data)
+  return backup.backedUp && backup.videoRequest ? backup.videoRequest : data
 }
 
 async function fetchExistingMp4Record(videoTaskId: string) {

@@ -6,6 +6,7 @@ import { getComposerStatement } from '@/lib/composer-statement'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { createStudioVoiceAssetUrl } from '@/lib/studio-voice-assets'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
+import { resolveStudioVideoUrl } from '@/lib/studio-video-backup'
 import { FiArrowLeft, FiFileText, FiMusic, FiClock, FiImage, FiCreditCard, FiDollarSign, FiMic, FiVideo, FiDownload } from 'react-icons/fi'
 import CopyButton from '@/components/CopyButton'
 
@@ -189,6 +190,10 @@ export default async function AdminComposerStudioPage({
   const versionAudioUrlById = new Map<string, { audioUrl: string | null; streamAudioUrl: string | null }>()
   await Promise.all((versionsResult.data || []).map(async (version: any) => {
     versionAudioUrlById.set(version.id, await getStudioVersionAudioUrls(version))
+  }))
+  const videoUrlById = new Map<string, string | null>()
+  await Promise.all((videosResult.data || []).map(async (video: any) => {
+    videoUrlById.set(video.id, await resolveStudioVideoUrl(video))
   }))
   const voices = await Promise.all((voicesResult.data || []).map(async (voice: any) => ({
     ...voice,
@@ -649,7 +654,7 @@ export default async function AdminComposerStudioPage({
                                   || version?.version_name
                                   || (versionNumber && versionNumber > 0 ? `Versão ${versionNumber}` : 'Versão não identificada')
                                 const statusLabel = videoStatusLabels[video.status] || video.status || 'Desconhecido'
-                                const videoUrl = video.video_url || null
+                                const videoUrl = videoUrlById.get(video.id) || null
 
                                 return (
                                   <article key={video.id} className="rounded-3xl border border-amber-900/40 bg-black/40 p-4 sm:p-5">

@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { isValidStudioCallback } from '@/lib/studio'
+import { backupStudioVideoRequest } from '@/lib/studio-video-backup'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 function getVideoTaskId(body: any) {
   return body?.data?.task_id || body?.data?.taskId || body?.task_id || body?.taskId
@@ -50,16 +52,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, processed: false, error: 'callback sem URL de vídeo' })
     }
 
-    await supabaseAdmin
+    const { data: completedRequest, error: completionError } = await supabaseAdmin
       .from('studio_video_requests')
       .update({
         status: 'completed',
         video_url: videoUrl,
+        video_backup_status: 'pending',
+        video_backup_error: null,
         response_payload: body,
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
       .eq('id', videoRequest.id)
+      .select('*')
+      .single()
+
+    if (completionError) throw completionError
+
+    if (completedRequest) {
+      await backupStudioVideoRequest(completedRequest)
+    }
 
     return NextResponse.json({ received: true, processed: true })
   } catch (error: any) {
