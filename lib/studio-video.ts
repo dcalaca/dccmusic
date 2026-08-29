@@ -243,6 +243,16 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
   if (requestError) throw requestError
   if (!videoRequest) throw new Error('Solicitação de vídeo com letra não encontrada.')
 
+  // O vídeo com letra é uma entrega da DCC. Preferimos o renderizador próprio para que
+  // capa, crédito, letra e arquivo final não dependam da disponibilidade do provedor.
+  if (process.env.STUDIO_INTERNAL_VIDEO_RENDERER !== 'false') {
+    const internalVideo = await tryInternalStudioVideoFallback(videoRequest.id, {
+      message: 'Renderização interna DCC selecionada.',
+    })
+    if (internalVideo) return internalVideo
+    throw new Error('Não foi possível preparar o vídeo interno agora. Tente novamente em instantes.')
+  }
+
   if (!process.env.SUNOAPI_KEY) {
     throw new Error('Geração de vídeo com letra não configurada no servidor.')
   }
