@@ -226,9 +226,9 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
   if (requestError) throw requestError
   if (!videoRequest) throw new Error('Solicitação de vídeo com letra não encontrada.')
 
-  // O vídeo simples é produzido internamente pelo cron com o áudio permanente.
-  // Assim a criação não depende do endpoint MP4 da Suno.
-  if (process.env.INTERNAL_STUDIO_VIDEO_ENABLED !== 'false') {
+  // O fluxo principal permanece imediato pela Suno. O render interno só entra
+  // quando for habilitado explicitamente como contingência, nunca por padrão.
+  if (process.env.INTERNAL_STUDIO_VIDEO_ENABLED === 'true') {
     const { data, error } = await supabaseAdmin
       .from('studio_video_requests')
       .update({
