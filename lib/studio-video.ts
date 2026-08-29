@@ -50,6 +50,12 @@ export const STUDIO_VIDEO_COURTESY_PROJECT_IDS = [
 export function studioVideoCanRegenerate(videoRequest: any, project: { id?: string; title?: string } | null) {
   if (!videoRequest || videoRequest.status !== 'completed' || !videoRequest.video_url) return false
   if (videoRequest.metadata?.courtesy_regenerate) return false
+  // O modelo interno v2 passa a gravar título, compositor e cartões de letra.
+  // Libera uma única cortesia para qualquer arquivo criado no renderizador anterior.
+  if (
+    videoRequest.request_payload?.provider === 'dcc-internal' &&
+    videoRequest.request_payload?.format !== 'static-cover-lyrics-v2'
+  ) return true
   if (project?.id && STUDIO_VIDEO_COURTESY_PROJECT_IDS.includes(String(project.id))) return true
   const author = String(videoRequest.request_payload?.author || videoRequest.metadata?.author || '').trim()
   const expected = formatMusicTitle(String(project?.title || '').trim())
