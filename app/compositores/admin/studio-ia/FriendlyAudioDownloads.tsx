@@ -174,7 +174,8 @@ export default function FriendlyAudioDownloads() {
         document.body.appendChild(link)
         originalAnchorClick.call(link)
         link.remove()
-        window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1000)
+        // Mantém o blob disponível enquanto o Safari/iOS finaliza a gravação do arquivo.
+        window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
       } catch {
         window.open(anchor.href, '_blank', 'noopener,noreferrer')
       } finally {

@@ -187,7 +187,9 @@ function StudioAudioPlayer({ src, label = 'Ouvir música' }: { src: string; labe
       document.body.appendChild(link)
       link.click()
       link.remove()
-      URL.revokeObjectURL(url)
+      // O Safari/iOS conclui o download de blobs de forma assíncrona. Revogar a URL
+      // imediatamente pode gerar um MP3 que chega ao WhatsApp com duração 0:00.
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch {
       window.open(src, '_blank', 'noopener,noreferrer')
     } finally {

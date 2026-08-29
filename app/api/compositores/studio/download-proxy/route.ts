@@ -32,6 +32,17 @@ function isAllowedAudioHost(hostname: string) {
   )
 }
 
+function normalizedAudioContentType(source: URL, upstreamContentType: string | null) {
+  const type = String(upstreamContentType || '').toLowerCase()
+  const path = source.pathname.toLowerCase()
+
+  if (path.endsWith('.mp3') || type.includes('mpeg') || type.includes('mp3')) return 'audio/mpeg'
+  if (path.endsWith('.m4a') || path.endsWith('.mp4') || type.includes('mp4')) return 'audio/mp4'
+  if (path.endsWith('.wav') || type.includes('wav')) return 'audio/wav'
+  if (path.endsWith('.ogg') || type.includes('ogg')) return 'audio/ogg'
+  return type.startsWith('audio/') ? type : 'audio/mpeg'
+}
+
 export async function POST(request: NextRequest) {
   const composer = getComposerFromRequest(request)
   if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
@@ -66,8 +77,10 @@ export async function POST(request: NextRequest) {
     return new NextResponse(bytes, {
       status: 200,
       headers: {
-        'Content-Type': upstream.headers.get('content-type') || 'audio/mpeg',
+        'Content-Type': normalizedAudioContentType(source, upstream.headers.get('content-type')),
         'Content-Length': String(bytes.byteLength),
+        'Content-Disposition': 'attachment; filename="dcc-music.mp3"',
+        'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'private, no-store, max-age=0',
       },
     })
