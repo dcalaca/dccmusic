@@ -162,6 +162,42 @@ export default function AdminComposerProfilePage() {
     }
   }
 
+  const handleSupportAccess = async () => {
+    if (!composer) return
+
+    setActionLoading('support-access')
+    const supportTab = window.open('about:blank', '_blank')
+
+    try {
+      const response = await fetch(`/api/admin/composers/${encodeURIComponent(composer.id)}/support-access`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(data.details || data.error || 'Não foi possível acessar o usuário')
+
+      localStorage.setItem('composer_token', data.token)
+      localStorage.setItem('composer_data', JSON.stringify(data.composer))
+      localStorage.setItem('composer_support_mode', JSON.stringify({
+        composerId: data.composer?.id,
+        composerName: data.composer?.name,
+        startedAt: new Date().toISOString(),
+        expiresInMinutes: data.expiresInMinutes || 60,
+      }))
+
+      if (supportTab) {
+        supportTab.location.href = '/compositores/admin'
+      } else {
+        window.location.href = '/compositores/admin'
+      }
+    } catch (error: any) {
+      if (supportTab) supportTab.close()
+      alert(`Erro: ${error.message}`)
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   const openEdit = () => {
     if (!composer) return
     setEditForm({ name: composer.name, slug: composer.slug, email: composer.email || '' })
@@ -366,6 +402,7 @@ export default function AdminComposerProfilePage() {
         <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-6">
           <h2 className="mb-4 text-xl font-black text-white">Ações administrativas</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <ActionButton icon={<FiUser />} label={actionLoading === 'support-access' ? 'Abrindo...' : 'Acessar como usuário'} color="amber" disabled={isBusy} onClick={handleSupportAccess} />
             <ActionButton icon={<FiGift />} label="Creditar músicas" color="emerald" disabled={isBusy} onClick={() => setCrediting(true)} />
             <ActionButton icon={<FiMail />} label="Enviar e-mail" color="sky" disabled={isBusy} onClick={openEmail} />
             <ActionButton icon={<FiKey />} label="Resetar senha para 123" color="yellow" disabled={isBusy} onClick={handleResetPassword} />
@@ -434,11 +471,12 @@ function Metric({ icon, label, value }: { icon: ReactNode; label: string; value:
 function ActionButton({ icon, label, color, disabled, onClick }: {
   icon: ReactNode
   label: string
-  color: 'emerald' | 'sky' | 'yellow' | 'green' | 'purple' | 'red'
+  color: 'amber' | 'emerald' | 'sky' | 'yellow' | 'green' | 'purple' | 'red'
   disabled?: boolean
   onClick: () => void
 }) {
   const classes: Record<typeof color, string> = {
+    amber: 'bg-amber-600 hover:bg-amber-700',
     emerald: 'bg-emerald-700 hover:bg-emerald-800',
     sky: 'bg-sky-700 hover:bg-sky-800',
     yellow: 'bg-yellow-600 hover:bg-yellow-700',

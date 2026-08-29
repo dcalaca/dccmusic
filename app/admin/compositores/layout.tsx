@@ -1,6 +1,5 @@
 import CountryFilterPortal from './CountryFilterPortal'
 import AdminComposerPhotoPortal from './AdminComposerPhotoPortal'
-import SupportAccessPortal from './SupportAccessPortal'
 
 const countryFetchPatch = `
 (function () {
@@ -51,7 +50,6 @@ export default function AdminComposersLayout({ children }: { children: React.Rea
       {children}
       <CountryFilterPortal />
       <AdminComposerPhotoPortal />
-      <SupportAccessPortal />
     </>
   )
 }
