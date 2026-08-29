@@ -189,7 +189,7 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
     request_payload: {
       ...(videoRequest.request_payload || {}),
       provider: 'dcc-internal',
-      format: 'static-cover-lyrics-v1',
+      format: 'static-cover-lyrics-v2',
     },
     updated_at: new Date().toISOString(),
   }).eq('id', videoRequest.id)
