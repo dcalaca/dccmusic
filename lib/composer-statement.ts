@@ -174,7 +174,7 @@ export async function getComposerStatement(composerId: string) {
     optionalRows(
       supabaseAdmin
         .from('studio_credit_topups')
-        .select('id, package_slug, music_quantity, credits, amount, currency, status, payment_gateway, payment_preference_id, payment_id, external_reference, paid_at, created_at, metadata')
+        .select('id, package_slug, music_quantity, credits, amount, currency, settlement_amount, settlement_currency, status, payment_gateway, payment_preference_id, payment_id, external_reference, paid_at, created_at, metadata')
         .eq('composer_id', composerId)
         .order('created_at', { ascending: false })
     ),
@@ -199,7 +199,7 @@ export async function getComposerStatement(composerId: string) {
       topup.status !== 'paid' ||
       topup.payment_gateway !== 'stripe' ||
       String(topup.currency || 'BRL').toUpperCase() === 'BRL' ||
-      topup.metadata?.stripe_settlement_amount ||
+      topup.settlement_amount ||
       !topup.payment_id
     ) return
 
@@ -213,9 +213,16 @@ export async function getComposerStatement(composerId: string) {
       stripe_exchange_rate: settlement.exchangeRate,
       stripe_balance_transaction_id: settlement.balanceTransactionId,
     }
+    topup.settlement_amount = settlement.amount
+    topup.settlement_currency = settlement.currency
     await supabaseAdmin
       .from('studio_credit_topups')
-      .update({ metadata: topup.metadata, updated_at: new Date().toISOString() })
+      .update({
+        settlement_amount: settlement.amount,
+        settlement_currency: settlement.currency,
+        metadata: topup.metadata,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', topup.id)
   }))
 
@@ -294,8 +301,8 @@ export async function getComposerStatement(composerId: string) {
         : isRefunded
           ? `${topup.music_quantity || 0} música(s) estornada(s). Créditos removidos do saldo.`
           : `${topup.music_quantity || 0} música(s) solicitada(s), aguardando pagamento`,
-      amount: Number(topup.metadata?.stripe_settlement_amount ?? topup.amount) || 0,
-      currency: topup.metadata?.stripe_settlement_currency || topup.currency || 'BRL',
+      amount: Number(topup.settlement_amount ?? topup.amount) || 0,
+      currency: topup.settlement_currency || topup.currency || 'BRL',
       status: topup.status,
       statusLabel: statusLabel(topup.status),
       paymentId: isPaid ? (topup.payment_id || null) : (topup.payment_preference_id || null),

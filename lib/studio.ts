@@ -673,12 +673,18 @@ export async function creditStudioTopupOnce(input: {
   const gatewayMetadata = provider === 'stripe'
     ? { stripe_payment: input.paymentData || input.topup.metadata?.stripe_payment || null }
     : { mercadopago_payment: input.paymentData || input.topup.metadata?.mercadopago_payment || null }
+  const settlementAmount = Number(input.metadata?.stripe_settlement_amount)
+  const settlementCurrency = String(input.metadata?.stripe_settlement_currency || '').toUpperCase()
+  const settlementFields = Number.isFinite(settlementAmount) && settlementAmount > 0 && settlementCurrency
+    ? { settlement_amount: settlementAmount, settlement_currency: settlementCurrency }
+    : {}
   const { data: claimedTopup, error: claimError } = await supabaseAdmin
     .from('studio_credit_topups')
     .update({
       status: 'paid',
       payment_id: paymentId,
       paid_at: new Date().toISOString(),
+      ...settlementFields,
       metadata: {
         ...(input.topup.metadata || {}),
         ...(input.metadata || {}),

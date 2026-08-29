@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { sendAdminStudioAlertEmail } from '@/lib/dcc-emails'
 import { FREE_STUDIO_MUSIC_LIMIT } from '@/lib/studio'
 import { getSunoCreditBalance, maybeSendSunoLowCreditAlert } from '@/lib/suno-credit-alert'
+import { getStripeSettlement } from '@/lib/stripe'
 
 export const dynamic = 'force-dynamic'
 
@@ -579,6 +580,17 @@ function sumAmount(rows: any[] | null | undefined) {
   return (rows || []).reduce((total, row) => total + Math.max(0, Number(row.amount) || 0), 0)
 }
 
+function getStudioTopupAmountBrl(topup: any) {
+  const originalCurrency = String(topup.currency || 'BRL').toUpperCase()
+  if (originalCurrency === 'BRL') return Math.max(0, Number(topup.amount) || 0)
+
+  const settlementCurrency = String(topup.settlement_currency || '').toUpperCase()
+  if (settlementCurrency === 'BRL') return Math.max(0, Number(topup.settlement_amount) || 0)
+
+  // Nunca somar o número de uma moeda estrangeira como se fosse real.
+  return 0
+}
+
 function getPaymentMethodFromPayload(payload: any) {
   return payload?.payment_method_id ||
     payload?.payment_method?.id ||
@@ -762,7 +774,7 @@ export async function GET(request: NextRequest) {
         .lt('created_at', endIso),
       supabaseAdmin
         .from('studio_credit_topups')
-        .select('id, composer_id, package_slug, music_quantity, credits, amount, payment_id, metadata, paid_at, created_at')
+        .select('id, composer_id, package_slug, music_quantity, credits, amount, currency, settlement_amount, settlement_currency, payment_gateway, payment_id, metadata, paid_at, created_at')
         .eq('status', 'paid')
         .gte('paid_at', startIso)
         .lt('paid_at', endIso),
@@ -840,6 +852,36 @@ export async function GET(request: NextRequest) {
 
     const topupTableMissing = isMissingTopupTableError(studioTopupsResult.error)
     const studioTopups = topupTableMissing ? [] : (studioTopupsResult.data || [])
+    await Promise.all(studioTopups.map(async (topup: any) => {
+      if (
+        topup.payment_gateway !== 'stripe' ||
+        String(topup.currency || 'BRL').toUpperCase() === 'BRL' ||
+        topup.settlement_amount ||
+        !topup.payment_id
+      ) return
+
+      const settlement = await getStripeSettlement(String(topup.payment_id)).catch((error) => {
+        console.error('[Admin Finance] Erro ao converter pagamento Stripe para BRL:', topup.payment_id, error)
+        return null
+      })
+      if (!settlement || settlement.currency !== 'BRL') return
+
+      topup.settlement_amount = settlement.amount
+      topup.settlement_currency = settlement.currency
+      topup.metadata = {
+        ...(topup.metadata || {}),
+        stripe_settlement_amount: settlement.amount,
+        stripe_settlement_currency: settlement.currency,
+        stripe_exchange_rate: settlement.exchangeRate,
+        stripe_balance_transaction_id: settlement.balanceTransactionId,
+      }
+      await supabaseAdmin.from('studio_credit_topups').update({
+        settlement_amount: settlement.amount,
+        settlement_currency: settlement.currency,
+        metadata: topup.metadata,
+        updated_at: new Date().toISOString(),
+      }).eq('id', topup.id)
+    }))
     const subscriptionPayments = dedupeByKey(paymentsResult.data || [], (payment: any) => (
       payment.gateway_payment_id
         ? `gateway:${payment.gateway_payment_id}`
@@ -943,7 +985,7 @@ export async function GET(request: NextRequest) {
       ...paidStudioTopups.map((payment: any) => {
         const composer = composersById.get(payment.composer_id)
         const paymentMethod = getPaymentMethodFromPayload(payment.metadata?.mercadopago_payment)
-        const amount = Number(payment.amount) || 0
+        const amount = getStudioTopupAmountBrl(payment)
         return {
           id: payment.id,
           source: 'studio_topup' as const,
@@ -982,7 +1024,7 @@ export async function GET(request: NextRequest) {
 
     const subscriptionRevenue = sumAmount(subscriptionPayments)
     const featuredRevenue = sumAmount(featuredPayments)
-    const studioTopupRevenue = sumAmount(paidStudioTopups)
+    const studioTopupRevenue = paidStudioTopups.reduce((total: number, topup: any) => total + getStudioTopupAmountBrl(topup), 0)
     const videoRevenue = sumAmount(paidVideoRequests)
     const totalRevenue = subscriptionRevenue + featuredRevenue + studioTopupRevenue + videoRevenue
     const mercadoPagoFees = buildMercadoPagoFeeSummary(paymentDetails)
