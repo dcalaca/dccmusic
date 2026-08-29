@@ -426,9 +426,6 @@ export async function getStudioVersionAudioUrls(version: any) {
 
   const providerFullUrl = version?.audio_url || null
   const providerStreamUrl = version?.stream_audio_url || null
-  const providerHasDistinctFull = Boolean(
-    providerFullUrl && providerStreamUrl && providerFullUrl !== providerStreamUrl
-  )
   const internalAudioIsStreamOnly = isStreamBackupPath(version?.audio_path)
   const hasConfirmedInternalFull = Boolean(
     audioSignedUrl &&
@@ -436,21 +433,20 @@ export async function getStudioVersionAudioUrls(version: any) {
     version?.audio_backup_status === 'backed_up' &&
     !internalAudioIsStreamOnly
   )
-  // Backup antigo pode ter gravado stream com nome "-audio"; enquanto houver URL completa
-  // do provedor, preferimos ela para não cortar o final. Quando o backup interno já foi
-  // confirmado como completo, ele tem prioridade sobre links externos temporários.
-  const preferProviderFull = internalAudioIsStreamOnly || Boolean(
-    providerHasDistinctFull &&
-    !(hasConfirmedInternalFull && isTemporaryProviderAudioUrl(providerFullUrl))
-  )
+  const hasInternalStream = Boolean(streamSignedUrl && version?.stream_audio_path)
 
-  const fullAudioUrl = preferProviderFull
-    ? (providerFullUrl || audioSignedUrl || null)
-    : (audioSignedUrl || providerFullUrl || null)
+  // Uma cópia confirmada no nosso armazenamento é a fonte canônica. Links de provedores
+  // expiram e podem ser criptografados/removidos sem aviso; eles só servem de contingência
+  // enquanto a cópia permanente ainda não existe.
+  const fullAudioUrl = hasConfirmedInternalFull
+    ? audioSignedUrl
+    : hasInternalStream
+      ? streamSignedUrl
+      : audioSignedUrl || streamSignedUrl || providerFullUrl || providerStreamUrl || null
 
   return {
-    audioUrl: fullAudioUrl || streamSignedUrl || providerStreamUrl || null,
-    streamAudioUrl: streamSignedUrl || fullAudioUrl || providerStreamUrl || providerFullUrl || null,
+    audioUrl: fullAudioUrl,
+    streamAudioUrl: streamSignedUrl || audioSignedUrl || providerStreamUrl || providerFullUrl || null,
   }
 }
 
