@@ -226,6 +226,28 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
   if (requestError) throw requestError
   if (!videoRequest) throw new Error('Solicitação de vídeo com letra não encontrada.')
 
+  // O vídeo simples é produzido internamente pelo cron com o áudio permanente.
+  // Assim a criação não depende do endpoint MP4 da Suno.
+  if (process.env.INTERNAL_STUDIO_VIDEO_ENABLED !== 'false') {
+    const { data, error } = await supabaseAdmin
+      .from('studio_video_requests')
+      .update({
+        status: 'retry_pending',
+        request_payload: {
+          ...(videoRequest.request_payload || {}),
+          provider: 'dcc-internal',
+          format: 'static-cover-lyrics-v1',
+        },
+        error_message: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', videoRequest.id)
+      .select('*')
+      .single()
+    if (error) throw error
+    return data
+  }
+
   if (!process.env.SUNOAPI_KEY) {
     throw new Error('Geração de vídeo com letra não configurada no servidor.')
   }

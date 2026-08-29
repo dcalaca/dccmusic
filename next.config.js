@@ -10,6 +10,7 @@ const nextConfig = {
       '/blog': ['./content/blog/**/*'],
       '/blog/**/*': ['./content/blog/**/*'],
       '/api/admin/playback': ['./node_modules/@ffmpeg-installer/ffmpeg/**/*'],
+      '/api/cron/studio-video-backup': ['./node_modules/@ffmpeg-installer/ffmpeg/**/*'],
     },
   },
 }

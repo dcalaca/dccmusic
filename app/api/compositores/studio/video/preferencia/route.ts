@@ -93,12 +93,12 @@ export async function POST(request: NextRequest) {
 
     const completedByVersionId = (existingRequests || []).find((item: any) => (
       item.status === 'completed' &&
-      item.video_url &&
+      (item.video_url || item.video_path) &&
       getStudioVideoRequestVersionId(item) === version.id
     ))
     const untaggedCompleted = (existingRequests || []).find((item: any) => (
       item.status === 'completed' &&
-      item.video_url &&
+      (item.video_url || item.video_path) &&
       !getStudioVideoRequestVersionId(item)
     ))
     const completedForVersion = completedByVersionId

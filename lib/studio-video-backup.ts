@@ -99,6 +99,65 @@ export async function resolveStudioVideoUrl(videoRequest: any) {
   return String(videoRequest?.video_url || '').trim() || null
 }
 
+export async function saveInternalStudioVideo(input: {
+  videoRequest: any
+  buffer: Buffer
+  contentType?: string
+}) {
+  const { videoRequest, buffer } = input
+  if (!videoRequest?.id || !videoRequest?.composer_id || !videoRequest?.project_id) {
+    throw new Error('Solicitação de vídeo incompleta.')
+  }
+  if (!buffer.byteLength) throw new Error('O vídeo gerado está vazio.')
+  if (buffer.byteLength > MAX_VIDEO_BYTES) throw new Error('Vídeo maior que o limite interno.')
+
+  const path = `${videoRequest.composer_id}/video/${studioMonthKey()}/${videoRequest.id}.mp4`
+  const contentType = input.contentType || 'video/mp4'
+  const r2 = getR2Client()
+  let provider = 'supabase'
+
+  if (r2) {
+    await r2.send(new PutObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: path,
+      Body: buffer,
+      ContentType: contentType,
+    }))
+    provider = 'r2'
+  } else {
+    const { error } = await supabaseAdmin.storage
+      .from(STUDIO_ASSET_BUCKET)
+      .upload(path, buffer, { contentType, upsert: true })
+    if (error) throw error
+  }
+
+  const now = new Date().toISOString()
+  const { data, error } = await supabaseAdmin
+    .from('studio_video_requests')
+    .update({
+      status: 'completed',
+      video_url: null,
+      video_path: path,
+      video_storage_provider: provider,
+      video_backup_status: 'backed_up',
+      video_backup_error: null,
+      video_backed_up_at: now,
+      completed_at: now,
+      error_message: null,
+      response_payload: {
+        provider: 'dcc-internal',
+        format: 'static-cover-lyrics-v1',
+        bytes: buffer.byteLength,
+      },
+      updated_at: now,
+    })
+    .eq('id', videoRequest.id)
+    .select('*')
+    .single()
+  if (error) throw error
+  return data
+}
+
 export async function backupStudioVideoRequest(videoRequest: any): Promise<StudioVideoBackupResult> {
   if (!videoRequest?.id || !videoRequest?.composer_id || !videoRequest?.project_id) {
     return { backedUp: false, videoRequest: null, error: 'Solicitação de vídeo incompleta.' }
