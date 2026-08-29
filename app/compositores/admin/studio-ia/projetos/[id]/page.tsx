@@ -1459,7 +1459,7 @@ export default function StudioProjectDetailPage() {
               }}
             />
           ) : (
-          <div className="grid w-full max-w-full gap-4 lg:grid-cols-[0.88fr_1.12fr] lg:gap-5">
+          <div className="grid w-full max-w-full gap-4">
             <aside className="space-y-4">
               <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-gray-950/85 shadow-2xl shadow-black/30 sm:rounded-[1.75rem]">
                 <div className="relative aspect-[4/3] bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.28),transparent_34%),linear-gradient(135deg,#111827,#1f1235,#020617)] sm:aspect-square">
@@ -1558,6 +1558,99 @@ export default function StudioProjectDetailPage() {
                       </div>
                     </div>
                   )}
+
+                  {shouldShowVersionList && (
+                    <section className="mt-5 rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:rounded-[1.75rem] sm:p-5">
+                      <div className="mb-4">
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-green-300">Música pronta</p>
+                        <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">Escolha sua versão</h2>
+                        <p className="mt-1 text-sm text-gray-400">
+                          Ouça as versões geradas abaixo. A versão atual está marcada, mas todas ficam disponíveis aqui.
+                        </p>
+                      </div>
+                      <div className="grid gap-3 lg:grid-cols-2">
+                        {projectVersions.map((version: any, index: number) => {
+                          const versionAudioUrl = version.audioUrl || version.streamAudioUrl
+                          const duration = formatAudioDuration(version.duration)
+                          const versionNumber = projectVersions.length - index
+
+                          return (
+                            <article key={version.id} className={`rounded-2xl border p-3 sm:p-4 ${version.isCurrent ? 'border-green-500/50 bg-green-950/10' : 'border-gray-800 bg-black/35'}`}>
+                              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="text-xs font-bold uppercase tracking-wide text-green-300">
+                                      Versão {versionNumber}
+                                    </p>
+                                    {version.isCurrent && (
+                                      <span className="rounded-full bg-green-950 px-2.5 py-1 text-[11px] font-bold text-green-300">
+                                        atual
+                                      </span>
+                                    )}
+                                    {version.isPublished && (
+                                      <span className="rounded-full bg-primary-950 px-2.5 py-1 text-[11px] font-bold text-primary-200">
+                                        publicada
+                                      </span>
+                                    )}
+                                  </div>
+                                  <h3 className="mt-1 line-clamp-2 font-black text-white">
+                                    {version.versionName || version.style || `Música gerada #${versionNumber}`}
+                                  </h3>
+                                  <p className="mt-1 text-xs text-gray-500">
+                                    {new Date(version.createdAt).toLocaleString('pt-BR')}
+                                    {duration ? ` · ${duration}` : ''}
+                                  </p>
+                                </div>
+                              </div>
+                              {versionAudioUrl ? (
+                                <StudioAudioPlayer src={versionAudioUrl} label={`Versão ${versionNumber}`} />
+                              ) : (
+                                <p className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4 text-sm text-gray-500">Áudio sem URL registrada.</p>
+                              )}
+                              {versionAudioUrl && (
+                                <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                                  <Link
+                                    href={`/compositores/admin/studio-ia/playback?projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(version.id)}`}
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-primary-600 px-4 py-3 text-sm font-black text-white transition hover:scale-[1.01] sm:w-auto"
+                                  >
+                                    <FiHeadphones /> Criar playback desta versão
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    onClick={() => openInspirationPickerForVersion(version.id)}
+                                    disabled={Boolean(processing) || !canReuseLyric}
+                                    className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-purple-500/50 bg-purple-950/30 px-4 py-3 text-sm font-bold text-purple-100 transition hover:border-purple-300 hover:bg-purple-900/40 disabled:opacity-60 sm:w-auto"
+                                  >
+                                    <FiMusic /> Criar nova versão usando esta como inspiração
+                                  </button>
+                                </div>
+                              )}
+                            </article>
+                          )
+                        })}
+                      </div>
+                    </section>
+                  )}
+
+                  <section className="mt-5 rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:rounded-[1.75rem] sm:p-5">
+                    <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div>
+                        <h2 className="text-xl font-black text-white sm:text-2xl">Letra da música</h2>
+                        <p className="mt-1 text-xs text-gray-400">Você pode corrigir qualquer palavra antes de criar ou publicar.</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2 sm:justify-end">
+                        <button onClick={saveLyric} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-bold text-gray-100 hover:bg-white/[0.09] sm:w-auto">
+                          <FiSave /> Salvar letra
+                        </button>
+                      </div>
+                    </div>
+                    <textarea
+                      value={lyric}
+                      onChange={(event) => setLyric(event.target.value)}
+                      rows={18}
+                      className="w-full resize-none rounded-3xl border border-white/10 bg-[#05070d] px-4 py-4 text-sm leading-relaxed text-gray-100 shadow-inner shadow-black/50 outline-none transition [background-clip:padding-box] [transform:translateZ(0)] focus:border-primary-400 focus:bg-[#05070d] sm:resize-y"
+                    />
+                  </section>
 
                   {hasProjectReadyAudio && (
                     <div className="mt-4 overflow-hidden rounded-2xl border border-fuchsia-400/30 bg-gradient-to-br from-fuchsia-950/25 via-purple-950/25 to-black p-4">
@@ -1727,6 +1820,12 @@ export default function StudioProjectDetailPage() {
                           </article>
                         )
                       })}
+                    </div>
+                  )}
+
+                  {hasProjectReadyAudio && (
+                    <div className="mt-4">
+                      <LearnYourMusicAd studioVersionId={currentStudioVersionId} studioProjectId={project.id} />
                     </div>
                   )}
 
@@ -1902,100 +2001,6 @@ export default function StudioProjectDetailPage() {
                   {visibleMessage}
                 </div>
               )}
-
-              {shouldShowVersionList && (
-                <section className="rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:rounded-[1.75rem] sm:p-5">
-                  <div className="mb-4">
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-green-300">Música pronta</p>
-                    <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">Escolha sua versão</h2>
-                    <p className="mt-1 text-sm text-gray-400">
-                      Ouça as versões geradas abaixo. A versão atual está marcada, mas todas ficam disponíveis aqui.
-                    </p>
-                    <LearnYourMusicAd studioVersionId={currentStudioVersionId} studioProjectId={project.id} />
-                  </div>
-                  <div className="grid gap-3">
-                    {projectVersions.map((version: any, index: number) => {
-                      const versionAudioUrl = version.audioUrl || version.streamAudioUrl
-                      const duration = formatAudioDuration(version.duration)
-                      const versionNumber = projectVersions.length - index
-
-                      return (
-                        <article key={version.id} className={`rounded-2xl border p-3 sm:p-4 ${version.isCurrent ? 'border-green-500/50 bg-green-950/10' : 'border-gray-800 bg-black/35'}`}>
-                          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                            <div className="min-w-0">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <p className="text-xs font-bold uppercase tracking-wide text-green-300">
-                                  Versão {versionNumber}
-                                </p>
-                                {version.isCurrent && (
-                                  <span className="rounded-full bg-green-950 px-2.5 py-1 text-[11px] font-bold text-green-300">
-                                    atual
-                                  </span>
-                                )}
-                                {version.isPublished && (
-                                  <span className="rounded-full bg-primary-950 px-2.5 py-1 text-[11px] font-bold text-primary-200">
-                                    publicada
-                                  </span>
-                                )}
-                              </div>
-                              <h3 className="mt-1 line-clamp-2 font-black text-white">
-                                {version.versionName || version.style || `Música gerada #${versionNumber}`}
-                              </h3>
-                              <p className="mt-1 text-xs text-gray-500">
-                                {new Date(version.createdAt).toLocaleString('pt-BR')}
-                                {duration ? ` · ${duration}` : ''}
-                              </p>
-                            </div>
-                          </div>
-                          {versionAudioUrl ? (
-                            <StudioAudioPlayer src={versionAudioUrl} label={`Versão ${versionNumber}`} />
-                          ) : (
-                            <p className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4 text-sm text-gray-500">Áudio sem URL registrada.</p>
-                          )}
-                          {versionAudioUrl && (
-                            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                              <Link
-                                href={`/compositores/admin/studio-ia/playback?projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(version.id)}`}
-                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-primary-600 px-4 py-3 text-sm font-black text-white transition hover:scale-[1.01] sm:w-auto"
-                              >
-                                <FiHeadphones /> Criar playback desta versão
-                              </Link>
-                              <button
-                                type="button"
-                                onClick={() => openInspirationPickerForVersion(version.id)}
-                                disabled={Boolean(processing) || !canReuseLyric}
-                                className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-purple-500/50 bg-purple-950/30 px-4 py-3 text-sm font-bold text-purple-100 transition hover:border-purple-300 hover:bg-purple-900/40 disabled:opacity-60 sm:w-auto"
-                              >
-                                <FiMusic /> Criar nova versão usando esta como inspiração
-                              </button>
-                            </div>
-                          )}
-                        </article>
-                      )
-                    })}
-                  </div>
-                </section>
-              )}
-
-              <section className="rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:rounded-[1.75rem] sm:p-5">
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <h2 className="text-xl font-black text-white sm:text-2xl">Letra da música</h2>
-                    <p className="mt-1 text-xs text-gray-400">Você pode corrigir qualquer palavra antes de criar ou publicar.</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 sm:justify-end">
-                    <button onClick={saveLyric} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-bold text-gray-100 hover:bg-white/[0.09] sm:w-auto">
-                      <FiSave /> Salvar letra
-                    </button>
-                  </div>
-                </div>
-                <textarea
-                  value={lyric}
-                  onChange={(event) => setLyric(event.target.value)}
-                  rows={18}
-                  className="w-full resize-none rounded-3xl border border-white/10 bg-[#05070d] px-4 py-4 text-sm leading-relaxed text-gray-100 shadow-inner shadow-black/50 outline-none transition [background-clip:padding-box] [transform:translateZ(0)] focus:border-primary-400 focus:bg-[#05070d] sm:resize-y"
-                />
-              </section>
 
               <details className="rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-4 sm:rounded-[1.75rem] sm:p-5">
                 <summary className="cursor-pointer list-none">
