@@ -12,12 +12,69 @@ function isAuthorized(request: NextRequest) {
   return request.headers.get('authorization') === `Bearer ${secret}`
 }
 
+function rawVideoFailure(video: any) {
+  return [
+    video?.error_message,
+    video?.video_backup_error,
+    video?.response_payload?.msg,
+    video?.response_payload?.message,
+    video?.response_payload?.error?.message,
+    video?.metadata?.video_retry_reason,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+}
+
+function isMp4OutageFailure(video: any) {
+  const message = rawVideoFailure(video)
+  return (
+    message.includes('failed to add suno mp4 generation task') ||
+    message.includes('temporarily unavailable') ||
+    message.includes('try again later')
+  )
+}
+
 export async function GET(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
   try {
+    // Recoloca automaticamente na fila solicitações recentes que ficaram como
+    // "failed" durante a indisponibilidade do endpoint MP4 do provedor.
+    // Fazemos isso somente para mensagens conhecidas como transitórias para não
+    // ressuscitar erros permanentes (versão ausente, dados inválidos etc.).
+    const failedCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+    const { data: recentFailed, error: failedError } = await supabaseAdmin
+      .from('studio_video_requests')
+      .select('*')
+      .eq('status', 'failed')
+      .gte('created_at', failedCutoff)
+      .order('created_at', { ascending: true })
+      .limit(50)
+
+    if (failedError) throw failedError
+
+    const outageFailed = (recentFailed || []).filter(isMp4OutageFailure)
+    let requeued = 0
+    if (outageFailed.length) {
+      const outageIds = outageFailed.map((video: any) => video.id)
+      const now = new Date().toISOString()
+      const { error: requeueError } = await supabaseAdmin
+        .from('studio_video_requests')
+        .update({
+          status: 'retry_pending',
+          error_message: null,
+          updated_at: now,
+        })
+        .in('id', outageIds)
+
+      if (requeueError) throw requeueError
+      requeued = outageIds.length
+      console.log('[CRON STUDIO VIDEO BACKUP] Solicitações MP4 reativadas:', outageIds)
+    }
+
     const retryLimit = 1
     const retryCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()
     const { data: retryVideos, error: retryError } = await supabaseAdmin
@@ -61,6 +118,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      outageFailuresFound: outageFailed.length,
+      requeued,
       retriesChecked: retryVideos?.length || 0,
       retryResults,
       checked: videos?.length || 0,
