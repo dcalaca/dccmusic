@@ -25,11 +25,18 @@ function formatDate(value?: string | null) {
   })
 }
 
-function formatMoney(value?: number | null) {
+function formatMoney(value?: number | null, currency = 'BRL') {
   return Number(value || 0).toLocaleString('pt-BR', {
     style: 'currency',
-    currency: 'BRL',
+    currency,
+    currencyDisplay: 'narrowSymbol',
   })
+}
+
+function formatMoneyTotals(totals?: Record<string, number> | null) {
+  const entries = Object.entries(totals || {}).filter(([, value]) => value !== 0)
+  if (entries.length === 0) return formatMoney(0)
+  return entries.map(([currency, value]) => formatMoney(value, currency)).join(' + ')
 }
 
 function formatDuration(value?: number | string | null) {
@@ -253,22 +260,22 @@ export default async function AdminComposerStudioPage({
               </div>
               <div className="rounded-2xl border border-green-900/60 bg-green-950/20 px-4 py-3">
                 <p className="text-xs font-bold uppercase text-green-200/70">Total pago</p>
-                <p className="text-2xl font-black text-green-300">{formatMoney(statement.summary.totalPaid)}</p>
+                <p className="text-2xl font-black text-green-300">{formatMoneyTotals(statement.summary.totalPaidByCurrency)}</p>
               </div>
             </div>
 
             <div className="mb-6 grid gap-3 sm:grid-cols-5">
               <div className="rounded-2xl border border-gray-800 bg-black/35 p-4">
                 <p className="text-xs font-bold uppercase text-gray-500">Planos</p>
-                <p className="mt-1 text-xl font-black text-white">{formatMoney(statement.summary.planPaid)}</p>
+                <p className="mt-1 text-xl font-black text-white">{formatMoneyTotals(statement.summary.planPaidByCurrency)}</p>
               </div>
               <div className="rounded-2xl border border-gray-800 bg-black/35 p-4">
                 <p className="text-xs font-bold uppercase text-gray-500">Destaques</p>
-                <p className="mt-1 text-xl font-black text-white">{formatMoney(statement.summary.featuredPaid)}</p>
+                <p className="mt-1 text-xl font-black text-white">{formatMoneyTotals(statement.summary.featuredPaidByCurrency)}</p>
               </div>
               <div className="rounded-2xl border border-gray-800 bg-black/35 p-4">
                 <p className="text-xs font-bold uppercase text-gray-500">Recargas</p>
-                <p className="mt-1 text-xl font-black text-primary-300">{formatMoney(statement.summary.topupPaid)}</p>
+                <p className="mt-1 text-xl font-black text-primary-300">{formatMoneyTotals(statement.summary.topupPaidByCurrency)}</p>
               </div>
               <div className="rounded-2xl border border-gray-800 bg-black/35 p-4">
                 <p className="text-xs font-bold uppercase text-gray-500">Créditos liberados</p>
@@ -305,7 +312,7 @@ export default async function AdminComposerStudioPage({
                             {payment.paymentId && <p className="mt-1 break-all text-xs text-gray-500">{payment.paymentIdLabel || 'ID pagamento'}: {payment.paymentId}</p>}
                           </div>
                           <div className="text-left sm:text-right">
-                            <p className="font-black text-green-300">{formatMoney(payment.amount)}</p>
+                            <p className="font-black text-green-300">{formatMoney(payment.amount, payment.currency)}</p>
                             <p className="mt-1 text-xs text-gray-400">{payment.statusLabel}</p>
                             {payment.credits ? <p className="mt-1 text-xs text-purple-300">{payment.credits} créditos</p> : null}
                           </div>
@@ -330,7 +337,7 @@ export default async function AdminComposerStudioPage({
                               {payment.paymentId && <p className="mt-1 break-all text-xs text-gray-500">{payment.paymentIdLabel}: {payment.paymentId}</p>}
                             </div>
                             <div className="text-left sm:text-right">
-                              <p className="font-black text-yellow-200">{formatMoney(payment.amount)}</p>
+                              <p className="font-black text-yellow-200">{formatMoney(payment.amount, payment.currency)}</p>
                               <p className="mt-1 text-xs text-yellow-200/80">Aguardando pagamento</p>
                               <p className="mt-1 text-xs text-gray-500">{payment.pendingCredits} créditos ainda não liberados</p>
                             </div>

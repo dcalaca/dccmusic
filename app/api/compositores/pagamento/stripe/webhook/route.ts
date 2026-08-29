@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { creditStudioTopupOnce, revokeStudioTopupCreditOnce } from '@/lib/studio'
 import { sendApprovedStudioTopupSideEffects } from '@/lib/studio-topup-side-effects'
-import { sanitizeStripeObject, verifyStripeWebhookSignature } from '@/lib/stripe'
+import { getStripeSettlement, sanitizeStripeObject, verifyStripeWebhookSignature } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase'
 import { activateComposerPlanAccess, revokeComposerPlanAccess } from '@/lib/composer-plan-access'
 import { recordPartnerPurchase } from '@/lib/partners'
@@ -158,7 +158,26 @@ export async function POST(request: NextRequest) {
       if (!topup || object.metadata?.external_reference !== topup.external_reference) return NextResponse.json({ received: true })
       const paymentId = typeof object.payment_intent === 'string' ? object.payment_intent : object.payment_intent?.id
       if (!paymentId) return NextResponse.json({ received: true })
-      const result = await creditStudioTopupOnce({ topup, paymentId, paymentData: sanitizeStripeObject(object), provider: 'stripe', metadata: { stripe_event_id: event.id, stripe_session_id: object.id } })
+      const settlement = await getStripeSettlement(paymentId).catch((settlementError) => {
+        console.error('[STRIPE WEBHOOK] Erro ao obter conversão para BRL:', settlementError)
+        return null
+      })
+      const result = await creditStudioTopupOnce({
+        topup,
+        paymentId,
+        paymentData: sanitizeStripeObject(object),
+        provider: 'stripe',
+        metadata: {
+          stripe_event_id: event.id,
+          stripe_session_id: object.id,
+          ...(settlement ? {
+            stripe_settlement_amount: settlement.amount,
+            stripe_settlement_currency: settlement.currency,
+            stripe_exchange_rate: settlement.exchangeRate,
+            stripe_balance_transaction_id: settlement.balanceTransactionId,
+          } : {}),
+        },
+      })
       if (result.credited) await sendApprovedStudioTopupSideEffects(request, result.topup, paymentId)
     } else if (event.type === 'checkout.session.expired' && topupId) {
       await supabaseAdmin.from('studio_credit_topups').update({ status: 'cancelled', updated_at: new Date().toISOString() }).eq('id', topupId).neq('status', 'paid')

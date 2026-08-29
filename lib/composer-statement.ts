@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '@/lib/supabase'
+import { getStripeSettlement } from '@/lib/stripe'
 import { getStudioAccess, getStudioCreditUsage, STUDIO_MUSIC_CREDITS } from '@/lib/studio'
 
 type QueryResult = {
@@ -173,7 +174,7 @@ export async function getComposerStatement(composerId: string) {
     optionalRows(
       supabaseAdmin
         .from('studio_credit_topups')
-        .select('id, package_slug, music_quantity, credits, amount, currency, status, payment_gateway, payment_preference_id, payment_id, external_reference, paid_at, created_at')
+        .select('id, package_slug, music_quantity, credits, amount, currency, status, payment_gateway, payment_preference_id, payment_id, external_reference, paid_at, created_at, metadata')
         .eq('composer_id', composerId)
         .order('created_at', { ascending: false })
     ),
@@ -192,6 +193,31 @@ export async function getComposerStatement(composerId: string) {
         .eq('composer_id', composerId)
     ),
   ])
+
+  await Promise.all(topups.map(async (topup: any) => {
+    if (
+      topup.status !== 'paid' ||
+      topup.payment_gateway !== 'stripe' ||
+      String(topup.currency || 'BRL').toUpperCase() === 'BRL' ||
+      topup.metadata?.stripe_settlement_amount ||
+      !topup.payment_id
+    ) return
+
+    const settlement = await getStripeSettlement(String(topup.payment_id)).catch(() => null)
+    if (!settlement || settlement.currency !== 'BRL') return
+
+    topup.metadata = {
+      ...(topup.metadata || {}),
+      stripe_settlement_amount: settlement.amount,
+      stripe_settlement_currency: settlement.currency,
+      stripe_exchange_rate: settlement.exchangeRate,
+      stripe_balance_transaction_id: settlement.balanceTransactionId,
+    }
+    await supabaseAdmin
+      .from('studio_credit_topups')
+      .update({ metadata: topup.metadata, updated_at: new Date().toISOString() })
+      .eq('id', topup.id)
+  }))
 
   const subscriptionIds = payments.map((payment: any) => payment.subscription_id).filter(Boolean)
   const subscriptions = subscriptionIds.length > 0
@@ -268,8 +294,8 @@ export async function getComposerStatement(composerId: string) {
         : isRefunded
           ? `${topup.music_quantity || 0} música(s) estornada(s). Créditos removidos do saldo.`
           : `${topup.music_quantity || 0} música(s) solicitada(s), aguardando pagamento`,
-      amount: Number(topup.amount) || 0,
-      currency: topup.currency || 'BRL',
+      amount: Number(topup.metadata?.stripe_settlement_amount ?? topup.amount) || 0,
+      currency: topup.metadata?.stripe_settlement_currency || topup.currency || 'BRL',
       status: topup.status,
       statusLabel: statusLabel(topup.status),
       paymentId: isPaid ? (topup.payment_id || null) : (topup.payment_preference_id || null),
@@ -344,6 +370,23 @@ export async function getComposerStatement(composerId: string) {
   const paidTopupTotal = topupPayments
     .filter((payment) => payment.status === 'paid')
     .reduce((sum, payment) => sum + payment.amount, 0)
+  const totalsByCurrency = (items: any[], paidStatus: string) => items
+    .filter((payment) => payment.status === paidStatus)
+    .reduce((totals: Record<string, number>, payment: any) => {
+      const currency = String(payment.currency || 'BRL').toUpperCase()
+      totals[currency] = (totals[currency] || 0) + payment.amount
+      return totals
+    }, {})
+  const planPaidByCurrency = totalsByCurrency(planPayments, 'paid')
+  const featuredPaidByCurrency = totalsByCurrency(featured, 'approved')
+  const topupPaidByCurrency = totalsByCurrency(topupPayments, 'paid')
+  const totalPaidByCurrency = [planPaidByCurrency, featuredPaidByCurrency, topupPaidByCurrency]
+    .reduce((total, group) => {
+      Object.entries(group).forEach(([currency, amount]) => {
+        total[currency] = (total[currency] || 0) + amount
+      })
+      return total
+    }, {} as Record<string, number>)
   const boughtCredits = topupPayments
     .filter((payment) => payment.status === 'paid')
     .reduce((sum, payment) => sum + payment.credits, 0)
@@ -387,6 +430,10 @@ export async function getComposerStatement(composerId: string) {
       planPaid: paidPlanTotal,
       featuredPaid: paidFeaturedTotal,
       topupPaid: paidTopupTotal,
+      totalPaidByCurrency,
+      planPaidByCurrency,
+      featuredPaidByCurrency,
+      topupPaidByCurrency,
       boughtCredits: studioUsage.monthlyCredits,
       boughtMusicQuantity: boughtMusicQuantity + Math.floor(manualCredits / 10),
       usedCredits: studioUsage.used,

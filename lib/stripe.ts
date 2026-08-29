@@ -26,6 +26,30 @@ export async function stripeRequest<T = any>(path: string, init: RequestInit = {
   return data as T
 }
 
+const STRIPE_ZERO_DECIMAL_CURRENCIES = new Set([
+  'BIF', 'CLP', 'DJF', 'GNF', 'JPY', 'KMF', 'KRW', 'MGA', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF',
+])
+
+export async function getStripeSettlement(paymentIntentId: string) {
+  const paymentIntent = await stripeRequest<any>(
+    `/payment_intents/${encodeURIComponent(paymentIntentId)}?expand[]=latest_charge.balance_transaction`,
+    { method: 'GET' }
+  )
+  const balanceTransaction = paymentIntent?.latest_charge?.balance_transaction
+  if (!balanceTransaction || typeof balanceTransaction === 'string') return null
+
+  const currency = String(balanceTransaction.currency || '').toUpperCase()
+  const minorAmount = Number(balanceTransaction.amount)
+  if (!currency || !Number.isFinite(minorAmount)) return null
+
+  return {
+    amount: minorAmount / (STRIPE_ZERO_DECIMAL_CURRENCIES.has(currency) ? 1 : 100),
+    currency,
+    exchangeRate: Number(balanceTransaction.exchange_rate) || null,
+    balanceTransactionId: balanceTransaction.id || null,
+  }
+}
+
 export function verifyStripeWebhookSignature(rawBody: string, signatureHeader: string | null) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim()
   if (!secret) return { ok: false, configured: false, reason: 'secret_not_configured' }

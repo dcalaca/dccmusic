@@ -108,10 +108,11 @@ function formatDateTime(value?: string | null) {
   })
 }
 
-function formatMoney(value?: number | null) {
+function formatMoney(value?: number | null, currency = 'BRL') {
   return Number(value || 0).toLocaleString('pt-BR', {
     style: 'currency',
-    currency: 'BRL',
+    currency,
+    currencyDisplay: 'narrowSymbol',
   })
 }
 
@@ -362,7 +363,7 @@ function StatementSection({ statement }: { statement: any }) {
                         )}
                       </div>
                       <div className="text-left sm:text-right">
-                        <p className="font-black text-green-300">{formatMoney(payment.amount)}</p>
+                        <p className="font-black text-green-300">{formatMoney(payment.amount, payment.currency)}</p>
                         <p className="mt-1 text-xs text-gray-400">{payment.statusLabel}</p>
                       </div>
                     </div>

@@ -37,6 +37,7 @@ vi.mock('@/lib/studio', () => ({
 }))
 
 vi.mock('@/lib/stripe', () => ({
+  getStripeSettlement: vi.fn(),
   sanitizeStripeObject: (value: unknown) => value,
   stripeRequest: vi.fn(),
 }))

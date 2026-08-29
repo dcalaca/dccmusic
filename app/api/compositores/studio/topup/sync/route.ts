@@ -3,7 +3,7 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { paymentClient } from '@/lib/mercadopago'
 import { supabaseAdmin } from '@/lib/supabase'
 import { creditStudioTopupOnce, revokeStudioTopupCreditOnce } from '@/lib/studio'
-import { sanitizeStripeObject, stripeRequest } from '@/lib/stripe'
+import { getStripeSettlement, sanitizeStripeObject, stripeRequest } from '@/lib/stripe'
 import { sendApprovedStudioTopupSideEffects } from '@/lib/studio-topup-side-effects'
 import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
@@ -70,12 +70,22 @@ export async function POST(request: NextRequest) {
         }).eq('id', currentTopup.id)
         return NextResponse.json({ success: true, status: nextStatus, pending: nextStatus === 'pending' })
       }
+      const settlement = await getStripeSettlement(stripePaymentId).catch(() => null)
       const result = await creditStudioTopupOnce({
         topup: currentTopup,
         paymentId: stripePaymentId,
         paymentData: sanitizeStripeObject(session),
         provider: 'stripe',
-        metadata: { syncedFromStripeSession: true, stripe_session_id: session.id },
+        metadata: {
+          syncedFromStripeSession: true,
+          stripe_session_id: session.id,
+          ...(settlement ? {
+            stripe_settlement_amount: settlement.amount,
+            stripe_settlement_currency: settlement.currency,
+            stripe_exchange_rate: settlement.exchangeRate,
+            stripe_balance_transaction_id: settlement.balanceTransactionId,
+          } : {}),
+        },
       })
       if (result.credited) await sendApprovedStudioTopupSideEffects(request, result.topup, stripePaymentId)
       return NextResponse.json({ success: true, status: 'paid', credited: result.credited, paymentId: stripePaymentId, topupId: currentTopup.id })
