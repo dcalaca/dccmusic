@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { backupStudioVideoRequest } from '@/lib/studio-video-backup'
+import { startStudioVideoGeneration } from '@/lib/studio-video'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -17,6 +18,28 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const retryLimit = Math.max(1, Math.min(3, Number(request.nextUrl.searchParams.get('retryLimit')) || 3))
+    const retryCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    const { data: retryVideos, error: retryError } = await supabaseAdmin
+      .from('studio_video_requests')
+      .select('*')
+      .eq('status', 'retry_pending')
+      .lte('updated_at', retryCutoff)
+      .order('updated_at', { ascending: true })
+      .limit(retryLimit)
+
+    if (retryError) throw retryError
+
+    const retryResults = []
+    for (const video of retryVideos || []) {
+      try {
+        const retried = await startStudioVideoGeneration(video.id)
+        retryResults.push({ videoRequestId: video.id, status: retried?.status || 'unknown' })
+      } catch (error: any) {
+        retryResults.push({ videoRequestId: video.id, status: 'failed', error: error?.message || String(error) })
+      }
+    }
+
     const limit = Math.max(1, Math.min(2, Number(request.nextUrl.searchParams.get('limit')) || 1))
     const { data: videos, error } = await supabaseAdmin
       .from('studio_video_requests')
@@ -38,6 +61,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      retriesChecked: retryVideos?.length || 0,
+      retryResults,
       checked: videos?.length || 0,
       results,
       timestamp: new Date().toISOString(),

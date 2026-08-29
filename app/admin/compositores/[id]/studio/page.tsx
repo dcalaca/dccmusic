@@ -64,6 +64,7 @@ const videoStatusLabels: Record<string, string> = {
   payment_pending: 'Aguardando pagamento',
   requested: 'Solicitado',
   in_production: 'Gerando vídeo',
+  retry_pending: 'Tentando novamente',
   processing: 'Processando',
   completed: 'Pronto',
   cancelled: 'Cancelado',

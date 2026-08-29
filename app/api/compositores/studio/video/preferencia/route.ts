@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     }
 
     const activeForVersion = (existingRequests || []).find((item: any) => (
-      ['payment_pending', 'requested', 'in_production'].includes(item.status) &&
+      ['payment_pending', 'requested', 'in_production', 'retry_pending'].includes(item.status) &&
       getStudioVideoRequestVersionId(item) === version.id
     ))
 
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     }
 
     const anotherVideoInProduction = (existingRequests || []).find((item: any) => (
-      ['payment_pending', 'requested', 'in_production'].includes(item.status) &&
+      ['payment_pending', 'requested', 'in_production', 'retry_pending'].includes(item.status) &&
       getStudioVideoRequestVersionId(item) !== version.id
     ))
 

@@ -67,6 +67,55 @@ function isExistingMp4Conflict(result: any, response: Response) {
   return response.status === 409 || result?.code === 409 || message.includes('already exists')
 }
 
+const MAX_STUDIO_VIDEO_START_RETRIES = 6
+
+function isTransientVideoStartError(result: any, response: Response) {
+  const message = String(result?.msg || result?.message || result?.error?.message || '').toLowerCase()
+  const code = Number(result?.code || response.status || 0)
+  return (
+    code >= 500 ||
+    message.includes('failed to add suno mp4 generation task') ||
+    message.includes('internal error') ||
+    message.includes('try again later') ||
+    message.includes('temporarily unavailable') ||
+    message.includes('timeout')
+  )
+}
+
+async function scheduleVideoStartRetry(videoRequest: any, result: any) {
+  const retryCount = Math.max(0, Number(videoRequest?.metadata?.video_retry_count || 0)) + 1
+  if (retryCount > MAX_STUDIO_VIDEO_START_RETRIES) return null
+
+  const rawProviderError = String(
+    result?.msg || result?.message || result?.error?.message || 'Falha temporária ao iniciar vídeo.'
+  ).slice(0, 500)
+  const { data, error } = await supabaseAdmin
+    .from('studio_video_requests')
+    .update({
+      status: 'retry_pending',
+      metadata: {
+        ...(videoRequest.metadata || {}),
+        video_retry_count: retryCount,
+        video_retry_reason: rawProviderError,
+        video_retry_scheduled_at: new Date().toISOString(),
+      },
+      response_payload: result,
+      error_message: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', videoRequest.id)
+    .select('*')
+    .single()
+
+  if (error) throw error
+  console.warn('[Studio Video] Início reagendado automaticamente', {
+    videoRequestId: videoRequest.id,
+    retryCount,
+    providerError: rawProviderError,
+  })
+  return data
+}
+
 async function markVideoRequestCompleted(videoRequestId: string, input: {
   providerTaskId: string | null
   videoUrl: string
@@ -361,6 +410,11 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
       })
     }
 
+    if (isTransientVideoStartError(result, response)) {
+      const scheduledRetry = await scheduleVideoStartRetry(videoRequest, result)
+      if (scheduledRetry) return scheduledRetry
+    }
+
     const errorMessage = translateStudioVideoProviderError(
       result?.msg,
       'Não consegui iniciar a geração do vídeo com letra agora.'
@@ -455,6 +509,11 @@ export async function startStudioVideoGenerationWithProviderIds(input: {
   }
 
   if (!response.ok || result?.code !== 200) {
+    if (isTransientVideoStartError(result, response)) {
+      const scheduledRetry = await scheduleVideoStartRetry(videoRequest, result)
+      if (scheduledRetry) return scheduledRetry
+    }
+
     const errorMessage = translateStudioVideoProviderError(
       result?.msg,
       'Não consegui iniciar a geração do vídeo com letra agora.'

@@ -335,6 +335,10 @@ const videoRequestStatus: Record<string, { label: string; description: string }>
     label: 'Em produção',
     description: 'Seu vídeo com capa, nome e letra está sendo produzido. Assim que finalizar, o link aparecerá aqui.',
   },
+  retry_pending: {
+    label: 'Tentando novamente',
+    description: 'A geradora apresentou uma instabilidade. Seu vídeo continua na fila e será reenviado automaticamente, sem cobrança.',
+  },
   completed: {
     label: 'Concluído',
     description: 'Seu vídeo com letra foi finalizado.',
@@ -1156,7 +1160,7 @@ export default function StudioProjectDetailPage() {
       ...(Array.isArray(project?.videoRequests) ? project.videoRequests : []),
       project?.videoRequest,
     ].filter(Boolean)
-    const hasActive = requests.some((item: any) => ['payment_pending', 'requested', 'in_production'].includes(item.status))
+    const hasActive = requests.some((item: any) => ['payment_pending', 'requested', 'in_production', 'retry_pending'].includes(item.status))
     if (!hasActive) return
 
     const interval = window.setInterval(() => {
@@ -1273,8 +1277,8 @@ export default function StudioProjectDetailPage() {
       ? allVideoRequests.find((item: any) => !item.versionId)
       : null)
     || null
-  const hasActiveVideoRequest = allVideoRequests.some((item: any) => ['payment_pending', 'requested', 'in_production'].includes(item.status))
-  const selectedVideoIsActive = Boolean(currentVideoRequest && ['payment_pending', 'requested', 'in_production'].includes(currentVideoRequest.status))
+  const hasActiveVideoRequest = allVideoRequests.some((item: any) => ['payment_pending', 'requested', 'in_production', 'retry_pending'].includes(item.status))
+  const selectedVideoIsActive = Boolean(currentVideoRequest && ['payment_pending', 'requested', 'in_production', 'retry_pending'].includes(currentVideoRequest.status))
   const selectedVideoIsReady = Boolean(currentVideoRequest?.status === 'completed' && currentVideoRequest.videoUrl)
   const canRegenerateSelectedVideo = Boolean(currentVideoRequest?.canRegenerate)
   const inspiration = project.inspiration
