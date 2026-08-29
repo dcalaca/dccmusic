@@ -69,7 +69,7 @@ export function buildInternalVideoAss(input: {
       ? duration - outro - cursor
       : available * (weights[index] / totalWeight)
     const end = Math.min(duration - outro, cursor + Math.max(2.2, cardDuration))
-    const line = `Dialogue: 0,${assTime(cursor)},${assTime(end)},Lyrics,,0,0,0,,${assEscape(card)}`
+    const line = `Dialogue: 0,${assTime(cursor)},${assTime(end)},Lyrics,,0,0,0,,{\\fad(240,240)}${assEscape(card)}`
     cursor = end
     return line
   })
@@ -84,9 +84,9 @@ WrapStyle: 2
 
 [V4+ Styles]
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-Style: Title,Arial,42,&H00FFFFFF,&H000000FF,&H00101010,&H70000000,-1,0,0,0,100,100,0,0,1,3,1,8,45,45,70,1
-Style: Artist,Arial,26,&H00E8E8E8,&H000000FF,&H00101010,&H70000000,0,0,0,0,100,100,0,0,1,2,1,8,45,45,125,1
-Style: Lyrics,Arial,40,&H00FFFFFF,&H000000FF,&H00101010,&H90000000,-1,0,0,0,100,100,0,0,3,2,0,2,55,55,120,1
+Style: Title,Arial,48,&H00FFFFFF,&H000000FF,&H00101010,&H90000000,-1,0,0,0,100,100,0,0,1,3,1,8,45,45,72,1
+Style: Artist,Arial,29,&H00E8E8E8,&H000000FF,&H00101010,&H90000000,0,0,0,0,100,100,0,0,1,2,1,8,45,45,132,1
+Style: Lyrics,Arial,46,&H00FFFFFF,&H000000FF,&H00101010,&HAA000000,-1,0,0,0,100,100,0,0,3,2,0,2,55,55,130,1
 
 [Events]
 Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
@@ -179,6 +179,7 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dcc-lyric-video-'))
   const audioPath = path.join(tempDir, 'audio')
   const coverPath = path.join(tempDir, 'cover')
+  const logoPath = path.join(tempDir, 'dcc-logo.png')
   const assPath = path.join(tempDir, 'lyrics.ass')
   const outputPath = path.join(tempDir, 'video.mp4')
 
@@ -197,6 +198,7 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
     await Promise.all([
       fs.writeFile(audioPath, audio.buffer),
       fs.writeFile(coverPath, cover),
+      fs.copyFile(path.join(process.cwd(), 'public', 'logopng.png'), logoPath),
       fs.writeFile(assPath, buildInternalVideoAss({
         title: String(project?.title || videoRequest?.metadata?.project_title || 'DCC Music'),
         artist: String(composer?.name || videoRequest?.metadata?.composer_name || 'DCC Music'),
@@ -205,9 +207,9 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
       })),
     ])
 
-    const filter = `[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,boxblur=20:5[bg];[0:v]scale=620:620:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:210,ass=${assPath.replace(/([\\:])/g, '\\$1')}`
+    const filter = `[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,boxblur=20:5[bg];[0:v]scale=620:620:force_original_aspect_ratio=decrease[fg];[2:v]scale=150:-1,colorchannelmixer=aa=0.82[logo];[bg][fg]overlay=(W-w)/2:220[video];[video][logo]overlay=W-w-34:34,ass=${assPath.replace(/([\\:])/g, '\\$1')}`
     await execFileAsync(resolveFfmpegPath(), [
-      '-hide_banner', '-loglevel', 'error', '-loop', '1', '-i', coverPath, '-i', audioPath,
+      '-hide_banner', '-loglevel', 'error', '-loop', '1', '-i', coverPath, '-i', audioPath, '-loop', '1', '-i', logoPath,
       '-filter_complex', filter,
       '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '25', '-pix_fmt', 'yuv420p',
       '-c:a', 'aac', '-b:a', '160k', '-shortest', '-movflags', '+faststart', '-y', outputPath,
