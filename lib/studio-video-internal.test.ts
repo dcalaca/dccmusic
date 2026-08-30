@@ -38,8 +38,12 @@ describe('studio video interno', () => {
     const cover = path.join(tempDir, 'cover.png')
     const audio = path.join(tempDir, 'audio.m4a')
     const subtitles = path.join(tempDir, 'lyrics.ass')
+    const fontConfig = path.join(tempDir, 'fonts.conf')
+    const fontCache = path.join(tempDir, 'font-cache')
+    const fontDir = path.join(process.cwd(), 'node_modules', '@fontsource-variable', 'inter', 'files')
     const output = path.join(tempDir, 'output.mp4')
     try {
+      await fs.mkdir(fontCache, { recursive: true })
       await Promise.all([
         execFileAsync(ffmpegPath(), ['-f', 'lavfi', '-i', 'color=c=0x34105f:s=720x720:d=1', '-frames:v', '1', '-y', cover]),
         execFileAsync(ffmpegPath(), ['-f', 'lavfi', '-i', 'sine=frequency=440:duration=3', '-c:a', 'aac', '-y', audio]),
@@ -49,13 +53,19 @@ describe('studio video interno', () => {
           lyrics: 'Primeira linha\nSegunda linha',
           durationSeconds: 3,
         })),
+        fs.writeFile(fontConfig, `<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+<fontconfig><dir>${fontDir}</dir><cachedir>${fontCache}</cachedir></fontconfig>`),
       ])
-      const filter = `[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,boxblur=20:5[bg];[0:v]scale=620:620:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:210,ass=${subtitles.replace(/([\\:])/g, '\\$1')}`
+      const filter = `[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,boxblur=20:5[bg];[0:v]scale=620:620:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:210,ass=${subtitles.replace(/([\\:])/g, '\\$1')}:fontsdir=${fontDir.replace(/([\\:])/g, '\\$1')}`
       await execFileAsync(ffmpegPath(), [
         '-loop', '1', '-i', cover, '-i', audio, '-filter_complex', filter,
         '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
         '-c:a', 'aac', '-shortest', '-movflags', '+faststart', '-y', output,
-      ], { timeout: 30_000 })
+      ], {
+        timeout: 30_000,
+        env: { ...process.env, FONTCONFIG_FILE: fontConfig, FONTCONFIG_PATH: tempDir },
+      })
       const result = await fs.readFile(output)
       expect(result.byteLength).toBeGreaterThan(10_000)
       expect(result.subarray(4, 8).toString()).toBe('ftyp')
