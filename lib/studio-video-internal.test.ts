@@ -5,6 +5,7 @@ import os from 'os'
 import path from 'path'
 import { promisify } from 'util'
 import { buildInternalVideoAss, lyricCards } from './studio-video-internal'
+import { STUDIO_VIDEO_FONT_BASE64 } from './studio-video-font'
 
 const execFileAsync = promisify(execFile)
 
@@ -40,8 +41,10 @@ describe('studio video interno', () => {
     const subtitles = path.join(tempDir, 'lyrics.ass')
     const fontConfig = path.join(tempDir, 'fonts.conf')
     const fontCache = path.join(tempDir, 'font-cache')
-    const fontDir = path.join(process.cwd(), 'node_modules', '@fontsource-variable', 'inter', 'files')
+    const fontDir = tempDir
+    const fontPath = path.join(tempDir, 'dcc-video-font.otf')
     const output = path.join(tempDir, 'output.mp4')
+    const frame = path.join(tempDir, 'frame.rgb')
     try {
       await fs.mkdir(fontCache, { recursive: true })
       await Promise.all([
@@ -53,6 +56,7 @@ describe('studio video interno', () => {
           lyrics: 'Primeira linha\nSegunda linha',
           durationSeconds: 3,
         })),
+        fs.writeFile(fontPath, Buffer.from(STUDIO_VIDEO_FONT_BASE64, 'base64')),
         fs.writeFile(fontConfig, `<?xml version="1.0"?>
 <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
 <fontconfig><dir>${fontDir}</dir><cachedir>${fontCache}</cachedir></fontconfig>`),
@@ -69,6 +73,15 @@ describe('studio video interno', () => {
       const result = await fs.readFile(output)
       expect(result.byteLength).toBeGreaterThan(10_000)
       expect(result.subarray(4, 8).toString()).toBe('ftyp')
+      await execFileAsync(ffmpegPath(), [
+        '-ss', '1', '-i', output, '-frames:v', '1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-y', frame,
+      ])
+      const pixels = await fs.readFile(frame)
+      let whitePixels = 0
+      for (let index = 0; index < pixels.length; index += 3) {
+        if (pixels[index] > 225 && pixels[index + 1] > 225 && pixels[index + 2] > 225) whitePixels += 1
+      }
+      expect(whitePixels).toBeGreaterThan(500)
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true })
     }

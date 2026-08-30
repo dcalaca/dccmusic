@@ -6,6 +6,7 @@ import { promisify } from 'util'
 import { backupStudioVersionAudio, downloadStudioAudioBuffer } from '@/lib/studio-audio-backup'
 import { saveInternalStudioVideo } from '@/lib/studio-video-backup'
 import { getStudioVideoRequestVersionId } from '@/lib/studio-video'
+import { STUDIO_VIDEO_FONT_BASE64 } from '@/lib/studio-video-font'
 import { supabaseAdmin } from '@/lib/supabase'
 
 const execFileAsync = promisify(execFile)
@@ -17,19 +18,6 @@ function resolveFfmpegPath() {
   } catch {
     return process.env.FFMPEG_PATH || 'ffmpeg'
   }
-}
-
-function resolveVideoFontPath() {
-  // O caminho é montado em runtime para o webpack não tentar interpretar o
-  // arquivo binário como JavaScript. O next.config inclui a fonte no bundle.
-  return path.join(
-    process.cwd(),
-    'node_modules',
-    '@fontsource-variable',
-    'inter',
-    'files',
-    'inter-latin-ext-wght-normal.woff2'
-  )
 }
 
 function assTime(seconds: number) {
@@ -129,9 +117,9 @@ WrapStyle: 2
 
 [V4+ Styles]
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-Style: Title,Inter,48,&H00FFFFFF,&H000000FF,&H00101010,&H90000000,-1,0,0,0,100,100,0,0,1,3,1,8,45,45,72,1
-Style: Artist,Inter,29,&H00E8E8E8,&H000000FF,&H00101010,&H90000000,0,0,0,0,100,100,0,0,1,2,1,8,45,45,132,1
-Style: Lyrics,Inter,46,&H00FFFFFF,&H000000FF,&H00101010,&HAA000000,-1,0,0,0,100,100,0,0,3,2,0,2,55,55,130,1
+Style: Title,Nimbus Sans,48,&H00FFFFFF,&H000000FF,&H00101010,&H90000000,-1,0,0,0,100,100,0,0,1,3,1,8,45,45,72,1
+Style: Artist,Nimbus Sans,29,&H00E8E8E8,&H000000FF,&H00101010,&H90000000,0,0,0,0,100,100,0,0,1,2,1,8,45,45,132,1
+Style: Lyrics,Nimbus Sans,46,&H00FFFFFF,&H000000FF,&H00101010,&HAA000000,-1,0,0,0,100,100,0,0,3,2,0,2,55,55,130,1
 
 [Events]
 Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
@@ -280,6 +268,7 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
   const audioPath = path.join(tempDir, 'audio')
   const coverPath = path.join(tempDir, 'cover')
   const logoPath = path.join(tempDir, 'dcc-logo.png')
+  const fontPath = path.join(tempDir, 'dcc-video-font.otf')
   const assPath = path.join(tempDir, 'lyrics.ass')
   const fontConfigPath = path.join(tempDir, 'fonts.conf')
   const fontCacheDir = path.join(tempDir, 'font-cache')
@@ -297,12 +286,13 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
   }).eq('id', videoRequest.id)
 
   try {
-    const fontDir = path.dirname(resolveVideoFontPath())
+    const fontDir = tempDir
     await fs.mkdir(fontCacheDir, { recursive: true })
     await Promise.all([
       fs.writeFile(audioPath, audio.buffer),
       fs.writeFile(coverPath, cover),
       fs.copyFile(path.join(process.cwd(), 'public', 'logopng.png'), logoPath),
+      fs.writeFile(fontPath, Buffer.from(STUDIO_VIDEO_FONT_BASE64, 'base64')),
       fs.writeFile(fontConfigPath, `<?xml version="1.0"?>
 <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
 <fontconfig>
