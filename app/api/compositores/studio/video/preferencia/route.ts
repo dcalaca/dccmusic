@@ -199,6 +199,19 @@ export async function POST(request: NextRequest) {
       paidAt: new Date().toISOString(),
       metadata,
     })
+
+    // O render interno pode levar alguns minutos. Responder antes evita que o
+    // navegador móvel encerre a conexão e mate a função no meio do FFmpeg. O
+    // cron dedicado pega este pedido em até dois minutos e a página acompanha
+    // o status por polling.
+    if (isInternalPilot) {
+      return NextResponse.json({
+        success: true,
+        message: 'Vídeo com letra recebido. A DCC já está preparando o arquivo.',
+        videoRequest: await mapStudioVideoRequest(videoRequest),
+      }, { status: 202 })
+    }
+
     const startedVideoRequest = await startStudioVideoGeneration(videoRequest.id, {
       skipRecover: Boolean(replaceExisting && canReplace),
     })
