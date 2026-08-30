@@ -2,6 +2,7 @@ import JSZip from 'jszip'
 import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
 import { overlayScoreTitleOnPdf } from '@/lib/pdf-score-title'
+import { createSimpleTextPdf } from '@/lib/simple-text-pdf'
 
 const BUCKET_NAME = 'studio-assets'
 
@@ -48,6 +49,42 @@ async function uploadBuffer(path: string, buffer: Buffer, contentType: string) {
     })
 
   if (error) throw error
+}
+
+export async function saveDccSimplifiedScore(input: {
+  composerId: string
+  transcriptionId: string
+  title: string
+  musicXml: string
+  preview: string
+}): Promise<SavedTranscriptionFiles> {
+  const baseName = normalizeFileName(input.title, 'partitura-simplificada')
+  const basePath = `${input.composerId}/music-transcriptions/${input.transcriptionId}`
+  const pdfPath = `${basePath}/${baseName}.pdf`
+  const musicXmlPath = `${basePath}/${baseName}.musicxml`
+  const zipPath = `${basePath}/${baseName}-${randomUUID()}.zip`
+  const pdfBuffer = createSimpleTextPdf({ title: input.title, text: input.preview })
+  const musicXmlBuffer = Buffer.from(input.musicXml, 'utf8')
+  const zip = new JSZip()
+  zip.file(`${baseName}.pdf`, pdfBuffer)
+  zip.file(`${baseName}.musicxml`, musicXmlBuffer)
+  const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' })
+
+  await Promise.all([
+    uploadBuffer(pdfPath, pdfBuffer, 'application/pdf'),
+    uploadBuffer(musicXmlPath, musicXmlBuffer, 'application/vnd.recordare.musicxml+xml'),
+    uploadBuffer(zipPath, zipBuffer, 'application/zip'),
+  ])
+
+  return {
+    zipPath,
+    pdfPath,
+    musicXmlPath,
+    storageProvider: 'supabase',
+    pdfFileName: `${baseName}.pdf`,
+    musicXmlFileName: `${baseName}.musicxml`,
+    zipFileName: `${baseName}.zip`,
+  }
 }
 
 export async function createTranscriptionSignedUrl(path?: string | null) {

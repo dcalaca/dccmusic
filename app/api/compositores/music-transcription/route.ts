@@ -5,8 +5,9 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { addStudioCreditTransaction } from '@/lib/studio'
 import { getComposerStatement } from '@/lib/composer-statement'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
-import { saveMurekaTranscriptionZip, readTranscriptionTextFile } from '@/lib/music-transcription-storage'
+import { saveDccSimplifiedScore, saveMurekaTranscriptionZip, readTranscriptionTextFile } from '@/lib/music-transcription-storage'
 import { buildMusicXmlChordPreview } from '@/lib/musicxml-chord-preview'
+import { buildDccSimplifiedScore } from '@/lib/dcc-simplified-score'
 import {
   extractProviderErrorText,
   TRANSCRIPTION_ALREADY_PROCESSING_MESSAGE,
@@ -321,6 +322,68 @@ async function completeTranscription(input: {
   return saved
 }
 
+async function completeDccSimplifiedTranscription(input: {
+  record: any
+  composerId: string
+  title: string
+  lyrics: string
+  bpm?: number | null
+  projectId?: string | null
+}) {
+  const score = buildDccSimplifiedScore({ title: input.title, lyrics: input.lyrics, bpm: input.bpm })
+  const files = await saveDccSimplifiedScore({
+    composerId: input.composerId,
+    transcriptionId: input.record.id,
+    title: input.title,
+    musicXml: score.musicXml,
+    preview: score.preview,
+  })
+  const { data: saved, error } = await supabaseAdmin
+    .from('music_transcriptions')
+    .update({
+      status: 'completed',
+      credits_charged: TRANSCRIPTION_CREDITS,
+      provider_input_type: 'dcc_simplified_score',
+      provider_input_value: input.record.studio_version_id,
+      pdf_path: files.pdfPath,
+      pdf_storage_provider: files.storageProvider,
+      musicxml_path: files.musicXmlPath,
+      musicxml_storage_provider: files.storageProvider,
+      zip_path: files.zipPath,
+      zip_storage_provider: files.storageProvider,
+      preview_text: score.preview,
+      preview_payload: {
+        key: score.key,
+        bpm: String(score.bpm),
+        stats: { mode: 'dcc_simplified_score', lines: input.lyrics.split(/\r?\n/).filter(Boolean).length },
+        warnings: ['Partitura simplificada: voz, cifra e ritmo essencial.'],
+      },
+      provider_payload: { provider: 'dcc_simplified_score', version: 1 },
+      metadata: {
+        ...(input.record.metadata || {}),
+        source: 'dcc_simplified_score',
+        fileNames: { pdf: files.pdfFileName, musicxml: files.musicXmlFileName, zip: files.zipFileName },
+      },
+      completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      error_message: null,
+    })
+    .eq('id', input.record.id)
+    .select('*')
+    .single()
+  if (error) throw error
+
+  await addStudioCreditTransaction({
+    composerId: input.composerId,
+    projectId: input.projectId || null,
+    action: 'music_transcription',
+    amount: TRANSCRIPTION_CREDITS,
+    description: `Partitura e cifra simplificada: ${input.title}`,
+    metadata: { transcriptionId: input.record.id, sourceType: input.record.source_type, creditCost: TRANSCRIPTION_CREDITS, engine: 'dcc_simplified_score' },
+  })
+  return saved
+}
+
 function mapTranscription(row: any) {
   return {
     id: row.id,
@@ -413,20 +476,7 @@ export async function POST(request: NextRequest) {
 
       if (processingRecord.status === 'completed') return NextResponse.json({ transcription: mapTranscription(processingRecord), cached: true })
 
-      const uploaded = await uploadManualAudioToMureka(audioFile, arrayBuffer)
-      const transcription = await requestMurekaTranscription({ type: 'upload_audio_id', value: uploaded.uploadAudioId })
-      const saved = await completeTranscription({
-        record: processingRecord,
-        composerId: composer.composerId,
-        title,
-        providerInputType: 'upload_audio_id',
-        providerInputValue: uploaded.uploadAudioId,
-        providerPayload: transcription.payload,
-        zipUrl: transcription.zipUrl,
-        metadata: { uploadPayload: uploaded.uploadPayload },
-      })
-
-      return NextResponse.json({ transcription: mapTranscription(saved), cached: false, credits: { cost: TRANSCRIPTION_CREDITS } })
+      throw new Error('Nesta fase de teste, a partitura simplificada está disponível para músicas criadas no Studio IA. O envio de áudio externo volta assim que a análise própria estiver pronta.')
     }
 
     const body = await request.json().catch(() => null)
@@ -446,10 +496,6 @@ export async function POST(request: NextRequest) {
     const existing = await getExistingCompleted(composer.composerId, 'studio_version', studioVersionId)
     if (existing) return NextResponse.json({ transcription: mapTranscription(existing), cached: true })
 
-    const audio = await getStudioVersionAudioUrls(version)
-    const audioUrl = audio.streamAudioUrl || audio.audioUrl
-    if (!audioUrl) return NextResponse.json({ error: 'Essa música não tem áudio disponível para transcrição.' }, { status: 400 })
-
     await requireCredits(composer.composerId)
     const project = Array.isArray(version.project) ? version.project[0] : version.project
     const title = cleanStudioMusicTitle(project?.title || version.version_name)
@@ -465,15 +511,25 @@ export async function POST(request: NextRequest) {
 
     if (processingRecord.status === 'completed') return NextResponse.json({ transcription: mapTranscription(processingRecord), cached: true })
 
-    const transcription = await requestMurekaTranscription({ type: 'url', value: audioUrl })
-    const saved = await completeTranscription({
+    const { data: lyric, error: lyricError } = await supabaseAdmin
+      .from('studio_lyrics')
+      .select('content')
+      .eq('project_id', version.project_id)
+      .eq('composer_id', composer.composerId)
+      .eq('is_current', true)
+      .maybeSingle()
+    if (lyricError) throw lyricError
+    if (!lyric?.content?.trim()) return NextResponse.json({ error: 'Essa música não tem letra disponível para criar a partitura simplificada.' }, { status: 400 })
+
+    const { data: generation } = version.generation_id
+      ? await supabaseAdmin.from('studio_generations').select('request_payload').eq('id', version.generation_id).maybeSingle()
+      : { data: null }
+    const saved = await completeDccSimplifiedTranscription({
       record: processingRecord,
       composerId: composer.composerId,
       title,
-      providerInputType: 'url',
-      providerInputValue: audioUrl,
-      providerPayload: transcription.payload,
-      zipUrl: transcription.zipUrl,
+      lyrics: lyric.content,
+      bpm: Number(generation?.request_payload?.bpm) || 100,
       projectId: version.project_id,
     })
 

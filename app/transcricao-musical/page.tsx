@@ -185,7 +185,7 @@ function TranscricaoMusicalContent() {
       if (!response.ok) throw new Error(readClientApiError(data, 'Erro ao gerar partitura e cifra.'))
 
       setSelectedTranscription(data.transcription)
-      setSuccess(data.cached ? 'Partitura e cifra já estavam salvas. Nenhum crédito foi descontado.' : `Partitura e cifra geradas. Debitamos ${COST} créditos do seu saldo DCC.`)
+      setSuccess(data.cached ? 'Partitura e cifra já estavam salvas. Nenhum crédito foi descontado.' : `Partitura simplificada DCC gerada. Debitamos ${COST} créditos do seu saldo DCC.`)
       await loadData()
     } catch (err: any) {
       setError(readClientApiError(err, 'Erro ao gerar partitura e cifra.'))
@@ -286,9 +286,9 @@ function TranscricaoMusicalContent() {
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-800 bg-cyan-950/40 px-3 py-1 text-xs font-bold text-cyan-200">
               <FiMusic /> Partitura e Cifra
             </div>
-            <h1 className="text-2xl font-black leading-tight sm:text-3xl">Transforme áudio em partitura, MusicXML e letra cifrada</h1>
+            <h1 className="text-2xl font-black leading-tight sm:text-3xl">Partitura simplificada, MusicXML e letra cifrada</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
-              Escolha uma música do Studio IA ou envie seu áudio. Preço: {DISPLAY_PRICE} por música.
+              Para músicas do Studio IA, a DCC cria uma guia simplificada de voz, ritmo e cifra a partir da letra estruturada. Preço: {DISPLAY_PRICE} por música.
               <span className="block text-xs text-gray-500">Debitamos {COST} créditos do seu saldo DCC.</span>
             </p>
           </div>
@@ -327,10 +327,11 @@ function TranscricaoMusicalContent() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setMode('upload')}
-                  className={`rounded-xl px-3 py-3 text-xs font-black sm:px-4 sm:text-sm ${mode === 'upload' ? 'bg-primary-600 text-white' : 'border border-gray-700 text-gray-300'}`}
+                  disabled
+                  title="Disponível em breve"
+                  className="cursor-not-allowed rounded-xl border border-gray-700 px-3 py-3 text-xs font-black text-gray-500 opacity-50 sm:px-4 sm:text-sm"
                 >
-                  Enviar áudio
+                  Enviar áudio (em breve)
                 </button>
               </div>
 
@@ -361,7 +362,7 @@ function TranscricaoMusicalContent() {
                         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-black text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {processing ? <FiLoader className="animate-spin" /> : <FiFileText />}
-                        {processing ? 'Gerando...' : `Gerar partitura e cifra - ${DISPLAY_PRICE}`}
+                        {processing ? 'Gerando...' : `Gerar partitura simplificada - ${DISPLAY_PRICE}`}
                       </button>
                     </>
                   )}
