@@ -3,7 +3,7 @@ import { promises as fs } from 'fs'
 import os from 'os'
 import path from 'path'
 import { promisify } from 'util'
-import { downloadStudioAudioBuffer } from '@/lib/studio-audio-backup'
+import { backupStudioVersionAudio, downloadStudioAudioBuffer } from '@/lib/studio-audio-backup'
 import { saveInternalStudioVideo } from '@/lib/studio-video-backup'
 import { getStudioVideoRequestVersionId } from '@/lib/studio-video'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -169,11 +169,35 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
     supabaseAdmin.from('studio_lyrics').select('content').eq('project_id', videoRequest.project_id).eq('is_current', true).maybeSingle(),
   ])
   if (!version) throw new Error('Versão da música não encontrada.')
-  if (!version.audio_path || version.audio_backup_status !== 'backed_up') {
-    throw new Error('O áudio ainda não tem cópia permanente para gerar o vídeo.')
+
+  // Para o piloto não dependemos do cron: antes de renderizar, tentamos salvar
+  // a cópia permanente da própria versão. Com isso qualquer projeto do Douglas
+  // que ainda tenha o áudio disponível pode ser usado no teste.
+  let videoVersion = version
+  if (!videoVersion.audio_path || videoVersion.audio_backup_status !== 'backed_up') {
+    const backup = await backupStudioVersionAudio({
+      versionId: videoVersion.id,
+      composerId: videoRequest.composer_id,
+      audioUrl: videoVersion.audio_url,
+      streamAudioUrl: videoVersion.stream_audio_url,
+      forceFullAudioUpgrade: true,
+    })
+    if (!backup.backedUp) {
+      throw new Error('Não consegui salvar a cópia permanente deste áudio para criar o vídeo.')
+    }
+    const { data: refreshedVersion, error: refreshedVersionError } = await supabaseAdmin
+      .from('studio_versions')
+      .select('*')
+      .eq('id', videoVersion.id)
+      .maybeSingle()
+    if (refreshedVersionError) throw refreshedVersionError
+    if (!refreshedVersion?.audio_path || refreshedVersion.audio_backup_status !== 'backed_up') {
+      throw new Error('A cópia permanente deste áudio ainda não ficou disponível.')
+    }
+    videoVersion = refreshedVersion
   }
 
-  const audio = await downloadStudioAudioBuffer(version.audio_path, version.audio_storage_provider)
+  const audio = await downloadStudioAudioBuffer(videoVersion.audio_path, videoVersion.audio_storage_provider)
   if (!audio?.buffer.byteLength) throw new Error('O áudio permanente está vazio.')
   const cover = await getCoverBuffer(videoRequest)
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dcc-lyric-video-'))
@@ -189,7 +213,7 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
     request_payload: {
       ...(videoRequest.request_payload || {}),
       provider: 'dcc-internal',
-      format: 'static-cover-lyrics-v2',
+      format: 'static-cover-lyrics-v3',
     },
     updated_at: new Date().toISOString(),
   }).eq('id', videoRequest.id)
@@ -203,14 +227,18 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
         title: String(project?.title || videoRequest?.metadata?.project_title || 'DCC Music'),
         artist: String(composer?.name || videoRequest?.metadata?.composer_name || 'DCC Music'),
         lyrics: String(lyric?.content || ''),
-        durationSeconds: durationSeconds(version),
+        durationSeconds: durationSeconds(videoVersion),
       })),
     ])
 
-    const filter = `[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,boxblur=20:5[bg];[0:v]scale=620:620:force_original_aspect_ratio=decrease[fg];[2:v]scale=150:-1,colorchannelmixer=aa=0.82[logo];[bg][fg]overlay=(W-w)/2:220[video];[video][logo]overlay=W-w-34:34,ass=${assPath.replace(/([\\:])/g, '\\$1')}`
+    // O mapa explícito impede o FFmpeg de escolher por engano a capa original
+    // quando há várias entradas de vídeo. O último filtro é o único vídeo de
+    // saída e contém marca, título, compositor e os cartões da letra.
+    const filter = `[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,boxblur=20:5[bg];[0:v]scale=620:620:force_original_aspect_ratio=decrease[fg];[2:v]scale=150:-1,colorchannelmixer=aa=0.82[logo];[bg][fg]overlay=(W-w)/2:220[video];[video][logo]overlay=W-w-34:34[branded];[branded]ass=${assPath.replace(/([\\:])/g, '\\$1')}[rendered]`
     await execFileAsync(resolveFfmpegPath(), [
       '-hide_banner', '-loglevel', 'error', '-loop', '1', '-i', coverPath, '-i', audioPath, '-loop', '1', '-i', logoPath,
       '-filter_complex', filter,
+      '-map', '[rendered]', '-map', '1:a:0',
       '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '25', '-pix_fmt', 'yuv420p',
       '-c:a', 'aac', '-b:a', '160k', '-shortest', '-movflags', '+faststart', '-y', outputPath,
     ], { timeout: 280_000, maxBuffer: 10 * 1024 * 1024 })
