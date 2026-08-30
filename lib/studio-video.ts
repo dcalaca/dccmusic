@@ -47,6 +47,18 @@ export const STUDIO_VIDEO_COURTESY_PROJECT_IDS = [
   'e2d26798-b1ff-4291-b9d5-acac1802cd47',
 ]
 
+// O renderizador da DCC ainda está em validação real. Esta lista é aplicada
+// no servidor (a partir do e-mail salvo do compositor), nunca pelo navegador.
+// Assim nenhum cliente recebe o fluxo experimental por engano.
+const INTERNAL_STUDIO_VIDEO_PILOT_EMAILS = new Set([
+  'dcalaca@gmail.com',
+])
+
+export function isInternalStudioVideoPilot(composer: { email?: string | null } | null | undefined) {
+  const email = String(composer?.email || '').trim().toLowerCase()
+  return process.env.STUDIO_INTERNAL_VIDEO_PILOT !== 'false' && INTERNAL_STUDIO_VIDEO_PILOT_EMAILS.has(email)
+}
+
 export function studioVideoCanRegenerate(videoRequest: any, project: { id?: string; title?: string } | null) {
   if (!videoRequest || videoRequest.status !== 'completed' || !videoRequest.video_url) return false
   if (videoRequest.metadata?.courtesy_regenerate) return false
@@ -249,11 +261,18 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
   if (requestError) throw requestError
   if (!videoRequest) throw new Error('Solicitação de vídeo com letra não encontrada.')
 
-  // Só habilitamos o renderizador próprio quando ele estiver explicitamente validado.
-  // Enquanto isso, o fluxo estável continua sendo o padrão para não entregar vídeo sem texto.
-  if (process.env.STUDIO_INTERNAL_VIDEO_RENDERER === 'true') {
+  const { data: requestComposer, error: composerError } = await supabaseAdmin
+    .from('dccmusic_composers')
+    .select('email')
+    .eq('id', videoRequest.composer_id)
+    .maybeSingle()
+  if (composerError) throw composerError
+
+  // Piloto fechado: somente o laboratório do Douglas usa o renderizador DCC.
+  // Todos os demais continuam no fornecedor atual até a validação ser concluída.
+  if (isInternalStudioVideoPilot(requestComposer)) {
     const internalVideo = await tryInternalStudioVideoFallback(videoRequest.id, {
-      message: 'Renderização interna DCC selecionada.',
+      message: 'Renderização interna DCC — piloto fechado.',
     })
     if (internalVideo) return internalVideo
     throw new Error('Não foi possível preparar o vídeo interno agora. Tente novamente em instantes.')
