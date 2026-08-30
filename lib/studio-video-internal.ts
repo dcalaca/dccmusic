@@ -322,7 +322,7 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
     // quando há várias entradas de vídeo. O último filtro é o único vídeo de
     // saída e contém marca, título, compositor e os cartões da letra.
     const filter = [
-      '[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,boxblur=20:5[bg]',
+      '[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,boxblur=12:3[bg]',
       '[0:v]scale=620:620:force_original_aspect_ratio=decrease[fg]',
       '[2:v]scale=150:-1,colorchannelmixer=aa=0.82[logo]',
       '[bg][fg]overlay=(W-w)/2:220[video]',
@@ -333,7 +333,9 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
       '-hide_banner', '-loglevel', 'error', '-loop', '1', '-i', coverPath, '-i', audioPath, '-loop', '1', '-i', logoPath,
       '-filter_complex', filter,
       '-map', '[rendered]', '-map', '1:a:0',
-      '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '25', '-pix_fmt', 'yuv420p',
+      // O vídeo é uma capa estática com texto; ultrafast evita estourar o
+      // limite de execução da função sem alterar a resolução entregue.
+      '-c:v', 'libx264', '-preset', 'ultrafast', '-tune', 'stillimage', '-crf', '28', '-pix_fmt', 'yuv420p',
       '-c:a', 'aac', '-b:a', '160k', '-shortest', '-movflags', '+faststart', '-y', outputPath,
     ], {
       timeout: 280_000,
