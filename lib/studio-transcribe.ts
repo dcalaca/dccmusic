@@ -2,6 +2,12 @@ import { normalizeStudioLyricStructure } from '@/lib/studio-lyric-normalizer'
 
 const MAX_TRANSCRIPTION_AUDIO_BYTES = 25 * 1024 * 1024
 
+export type StudioTimedLyricSegment = {
+  text: string
+  start: number
+  end: number
+}
+
 const YOUTUBE_SPAM_RE =
   /inscreva[- ]se no canal|ative o sininho|subscribe to (the|my) channel|turn on (the )?notifications|deixe seu like|compartilhe (esse|este) v[ií]deo/i
 
@@ -126,4 +132,46 @@ export async function transcribeStudioAudioBuffer(input: {
   const fileName = input.fileName || 'audio.mp3'
   const blob = new Blob([new Uint8Array(input.buffer)], { type: contentType })
   return transcribeStudioAudioFile(blob, fileName)
+}
+
+/** Obtém os tempos reais da voz para sincronizar vídeos com letra. */
+export async function transcribeStudioTimedLyricSegments(input: {
+  buffer: Buffer
+  fileName?: string
+  contentType?: string | null
+  lyricHint?: string
+}) {
+  const apiKey = process.env.OPENAI_API_KEY?.trim()
+  if (!apiKey) throw new Error('Transcrição de áudio não configurada no servidor.')
+  if (!input.buffer.byteLength || input.buffer.byteLength > MAX_TRANSCRIPTION_AUDIO_BYTES) {
+    throw new Error('O áudio não pode ser sincronizado agora.')
+  }
+
+  const blob = new Blob([new Uint8Array(input.buffer)], { type: input.contentType || 'audio/mpeg' })
+  const form = new FormData()
+  form.set('file', blob, input.fileName || 'audio.mp3')
+  form.set('model', process.env.OPENAI_TRANSCRIPTION_MODEL || 'whisper-1')
+  form.set('language', 'pt')
+  form.set('response_format', 'verbose_json')
+  form.append('timestamp_granularities[]', 'segment')
+  const hint = String(input.lyricHint || '').replace(/\[[^\]]+\]/g, '').trim()
+  if (hint) form.set('prompt', `Esta é a letra oficial da música. Use estas palavras ao transcrever: ${hint.slice(0, 3000)}`)
+
+  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: form,
+  })
+  const data = await response.json().catch(() => null)
+  if (!response.ok) throw new Error(data?.error?.message || 'Não consegui sincronizar a letra.')
+
+  return (Array.isArray(data?.segments) ? data.segments : [])
+    .map((segment: any) => ({
+      text: String(segment?.text || '').trim(),
+      start: Number(segment?.start),
+      end: Number(segment?.end),
+    }))
+    .filter((segment: StudioTimedLyricSegment) => (
+      segment.text && Number.isFinite(segment.start) && Number.isFinite(segment.end) && segment.end > segment.start
+    )) as StudioTimedLyricSegment[]
 }

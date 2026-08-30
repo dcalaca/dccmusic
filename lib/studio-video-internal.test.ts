@@ -34,6 +34,18 @@ describe('studio video interno', () => {
     expect(ass).toContain('Primeira linha\\NSegunda linha')
   })
 
+  it('usa tempos reais da transcrição quando disponíveis', () => {
+    const ass = buildInternalVideoAss({
+      title: 'Futebol',
+      artist: 'Douglas',
+      lyrics: 'Trecho oficial',
+      durationSeconds: 60,
+      timedSegments: [{ text: 'Trecho cantado', start: 12.5, end: 16.8 }],
+    })
+    expect(ass).toContain('Dialogue: 0,0:00:12.50,0:00:16.80,Lyrics')
+    expect(ass).toContain('Trecho cantado')
+  })
+
   it('renderiza um MP4 vertical reproduzível com o FFmpeg empacotado', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dcc-video-test-'))
     const cover = path.join(tempDir, 'cover.png')

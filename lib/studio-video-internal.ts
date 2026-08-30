@@ -7,6 +7,7 @@ import { backupStudioVersionAudio, downloadStudioAudioBuffer } from '@/lib/studi
 import { saveInternalStudioVideo } from '@/lib/studio-video-backup'
 import { getStudioVideoRequestVersionId } from '@/lib/studio-video'
 import { STUDIO_VIDEO_FONT_BASE64 } from '@/lib/studio-video-font'
+import { transcribeStudioTimedLyricSegments, type StudioTimedLyricSegment } from '@/lib/studio-transcribe'
 import { supabaseAdmin } from '@/lib/supabase'
 
 const execFileAsync = promisify(execFile)
@@ -101,9 +102,17 @@ export function buildInternalVideoAss(input: {
   artist: string
   lyrics: string
   durationSeconds: number
+  timedSegments?: StudioTimedLyricSegment[]
 }) {
   const duration = Math.max(10, input.durationSeconds || 240)
-  const events = lyricCardSchedule(input.lyrics, duration).map((card) => (
+  const schedule = input.timedSegments?.length
+    ? input.timedSegments.map((segment) => ({
+        text: wrapVideoText(segment.text, 30, 4),
+        start: Math.max(0, segment.start),
+        end: Math.min(duration, segment.end),
+      }))
+    : lyricCardSchedule(input.lyrics, duration)
+  const events = schedule.map((card) => (
     `Dialogue: 0,${assTime(card.start)},${assTime(card.end)},Lyrics,,0,0,0,,{\\fad(240,240)}${assEscape(card.text)}`
   ))
 
@@ -287,6 +296,24 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
 
   try {
     const fontDir = tempDir
+    let timedSegments: StudioTimedLyricSegment[] = []
+    try {
+      timedSegments = await transcribeStudioTimedLyricSegments({
+        buffer: audio.buffer,
+        fileName: audio.contentType === 'audio/mp4' ? 'musica.m4a' : 'musica.mp3',
+        contentType: audio.contentType,
+        lyricHint: String(lyric?.content || ''),
+      })
+      console.log('[Studio Video Interno] Letra sincronizada pelo áudio.', {
+        videoRequestId: videoRequest.id,
+        segments: timedSegments.length,
+      })
+    } catch (syncError) {
+      console.warn('[Studio Video Interno] Sincronização indisponível; usando distribuição proporcional.', {
+        videoRequestId: videoRequest.id,
+        error: syncError instanceof Error ? syncError.message : String(syncError),
+      })
+    }
     await fs.mkdir(fontCacheDir, { recursive: true })
     await Promise.all([
       fs.writeFile(audioPath, audio.buffer),
@@ -305,6 +332,7 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
         artist: `Compositor: ${wrapVideoText(String(composer?.name || videoRequest?.metadata?.composer_name || 'DCC Music'), 34, 1)}`,
         lyrics: String(lyric?.content || ''),
         durationSeconds: durationSeconds(videoVersion),
+        timedSegments,
       }), 'utf8'),
     ])
 
