@@ -20,13 +20,16 @@ function resolveFfmpegPath() {
 }
 
 function resolveVideoFontPath() {
-  try {
-    // A fonte faz parte do bundle para o texto não depender das fontes da Vercel.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require.resolve('@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2')
-  } catch {
-    return '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
-  }
+  // O caminho é montado em runtime para o webpack não tentar interpretar o
+  // arquivo binário como JavaScript. O next.config inclui a fonte no bundle.
+  return path.join(
+    process.cwd(),
+    'node_modules',
+    '@fontsource-variable',
+    'inter',
+    'files',
+    'inter-latin-ext-wght-normal.woff2'
+  )
 }
 
 function assTime(seconds: number) {
