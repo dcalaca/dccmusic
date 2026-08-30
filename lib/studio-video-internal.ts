@@ -281,6 +281,8 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
   const coverPath = path.join(tempDir, 'cover')
   const logoPath = path.join(tempDir, 'dcc-logo.png')
   const assPath = path.join(tempDir, 'lyrics.ass')
+  const fontConfigPath = path.join(tempDir, 'fonts.conf')
+  const fontCacheDir = path.join(tempDir, 'font-cache')
   const outputPath = path.join(tempDir, 'video.mp4')
 
   await supabaseAdmin.from('studio_video_requests').update({
@@ -295,10 +297,19 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
   }).eq('id', videoRequest.id)
 
   try {
+    const fontDir = path.dirname(resolveVideoFontPath())
+    await fs.mkdir(fontCacheDir, { recursive: true })
     await Promise.all([
       fs.writeFile(audioPath, audio.buffer),
       fs.writeFile(coverPath, cover),
       fs.copyFile(path.join(process.cwd(), 'public', 'logopng.png'), logoPath),
+      fs.writeFile(fontConfigPath, `<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+<fontconfig>
+  <dir>${fontDir}</dir>
+  <cachedir>${fontCacheDir}</cachedir>
+</fontconfig>
+`, 'utf8'),
       fs.writeFile(assPath, buildInternalVideoAss({
         title: wrapVideoText(String(project?.title || videoRequest?.metadata?.project_title || 'DCC Music'), 22, 2),
         artist: `Compositor: ${wrapVideoText(String(composer?.name || videoRequest?.metadata?.composer_name || 'DCC Music'), 34, 1)}`,
@@ -310,7 +321,6 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
     // O mapa explícito impede o FFmpeg de escolher por engano a capa original
     // quando há várias entradas de vídeo. O último filtro é o único vídeo de
     // saída e contém marca, título, compositor e os cartões da letra.
-    const fontDir = path.dirname(resolveVideoFontPath())
     const filter = [
       '[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,boxblur=20:5[bg]',
       '[0:v]scale=620:620:force_original_aspect_ratio=decrease[fg]',
@@ -325,7 +335,15 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
       '-map', '[rendered]', '-map', '1:a:0',
       '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '25', '-pix_fmt', 'yuv420p',
       '-c:a', 'aac', '-b:a', '160k', '-shortest', '-movflags', '+faststart', '-y', outputPath,
-    ], { timeout: 280_000, maxBuffer: 10 * 1024 * 1024 })
+    ], {
+      timeout: 280_000,
+      maxBuffer: 10 * 1024 * 1024,
+      env: {
+        ...process.env,
+        FONTCONFIG_FILE: fontConfigPath,
+        FONTCONFIG_PATH: tempDir,
+      },
+    })
 
     const output = await fs.readFile(outputPath)
     if (output.byteLength < 10_000) throw new Error('O arquivo de vídeo gerado ficou inválido.')
