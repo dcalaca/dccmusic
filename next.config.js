@@ -16,10 +16,12 @@ const nextConfig = {
       '/api/cron/studio-video-backup': [
         './node_modules/@ffmpeg-installer/ffmpeg/**/*',
         './node_modules/@ffmpeg-installer/linux-x64/**/*',
+        './node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2',
       ],
       '/api/compositores/studio/video/preferencia': [
         './node_modules/@ffmpeg-installer/ffmpeg/**/*',
         './node_modules/@ffmpeg-installer/linux-x64/**/*',
+        './node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2',
       ],
     },
     serverComponentsExternalPackages: [
