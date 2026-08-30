@@ -22,9 +22,10 @@ import {
   markStudioGenerationAsCommunicationFailure,
   releaseStudioProjectFromFailedGeneration,
 } from '@/lib/studio-generation-timeout'
-import { startMurekaFallbackForSunoGeneration } from '@/lib/studio-music-provider-fallback'
+import { startLyriaFallbackForSunoGeneration } from '@/lib/studio-lyria-fallback'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 300
 
 function getSunoTracks(result: any) {
   const candidates = [
@@ -244,7 +245,7 @@ export async function GET(request: NextRequest) {
     const hasAudioBeforePoll = Boolean(existingVersionBeforePoll?.audio_url || existingVersionBeforePoll?.stream_audio_url)
 
     if (!hasAudioBeforePoll && isStudioGenerationTimedOut(generation)) {
-      const fallback = await startMurekaFallbackForSunoGeneration({
+      const fallback = await startLyriaFallbackForSunoGeneration({
         generation,
         sunoFailurePayload: generation.response_payload,
         reason: 'timeout',
@@ -268,7 +269,7 @@ export async function GET(request: NextRequest) {
         await saveSunoTrack(generation, sunoData, status)
       } else if (status?.includes('FAILED') || status === 'SENSITIVE_WORD_ERROR') {
         await markExpiredVoiceFromGeneration(generation, result)
-        const fallback = await startMurekaFallbackForSunoGeneration({
+        const fallback = await startLyriaFallbackForSunoGeneration({
           generation,
           sunoFailurePayload: result,
           reason: 'poll_failure',

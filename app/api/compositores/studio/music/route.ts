@@ -658,8 +658,10 @@ export async function POST(request: NextRequest) {
     }
 
     const sunoApiKey = process.env.SUNOAPI_KEY?.trim()
-    const murekaApiKey = process.env.MUREKA_API_KEY?.trim()
-    if (!sunoApiKey && !murekaApiKey) {
+    // As novas gerações são sempre iniciadas pela Suno. O Google Lyria é
+    // acionado apenas se ela falhar, mantendo a engenharia temporal da DCC.
+    const murekaApiKey = ''
+    if (!sunoApiKey) {
       return NextResponse.json(
         { error: 'A geração musical não está configurada no servidor.' },
         { status: 500 }
@@ -833,7 +835,7 @@ export async function POST(request: NextRequest) {
         : isLongLyricForMureka
           ? 'long_lyric'
           : 'none'
-    const preferMureka = preferMurekaReason !== 'none'
+    const preferMureka = false
 
     const trySuno = async () => {
       if (providerResult || !sunoApiKey) return
@@ -936,13 +938,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (preferMureka) {
-      await tryMureka()
-      await trySuno()
-    } else {
-      await trySuno()
-      await tryMureka()
-    }
+    await trySuno()
 
     if (!providerResult) {
       await sendAdminStudioAlertEmail({

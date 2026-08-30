@@ -18,9 +18,10 @@ import {
   getStudioMusicGenerationFailureMessage,
   releaseStudioProjectFromFailedGeneration,
 } from '@/lib/studio-generation-timeout'
-import { startMurekaFallbackForSunoGeneration } from '@/lib/studio-music-provider-fallback'
+import { startLyriaFallbackForSunoGeneration } from '@/lib/studio-lyria-fallback'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 300
 
 function getCallbackTaskId(body: any) {
   return body?.data?.task_id || body?.data?.taskId || body?.task_id || body?.taskId
@@ -166,7 +167,7 @@ export async function POST(request: Request) {
     if (hasFailure) {
       await markExpiredVoiceFromGeneration(generation, body)
 
-      const fallback = await startMurekaFallbackForSunoGeneration({
+      const fallback = await startLyriaFallbackForSunoGeneration({
         generation,
         sunoFailurePayload: body,
         reason: 'callback_failure',
@@ -175,14 +176,11 @@ export async function POST(request: Request) {
         return NextResponse.json({
           received: true,
           processed: true,
-          fallback: 'mureka',
+          fallback: 'lyria',
         })
       }
-      if ('result' in fallback && fallback.result) {
-        providerError = getStudioGenerationProviderError(fallback.result) ||
-          fallback.result?.msg ||
-          fallback.result?.message ||
-          providerError
+      if ('error' in fallback && fallback.error) {
+        providerError = fallback.error || providerError
       }
     }
 
