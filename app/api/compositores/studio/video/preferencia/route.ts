@@ -129,8 +129,12 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const activeForVersion = (existingRequests || []).find((item: any) => (
+    const isActiveRequest = (item: any) => (
       ['payment_pending', 'requested', 'in_production', 'retry_pending'].includes(item.status) &&
+      !(isInternalPilot && item.status === 'retry_pending')
+    )
+    const activeForVersion = (existingRequests || []).find((item: any) => (
+      isActiveRequest(item) &&
       getStudioVideoRequestVersionId(item) === version.id
     ))
 
@@ -142,7 +146,7 @@ export async function POST(request: NextRequest) {
     }
 
     const anotherVideoInProduction = (existingRequests || []).find((item: any) => (
-      ['payment_pending', 'requested', 'in_production', 'retry_pending'].includes(item.status) &&
+      isActiveRequest(item) &&
       getStudioVideoRequestVersionId(item) !== version.id
     ))
 
@@ -151,6 +155,22 @@ export async function POST(request: NextRequest) {
         { error: 'Já existe um vídeo com letra em andamento. Aguarde finalizar para gerar o de outra versão.' },
         { status: 409 }
       )
+    }
+
+    // Se o laboratório optar por tentar novamente agora, encerra as tentativas
+    // antigas antes de criar a nova. A recuperação automática segue como rede
+    // de segurança para quem não estiver com a página aberta.
+    if (isInternalPilot) {
+      await supabaseAdmin
+        .from('studio_video_requests')
+        .update({
+          status: 'failed',
+          error_message: 'Substituída por uma nova tentativa manual.',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('composer_id', composer.composerId)
+        .eq('project_id', project.id)
+        .eq('status', 'retry_pending')
     }
 
     const versionNumber = getVersionNumber(versions || [], version.id)
