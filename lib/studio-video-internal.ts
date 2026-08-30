@@ -19,6 +19,16 @@ function resolveFfmpegPath() {
   }
 }
 
+function resolveVideoFontPath() {
+  try {
+    // A fonte faz parte do bundle para o texto não depender das fontes da Vercel.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require.resolve('@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2')
+  } catch {
+    return '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+  }
+}
+
 function assTime(seconds: number) {
   const value = Math.max(0, seconds)
   const hours = Math.floor(value / 3600)
@@ -49,14 +59,34 @@ export function lyricCards(content: string) {
   return cards.length ? cards : ['DCC Music']
 }
 
-export function buildInternalVideoAss(input: {
-  title: string
-  artist: string
-  lyrics: string
-  durationSeconds: number
-}) {
-  const duration = Math.max(10, input.durationSeconds || 240)
-  const cards = lyricCards(input.lyrics)
+function wrapVideoText(value: string, maxCharacters: number, maxLines = 3) {
+  const paragraphs = String(value || '').split(/\r?\n/)
+  const lines: string[] = []
+
+  for (const paragraph of paragraphs) {
+    const words = paragraph.trim().split(/\s+/).filter(Boolean)
+    let current = ''
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word
+      if (candidate.length <= maxCharacters || !current) {
+        current = candidate
+      } else {
+        lines.push(current)
+        current = word
+      }
+    }
+    if (current) lines.push(current)
+  }
+
+  if (lines.length <= maxLines) return lines.join('\n')
+  const visible = lines.slice(0, maxLines)
+  visible[maxLines - 1] = `${visible[maxLines - 1].replace(/[.…]+$/, '')}…`
+  return visible.join('\n')
+}
+
+function lyricCardSchedule(lyrics: string, durationSecondsValue: number) {
+  const duration = Math.max(10, durationSecondsValue || 240)
+  const cards = lyricCards(lyrics)
   const intro = Math.min(6, duration * 0.06)
   const outro = Math.min(5, duration * 0.04)
   const available = Math.max(5, duration - intro - outro)
@@ -64,15 +94,27 @@ export function buildInternalVideoAss(input: {
   const totalWeight = weights.reduce((sum, value) => sum + value, 0)
   let cursor = intro
 
-  const events = cards.map((card, index) => {
+  return cards.map((card, index) => {
     const cardDuration = index === cards.length - 1
       ? duration - outro - cursor
       : available * (weights[index] / totalWeight)
     const end = Math.min(duration - outro, cursor + Math.max(2.2, cardDuration))
-    const line = `Dialogue: 0,${assTime(cursor)},${assTime(end)},Lyrics,,0,0,0,,{\\fad(240,240)}${assEscape(card)}`
+    const scheduled = { text: wrapVideoText(card, 30, 4), start: cursor, end }
     cursor = end
-    return line
+    return scheduled
   })
+}
+
+export function buildInternalVideoAss(input: {
+  title: string
+  artist: string
+  lyrics: string
+  durationSeconds: number
+}) {
+  const duration = Math.max(10, input.durationSeconds || 240)
+  const events = lyricCardSchedule(input.lyrics, duration).map((card) => (
+    `Dialogue: 0,${assTime(card.start)},${assTime(card.end)},Lyrics,,0,0,0,,{\\fad(240,240)}${assEscape(card.text)}`
+  ))
 
   const safeTitle = assEscape(input.title || 'DCC Music')
   const safeArtist = assEscape(input.artist || 'DCC Music')
@@ -94,6 +136,37 @@ Dialogue: 0,0:00:00.00,${assTime(duration)},Title,,0,0,0,,${safeTitle}
 Dialogue: 0,0:00:00.00,${assTime(duration)},Artist,,0,0,0,,${safeArtist}
 ${events.join('\n')}
 `
+}
+
+function filterPath(value: string) {
+  return value.replace(/\\/g, '\\\\').replace(/:/g, '\\:').replace(/'/g, "\\'")
+}
+
+export function buildInternalVideoTextFilter(input: {
+  fontPath: string
+  titlePath: string
+  artistPath: string
+  lyricPaths: Array<{ path: string; start: number; end: number }>
+}) {
+  const font = filterPath(input.fontPath)
+  const title = filterPath(input.titlePath)
+  const artist = filterPath(input.artistPath)
+  const filters = [
+    `[branded]drawtext=fontfile='${font}':textfile='${title}':expansion=none:fontcolor=white:fontsize=44:line_spacing=7:borderw=3:bordercolor=black@0.9:x=35:y=48[text-title]`,
+    `[text-title]drawtext=fontfile='${font}':textfile='${artist}':expansion=none:fontcolor=white@0.9:fontsize=27:borderw=2:bordercolor=black@0.9:x=37:y=154[text-artist]`,
+  ]
+  let previous = 'text-artist'
+
+  input.lyricPaths.forEach((card, index) => {
+    const next = `text-lyric-${index}`
+    const textPath = filterPath(card.path)
+    filters.push(
+      `[${previous}]drawtext=fontfile='${font}':textfile='${textPath}':expansion=none:fontcolor=white:fontsize=42:line_spacing=11:borderw=3:bordercolor=black@0.95:box=1:boxcolor=black@0.58:boxborderw=22:x=(w-text_w)/2:y=h-text_h-105:enable='between(t,${card.start.toFixed(3)},${card.end.toFixed(3)})'[${next}]`
+    )
+    previous = next
+  })
+
+  return { filters, outputLabel: previous }
 }
 
 function fallbackCoverBuffer() {
@@ -204,7 +277,8 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
   const audioPath = path.join(tempDir, 'audio')
   const coverPath = path.join(tempDir, 'cover')
   const logoPath = path.join(tempDir, 'dcc-logo.png')
-  const assPath = path.join(tempDir, 'lyrics.ass')
+  const titlePath = path.join(tempDir, 'title.txt')
+  const artistPath = path.join(tempDir, 'artist.txt')
   const outputPath = path.join(tempDir, 'video.mp4')
 
   await supabaseAdmin.from('studio_video_requests').update({
@@ -213,32 +287,51 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
     request_payload: {
       ...(videoRequest.request_payload || {}),
       provider: 'dcc-internal',
-      format: 'static-cover-lyrics-v3',
+      format: 'static-cover-lyrics-v4',
     },
     updated_at: new Date().toISOString(),
   }).eq('id', videoRequest.id)
 
   try {
+    const title = String(project?.title || videoRequest?.metadata?.project_title || 'DCC Music')
+    const artist = String(composer?.name || videoRequest?.metadata?.composer_name || 'DCC Music')
+    const lyrics = String(lyric?.content || '')
+    const schedule = lyricCardSchedule(lyrics, durationSeconds(videoVersion))
+    const lyricPaths = schedule.map((card, index) => ({
+      ...card,
+      path: path.join(tempDir, `lyric-${index}.txt`),
+    }))
+
     await Promise.all([
       fs.writeFile(audioPath, audio.buffer),
       fs.writeFile(coverPath, cover),
       fs.copyFile(path.join(process.cwd(), 'public', 'logopng.png'), logoPath),
-      fs.writeFile(assPath, buildInternalVideoAss({
-        title: String(project?.title || videoRequest?.metadata?.project_title || 'DCC Music'),
-        artist: String(composer?.name || videoRequest?.metadata?.composer_name || 'DCC Music'),
-        lyrics: String(lyric?.content || ''),
-        durationSeconds: durationSeconds(videoVersion),
-      })),
+      fs.writeFile(titlePath, wrapVideoText(title, 22, 2), 'utf8'),
+      fs.writeFile(artistPath, `Compositor: ${wrapVideoText(artist, 34, 1)}`, 'utf8'),
+      ...lyricPaths.map((card) => fs.writeFile(card.path, card.text, 'utf8')),
     ])
 
     // O mapa explícito impede o FFmpeg de escolher por engano a capa original
     // quando há várias entradas de vídeo. O último filtro é o único vídeo de
     // saída e contém marca, título, compositor e os cartões da letra.
-    const filter = `[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,boxblur=20:5[bg];[0:v]scale=620:620:force_original_aspect_ratio=decrease[fg];[2:v]scale=150:-1,colorchannelmixer=aa=0.82[logo];[bg][fg]overlay=(W-w)/2:220[video];[video][logo]overlay=W-w-34:34[branded];[branded]ass=${assPath.replace(/([\\:])/g, '\\$1')}[rendered]`
+    const textFilter = buildInternalVideoTextFilter({
+      fontPath: resolveVideoFontPath(),
+      titlePath,
+      artistPath,
+      lyricPaths,
+    })
+    const filter = [
+      '[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,boxblur=20:5[bg]',
+      '[0:v]scale=620:620:force_original_aspect_ratio=decrease[fg]',
+      '[2:v]scale=150:-1,colorchannelmixer=aa=0.82[logo]',
+      '[bg][fg]overlay=(W-w)/2:220[video]',
+      '[video][logo]overlay=W-w-34:34[branded]',
+      ...textFilter.filters,
+    ].join(';')
     await execFileAsync(resolveFfmpegPath(), [
       '-hide_banner', '-loglevel', 'error', '-loop', '1', '-i', coverPath, '-i', audioPath, '-loop', '1', '-i', logoPath,
       '-filter_complex', filter,
-      '-map', '[rendered]', '-map', '1:a:0',
+      '-map', `[${textFilter.outputLabel}]`, '-map', '1:a:0',
       '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '25', '-pix_fmt', 'yuv420p',
       '-c:a', 'aac', '-b:a', '160k', '-shortest', '-movflags', '+faststart', '-y', outputPath,
     ], { timeout: 280_000, maxBuffer: 10 * 1024 * 1024 })
