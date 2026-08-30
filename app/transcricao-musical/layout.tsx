@@ -1,28 +1,24 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Partitura e Cifra - Transcrição Musical',
+  title: 'Cifra da Música',
   description:
-    'Transforme áudio em partitura PDF, MusicXML e letra cifrada. Use uma música do Studio IA ou envie seu áudio. Preço: R$ 6,90 por música (25 créditos).',
+    'Gere uma cifra limpa com letra e acordes para tocar, imprimir e compartilhar. Custa 10 créditos por música.',
   keywords: [
-    'partitura e cifra',
-    'transcrição musical',
-    'MusicXML',
-    'letra cifrada',
-    'partitura PDF',
     'cifra de música',
+    'letra cifrada',
     'DCC Music',
     'Studio IA',
     'gerar cifra',
-    'partitura online',
+    'cifra online',
   ],
   alternates: {
     canonical: '/transcricao-musical',
   },
   openGraph: {
-    title: 'Partitura e Cifra | DCC Music',
+    title: 'Cifra da Música | DCC Music',
     description:
-      'Gere partitura, cifra, MusicXML e letra cifrada a partir do áudio da sua música. Ideal para estudar, tocar e imprimir.',
+      'Gere uma cifra limpa com letra e acordes para tocar e imprimir.',
     url: 'https://www.dccmusic.online/transcricao-musical',
     type: 'website',
   },
@@ -31,21 +27,15 @@ export const metadata: Metadata = {
 const serviceSchema = {
   '@context': 'https://schema.org',
   '@type': 'Service',
-  name: 'Partitura e Cifra DCC Music',
+  name: 'Cifra da Música DCC Music',
   description:
-    'Serviço de transcrição musical que gera partitura PDF, MusicXML e letra cifrada a partir de músicas do Studio IA ou upload de áudio.',
+    'Serviço da DCC Music que gera cifra em PDF com letra e acordes para músicas do Studio IA.',
   provider: {
     '@type': 'Organization',
     name: 'DCC Music',
     url: 'https://www.dccmusic.online',
   },
   areaServed: 'BR',
-  offers: {
-    '@type': 'Offer',
-    price: '6.90',
-    priceCurrency: 'BRL',
-    description: '25 créditos do saldo DCC por transcrição musical',
-  },
 }
 
 export default function TranscricaoMusicalLayout({

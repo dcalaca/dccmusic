@@ -51,7 +51,7 @@ export default function Footer() {
                 className="h-10 w-auto mb-4"
               />
               <p className="text-gray-400 text-sm">
-                Plataforma para ouvir músicas e vídeos, criar com Studio IA, gerar partitura e cifra e divulgar o trabalho de compositores.
+                Plataforma para ouvir músicas e vídeos, criar com Studio IA, gerar cifras e divulgar o trabalho de compositores.
               </p>
               <a
                 href="https://carimbo.tec.br/v/3b5746ccfca8bb56c26b056cebdf424e"
@@ -91,7 +91,7 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link href="/transcricao-musical" className="text-gray-400 hover:text-white transition-colors">
-                    Partitura e Cifra
+                    Cifra da Música
                   </Link>
                 </li>
                 <li>

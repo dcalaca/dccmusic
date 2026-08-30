@@ -44,7 +44,7 @@ function HeaderComposerAvatar({
 const siteNavItems = [
   { href: '/', label: 'Home', icon: FiHome },
   { href: '/studio-ia', label: 'Studio IA', icon: FiZap },
-  { href: '/transcricao-musical', label: 'Partitura e Cifra', mobileLabel: 'Partitura', icon: FiFileText },
+  { href: '/transcricao-musical', label: 'Cifra da Música', mobileLabel: 'Cifra', icon: FiFileText },
   { href: '/distribuicao-digital', label: 'Distribuição Digital', mobileLabel: 'Distribuição', icon: FiGlobe },
   { href: '/compositores', label: 'Compositores Premium', mobileLabel: 'Compositores', icon: FiUsers },
   { href: '/compositores/planos', label: 'Planos', icon: FiCreditCard },

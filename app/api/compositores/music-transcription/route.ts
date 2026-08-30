@@ -18,7 +18,7 @@ import {
 
 export const dynamic = 'force-dynamic'
 
-const TRANSCRIPTION_CREDITS = 25
+const TRANSCRIPTION_CREDITS = 10
 const MAX_MANUAL_AUDIO_BYTES = 50 * 1024 * 1024
 
 function cleanStudioMusicTitle(value?: string | null) {
@@ -174,7 +174,7 @@ async function requireCredits(composerId: string) {
   const statement = await getComposerStatement(composerId)
   const balance = Number(statement?.summary?.currentCreditBalance) || 0
   if (balance < TRANSCRIPTION_CREDITS) {
-    throw new Error(`Saldo insuficiente para gerar partitura e cifra. Faça uma recarga para continuar. Seu saldo atual é ${balance} créditos.`)
+    throw new Error(`Saldo insuficiente para gerar a cifra. Faça uma recarga para continuar. Seu saldo atual é ${balance} créditos.`)
   }
   return balance
 }
@@ -380,7 +380,7 @@ async function completeDccSimplifiedTranscription(input: {
     projectId: input.projectId || null,
     action: 'music_transcription',
     amount: TRANSCRIPTION_CREDITS,
-    description: `Partitura e cifra simplificada: ${input.title}`,
+    description: `Cifra da música: ${input.title}`,
     metadata: { transcriptionId: input.record.id, sourceType: input.record.source_type, creditCost: TRANSCRIPTION_CREDITS, engine: 'dcc_simplified_score' },
   })
   return saved
@@ -539,7 +539,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     if (processingRecord?.id) await failRecord(processingRecord.id, error)
     console.error('[Music Transcription] Erro gerar transcrição:', error)
-    const message = translateMusicTranscriptionError(error?.message || error, 'Erro ao gerar partitura e cifra.')
+    const message = translateMusicTranscriptionError(error?.message || error, 'Erro ao gerar a cifra.')
     const isUserError =
       message === TRANSCRIPTION_ALREADY_PROCESSING_MESSAGE ||
       message === TRANSCRIPTION_CATALOG_MATCH_MESSAGE ||

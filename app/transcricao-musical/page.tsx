@@ -3,7 +3,7 @@
 import { FormEvent, Suspense, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FiDownload, FiFileText, FiLoader, FiMusic, FiUpload } from 'react-icons/fi'
+import { FiFileText, FiLoader, FiMusic, FiUpload } from 'react-icons/fi'
 import { readClientApiError } from '@/lib/music-transcription-errors'
 
 type Source = {
@@ -29,8 +29,8 @@ type Transcription = {
   hasFiles: boolean
 }
 
-const COST = 25
-const DISPLAY_PRICE = 'R$ 6,90'
+const COST = 10
+const DISPLAY_PRICE = '10 créditos'
 
 function safeFileName(value: string, extension: string) {
   const base = value
@@ -147,7 +147,7 @@ function TranscricaoMusicalContent() {
       localStorage.setItem('composer_studio_balance', String(nextBalance))
       window.dispatchEvent(new CustomEvent('studioBalanceChange', { detail: { balance: nextBalance } }))
     } catch (err: any) {
-      setError(err.message || 'Erro ao carregar partitura e cifra.')
+      setError(err.message || 'Erro ao carregar cifras.')
     } finally {
       setLoading(false)
     }
@@ -182,13 +182,13 @@ function TranscricaoMusicalContent() {
         body: JSON.stringify({ studioVersionId: selectedSourceId }),
       })
       const data = await response.json().catch(() => null)
-      if (!response.ok) throw new Error(readClientApiError(data, 'Erro ao gerar partitura e cifra.'))
+      if (!response.ok) throw new Error(readClientApiError(data, 'Erro ao gerar a cifra.'))
 
       setSelectedTranscription(data.transcription)
-      setSuccess(data.cached ? 'Partitura e cifra já estavam salvas. Nenhum crédito foi descontado.' : `Partitura simplificada DCC gerada. Debitamos ${COST} créditos do seu saldo DCC.`)
+      setSuccess(data.cached ? 'A cifra já estava salva. Nenhum crédito foi descontado.' : `Cifra gerada. Debitamos ${COST} créditos do seu saldo DCC.`)
       await loadData()
     } catch (err: any) {
-      setError(readClientApiError(err, 'Erro ao gerar partitura e cifra.'))
+      setError(readClientApiError(err, 'Erro ao gerar a cifra.'))
     } finally {
       setProcessing(false)
     }
@@ -221,13 +221,13 @@ function TranscricaoMusicalContent() {
         body: formData,
       })
       const data = await response.json().catch(() => null)
-      if (!response.ok) throw new Error(readClientApiError(data, 'Erro ao gerar partitura e cifra.'))
+      if (!response.ok) throw new Error(readClientApiError(data, 'Erro ao gerar a cifra.'))
 
       setSelectedTranscription(data.transcription)
       setSuccess(data.cached ? 'Partitura e cifra já estavam salvas. Nenhum crédito foi descontado.' : `Partitura e cifra geradas. Debitamos ${COST} créditos do seu saldo DCC.`)
       await loadData()
     } catch (err: any) {
-      setError(readClientApiError(err, 'Erro ao gerar partitura e cifra.'))
+      setError(readClientApiError(err, 'Erro ao gerar a cifra.'))
     } finally {
       setProcessing(false)
     }
@@ -284,12 +284,12 @@ function TranscricaoMusicalContent() {
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-800 bg-cyan-950/40 px-3 py-1 text-xs font-bold text-cyan-200">
-              <FiMusic /> Partitura e Cifra
+              <FiMusic /> Cifra da Música
             </div>
-            <h1 className="text-2xl font-black leading-tight sm:text-3xl">Partitura simplificada, MusicXML e letra cifrada</h1>
+            <h1 className="text-2xl font-black leading-tight sm:text-3xl">Cifra da música</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
-              Para músicas do Studio IA, a DCC cria uma guia simplificada de voz, ritmo e cifra a partir da letra estruturada. Preço: {DISPLAY_PRICE} por música.
-              <span className="block text-xs text-gray-500">Debitamos {COST} créditos do seu saldo DCC.</span>
+              Para músicas do Studio IA, a DCC organiza a letra e os acordes em uma cifra limpa, pronta para tocar e imprimir.
+              <span className="block text-xs text-gray-500">Custa {COST} créditos do saldo DCC.</span>
             </p>
           </div>
           <div className="w-full shrink-0 rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-3 text-sm sm:w-auto sm:px-5 sm:py-4">
@@ -303,13 +303,13 @@ function TranscricaoMusicalContent() {
         {!canAfford && (
           <div className="mb-5 flex flex-col gap-3 rounded-xl border border-yellow-800 bg-yellow-950/40 p-4 text-sm text-yellow-100 sm:flex-row sm:items-center sm:justify-between">
             <span className="min-w-0 break-words">
-              Saldo insuficiente para gerar partitura e cifra.
+              Saldo insuficiente para gerar a cifra.
             </span>
             <Link
               href="/compositores/admin/studio-ia/recarga"
               className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-yellow-400 px-4 py-2 text-sm font-black text-black hover:bg-yellow-300 sm:w-auto"
             >
-              Comprar créditos para gerar partitura
+              Comprar créditos para gerar cifra
             </Link>
           </div>
         )}
@@ -362,7 +362,7 @@ function TranscricaoMusicalContent() {
                         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-black text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {processing ? <FiLoader className="animate-spin" /> : <FiFileText />}
-                        {processing ? 'Gerando...' : `Gerar partitura simplificada - ${DISPLAY_PRICE}`}
+                        {processing ? 'Gerando...' : `Gerar cifra - ${DISPLAY_PRICE}`}
                       </button>
                     </>
                   )}
@@ -402,19 +402,13 @@ function TranscricaoMusicalContent() {
             <h2 className="mb-4 text-xl font-bold">Resultado</h2>
             {!selectedTranscription ? (
               <div className="rounded-xl border border-gray-800 bg-black/40 p-4 text-sm text-gray-400">
-                Gere uma partitura e cifra para ver o resultado e baixar os arquivos. O histórico fica em Meus Projetos.
+                Gere uma cifra para ver o resultado e baixar o PDF. O histórico fica em Meus Projetos.
               </div>
             ) : (
               <div className="min-w-0 space-y-5">
                 <div className="flex flex-col gap-3">
                   <button onClick={() => downloadFile('pdf')} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-black text-white hover:bg-primary-700">
-                    <FiFileText /> Baixar partitura PDF
-                  </button>
-                  <button onClick={() => downloadFile('musicxml')} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-700 px-4 py-3 text-sm font-black text-gray-100 hover:border-primary-400">
-                    <FiDownload /> Baixar MusicXML
-                  </button>
-                  <button onClick={() => downloadFile('preview-pdf')} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-700 px-4 py-3 text-sm font-black text-gray-100 hover:border-primary-400">
-                    <FiDownload /> Salvar letra cifrada em PDF
+                    <FiFileText /> Baixar cifra em PDF
                   </button>
                 </div>
 

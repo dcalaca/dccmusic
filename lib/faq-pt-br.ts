@@ -2,7 +2,7 @@ export const faqsPtBr = [
   {
     category: 'DCC Music',
     questions: [
-      { question: 'O que é o DCC Music?', answer: 'O DCC Music é uma plataforma brasileira para ouvir músicas e vídeos, conhecer compositores e criar produções com inteligência artificial. Além do catálogo público, compositores logados têm acesso ao Studio IA (criação de músicas), Partitura e Cifra (transcrição em partitura, MusicXML e letra cifrada) e ferramentas de divulgação.' },
+      { question: 'O que é o DCC Music?', answer: 'O DCC Music é uma plataforma brasileira para ouvir músicas e vídeos, conhecer compositores e criar produções com inteligência artificial. Além do catálogo público, compositores logados têm acesso ao Studio IA, à Cifra da Música e a ferramentas de divulgação.' },
       { question: 'Preciso pagar para acessar o site?', answer: 'Não. Ouvir músicas e ver vídeos é grátis, sem cadastro. Para comentar, avaliar ou criar no Studio IA, use a conta de compositor. Não existe mais cadastro separado de ouvinte.' },
       { question: 'Posso ouvir músicas e assistir vídeos pelo celular?', answer: 'Sim. O site funciona no celular, tablet e computador. Para melhor experiência, use um navegador atualizado, como Chrome, Edge, Safari ou Firefox.' },
     ],
@@ -11,9 +11,9 @@ export const faqsPtBr = [
     category: 'Área do Compositor',
     questions: [
       { question: 'Como faço para me cadastrar como compositor?', answer: 'Acesse a página de cadastro de compositores, preencha seus dados e crie sua conta. Depois disso, você poderá entrar na área do compositor para gerenciar músicas, vídeos, projetos do Studio IA, créditos e extrato.' },
-      { question: 'O que consigo fazer na área do compositor?', answer: 'Você consegue criar músicas no Studio IA, gerar partitura e cifra, cadastrar músicas e vídeos, acompanhar projetos em Meus Projetos, comprar créditos, comentar, avaliar, ver Conta e extrato e usar recursos disponíveis no seu plano.' },
+      { question: 'O que consigo fazer na área do compositor?', answer: 'Você consegue criar músicas no Studio IA, gerar cifras, cadastrar músicas e vídeos, acompanhar projetos em Meus Projetos, comprar créditos, comentar, avaliar, ver Conta e extrato e usar recursos disponíveis no seu plano.' },
       { question: 'Esqueci minha senha. O que faço?', answer: 'Na tela de login do compositor, clique na opção de recuperar senha e siga as instruções. Se continuar com dificuldade, entre em contato com o suporte.' },
-      { question: 'Onde vejo meu saldo e extrato de créditos?', answer: 'Depois de entrar na sua conta, clique no seu nome no topo do site e escolha Conta e extrato. Lá você acompanha saldo, movimentações e histórico de uso, incluindo criações no Studio IA e Partitura e Cifra.' },
+      { question: 'Onde vejo meu saldo e extrato de créditos?', answer: 'Depois de entrar na sua conta, clique no seu nome no topo do site e escolha Conta e extrato. Lá você acompanha saldo, movimentações e histórico de uso, incluindo criações no Studio IA e Cifra da Música.' },
     ],
   },
   {
@@ -25,34 +25,34 @@ export const faqsPtBr = [
       { question: 'Posso gravar minha voz direto no site?', answer: 'Sim. Você pode gravar pelo próprio navegador, cantar um trecho ou uma ideia, conferir a letra transcrita e pedir para a IA completar ou produzir a música usando sua gravação como referência.' },
       { question: 'Posso usar minhas próprias vozes clonadas?', answer: 'Sim. Em Minhas vozes, você pode cadastrar e validar vozes para usar nas criações do Studio IA, quando essa opção estiver disponível na sua conta.' },
       { question: 'Qual é o limite de duração das músicas criadas?', answer: 'As músicas criadas pelo Studio IA são orientadas para ter no máximo 4 minutos e 30 segundos. Esse limite ajuda a evitar áudios longos demais ou repetidos.' },
-      { question: 'Quando o sistema gera duas versões, eu posso escolher uma?', answer: 'Sim. Quando houver mais de uma versão no projeto, você pode ouvir as opções e escolher qual delas quer usar como inspiração para uma nova criação ou para gerar partitura e cifra.' },
+      { question: 'Quando o sistema gera duas versões, eu posso escolher uma?', answer: 'Sim. Quando houver mais de uma versão no projeto, você pode ouvir as opções e escolher qual delas quer usar como inspiração para uma nova criação ou para gerar cifra.' },
     ],
   },
   {
-    category: 'Partitura e Cifra',
+    category: 'Cifra da Música',
     questions: [
-      { question: 'O que é Partitura e Cifra no DCC Music?', answer: 'É o serviço que transforma o áudio de uma música em arquivos para estudar e tocar: partitura em PDF, MusicXML e letra cifrada. Você pode usar uma música criada no Studio IA ou enviar seu próprio áudio.' },
-      { question: 'Quanto custa gerar partitura e cifra?', answer: 'O preço exibido é de R$ 6,90 por música. Na prática, o sistema debita 25 créditos do seu saldo DCC a cada transcrição concluída com sucesso.' },
-      { question: 'Quais arquivos eu recebo?', answer: 'Você recebe partitura em PDF, arquivo MusicXML (para abrir em programas de notação) e PDF da letra cifrada. Também há prévia da cifra e letra direto na tela, com tom e BPM quando disponíveis.' },
-      { question: 'Posso usar uma música que criei no Studio IA?', answer: 'Sim. Na página Partitura e Cifra, escolha Música do Studio IA e selecione a música desejada. Se você vier direto de um projeto recém-criado, a plataforma tenta pré-selecionar essa música automaticamente.' },
-      { question: 'Posso enviar um áudio meu, sem ser do Studio IA?', answer: 'Sim. Use a opção Enviar áudio e mande um arquivo MP3, WAV, M4A, AAC, FLAC ou OGG de até 50 MB. Informe o nome da música e o sistema gera a transcrição.' },
-      { question: 'Onde ficam salvas minhas partituras depois de gerar?', answer: 'Os arquivos ficam salvos permanentemente na sua conta. Acesse Meus Projetos no Studio IA e use o filtro Partituras e Cifras para ver, baixar novamente e gerenciar tudo o que já foi gerado.' },
-      { question: 'Se eu gerar de novo a mesma música, pago outra vez?', answer: 'Não. Se a transcrição daquela música já foi concluída antes, o sistema reutiliza o resultado salvo e não desconta créditos novamente.' },
+      { question: 'O que é Cifra da Música no DCC Music?', answer: 'É o serviço que organiza a letra e os acordes da sua música do Studio IA em uma cifra limpa, pronta para tocar e imprimir.' },
+      { question: 'Quanto custa gerar uma cifra?', answer: 'A geração custa 10 créditos do saldo DCC por música concluída com sucesso.' },
+      { question: 'O que eu recebo?', answer: 'Você recebe a cifra em PDF e também vê a letra cifrada diretamente na tela, com tom e BPM quando disponíveis.' },
+      { question: 'Posso usar uma música que criei no Studio IA?', answer: 'Sim. Na página Cifra da Música, selecione a versão desejada. Se vier diretamente de um projeto recém-criado, a plataforma tenta pré-selecioná-la.' },
+      { question: 'Posso enviar um áudio meu, sem ser do Studio IA?', answer: 'Nesta primeira fase, a Cifra da Música está disponível para músicas criadas no Studio IA.' },
+      { question: 'Onde ficam salvas minhas cifras depois de gerar?', answer: 'As cifras ficam salvas permanentemente na sua conta para baixar novamente.' },
+      { question: 'Se eu gerar de novo a mesma música, pago outra vez?', answer: 'Não. Se a cifra daquela música já tiver sido concluída antes, o sistema reutiliza o resultado salvo e não volta a descontar créditos.' },
     ],
   },
   {
     category: 'Créditos e Pagamentos',
     questions: [
-      { question: 'Como funcionam os créditos do Studio IA?', answer: 'Cada criação de música no Studio IA consome créditos. A Partitura e Cifra consome 25 créditos por transcrição nova. Os créditos podem vir do seu plano, de recargas avulsas ou de regras promocionais disponíveis no momento.' },
-      { question: 'Consigo comprar créditos avulsos?', answer: 'Sim. Você pode comprar créditos avulsos para criar músicas e usar Partitura e Cifra sem depender apenas de um plano mensal. Quanto maior o pacote, melhor pode ser o valor por crédito.' },
-      { question: 'Onde vejo o que foi descontado?', answer: 'Em Conta e extrato, no menu do seu nome no topo do site. Lá aparecem criações no Studio IA, Partitura e cifra, recargas e outras movimentações. Se tiver dúvida sobre um projeto específico, copie o código do projeto e envie para o suporte.' },
+      { question: 'Como funcionam os créditos do Studio IA?', answer: 'Cada criação de música no Studio IA consome créditos. A Cifra da Música consome 10 créditos por nova geração. Os créditos podem vir do seu plano, de recargas avulsas ou de regras promocionais disponíveis no momento.' },
+      { question: 'Consigo comprar créditos avulsos?', answer: 'Sim. Você pode comprar créditos avulsos para criar músicas e gerar cifras sem depender apenas de um plano mensal. Quanto maior o pacote, melhor pode ser o valor por crédito.' },
+      { question: 'Onde vejo o que foi descontado?', answer: 'Em Conta e extrato, no menu do seu nome no topo do site. Lá aparecem criações no Studio IA, cifras, recargas e outras movimentações. Se tiver dúvida sobre um projeto específico, copie o código do projeto e envie para o suporte.' },
       { question: 'A compra é liberada na hora?', answer: 'Normalmente a liberação acontece automaticamente após a confirmação do pagamento. Se o pagamento foi aprovado e os créditos não apareceram, fale com o suporte informando seu email de cadastro.' },
     ],
   },
   {
     category: 'Projetos, Músicas e Suporte',
     questions: [
-      { question: 'Onde ficam minhas músicas criadas pela IA?', answer: 'As músicas criadas ficam em Meus Projetos, dentro da área do Studio IA. Cada projeto pode ter letra, capa, versões geradas e histórico de criação. As partituras e cifras geradas aparecem no filtro Partituras e Cifras.' },
+      { question: 'Onde ficam minhas músicas criadas pela IA?', answer: 'As músicas criadas ficam em Meus Projetos, dentro da área do Studio IA. Cada projeto pode ter letra, capa, versões geradas e histórico de criação. As cifras geradas ficam salvas junto à sua conta.' },
       { question: 'Posso compartilhar uma música ou vídeo?', answer: 'Sim. As páginas públicas de músicas e vídeos podem ser compartilhadas por link. No Studio IA, você também pode publicar a música no DCC Music e usar link público ou player incorporável.' },
       { question: 'Como encontro uma música por estilo?', answer: 'Nas páginas públicas de músicas e vídeos, use os filtros disponíveis para procurar por gênero, compositor ou conteúdo.' },
       { question: 'Como peço ajuda sobre um projeto específico?', answer: 'Abra o projeto no Studio IA, copie o código do projeto e envie para o suporte junto com sua dúvida. Isso ajuda a localizar exatamente a música ou criação que você está falando.' },
