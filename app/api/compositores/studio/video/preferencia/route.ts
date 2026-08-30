@@ -3,6 +3,7 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { getCurrentProjectAssets, getProjectForComposer } from '@/lib/studio'
 import {
   getStudioVideoRequestVersionId,
+  isInternalStudioVideoPilot,
   mapStudioVideoRequest,
   startStudioVideoGeneration,
   studioVideoCanRegenerate,
@@ -83,6 +84,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const { data: composerData } = await supabaseAdmin
+      .from('dccmusic_composers')
+      .select('email, name')
+      .eq('id', composer.composerId)
+      .maybeSingle()
+    const isInternalPilot = isInternalStudioVideoPilot(composerData)
+
     const { data: existingRequests } = await supabaseAdmin
       .from('studio_video_requests')
       .select('*')
@@ -104,7 +112,11 @@ export async function POST(request: NextRequest) {
     const completedForVersion = completedByVersionId
       || ((Boolean(version.is_current) || Boolean(body.replaceExisting)) ? untaggedCompleted : null)
     const replaceExisting = Boolean(body.replaceExisting)
-    const canReplace = Boolean(completedForVersion && studioVideoCanRegenerate(completedForVersion, project))
+    // No laboratório, permita refazer o arquivo anterior para que o teste
+    // sempre gere um MP4 novo, sem reutilizar o vídeo antigo sem letras.
+    const canReplace = Boolean(
+      completedForVersion && (isInternalPilot || studioVideoCanRegenerate(completedForVersion, project))
+    )
 
     if (completedForVersion && !(replaceExisting && canReplace)) {
       return NextResponse.json({
@@ -112,7 +124,7 @@ export async function POST(request: NextRequest) {
         message: 'Este vídeo com letra já estava pronto para esta versão. Use o botão abaixo para assistir ou baixar.',
         videoRequest: {
           ...(await mapStudioVideoRequest(completedForVersion)),
-          canRegenerate: studioVideoCanRegenerate(completedForVersion, project),
+          canRegenerate: canReplace,
         },
       })
     }
@@ -141,12 +153,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { data: composerData } = await supabaseAdmin
-      .from('dccmusic_composers')
-      .select('email, name')
-      .eq('id', composer.composerId)
-      .maybeSingle()
-
     const versionNumber = getVersionNumber(versions || [], version.id)
     const metadata = {
       type: 'studio_lyric_video',
@@ -161,6 +167,7 @@ export async function POST(request: NextRequest) {
       cover_url: cover?.image_url || null,
       amount: 0,
       courtesy_regenerate: Boolean(replaceExisting && canReplace),
+      internal_video_pilot: isInternalPilot,
     }
 
     const reference = `studio-lyric-video:${project.id}:${version.id}:${Date.now()}`
