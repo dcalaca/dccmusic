@@ -33,34 +33,6 @@ async function mapVoice(row: any) {
   }
 }
 
-async function archiveDuplicateActiveVoices(composerId: string, displayName: string) {
-  const { data, error } = await supabaseAdmin
-    .from('studio_voice_profiles')
-    .select('id, created_at')
-    .eq('composer_id', composerId)
-    .neq('status', 'archived')
-    .ilike('display_name', displayName)
-    .order('created_at', { ascending: false })
-
-  if (error) throw error
-  if (!data || data.length <= 1) return data?.[0]?.id || null
-
-  const [voiceToKeep, ...duplicates] = data
-  const duplicateIds = duplicates.map((voice: any) => voice.id).filter(Boolean)
-
-  if (duplicateIds.length > 0) {
-    const { error: archiveError } = await supabaseAdmin
-      .from('studio_voice_profiles')
-      .update({ status: 'archived', updated_at: new Date().toISOString() })
-      .in('id', duplicateIds)
-      .eq('composer_id', composerId)
-
-    if (archiveError) throw archiveError
-  }
-
-  return voiceToKeep.id
-}
-
 async function getVoiceById(id: string) {
   const { data, error } = await supabaseAdmin
     .from('studio_voice_profiles')
@@ -255,12 +227,8 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (updateError) throw updateError
-    const activeVoiceId = await archiveDuplicateActiveVoices(composer.composerId, displayName)
-    const activeVoice = activeVoiceId ? await getVoiceById(activeVoiceId) : updatedVoice
-
     return NextResponse.json({
-      voice: await mapVoice(activeVoice || updatedVoice),
-      deduped: Boolean(activeVoiceId && activeVoiceId !== updatedVoice.id),
+      voice: await mapVoice(updatedVoice),
     })
   } catch (error: any) {
     console.error('[Studio Voice] Erro criar voz:', error)
