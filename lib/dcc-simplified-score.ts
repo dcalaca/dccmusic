@@ -77,7 +77,6 @@ export function buildDccSimplifiedScore(input: ScoreInput): ScoreResult {
   const musicXml = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">\n<score-partwise version="4.0"><work><work-title>${escapeXml(input.title)}</work-title></work><identification><creator type="composer">${escapeXml(input.composerName?.trim() || 'DCC Music')}</creator></identification><part-list><score-part id="P1"><part-name>Cifra</part-name></score-part></part-list><part id="P1">${measures}</part></score-partwise>`
   const previewLines = lines.map((line, index) => `${progression[index % progression.length]}\n${line}`)
   const preview = [
-    'Cifra da Música',
     `Música: ${input.title}`,
     `Compositor: ${input.composerName?.trim() || 'DCC Music'}`,
     `Tom: C`,

@@ -63,7 +63,7 @@ export async function saveDccSimplifiedScore(input: {
   const pdfPath = `${basePath}/${baseName}.pdf`
   const musicXmlPath = `${basePath}/${baseName}.musicxml`
   const zipPath = `${basePath}/${baseName}-${randomUUID()}.zip`
-  const pdfBuffer = createSimpleTextPdf({ title: 'Cifra da Música', text: input.preview })
+  const pdfBuffer = createSimpleTextPdf({ title: '', text: input.preview })
   const musicXmlBuffer = Buffer.from(input.musicXml, 'utf8')
   const zip = new JSZip()
   zip.file(`${baseName}.pdf`, pdfBuffer)

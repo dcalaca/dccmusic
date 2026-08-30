@@ -4,6 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { readTranscriptionBinaryFile } from '@/lib/music-transcription-storage'
 import { overlayScoreTitleOnPdf } from '@/lib/pdf-score-title'
 import { formatMusicTitle } from '@/lib/normalize'
+import { createSimpleTextPdf } from '@/lib/simple-text-pdf'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,7 +48,13 @@ export async function GET(request: NextRequest) {
     const path = kind === 'musicxml' ? row.musicxml_path : kind === 'zip' ? row.zip_path : row.pdf_path
     if (!path) return NextResponse.json({ error: 'Arquivo não encontrado para esta transcrição.' }, { status: 404 })
 
-    const fileBuffer = await readTranscriptionBinaryFile(path)
+    const isDccCifra = row.provider_payload?.provider === 'dcc_simplified_score'
+    const fileBuffer = kind === 'pdf' && isDccCifra && row.preview_text
+      ? createSimpleTextPdf({
+        title: '',
+        text: String(row.preview_text).replace(/^Cifra da Música\s*\n?/i, ''),
+      })
+      : await readTranscriptionBinaryFile(path)
     let title = String(row.title || '').trim()
     if (kind === 'pdf' && row.studio_project_id) {
       const { data: project } = await supabaseAdmin
@@ -58,7 +65,7 @@ export async function GET(request: NextRequest) {
       if (project?.title) title = project.title
     }
     const responseBuffer = kind === 'pdf'
-      ? await overlayScoreTitleOnPdf(fileBuffer, formatMusicTitle(title || 'Partitura'))
+      ? await overlayScoreTitleOnPdf(fileBuffer, formatMusicTitle(title || 'Cifra da Música'))
       : fileBuffer
     const extension = kind === 'musicxml' ? 'musicxml' : kind
     const contentType = kind === 'musicxml'
