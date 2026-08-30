@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { getCurrentProjectAssets, getProjectForComposer, mapStudioProject } from '@/lib/studio'
-import { mapStudioVideoRequest, studioVideoCanRegenerate } from '@/lib/studio-video'
+import { isInternalStudioVideoPilot, mapStudioVideoRequest, studioVideoCanRegenerate } from '@/lib/studio-video'
 import { supabaseAdmin } from '@/lib/supabase'
 import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
@@ -211,13 +211,20 @@ export async function GET(
       .order('created_at', { ascending: false })
       .limit(30)
 
+    const { data: composerData } = await supabaseAdmin
+      .from('dccmusic_composers')
+      .select('email')
+      .eq('id', composer.composerId)
+      .maybeSingle()
+    const isInternalPilot = isInternalStudioVideoPilot(composerData)
+
     const mappedVideoRequests = (await Promise.all((videoRequests || [])
       .map(async (item: any) => {
         const mapped = await mapStudioVideoRequest(item)
         if (!mapped) return null
         return {
           ...mapped,
-          canRegenerate: studioVideoCanRegenerate(item, project),
+          canRegenerate: isInternalPilot || studioVideoCanRegenerate(item, project),
         }
       })))
       .filter(Boolean)
