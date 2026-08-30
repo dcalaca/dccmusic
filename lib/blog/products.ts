@@ -9,11 +9,11 @@ export const blogProducts: BlogProduct[] = [
     defaultCta: 'Criar música no Studio IA',
   },
   {
-    id: 'partitura-e-cifra',
-    label: 'Partitura e Cifra',
-    description: 'Gere partitura PDF, MusicXML e letra cifrada a partir do áudio.',
+    id: 'cifra-da-musica',
+    label: 'Cifra da Música',
+    description: 'Gere uma cifra em PDF das músicas criadas no Studio IA.',
     path: '/transcricao-musical',
-    defaultCta: 'Gerar partitura e cifra',
+    defaultCta: 'Gerar cifra',
   },
   {
     id: 'distribuicao-digital',

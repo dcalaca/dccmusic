@@ -10,16 +10,16 @@ import Link from 'next/link'
 import { FiPlayCircle, FiMusic, FiArrowRight, FiZap } from 'react-icons/fi'
 
 export const metadata = {
-  title: 'DCC Music - Músicas, Studio IA e Partitura com Cifra',
+  title: 'DCC Music - Músicas, Studio IA e Cifras',
   description:
-    'Ouça lançamentos, crie músicas com Studio IA, gere partitura PDF, MusicXML e letra cifrada. Plataforma completa para compositores e ouvintes.',
+    'Ouça lançamentos, crie músicas com Studio IA e gere cifras. Plataforma completa para compositores e ouvintes.',
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'DCC Music - Músicas, Studio IA e Partitura com Cifra',
+    title: 'DCC Music - Músicas, Studio IA e Cifras',
     description:
-      'Catálogo musical, criação com IA e transcrição em partitura e cifra em um só lugar.',
+      'Catálogo musical, criação com IA e cifras em um só lugar.',
     url: 'https://www.dccmusic.online',
     type: 'website',
   },

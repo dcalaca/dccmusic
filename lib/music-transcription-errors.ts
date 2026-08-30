@@ -1,11 +1,11 @@
 export const TRANSCRIPTION_CATALOG_MATCH_MESSAGE =
-  'Não foi possível gerar a partitura e cifra porque o fornecedor identificou semelhança com uma gravação já existente no catálogo. Envie uma música original sua (não uma gravação comercial conhecida) ou escolha outra faixa do Studio IA.'
+  'Não foi possível gerar a cifra porque a música precisa ser uma criação original sua do Studio IA.'
 
 export const TRANSCRIPTION_ALREADY_PROCESSING_MESSAGE =
-  'Esta música já está sendo processada para partitura e cifra. Aguarde alguns minutos e tente novamente.'
+  'Esta música já está sendo processada para gerar a cifra. Aguarde alguns minutos e tente novamente.'
 
 export const TRANSCRIPTION_DUPLICATE_MESSAGE =
-  'Esta música já foi enviada para partitura e cifra. Se a geração anterior falhou, tente novamente em alguns minutos.'
+  'Esta música já foi enviada para gerar cifra. Se a geração anterior falhou, tente novamente em alguns minutos.'
 
 function asTrimmedString(value: unknown): string | null {
   if (typeof value === 'string' && value.trim()) return value.trim()
@@ -58,7 +58,7 @@ function normalizeErrorText(value: unknown): string {
   return String(value)
 }
 
-export function translateMusicTranscriptionError(value?: unknown, fallback = 'Erro ao gerar partitura e cifra.'): string {
+export function translateMusicTranscriptionError(value?: unknown, fallback = 'Erro ao gerar cifra.'): string {
   let message = normalizeErrorText(value)
 
   if (message.trim().startsWith('{') || message.trim().startsWith('[')) {

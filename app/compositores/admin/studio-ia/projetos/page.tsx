@@ -12,7 +12,7 @@ const filters = [
   { id: 'favorites', label: 'Favoritos' },
 ]
 
-const TRANSCRIPTIONS_FILTER = 'partituras-cifras'
+const TRANSCRIPTIONS_FILTER = 'cifras'
 
 const inspirationVariationOptions = [
   { id: 'similar', label: 'Manter parecido' },
@@ -35,13 +35,13 @@ function formatDate(value: string | null) {
 }
 
 function safeFileName(value: string, extension: string) {
-  const base = String(value || 'partitura-e-cifra')
+  const base = String(value || 'cifra-da-musica')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\w.-]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
-    .slice(0, 80) || 'partitura-e-cifra'
+    .slice(0, 80) || 'cifra-da-musica'
 
   return `${base}.${extension}`
 }
@@ -98,11 +98,11 @@ function StudioProjectsContent() {
             showSessionExpired()
             return
           }
-          if (!response.ok) throw new Error(data.error || 'Erro ao carregar partituras e cifras')
+          if (!response.ok) throw new Error(data.error || 'Erro ao carregar cifras')
           setProjects([])
           setTranscriptions(data.transcriptions || [])
         })
-        .catch((err) => setError(err.message || 'Erro ao carregar partituras e cifras'))
+        .catch((err) => setError(err.message || 'Erro ao carregar cifras'))
         .finally(() => setLoading(false))
       return
     }
@@ -602,7 +602,7 @@ function StudioProjectsContent() {
                   }`}
                 >
                   <FiFileText />
-                  Partituras e Cifras
+                  Cifras
                 </Link>
               </div>
               <Link
@@ -621,7 +621,7 @@ function StudioProjectsContent() {
                 }`}
               >
                 <FiFileText />
-                Partituras e Cifras
+                Cifras
               </Link>
             </aside>
 
@@ -663,14 +663,14 @@ function StudioProjectsContent() {
 
               {loading ? (
                 <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">
-                  {currentFilter === TRANSCRIPTIONS_FILTER ? 'Carregando partituras e cifras...' : 'Carregando projetos...'}
+                  {currentFilter === TRANSCRIPTIONS_FILTER ? 'Carregando cifras...' : 'Carregando projetos...'}
                 </div>
               ) : currentFilter === TRANSCRIPTIONS_FILTER ? (
                 transcriptions.length === 0 ? (
                   <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center">
-                    <p className="mb-4 text-gray-400">Nenhuma partitura ou cifra salva ainda.</p>
+                    <p className="mb-4 text-gray-400">Nenhuma cifra salva ainda.</p>
                     <Link href="/transcricao-musical" className="inline-flex rounded-xl bg-primary-600 px-5 py-3 font-semibold">
-                      Criar partitura e cifra
+                      Criar cifra
                     </Link>
                   </div>
                 ) : (
@@ -682,7 +682,7 @@ function StudioProjectsContent() {
                             <FiFileText className="h-8 w-8" />
                           </div>
                           <span className="absolute bottom-3 left-3 rounded-full bg-black/80 px-3 py-1 text-xs font-bold text-amber-100">
-                            Partitura e cifra
+                            Cifra da Música
                           </span>
                         </div>
                         <div className={viewMode === 'small' ? 'p-3' : 'p-4'}>
@@ -699,31 +699,8 @@ function StudioProjectsContent() {
                               onClick={() => downloadTranscriptionFile(item, 'pdf')}
                               className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-3 py-2 text-xs font-bold text-white hover:bg-primary-500"
                             >
-                              <FiDownload /> Partitura PDF
+                              <FiDownload /> Baixar cifra em PDF
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => downloadTranscriptionFile(item, 'preview-pdf')}
-                              className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-700 px-3 py-2 text-xs font-bold text-gray-100 hover:border-amber-400"
-                            >
-                              <FiDownload /> Letra cifrada PDF
-                            </button>
-                            <div className="grid grid-cols-2 gap-2">
-                              <button
-                                type="button"
-                                onClick={() => downloadTranscriptionFile(item, 'musicxml')}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-700 px-3 py-2 text-xs font-bold text-gray-100 hover:border-amber-400"
-                              >
-                                MusicXML
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => downloadTranscriptionFile(item, 'zip')}
-                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-700 px-3 py-2 text-xs font-bold text-gray-100 hover:border-amber-400"
-                              >
-                                ZIP
-                              </button>
-                            </div>
                           </div>
                         </div>
                       </div>

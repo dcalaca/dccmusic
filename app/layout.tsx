@@ -24,18 +24,16 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: 'DCC Music - Studio IA, Partitura e Cifra | Músicas e Vídeos',
+    default: 'DCC Music - Studio IA e Cifras | Músicas e Vídeos',
     template: '%s | DCC Music',
   },
-  description: 'Crie músicas com IA no Studio IA, gere partitura, cifra e MusicXML, ouça lançamentos e divulgue seu trabalho. Plataforma completa para compositores e fãs de música no Brasil.',
+  description: 'Crie músicas com IA no Studio IA, gere cifras, ouça lançamentos e divulgue seu trabalho. Plataforma completa para compositores e fãs de música no Brasil.',
   keywords: [
     'DCC Music',
     'Studio IA',
     'música com inteligência artificial',
-    'partitura e cifra',
-    'transcrição musical',
-    'MusicXML',
-    'letra cifrada',
+    'cifra da música',
+    'cifras',
     'música brasileira',
     'vídeos musicais',
     'artista independente',
@@ -63,8 +61,8 @@ export const metadata: Metadata = {
     locale: 'pt_BR',
     url: 'https://www.dccmusic.online',
     siteName: 'DCC Music',
-    title: 'DCC Music - Studio IA, Partitura e Cifra',
-    description: 'Crie músicas com IA, gere partitura e cifra, ouça lançamentos e divulgue seu trabalho na plataforma DCC Music.',
+    title: 'DCC Music - Studio IA e Cifras',
+    description: 'Crie músicas com IA, gere cifras, ouça lançamentos e divulgue seu trabalho na plataforma DCC Music.',
     images: [
       {
         url: '/logopng.png',
@@ -76,8 +74,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'DCC Music - Studio IA, Partitura e Cifra',
-    description: 'Crie músicas com IA, gere partitura e cifra e explore lançamentos no DCC Music.',
+    title: 'DCC Music - Studio IA e Cifras',
+    description: 'Crie músicas com IA, gere cifras e explore lançamentos no DCC Music.',
     images: ['/logopng.png'],
   },
   robots: {
@@ -124,7 +122,7 @@ const entityGraphSchema = {
         height: 630,
       },
       image: { '@id': 'https://www.dccmusic.online/#logo' },
-      description: 'Plataforma brasileira para criar músicas com inteligência artificial, gerar partitura, MusicXML e letra cifrada, organizar projetos e divulgar obras de compositores.',
+      description: 'Plataforma brasileira para criar músicas com inteligência artificial, gerar cifras, organizar projetos e divulgar obras de compositores.',
       email: 'suporte@dccmusic.online',
       contactPoint: {
         '@type': 'ContactPoint',
@@ -140,9 +138,7 @@ const entityGraphSchema = {
       knowsAbout: [
         'music creation with artificial intelligence',
         'songwriting',
-        'musical transcription',
-        'sheet music',
-        'MusicXML',
+        'chord charts',
         'chorded lyrics',
         'independent composers',
       ],
@@ -181,10 +177,10 @@ const entityGraphSchema = {
     {
       '@type': 'Service',
       '@id': 'https://www.dccmusic.online/transcricao-musical#service',
-      name: 'Partitura e Cifra - DCC Music',
+      name: 'Cifra da Música - DCC Music',
       url: 'https://www.dccmusic.online/transcricao-musical',
       serviceType: 'Musical transcription',
-      description: 'Serviço da DCC Music que transforma áudio compatível em materiais musicais como partitura em PDF, MusicXML e letra cifrada, com metadados musicais quando disponíveis.',
+      description: 'Serviço da DCC Music que organiza letras e acordes em cifras prontas para tocar e imprimir.',
       provider: { '@id': 'https://www.dccmusic.online/#organization' },
       areaServed: [
         { '@type': 'Country', name: 'Brazil' },

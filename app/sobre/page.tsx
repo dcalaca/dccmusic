@@ -15,8 +15,8 @@ const features = [
   },
   {
     icon: FiFileText,
-    title: 'Partitura e Cifra',
-    description: 'Transforme áudio em partitura PDF, MusicXML e letra cifrada. Ideal para estudar, tocar, imprimir e compartilhar.',
+    title: 'Cifra da Música',
+    description: 'Organize a letra e os acordes das músicas do Studio IA em uma cifra pronta para tocar e imprimir.',
   },
   {
     icon: FiEdit3,
@@ -49,7 +49,7 @@ const aboutSchema = {
   '@context': 'https://schema.org',
   '@type': 'AboutPage',
   name: 'Sobre o DCC Music',
-  description: 'Conheça o DCC Music: Studio IA para criar músicas com inteligência artificial, Partitura e Cifra para transcrição musical e ferramentas para compositores divulgarem suas obras.',
+  description: 'Conheça o DCC Music: Studio IA para criar músicas com inteligência artificial, Cifra da Música e ferramentas para compositores divulgarem suas obras.',
   publisher: {
     '@type': 'Organization',
     name: 'DCC Music',
@@ -100,7 +100,7 @@ export default function SobrePage() {
           </h1>
           <p className="text-gray-400 text-lg max-w-3xl mx-auto">
             A DCC Music ajuda compositores a transformar ideias em músicas completas,
-            gerar partitura e cifra, organizar projetos e divulgar suas criações com mais profissionalismo.
+            gerar cifras, organizar projetos e divulgar suas criações com mais profissionalismo.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
@@ -115,7 +115,7 @@ export default function SobrePage() {
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-cyan-700 bg-cyan-950/40 px-6 py-3 font-bold text-cyan-100 hover:border-cyan-500"
             >
               <FiFileText />
-              Partitura e Cifra
+              Cifra da Música
             </Link>
             <Link
               href="/compositores"
@@ -208,34 +208,34 @@ export default function SobrePage() {
               <div>
                 <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-cyan-400/40 bg-cyan-950/50 px-4 py-2 text-sm text-cyan-100">
                   <FiFileText />
-                  Transcrição musical
+                  Cifra da Música
                 </span>
                 <h2 className="text-3xl font-black sm:text-4xl">
-                  Partitura e Cifra: do áudio ao material para tocar
+                  Cifra da Música: pronta para tocar
                 </h2>
                 <p className="mt-4 leading-relaxed text-gray-300">
-                  Depois de criar ou enviar uma música, você pode gerar partitura em PDF,
-                  arquivo MusicXML e letra cifrada. Tudo fica salvo na sua conta, em Meus Projetos,
-                  no filtro Partituras e Cifras.
+                  Depois de criar uma música no Studio IA, você pode gerar uma cifra em PDF
+                  com letra, acordes, tom e BPM. Tudo fica salvo na sua conta, em Meus Projetos,
+                  no filtro Cifras.
                 </p>
                 <p className="mt-3 leading-relaxed text-gray-300">
-                  O serviço custa R$ 6,90 por música (25 créditos) e pode ser usado com músicas
-                  do Studio IA ou com upload de áudio próprio.
+                  O serviço custa 10 créditos por música e está disponível para músicas
+                  criadas no Studio IA.
                 </p>
                 <Link
                   href="/transcricao-musical"
                   className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-primary-600 px-5 py-3 font-bold text-white hover:from-cyan-500 hover:to-primary-500"
                 >
-                  Gerar partitura e cifra
+                  Gerar cifra
                   <FiFileText />
                 </Link>
               </div>
               <div className="grid gap-3">
                 {[
-                  ['Partitura PDF', 'Material pronto para imprimir e estudar.'],
-                  ['MusicXML', 'Abra em programas de notação musical.'],
-                  ['Letra cifrada', 'Cifras organizadas com tom e BPM quando disponíveis.'],
-                  ['Histórico salvo', 'Baixe novamente quando quiser, sem perder os arquivos.'],
+                  ['Cifra em PDF', 'Material pronto para imprimir e tocar.'],
+                  ['Letra e acordes', 'Cifra organizada de forma limpa.'],
+                  ['Tom e BPM', 'Informações da música quando disponíveis.'],
+                  ['Histórico salvo', 'Baixe novamente quando quiser.'],
                 ].map(([title, text]) => (
                   <div key={title} className="rounded-2xl border border-gray-800 bg-black/45 p-4">
                     <h3 className="font-bold text-white">{title}</h3>

@@ -20,10 +20,10 @@ export default function FAQPage() {
       : 'Perguntas Frequentes'
 
   const subtitle = isPortugal
-    ? 'Esclareça as suas dúvidas sobre o DCC Music, Studio IA, Partitura e Cifra, créditos, projetos e apoio.'
+    ? 'Esclareça as suas dúvidas sobre o DCC Music, Studio IA, Cifras, créditos, projetos e apoio.'
     : isSpanish
-      ? 'Resuelve tus dudas sobre DCC Music, Studio IA, Partitura y Cifrado, créditos, proyectos y soporte.'
-      : 'Tire dúvidas sobre DCC Music, Studio IA, Partitura e Cifra, créditos, projetos e suporte.'
+      ? 'Resuelve tus dudas sobre DCC Music, Studio IA, Cifras, créditos, proyectos y soporte.'
+      : 'Tire dúvidas sobre DCC Music, Studio IA, Cifra da Música, créditos, projetos e suporte.'
 
   const supportTitle = isPortugal
     ? 'Não encontrou o que procurava?'
@@ -32,10 +32,10 @@ export default function FAQPage() {
       : 'Não encontrou o que procurava?'
 
   const supportText = isPortugal
-    ? 'Contacte o apoio e indique o e-mail associado à sua conta. Se a questão for sobre o Studio IA ou Partitura e Cifra, envie também o código do projeto.'
+    ? 'Contacte o apoio e indique o e-mail associado à sua conta. Se a questão for sobre o Studio IA ou Cifras, envie também o código do projeto.'
     : isSpanish
-      ? 'Comunícate con soporte e informa el correo de tu cuenta. Si la consulta es sobre Studio IA o Partitura y Cifrado, envía también el código del proyecto.'
-      : 'Fale com o suporte e informe seu email de cadastro. Se for sobre uma música do Studio IA ou Partitura e Cifra, envie também o código do projeto.'
+      ? 'Comunícate con soporte e informa el correo de tu cuenta. Si la consulta es sobre Studio IA o Cifras, envía también el código del proyecto.'
+      : 'Fale com o suporte e informe seu email de cadastro. Se for sobre uma música do Studio IA ou Cifra da Música, envie também o código do projeto.'
 
   const showEmailLabel = isPortugal ? 'Ver e-mail' : isSpanish ? 'Ver correo' : 'Ver Email'
   const copyEmailLabel = isPortugal ? 'Copiar e-mail' : isSpanish ? 'Copiar correo' : 'Copiar email'

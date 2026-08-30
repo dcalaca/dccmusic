@@ -326,11 +326,12 @@ async function completeDccSimplifiedTranscription(input: {
   record: any
   composerId: string
   title: string
+  composerName?: string | null
   lyrics: string
   bpm?: number | null
   projectId?: string | null
 }) {
-  const score = buildDccSimplifiedScore({ title: input.title, lyrics: input.lyrics, bpm: input.bpm })
+  const score = buildDccSimplifiedScore({ title: input.title, composerName: input.composerName, lyrics: input.lyrics, bpm: input.bpm })
   const files = await saveDccSimplifiedScore({
     composerId: input.composerId,
     transcriptionId: input.record.id,
@@ -358,12 +359,13 @@ async function completeDccSimplifiedTranscription(input: {
         key: score.key,
         bpm: String(score.bpm),
         stats: { mode: 'dcc_simplified_score', lines: input.lyrics.split(/\r?\n/).filter(Boolean).length },
-        warnings: ['Partitura simplificada: voz, cifra e ritmo essencial.'],
+        warnings: ['Cifra gerada a partir da letra estruturada da música.'],
       },
       provider_payload: { provider: 'dcc_simplified_score', version: 1 },
       metadata: {
         ...(input.record.metadata || {}),
         source: 'dcc_simplified_score',
+        composerName: input.composerName || null,
         fileNames: { pdf: files.pdfFileName, musicxml: files.musicXmlFileName, zip: files.zipFileName },
       },
       completed_at: new Date().toISOString(),
@@ -478,7 +480,7 @@ export async function POST(request: NextRequest) {
 
       if (processingRecord.status === 'completed') return NextResponse.json({ transcription: mapTranscription(processingRecord), cached: true })
 
-      throw new Error('Nesta fase de teste, a partitura simplificada está disponível para músicas criadas no Studio IA. O envio de áudio externo volta assim que a análise própria estiver pronta.')
+      throw new Error('Nesta fase, a Cifra da Música está disponível para músicas criadas no Studio IA.')
     }
 
     const body = await request.json().catch(() => null)
@@ -521,7 +523,7 @@ export async function POST(request: NextRequest) {
       .eq('is_current', true)
       .maybeSingle()
     if (lyricError) throw lyricError
-    if (!lyric?.content?.trim()) return NextResponse.json({ error: 'Essa música não tem letra disponível para criar a partitura simplificada.' }, { status: 400 })
+    if (!lyric?.content?.trim()) return NextResponse.json({ error: 'Essa música não tem letra disponível para criar a cifra.' }, { status: 400 })
 
     const { data: generation } = version.generation_id
       ? await supabaseAdmin.from('studio_generations').select('request_payload').eq('id', version.generation_id).maybeSingle()
@@ -530,6 +532,7 @@ export async function POST(request: NextRequest) {
       record: processingRecord,
       composerId: composer.composerId,
       title,
+      composerName: composer.name,
       lyrics: lyric.content,
       bpm: Number(generation?.request_payload?.bpm) || 100,
       projectId: version.project_id,

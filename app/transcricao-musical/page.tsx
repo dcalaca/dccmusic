@@ -224,7 +224,7 @@ function TranscricaoMusicalContent() {
       if (!response.ok) throw new Error(readClientApiError(data, 'Erro ao gerar a cifra.'))
 
       setSelectedTranscription(data.transcription)
-      setSuccess(data.cached ? 'Partitura e cifra já estavam salvas. Nenhum crédito foi descontado.' : `Partitura e cifra geradas. Debitamos ${COST} créditos do seu saldo DCC.`)
+      setSuccess(data.cached ? 'A cifra já estava salva. Nenhum crédito foi descontado.' : `Cifra gerada. Debitamos ${COST} créditos do seu saldo DCC.`)
       await loadData()
     } catch (err: any) {
       setError(readClientApiError(err, 'Erro ao gerar a cifra.'))

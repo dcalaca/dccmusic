@@ -58,12 +58,12 @@ export async function saveDccSimplifiedScore(input: {
   musicXml: string
   preview: string
 }): Promise<SavedTranscriptionFiles> {
-  const baseName = normalizeFileName(input.title, 'partitura-simplificada')
+  const baseName = normalizeFileName(input.title, 'cifra-da-musica')
   const basePath = `${input.composerId}/music-transcriptions/${input.transcriptionId}`
   const pdfPath = `${basePath}/${baseName}.pdf`
   const musicXmlPath = `${basePath}/${baseName}.musicxml`
   const zipPath = `${basePath}/${baseName}-${randomUUID()}.zip`
-  const pdfBuffer = createSimpleTextPdf({ title: input.title, text: input.preview })
+  const pdfBuffer = createSimpleTextPdf({ title: 'Cifra da Música', text: input.preview })
   const musicXmlBuffer = Buffer.from(input.musicXml, 'utf8')
   const zip = new JSZip()
   zip.file(`${baseName}.pdf`, pdfBuffer)
