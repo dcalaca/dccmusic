@@ -2,6 +2,12 @@
 const nextConfig = {
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
+  env: {
+    // Suno continua como provedor principal. O renderizador DCC entra apenas
+    // quando a geração externa falhar.
+    STUDIO_INTERNAL_VIDEO_PILOT: 'false',
+    STUDIO_INTERNAL_VIDEO_FALLBACK: 'true',
+  },
   images: {
     domains: ['i.ytimg.com', 'i.scdn.co', 'is1-ssl.mzstatic.com'],
   },
@@ -19,6 +25,11 @@ const nextConfig = {
         './node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2',
       ],
       '/api/compositores/studio/video/preferencia': [
+        './node_modules/@ffmpeg-installer/ffmpeg/**/*',
+        './node_modules/@ffmpeg-installer/linux-x64/**/*',
+        './node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2',
+      ],
+      '/api/studio/suno/video-callback': [
         './node_modules/@ffmpeg-installer/ffmpeg/**/*',
         './node_modules/@ffmpeg-installer/linux-x64/**/*',
         './node_modules/@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2',
