@@ -75,7 +75,8 @@ export async function markExpiredVoiceFromGeneration(generation: any, providerPa
       .from('studio_voice_profiles')
       .update({
         status: 'validation_processing',
-        voice_id: null,
+        // Preserve the last known persona while the replacement is processed.
+        voice_id: voice.voice_id || null,
         is_available: false,
         validation_task_id: validationTaskId,
         validate_info: null,
@@ -90,6 +91,7 @@ export async function markExpiredVoiceFromGeneration(generation: any, providerPa
             at: now,
             reason: 'generation_voice_expired',
             expiredPersonaId: personaId,
+            previousVoiceId: voice.voice_id || null,
             generationId: generation?.id || null,
           },
         },
