@@ -100,42 +100,7 @@ async function proxyDownload(url: string) {
 
 export default function FriendlyAudioDownloads() {
   useEffect(() => {
-    const originalFetch = window.fetch.bind(window)
     const originalAnchorClick = HTMLAnchorElement.prototype.click
-
-    window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-      const rawUrl = typeof input === 'string'
-        ? input
-        : input instanceof URL
-          ? input.toString()
-          : input instanceof Request
-            ? input.url
-            : ''
-      const method = String(init?.method || (input instanceof Request ? input.method : 'GET')).toUpperCase()
-
-      if (method === 'GET' && isHttpUrl(rawUrl)) {
-        try {
-          const source = new URL(rawUrl)
-          if (source.origin !== window.location.origin) {
-            const token = localStorage.getItem('composer_token')
-            if (token) {
-              return await originalFetch('/api/compositores/studio/download-proxy', {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ url: rawUrl }),
-              })
-            }
-          }
-        } catch {
-          // Mantém o fetch original se a URL não puder ser tratada.
-        }
-      }
-
-      return originalFetch(input, init)
-    }
 
     HTMLAnchorElement.prototype.click = function patchedClick() {
       if (this.download && this.href.startsWith('blob:') && /\.mp3$/i.test(this.download)) {
@@ -188,7 +153,6 @@ export default function FriendlyAudioDownloads() {
     document.addEventListener('click', handleDownloadClick, true)
 
     return () => {
-      window.fetch = originalFetch
       HTMLAnchorElement.prototype.click = originalAnchorClick
       document.removeEventListener('click', handleDownloadClick, true)
     }
