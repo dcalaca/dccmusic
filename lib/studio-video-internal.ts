@@ -129,9 +129,9 @@ WrapStyle: 2
 
 [V4+ Styles]
 Format: Name,Fontname,Fontsize,PrimaryColour,SecondaryColour,OutlineColour,BackColour,Bold,Italic,Underline,StrikeOut,ScaleX,ScaleY,Spacing,Angle,BorderStyle,Outline,Shadow,Alignment,MarginL,MarginR,MarginV,Encoding
-Style: Title,Arial,48,&H00FFFFFF,&H000000FF,&H00101010,&H90000000,-1,0,0,0,100,100,0,0,1,3,1,8,45,45,72,1
-Style: Artist,Arial,29,&H00E8E8E8,&H000000FF,&H00101010,&H90000000,0,0,0,0,100,100,0,0,1,2,1,8,45,45,132,1
-Style: Lyrics,Arial,46,&H00FFFFFF,&H000000FF,&H00101010,&HAA000000,-1,0,0,0,100,100,0,0,3,2,0,2,55,55,130,1
+Style: Title,Inter,48,&H00FFFFFF,&H000000FF,&H00101010,&H90000000,-1,0,0,0,100,100,0,0,1,3,1,8,45,45,72,1
+Style: Artist,Inter,29,&H00E8E8E8,&H000000FF,&H00101010,&H90000000,0,0,0,0,100,100,0,0,1,2,1,8,45,45,132,1
+Style: Lyrics,Inter,46,&H00FFFFFF,&H000000FF,&H00101010,&HAA000000,-1,0,0,0,100,100,0,0,3,2,0,2,55,55,130,1
 
 [Events]
 Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
@@ -280,8 +280,7 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
   const audioPath = path.join(tempDir, 'audio')
   const coverPath = path.join(tempDir, 'cover')
   const logoPath = path.join(tempDir, 'dcc-logo.png')
-  const titlePath = path.join(tempDir, 'title.txt')
-  const artistPath = path.join(tempDir, 'artist.txt')
+  const assPath = path.join(tempDir, 'lyrics.ass')
   const outputPath = path.join(tempDir, 'video.mp4')
 
   await supabaseAdmin.from('studio_video_requests').update({
@@ -290,51 +289,40 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
     request_payload: {
       ...(videoRequest.request_payload || {}),
       provider: 'dcc-internal',
-      format: 'static-cover-lyrics-v4',
+      format: 'static-cover-lyrics-v5',
     },
     updated_at: new Date().toISOString(),
   }).eq('id', videoRequest.id)
 
   try {
-    const title = String(project?.title || videoRequest?.metadata?.project_title || 'DCC Music')
-    const artist = String(composer?.name || videoRequest?.metadata?.composer_name || 'DCC Music')
-    const lyrics = String(lyric?.content || '')
-    const schedule = lyricCardSchedule(lyrics, durationSeconds(videoVersion))
-    const lyricPaths = schedule.map((card, index) => ({
-      ...card,
-      path: path.join(tempDir, `lyric-${index}.txt`),
-    }))
-
     await Promise.all([
       fs.writeFile(audioPath, audio.buffer),
       fs.writeFile(coverPath, cover),
       fs.copyFile(path.join(process.cwd(), 'public', 'logopng.png'), logoPath),
-      fs.writeFile(titlePath, wrapVideoText(title, 22, 2), 'utf8'),
-      fs.writeFile(artistPath, `Compositor: ${wrapVideoText(artist, 34, 1)}`, 'utf8'),
-      ...lyricPaths.map((card) => fs.writeFile(card.path, card.text, 'utf8')),
+      fs.writeFile(assPath, buildInternalVideoAss({
+        title: wrapVideoText(String(project?.title || videoRequest?.metadata?.project_title || 'DCC Music'), 22, 2),
+        artist: `Compositor: ${wrapVideoText(String(composer?.name || videoRequest?.metadata?.composer_name || 'DCC Music'), 34, 1)}`,
+        lyrics: String(lyric?.content || ''),
+        durationSeconds: durationSeconds(videoVersion),
+      }), 'utf8'),
     ])
 
     // O mapa explícito impede o FFmpeg de escolher por engano a capa original
     // quando há várias entradas de vídeo. O último filtro é o único vídeo de
     // saída e contém marca, título, compositor e os cartões da letra.
-    const textFilter = buildInternalVideoTextFilter({
-      fontPath: resolveVideoFontPath(),
-      titlePath,
-      artistPath,
-      lyricPaths,
-    })
+    const fontDir = path.dirname(resolveVideoFontPath())
     const filter = [
       '[0:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,boxblur=20:5[bg]',
       '[0:v]scale=620:620:force_original_aspect_ratio=decrease[fg]',
       '[2:v]scale=150:-1,colorchannelmixer=aa=0.82[logo]',
       '[bg][fg]overlay=(W-w)/2:220[video]',
       '[video][logo]overlay=W-w-34:34[branded]',
-      ...textFilter.filters,
+      `[branded]ass=filename='${filterPath(assPath)}':fontsdir='${filterPath(fontDir)}'[rendered]`,
     ].join(';')
     await execFileAsync(resolveFfmpegPath(), [
       '-hide_banner', '-loglevel', 'error', '-loop', '1', '-i', coverPath, '-i', audioPath, '-loop', '1', '-i', logoPath,
       '-filter_complex', filter,
-      '-map', `[${textFilter.outputLabel}]`, '-map', '1:a:0',
+      '-map', '[rendered]', '-map', '1:a:0',
       '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '25', '-pix_fmt', 'yuv420p',
       '-c:a', 'aac', '-b:a', '160k', '-shortest', '-movflags', '+faststart', '-y', outputPath,
     ], { timeout: 280_000, maxBuffer: 10 * 1024 * 1024 })
@@ -343,6 +331,12 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
     if (output.byteLength < 10_000) throw new Error('O arquivo de vídeo gerado ficou inválido.')
     return await saveInternalStudioVideo({ videoRequest, buffer: output })
   } catch (error: any) {
+    console.error('[Studio Video Interno] Renderização falhou.', {
+      videoRequestId: videoRequest.id,
+      code: error?.code || null,
+      signal: error?.signal || null,
+      stderr: String(error?.stderr || '').slice(-4000),
+    })
     await supabaseAdmin.from('studio_video_requests').update({
       status: 'retry_pending',
       error_message: 'Estamos preparando o vídeo novamente.',
