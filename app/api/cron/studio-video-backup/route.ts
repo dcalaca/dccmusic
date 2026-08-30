@@ -76,19 +76,34 @@ export async function GET(request: NextRequest) {
     }
 
     const retryLimit = 1
-    const retryCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString()
-    const { data: retryVideos, error: retryError } = await supabaseAdmin
-      .from('studio_video_requests')
-      .select('*')
-      .eq('status', 'retry_pending')
-      .lte('updated_at', retryCutoff)
-      .order('updated_at', { ascending: true })
-      .limit(retryLimit)
+    const staleProductionCutoff = new Date(Date.now() - 6 * 60 * 1000).toISOString()
+    const [{ data: queuedVideos, error: queuedError }, { data: staleVideos, error: staleError }] = await Promise.all([
+      supabaseAdmin
+        .from('studio_video_requests')
+        .select('*')
+        .in('status', ['requested', 'retry_pending'])
+        .contains('metadata', { internal_video_pilot: true })
+        .order('updated_at', { ascending: true })
+        .limit(retryLimit),
+      supabaseAdmin
+        .from('studio_video_requests')
+        .select('*')
+        .eq('status', 'in_production')
+        .contains('metadata', { internal_video_pilot: true })
+        .lte('updated_at', staleProductionCutoff)
+        .order('updated_at', { ascending: true })
+        .limit(retryLimit),
+    ])
 
-    if (retryError) throw retryError
+    if (queuedError) throw queuedError
+    if (staleError) throw staleError
+
+    const retryVideos = [...(staleVideos || []), ...(queuedVideos || [])]
+      .filter((video, index, list) => list.findIndex((item) => item.id === video.id) === index)
+      .slice(0, retryLimit)
 
     const retryResults = []
-    for (const video of retryVideos || []) {
+    for (const video of retryVideos) {
       try {
         const retried = await renderInternalStudioVideo(video.id)
         retryResults.push({ videoRequestId: video.id, status: retried?.status || 'unknown' })
