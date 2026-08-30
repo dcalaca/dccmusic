@@ -146,7 +146,7 @@ export async function saveInternalStudioVideo(input: {
       error_message: null,
       response_payload: {
         provider: 'dcc-internal',
-        format: 'static-cover-lyrics-v1',
+        format: 'static-cover-lyrics-v4',
         bytes: buffer.byteLength,
       },
       updated_at: now,
