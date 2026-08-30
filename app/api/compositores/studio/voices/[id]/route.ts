@@ -141,7 +141,8 @@ export async function PATCH(
       updatePayload = {
         ...updatePayload,
         status: 'validation_processing',
-        voice_id: null,
+        // Keep the previous persona id for recovery while Suno creates a replacement.
+        voice_id: voice.voice_id || null,
         is_available: false,
         validation_task_id: validation?.data?.taskId || null,
         validate_info: null,
@@ -153,6 +154,7 @@ export async function PATCH(
           voiceReactivation: {
             validation,
             at: new Date().toISOString(),
+            previousVoiceId: voice.voice_id || null,
           },
         },
       }
