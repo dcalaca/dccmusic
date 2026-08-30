@@ -17,7 +17,7 @@
     },
     {
       "path": "/api/cron/studio-video-backup",
-      "schedule": "*/10 * * * *"
+      "schedule": "*/2 * * * *"
     },
     {
       "path": "/api/cron/email-campaigns",
