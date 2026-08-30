@@ -224,6 +224,12 @@ export async function GET(
         if (!mapped) return null
         return {
           ...mapped,
+          // No laboratório, a retentativa automática continua existindo no
+          // servidor, mas não deve prender o botão do usuário por vários
+          // minutos. A interface permite disparar uma nova tentativa na hora.
+          status: isInternalPilot && mapped.status === 'retry_pending'
+            ? 'failed'
+            : mapped.status,
           canRegenerate: isInternalPilot || studioVideoCanRegenerate(item, project),
         }
       })))
