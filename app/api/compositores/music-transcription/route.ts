@@ -343,7 +343,9 @@ async function completeDccSimplifiedTranscription(input: {
     .update({
       status: 'completed',
       credits_charged: TRANSCRIPTION_CREDITS,
-      provider_input_type: 'dcc_simplified_score',
+      // A coluna tem uma CHECK legada (url/upload_audio_id). A origem real
+      // fica identificada em provider_payload e metadata abaixo.
+      provider_input_type: 'url',
       provider_input_value: input.record.studio_version_id,
       pdf_path: files.pdfPath,
       pdf_storage_provider: files.storageProvider,
