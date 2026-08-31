@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { FiCalendar, FiRefreshCw } from 'react-icons/fi'
+import { FiCalendar, FiDownload, FiRefreshCw } from 'react-icons/fi'
 
 type ChartDay = {
   date: string
@@ -292,6 +292,7 @@ export default function AdminChartsPanel() {
   const [summary, setSummary] = useState<ChartsSummary | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [exporting, setExporting] = useState(false)
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams()
@@ -316,25 +317,67 @@ export default function AdminChartsPanel() {
     }
   }
 
+  const exportRegistrations = async () => {
+    try {
+      setExporting(true)
+      setError('')
+      const response = await fetch(`/api/admin/charts/registrations-export?${queryString}`, { cache: 'no-store' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Erro ao preparar cadastros')
+      const XLSX = await import('xlsx')
+      const worksheet = XLSX.utils.json_to_sheet((data.rows || []).map((row: any) => ({
+        Nome: row.name,
+        Email: row.email,
+        'País': row.country,
+        'Músicas criadas': row.musicCreated,
+        'Compras realizadas': row.purchaseCount,
+        'Músicas compradas': row.musicPurchased,
+        'Valor gasto (R$)': row.amountSpentBrl,
+      })))
+      worksheet['!cols'] = [
+        { wch: 28 }, { wch: 34 }, { wch: 12 }, { wch: 18 },
+        { wch: 20 }, { wch: 20 }, { wch: 18 },
+      ]
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Cadastros')
+      XLSX.writeFile(workbook, `cadastros-${range.startDate}-a-${range.endDate}.xlsx`)
+    } catch (err: any) {
+      setError(err.message || 'Erro ao exportar cadastros')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <section className="rounded-3xl border border-gray-800 bg-gradient-to-br from-gray-900/80 via-gray-900/50 to-black p-5 sm:p-6">
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-sm font-bold text-primary-300">Gráficos do admin</p>
-          <h1 className="mt-2 text-3xl font-black text-white">Cadastros, letras, capas e vozes</h1>
+          <h1 className="mt-2 text-3xl font-black text-white">Cadastros e Capas</h1>
           <p className="mt-2 text-sm text-gray-400">
             Datas no horário de Brasília. As músicas por fornecedor ficam no gráfico acima.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={loadCharts}
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-700 px-4 py-2 text-sm font-bold text-gray-300 transition-colors hover:border-primary-400 hover:text-primary-300 disabled:opacity-60"
-        >
-          <FiRefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          Atualizar
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={loadCharts}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-700 px-4 py-2 text-sm font-bold text-gray-300 transition-colors hover:border-primary-400 hover:text-primary-300 disabled:opacity-60"
+          >
+            <FiRefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Atualizar
+          </button>
+          <button
+            type="button"
+            onClick={exportRegistrations}
+            disabled={loading || exporting}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-700 px-4 py-2 text-sm font-bold text-gray-300 transition-colors hover:border-primary-400 hover:text-primary-300 disabled:opacity-60"
+          >
+            <FiDownload className="h-4 w-4" />
+            {exporting ? 'Exportando…' : 'Exportar cadastros XLSX'}
+          </button>
+        </div>
       </div>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
