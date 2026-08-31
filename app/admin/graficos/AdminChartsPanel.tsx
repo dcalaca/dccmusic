@@ -16,6 +16,7 @@ type ChartDay = {
   composerRegistrations: number
   siteUserRegistrations: number
   totalRegistrations: number
+  registrationsByCountry: Record<string, number>
 }
 
 type ChartsSummary = {
@@ -25,7 +26,86 @@ type ChartsSummary = {
   }
   days: ChartDay[]
   totals: Omit<ChartDay, 'date' | 'label'>
+  countryCodes: string[]
   warnings: string[]
+}
+
+const COUNTRY_STYLE: Record<string, { label: string; color: string }> = {
+  BR: { label: 'Brasil', color: '#22c55e' },
+  PY: { label: 'Paraguai', color: '#ef4444' },
+  CO: { label: 'Colômbia', color: '#facc15' },
+  MX: { label: 'México', color: '#06b6d4' },
+  PT: { label: 'Portugal', color: '#3b82f6' },
+}
+
+const EXTRA_COUNTRY_COLORS = ['#f97316', '#ec4899', '#14b8a6', '#8b5cf6', '#84cc16']
+
+function CountryRegistrationsChart({ data, countryCodes }: { data: ChartDay[]; countryCodes: string[] }) {
+  const countries = countryCodes.map((code, index) => ({
+    code,
+    label: COUNTRY_STYLE[code]?.label || code,
+    color: COUNTRY_STYLE[code]?.color || EXTRA_COUNTRY_COLORS[index % EXTRA_COUNTRY_COLORS.length],
+  }))
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const maxValue = Math.max(1, ...data.map(day => day.totalRegistrations))
+  const selectedDay = selectedDate ? data.find(day => day.date === selectedDate) || null : null
+  const chartMinWidth = Math.max(980, data.length * 36)
+
+  useEffect(() => setSelectedDate(null), [data])
+
+  return (
+    <div className="rounded-2xl border border-gray-800 bg-gray-950/60 p-5">
+      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="font-bold text-white">Cadastros por dia</h3>
+          <p className="mt-1 text-xs text-gray-500">Cada cor mostra o país de origem dos novos compositores.</p>
+        </div>
+        <div className="flex flex-wrap gap-3 text-xs">
+          {countries.map(country => (
+            <span key={country.code} className="inline-flex items-center gap-1 text-gray-400">
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: country.color }} />
+              {country.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {selectedDay && (
+        <div className="mb-4 rounded-xl border border-cyan-800/70 bg-cyan-950/30 px-4 py-3 text-sm text-cyan-50">
+          <p className="font-bold text-white">{selectedDay.label}: {formatNumber(selectedDay.totalRegistrations)} cadastros</p>
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-cyan-100">
+            {countries.map(country => (
+              <span key={country.code}>{country.label}: <strong className="text-white">{formatNumber(selectedDay.registrationsByCountry[country.code] || 0)}</strong></span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-x-auto pb-2">
+        <div className="flex h-[22rem] items-end gap-1.5 border-b border-gray-800 px-3" style={{ minWidth: chartMinWidth }}>
+          {data.map(day => (
+            <div key={day.date} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedDate(prev => prev === day.date ? null : day.date)}
+                className={`flex h-64 w-full max-w-10 flex-col justify-end overflow-hidden rounded-t-lg bg-gray-900/90 ring-1 transition-all ${selectedDate === day.date ? 'ring-2 ring-cyan-400' : 'ring-gray-800/80 hover:opacity-90'}`}
+                aria-label={`${day.label}: ${day.totalRegistrations} cadastros`}
+              >
+                {countries.map(country => {
+                  const value = day.registrationsByCountry[country.code] || 0
+                  return value > 0 ? <div key={country.code} className="w-full" style={{ height: `${Math.max(2, (value / maxValue) * 100)}%`, backgroundColor: country.color }} /> : null
+                })}
+              </button>
+              <span className="flex h-8 flex-col items-center text-center leading-tight">
+                <span className="text-[10px] text-gray-500">{day.label}</span>
+                <span className="text-[9px] text-gray-600">{formatWeekdayShort(day.date)}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 type SeriesConfig = {
@@ -321,14 +401,7 @@ export default function AdminChartsPanel() {
             <TotalCard label="Vozes concluídas" value={summary.totals.voicesCompleted} hint="Status ready e disponível" />
           </div>
 
-          <DailyStackedBarChart
-            title="Cadastros por dia"
-            description="Mostra os novos compositores cadastrados no DCC Music."
-            data={summary.days}
-            series={[
-              { key: 'composerRegistrations', label: 'Compositores', color: '#a855f7' },
-            ]}
-          />
+          <CountryRegistrationsChart data={summary.days} countryCodes={summary.countryCodes} />
 
           <StackedCoversChart data={summary.days} />
         </div>
