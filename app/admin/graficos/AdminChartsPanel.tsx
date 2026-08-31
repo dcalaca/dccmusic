@@ -330,13 +330,14 @@ export default function AdminChartsPanel() {
         Email: row.email,
         'País': row.country,
         'Músicas criadas': row.musicCreated,
+        'Projetos com músicas': row.projectsWithVersions,
         'Compras realizadas': row.purchaseCount,
         'Músicas compradas': row.musicPurchased,
         'Valor gasto (R$)': row.amountSpentBrl,
       })))
       worksheet['!cols'] = [
         { wch: 28 }, { wch: 34 }, { wch: 12 }, { wch: 18 },
-        { wch: 20 }, { wch: 20 }, { wch: 18 },
+        { wch: 22 }, { wch: 20 }, { wch: 20 }, { wch: 18 },
       ]
       const workbook = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Cadastros')

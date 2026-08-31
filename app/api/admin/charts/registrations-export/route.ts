@@ -66,24 +66,33 @@ export async function GET(request: NextRequest) {
       .range(from, to)
     )
     const composerIds = composers.map(row => row.id)
-    const stats = new Map(composerIds.map(id => [id, { musicCreated: 0, purchaseCount: 0, musicPurchased: 0, amountSpentBrl: 0 }]))
+    const stats = new Map(composerIds.map(id => [id, {
+      musicCreated: 0,
+      projectIdsWithVersions: new Set<string>(),
+      purchaseCount: 0,
+      musicPurchased: 0,
+      amountSpentBrl: 0,
+    }]))
 
     for (const ids of chunk(composerIds)) {
       const [generations, payments, featured, topups, videos] = await Promise.all([
-        fetchPaged<any>((from, to) => supabaseAdmin.from('studio_generations').select('id, composer_id, status').in('composer_id', ids).neq('status', 'failed').range(from, to)),
+        fetchPaged<any>((from, to) => supabaseAdmin.from('studio_generations').select('id, composer_id, project_id, status').in('composer_id', ids).neq('status', 'failed').range(from, to)),
         fetchPaged<any>((from, to) => supabaseAdmin.from('dccmusic_payments').select('id, composer_id, subscription_id, amount, status').in('composer_id', ids).eq('status', 'paid').range(from, to)),
         fetchPaged<any>((from, to) => supabaseAdmin.from('dccmusic_featured_payments').select('id, composer_id, amount').in('composer_id', ids).eq('payment_status', 'approved').range(from, to)),
         fetchPaged<any>((from, to) => supabaseAdmin.from('studio_credit_topups').select('id, composer_id, music_quantity, amount, currency, settlement_amount, settlement_currency, payment_gateway, payment_id, metadata').in('composer_id', ids).eq('status', 'paid').range(from, to)),
         fetchPaged<any>((from, to) => supabaseAdmin.from('studio_video_requests').select('id, composer_id, amount').in('composer_id', ids).gt('amount', 0).not('paid_at', 'is', null).range(from, to)),
       ])
 
-      const generationComposer = new Map(generations.map(row => [row.id, row.composer_id]))
-      for (const generationIds of chunk(Array.from(generationComposer.keys()), 500)) {
+      const generationsById = new Map(generations.map(row => [row.id, row]))
+      for (const generationIds of chunk(Array.from(generationsById.keys()), 500)) {
         const versions = await fetchPaged<any>((from, to) => supabaseAdmin.from('studio_versions').select('id, generation_id').in('generation_id', generationIds).range(from, to))
         for (const version of versions) {
-          const composerId = generationComposer.get(version.generation_id)
-          const item = composerId ? stats.get(composerId) : null
-          if (item) item.musicCreated += 1
+          const generation = generationsById.get(version.generation_id)
+          const item = generation?.composer_id ? stats.get(generation.composer_id) : null
+          if (item) {
+            item.musicCreated += 1
+            if (generation.project_id) item.projectIdsWithVersions.add(generation.project_id)
+          }
         }
       }
 
@@ -135,6 +144,7 @@ export async function GET(request: NextRequest) {
         email: composer.email || '',
         country: String(composer.country || 'BR').trim().toUpperCase() || 'BR',
         musicCreated: item.musicCreated,
+        projectsWithVersions: item.projectIdsWithVersions.size,
         purchaseCount: item.purchaseCount,
         musicPurchased: item.musicPurchased,
         amountSpentBrl: Number(item.amountSpentBrl.toFixed(2)),
