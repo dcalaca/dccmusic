@@ -17,6 +17,7 @@ import { normalizeStudioLyricStructure } from '@/lib/studio-lyric-normalizer'
 
 export const dynamic = 'force-dynamic'
 const STUDIO_TITLE_MAX_LENGTH = 30
+const ENHANCED_FILTER = 'melhoradas'
 
 function buildProjectDescription(body: any) {
   const idea = typeof body.idea === 'string' ? body.idea.trim() : ''
@@ -74,6 +75,18 @@ export async function GET(request: NextRequest) {
     if (filter === 'drafts') query = query.eq('status', 'draft')
     if (filter === 'published') query = query.eq('status', 'published')
     if (filter === 'favorites') query = query.eq('favorite', true)
+    if (filter === ENHANCED_FILTER) {
+      const { data: enhancedGenerations, error: enhancedError } = await supabaseAdmin
+        .from('studio_generations')
+        .select('project_id')
+        .eq('composer_id', composer.composerId)
+        .eq('request_payload->>feature', 'enhance_music')
+
+      if (enhancedError) throw enhancedError
+      const enhancedProjectIds = [...new Set((enhancedGenerations || []).map((item: any) => item.project_id).filter(Boolean))]
+      if (enhancedProjectIds.length === 0) return NextResponse.json({ projects: [] })
+      query = query.in('id', enhancedProjectIds)
+    }
 
     const { data, error } = await query
     if (error) throw error
