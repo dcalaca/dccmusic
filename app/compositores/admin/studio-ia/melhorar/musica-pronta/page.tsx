@@ -27,6 +27,10 @@ const voiceStyleOptions = [
   { id: 'bright', label: 'Aguda' },
 ]
 
+const moodOptions = ['Romântica', 'Sofrência', 'Chiclete', 'Engraçada', 'Reflexiva', 'Balada', 'Triste', 'Motivacional']
+const voiceToneOptions = ['Deixar a IA escolher', 'Voz grave', 'Voz média', 'Voz aguda', 'Voz rouca', 'Voz suave', 'Voz forte']
+const structureOptions = ['Padrão', 'A/B/Refrão/C/Refrão', 'A/Refrão/A/Refrão']
+
 const MAX_AUDIO_DURATION_SECONDS = 270
 
 async function readApiResponse(response: Response) {
@@ -106,6 +110,12 @@ export default function ImproveReadyMusicPage() {
   const [selectedImprovement, setSelectedImprovement] = useState('similar')
   const [selectedVoice, setSelectedVoice] = useState('same')
   const [selectedVoiceStyle, setSelectedVoiceStyle] = useState('natural')
+  const [mood, setMood] = useState('Sofrência')
+  const [voiceTone, setVoiceTone] = useState('Deixar a IA escolher')
+  const [structure, setStructure] = useState('Padrão')
+  const [lineCount, setLineCount] = useState('média')
+  const [wantInstruments, setWantInstruments] = useState('')
+  const [avoidInstruments, setAvoidInstruments] = useState('')
   const [additionalInstructions, setAdditionalInstructions] = useState('')
   const [lyric, setLyric] = useState('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
@@ -201,6 +211,12 @@ export default function ImproveReadyMusicPage() {
           improvement: selectedImprovement,
           voice: selectedVoice,
           voiceStyle: selectedVoiceStyle,
+          voiceTone,
+          mood,
+          structure,
+          lineCount,
+          wantInstruments: wantInstruments.trim(),
+          avoidInstruments: avoidInstruments.trim(),
           additionalInstructions: additionalInstructions.trim(),
           lyric: lyric.trim(),
           ...uploaded,
@@ -321,6 +337,46 @@ export default function ImproveReadyMusicPage() {
                 className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500"
               />
               <div className="mt-2 flex justify-end text-xs text-gray-500">{additionalInstructions.length}/500</div>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-gray-800 bg-black/20 p-4">
+              <p className="mb-3 text-sm font-bold text-gray-200">Detalhes da nova versão</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label>
+                  <span className="mb-1.5 block text-xs font-bold text-gray-300">Clima da música</span>
+                  <select value={mood} onChange={(event) => setMood(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
+                    {moodOptions.map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span className="mb-1.5 block text-xs font-bold text-gray-300">Característica da voz</span>
+                  <select value={voiceTone} onChange={(event) => setVoiceTone(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
+                    {voiceToneOptions.map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span className="mb-1.5 block text-xs font-bold text-gray-300">Estrutura desejada</span>
+                  <select value={structure} onChange={(event) => setStructure(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
+                    {structureOptions.map((option) => <option key={option}>{option}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span className="mb-1.5 block text-xs font-bold text-gray-300">Tamanho da letra</span>
+                  <select value={lineCount} onChange={(event) => setLineCount(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
+                    <option value="curta">Curta</option><option value="média">Média</option><option value="longa">Longa</option>
+                  </select>
+                </label>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <label>
+                  <span className="mb-1.5 block text-xs font-bold text-gray-300">Instrumentos que você quer <span className="font-normal text-gray-500">(opcional)</span></span>
+                  <input value={wantInstruments} onChange={(event) => setWantInstruments(event.target.value)} placeholder="Ex.: violão, acordeon e bateria" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                </label>
+                <label>
+                  <span className="mb-1.5 block text-xs font-bold text-gray-300">Instrumentos para evitar <span className="font-normal text-gray-500">(opcional)</span></span>
+                  <input value={avoidInstruments} onChange={(event) => setAvoidInstruments(event.target.value)} placeholder="Ex.: guitarra pesada" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                </label>
+              </div>
             </div>
 
             <div className="mt-5 rounded-2xl border border-gray-800 bg-black/20 p-4">
