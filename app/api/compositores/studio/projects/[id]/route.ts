@@ -193,8 +193,6 @@ export async function GET(
     const project = await getProjectForComposer(params.id, composer.composerId)
     if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
 
-    await syncMurekaGenerationIfReady(project, composer.composerId)
-
     const { lyric, version, cover } = await getCurrentProjectAssets(project.id)
     const { data: versions } = await supabaseAdmin
       .from('studio_versions')

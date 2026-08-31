@@ -297,41 +297,6 @@ export async function GET(request: NextRequest) {
           })
           .eq('id', generation.id)
       }
-    } else if (needsPolling && generation.provider === 'mureka' && generation.provider_task_id && process.env.MUREKA_API_KEY) {
-      const response = await fetch(`https://api.mureka.ai/v1/song/query/${encodeURIComponent(generation.provider_task_id)}`, {
-        headers: {
-          Authorization: `Bearer ${process.env.MUREKA_API_KEY}`,
-        },
-      })
-      const result = await response.json().catch(() => null)
-
-      const status = result?.status || result?.data?.status
-      providerStatus = status || null
-      const choices = extractMurekaChoicesFromPayload(result)
-
-      if (Array.isArray(choices) && choices.length > 0 && (status === 'succeeded' || status === 'streaming')) {
-        await saveMurekaTrack(generation, choices, status)
-      } else if (['failed', 'timeouted', 'cancelled'].includes(status)) {
-        const providerError = getStudioGenerationProviderError(result) || result?.msg || result?.message || status
-        await supabaseAdmin
-          .from('studio_generations')
-          .update({
-            status: 'failed',
-            error_message: getStudioMusicGenerationFailureMessage(providerError),
-            response_payload: result,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', generation.id)
-        await releaseStudioProjectFromFailedGeneration(generation.project_id)
-      } else if (result) {
-        await supabaseAdmin
-          .from('studio_generations')
-          .update({
-            response_payload: result,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', generation.id)
-      }
     }
 
     const [{ data: freshGeneration }, { data: version }, { data: cover }] = await Promise.all([

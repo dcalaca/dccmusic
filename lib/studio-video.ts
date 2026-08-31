@@ -4,9 +4,6 @@ import { formatMusicTitle } from '@/lib/normalize'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { backupStudioVideoRequest, resolveStudioVideoUrl } from '@/lib/studio-video-backup'
 import {
-  buildMurekaLyricsVideoPayload,
-  extractMurekaLyricsVideoUrl,
-  getStudioVersionDurationMs,
   getStudioVideoAudioId,
   isMurekaStudioTrack,
   isSunoRecordMissingError,
@@ -349,20 +346,12 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
   const artistName = String(composer?.name || '').trim() || 'DCC Music'
 
   if (isMurekaStudioTrack(generationToUse, version)) {
-    // O endpoint nativo de lyric video da Mureka não aceita o nome do artista.
-    // Quando recebe um song_id, ele imprime no MP4 o proprietário da conta da API,
-    // o que pode atribuir a música ao administrador da plataforma. Passe primeiro
-    // pelo fluxo da Suno, que aceita domainName e preserva o nome do compositor.
-    const refreshed = await startLyricVideoRefreshFromOriginalAudio({
-      videoRequest,
-      version,
-      project,
-      composerName: artistName,
-      songTitle,
+    const internalVideo = await tryInternalStudioVideoFallback(videoRequest.id, {
+      message: 'Música histórica: renderização pelo sistema próprio da DCC.',
     })
-    if (refreshed) return refreshed
+    if (internalVideo) return internalVideo
 
-    const errorMessage = 'Não consegui preparar este vídeo com o nome correto do compositor agora.'
+    const errorMessage = 'Não consegui preparar o vídeo com o sistema da DCC agora.'
     await supabaseAdmin
       .from('studio_video_requests')
       .update({
@@ -461,20 +450,8 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
   }
 
   if (!response.ok || result?.code !== 200) {
-    if (isSunoRecordMissingError(result) && isMurekaStudioTrack(generationToUse, version)) {
-      return startMurekaLyricsVideoGeneration({
-        videoRequest,
-        version,
-        generation: generationToUse,
-        songTitle,
-        artistName,
-      })
-    }
-
-    if (process.env.STUDIO_INTERNAL_VIDEO_FALLBACK === 'true') {
-      const internalVideo = await tryInternalStudioVideoFallback(videoRequest.id, result)
-      if (internalVideo) return internalVideo
-    }
+    const internalVideo = await tryInternalStudioVideoFallback(videoRequest.id, result)
+    if (internalVideo) return internalVideo
 
     if (isTransientVideoStartError(result, response)) {
       const scheduledRetry = await scheduleVideoStartRetry(videoRequest, result)
@@ -619,149 +596,6 @@ export async function startStudioVideoGenerationWithProviderIds(input: {
 
   if (updateError) throw updateError
   return updatedRequest
-}
-
-async function getLyricVideoCoverUrl(videoRequest: any) {
-  const metadataCover = String(videoRequest?.metadata?.cover_url || '').trim()
-  const { data: cover } = await supabaseAdmin
-    .from('studio_covers')
-    .select('image_url, image_path')
-    .eq('project_id', videoRequest.project_id)
-    .eq('composer_id', videoRequest.composer_id)
-    .eq('is_current', true)
-    .maybeSingle()
-
-  if (cover?.image_path) {
-    const { data } = await supabaseAdmin.storage
-      .from('studio-assets')
-      .createSignedUrl(cover.image_path, 60 * 60 * 24)
-    if (data?.signedUrl) return data.signedUrl
-  }
-
-  return String(cover?.image_url || metadataCover || '').trim() || null
-}
-
-async function startMurekaLyricsVideoGeneration(input: {
-  videoRequest: any
-  version: any
-  generation: any
-  songTitle: string
-  artistName: string
-}) {
-  const apiKey = process.env.MUREKA_API_KEY?.trim()
-  if (!apiKey) {
-    const errorMessage = 'Geração de vídeo com letra não configurada para este tipo de música.'
-    await supabaseAdmin
-      .from('studio_video_requests')
-      .update({
-        status: 'failed',
-        error_message: errorMessage,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', input.videoRequest.id)
-    throw new Error(errorMessage)
-  }
-
-  const songId = getStudioVideoAudioId(input.version, input.generation)
-  if (!songId) {
-    const errorMessage = 'Não encontrei os dados técnicos da música para gerar o vídeo com letra.'
-    await supabaseAdmin
-      .from('studio_video_requests')
-      .update({
-        status: 'failed',
-        error_message: errorMessage,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', input.videoRequest.id)
-    throw new Error(errorMessage)
-  }
-
-  const coverUrl = await getLyricVideoCoverUrl(input.videoRequest)
-  const payload = buildMurekaLyricsVideoPayload({
-    songId,
-    title: input.songTitle,
-    coverUrl,
-    durationMs: getStudioVersionDurationMs(input.version),
-  })
-
-  await supabaseAdmin
-    .from('studio_video_requests')
-    .update({
-      status: 'in_production',
-      request_payload: {
-        provider: 'mureka',
-        artist: input.artistName,
-        ...payload,
-      },
-      error_message: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', input.videoRequest.id)
-
-  async function requestMurekaLyricsVideo(body: Record<string, any>) {
-    const response = await fetch('https://api.mureka.ai/v1/lyrics-video/generate', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
-    const result = await response.json().catch(() => null)
-    return { response, result, videoUrl: extractMurekaLyricsVideoUrl(result) }
-  }
-
-  let payloadToStore = payload
-  let { response, result, videoUrl } = await requestMurekaLyricsVideo(payload)
-
-  if ((!response.ok || !videoUrl) && payload.cover) {
-    const fallbackPayload: Record<string, any> = { ...payload, layout: 'layout_1' }
-    delete fallbackPayload.cover
-    const retry = await requestMurekaLyricsVideo(fallbackPayload)
-    if (retry.videoUrl) {
-      payloadToStore = fallbackPayload
-      response = retry.response
-      result = retry.result
-      videoUrl = retry.videoUrl
-    }
-  }
-
-  if (payloadToStore !== payload) {
-    await supabaseAdmin
-      .from('studio_video_requests')
-      .update({
-        request_payload: {
-          provider: 'mureka',
-          artist: input.artistName,
-          ...payloadToStore,
-        },
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', input.videoRequest.id)
-  }
-
-  if (!response.ok || !videoUrl) {
-    const errorMessage = translateStudioVideoProviderError(
-      result?.error?.message || result?.message || result?.msg,
-      'Não consegui gerar o vídeo com letra desta música agora. Tente novamente em instantes.'
-    )
-    await supabaseAdmin
-      .from('studio_video_requests')
-      .update({
-        status: 'failed',
-        response_payload: result,
-        error_message: errorMessage,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', input.videoRequest.id)
-    throw new Error(errorMessage)
-  }
-
-  return markVideoRequestCompleted(input.videoRequest.id, {
-    providerTaskId: songId,
-    videoUrl,
-    responsePayload: result,
-  })
 }
 
 async function startLyricVideoRefreshFromOriginalAudio(input: {

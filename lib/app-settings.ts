@@ -13,19 +13,7 @@ export type AppSettingDefinition = {
   max?: number
 }
 
-export const APP_SETTING_DEFINITIONS: AppSettingDefinition[] = [
-  {
-    key: 'studio.long_lyric_prefer_mureka_chars',
-    label: 'Limiar de letra longa (preferir Mureka)',
-    description:
-      'Quando a letra tiver pelo menos este número de caracteres (e no máximo 3000), o Studio IA tenta o Mureka antes do Suno. Isso reduz músicas longas/duplicadas. Ex.: Quem sou eu tem ~1688 caracteres.',
-    group: 'Studio IA',
-    type: 'number',
-    defaultValue: '1500',
-    min: 500,
-    max: 3000,
-  },
-]
+export const APP_SETTING_DEFINITIONS: AppSettingDefinition[] = []
 
 const definitionByKey = new Map(APP_SETTING_DEFINITIONS.map((item) => [item.key, item]))
 
@@ -37,11 +25,7 @@ type CacheEntry = {
 const settingsCache = new Map<string, CacheEntry>()
 const SETTINGS_CACHE_TTL_MS = 30_000
 
-function getEnvFallback(key: string): string | null {
-  if (key === 'studio.long_lyric_prefer_mureka_chars') {
-    const raw = process.env.STUDIO_LONG_LYRIC_PREFER_MUREKA_CHARS?.trim()
-    return raw || null
-  }
+function getEnvFallback(_key: string): string | null {
   return null
 }
 

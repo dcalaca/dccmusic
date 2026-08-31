@@ -85,16 +85,13 @@ export async function POST(request: NextRequest) {
       ? await createStudioAudioSignedUrl(output.vocal.path, output.vocal.provider)
       : null
 
-    const usedFallback = output.separationProvider === 'mureka'
     return NextResponse.json({
       success: true,
       downloadUrl,
       vocalUrl,
       fileName: `${title || 'musica'} - Playback.mp3`,
       provider: output.separationProvider,
-      message: usedFallback
-        ? 'Voz retirada! A Suno falhou e a Mureka concluiu o playback automaticamente.'
-        : 'Voz retirada pela Suno! O playback está pronto para ouvir e baixar.',
+      message: 'Voz retirada! O playback está pronto para ouvir e baixar.',
     })
   } catch (error: any) {
     console.error('[Admin Playback] create error:', error)

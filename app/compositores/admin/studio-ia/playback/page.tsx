@@ -171,7 +171,7 @@ function PlaybackCreator() {
                 {!result && (
                   <div className="rounded-2xl border border-amber-400/30 bg-amber-950/20 p-5">
                     <p className="font-black text-amber-100">Custo: {PLAYBACK_CREDITS} créditos</p>
-                    <p className="mt-1 text-sm leading-relaxed text-amber-100/75">O valor é o mesmo da criação de uma música. Depois de concluído, o playback e a voz ficam salvos neste projeto. Se a Suno e a Mureka não conseguirem concluir, os créditos serão estornados automaticamente.</p>
+                    <p className="mt-1 text-sm leading-relaxed text-amber-100/75">O valor é o mesmo da criação de uma música. Depois de concluído, o playback e a voz ficam salvos neste projeto. Se não for possível concluir, os créditos serão estornados automaticamente.</p>
                   </div>
                 )}
 
@@ -227,7 +227,7 @@ function PlaybackCreator() {
 
                 <div className="rounded-2xl border border-amber-400/30 bg-amber-950/20 p-5">
                   <p className="font-black text-amber-100">Custo: {PLAYBACK_CREDITS} créditos</p>
-                  <p className="mt-1 text-sm leading-relaxed text-amber-100/75">Os créditos só serão debitados quando você iniciar. Se a Suno e a Mureka não conseguirem concluir, o valor será estornado automaticamente.</p>
+                  <p className="mt-1 text-sm leading-relaxed text-amber-100/75">Os créditos só serão debitados quando você iniciar. Se não for possível concluir, o valor será estornado automaticamente.</p>
                 </div>
 
                 {!result && (
