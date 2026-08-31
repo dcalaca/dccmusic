@@ -9,6 +9,7 @@ type ProviderDay = {
   label: string
   sunoapi: number
   mureka: number
+  lyria: number
   other: number
   total: number
 }
@@ -81,6 +82,7 @@ function buildBuckets(startDate: Date, endExclusive: Date) {
       label: formatDayLabel(date),
       sunoapi: 0,
       mureka: 0,
+      lyria: 0,
       other: 0,
       total: 0,
     })
@@ -93,11 +95,12 @@ function buildBuckets(startDate: Date, endExclusive: Date) {
 function providerLabel(provider: string) {
   if (provider === 'sunoapi') return 'Suno'
   if (provider === 'mureka') return 'Mureka'
+  if (provider === 'lyria') return 'Google Lyria'
   return provider || 'Outro'
 }
 
-function providerDayKey(provider: string): 'sunoapi' | 'mureka' | 'other' {
-  if (provider === 'sunoapi' || provider === 'mureka') return provider
+function providerDayKey(provider: string): 'sunoapi' | 'mureka' | 'lyria' | 'other' {
+  if (provider === 'sunoapi' || provider === 'mureka' || provider === 'lyria') return provider
   return 'other'
 }
 
