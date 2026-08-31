@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-helpers'
 import { supabaseAdmin } from '@/lib/supabase'
+import { getStripeSettlement } from '@/lib/stripe'
 
 export const dynamic = 'force-dynamic'
 
@@ -212,13 +213,13 @@ function emptySourceBreakdown(source: PaymentSource, label: string): SourceBreak
 }
 
 async function fetchComposersByIds(composerIds: string[]) {
-  const composersById = new Map<string, { name: string; email: string }>()
+  const composersById = new Map<string, { name: string; email: string; country: string }>()
   if (composerIds.length === 0) return composersById
 
   for (const ids of chunk(composerIds, 200)) {
     const result = await supabaseAdmin
       .from('dccmusic_composers')
-      .select('id, name, email')
+      .select('id, name, email, country')
       .in('id', ids)
 
     if (result.error) throw result.error
@@ -226,6 +227,7 @@ async function fetchComposersByIds(composerIds: string[]) {
       composersById.set(row.id, {
         name: row.name || 'Compositor sem nome',
         email: row.email || '',
+        country: String(row.country || 'BR').trim().toUpperCase() || 'BR',
       })
     }
   }
@@ -261,7 +263,7 @@ export async function GET(request: NextRequest) {
         .lt('created_at', endIso),
       supabaseAdmin
         .from('studio_credit_topups')
-        .select('id, composer_id, amount, payment_id, paid_at, created_at')
+        .select('id, composer_id, amount, currency, settlement_amount, settlement_currency, payment_gateway, payment_id, metadata, paid_at, created_at')
         .eq('status', 'paid')
         .gte('paid_at', startIso)
         .lt('paid_at', endIso),
@@ -301,6 +303,33 @@ export async function GET(request: NextRequest) {
     const studioTopups = dedupeByKey(topupsMissing ? [] : (topupsResult.data || []), (payment: any) => (
       `topup:${payment.id || payment.payment_id}:${Number(payment.amount) || 0}`
     ))
+
+    await Promise.all(studioTopups.map(async (topup: any) => {
+      if (
+        topup.payment_gateway !== 'stripe' ||
+        String(topup.currency || 'BRL').toUpperCase() === 'BRL' ||
+        topup.settlement_amount ||
+        !topup.payment_id
+      ) return
+
+      const settlement = await getStripeSettlement(String(topup.payment_id)).catch(() => null)
+      if (!settlement || settlement.currency !== 'BRL') return
+      topup.settlement_amount = settlement.amount
+      topup.settlement_currency = settlement.currency
+      topup.metadata = {
+        ...(topup.metadata || {}),
+        stripe_settlement_amount: settlement.amount,
+        stripe_settlement_currency: settlement.currency,
+        stripe_exchange_rate: settlement.exchangeRate,
+        stripe_balance_transaction_id: settlement.balanceTransactionId,
+      }
+      await supabaseAdmin.from('studio_credit_topups').update({
+        settlement_amount: settlement.amount,
+        settlement_currency: settlement.currency,
+        metadata: topup.metadata,
+        updated_at: new Date().toISOString(),
+      }).eq('id', topup.id)
+    }))
     const videoPayments = dedupeByKey(videosResult.data || [], (payment: any) => (
       `video:${payment.id || payment.payment_id || payment.project_id}:${Number(payment.amount) || 0}:${payment.paid_at || payment.created_at || ''}`
     ))
@@ -329,7 +358,11 @@ export async function GET(request: NextRequest) {
       ...studioTopups.map((payment: any) => ({
         id: payment.id,
         composerId: payment.composer_id,
-        amount: Math.max(0, Number(payment.amount) || 0),
+        amount: String(payment.currency || 'BRL').toUpperCase() === 'BRL'
+          ? Math.max(0, Number(payment.amount) || 0)
+          : String(payment.settlement_currency || '').toUpperCase() === 'BRL'
+            ? Math.max(0, Number(payment.settlement_amount) || 0)
+            : 0,
         paidAt: payment.paid_at || payment.created_at,
         source: 'studio_topup' as const,
         label: 'Recarga Studio',
@@ -384,6 +417,7 @@ export async function GET(request: NextRequest) {
     const exportRows: Array<{
       name: string
       email: string
+      country: string
       amount: number
       type: 'Novo' | 'Recorrente'
     }> = []
@@ -404,6 +438,7 @@ export async function GET(request: NextRequest) {
       exportRows.push({
         name: composer?.name || 'Compositor sem nome',
         email: composer?.email || '',
+        country: composer?.country || 'BR',
         amount: Number(payment.amount.toFixed(2)),
         type: kind === 'new' ? 'Novo' : 'Recorrente',
       })
