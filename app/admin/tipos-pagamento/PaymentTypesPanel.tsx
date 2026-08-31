@@ -43,6 +43,7 @@ type DayBucket = {
 type ExportPaymentRow = {
   name: string
   email: string
+  country: string
   amount: number
   type: 'Novo' | 'Recorrente'
 }
@@ -379,6 +380,7 @@ export default function PaymentTypesPanel() {
       const sheetRows = rows.map((row) => ({
         Nome: row.name,
         Email: row.email || 'Sem email',
+        'País': row.country,
         'Valor comprado': row.amount,
         Tipo: row.type,
       }))

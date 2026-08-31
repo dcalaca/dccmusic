@@ -734,11 +734,27 @@ export async function GET(request: NextRequest) {
     const startDate = parseDateOnly(searchParams.get('startDate'), defaultRange.start)
     const endDate = parseDateOnly(searchParams.get('endDate'), defaultRange.end)
     const endExclusive = addDays(endDate, 1)
+    const requestedCountry = String(searchParams.get('country') || '').trim().toUpperCase()
+    const country = /^[A-Z]{2}$/.test(requestedCountry) ? requestedCountry : null
 
     const startIso = startDate.toISOString()
     const endIso = endExclusive.toISOString()
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     const monthEnd = addDays(new Date(), 1)
+
+    const countryComposersResult = country
+      ? await supabaseAdmin.from('dccmusic_composers').select('id').ilike('country', country)
+      : { data: null, error: null }
+
+    if (countryComposersResult.error) {
+      throw countryComposersResult.error
+    }
+
+    const countryComposerIds = (countryComposersResult.data || []).map((row: any) => row.id)
+    const noComposerId = '00000000-0000-0000-0000-000000000000'
+    const filterComposer = (query: any) => country
+      ? query.in('composer_id', countryComposerIds.length > 0 ? countryComposerIds : [noComposerId])
+      : query
 
     const [
       paymentsResult,
@@ -760,67 +776,67 @@ export async function GET(request: NextRequest) {
       metaAdsSummary,
       metaAdsBalance,
     ] = await Promise.all([
-      supabaseAdmin
+      filterComposer(supabaseAdmin
         .from('dccmusic_payments')
         .select('id, composer_id, subscription_id, amount, payment_method, gateway_payment_id, gateway_response, paid_at, created_at')
         .eq('status', 'paid')
         .gte('paid_at', startIso)
-        .lt('paid_at', endIso),
-      supabaseAdmin
+        .lt('paid_at', endIso)),
+      filterComposer(supabaseAdmin
         .from('dccmusic_featured_payments')
         .select('id, composer_id, content_type, content_id, amount, created_at')
         .eq('payment_status', 'approved')
         .gte('created_at', startIso)
-        .lt('created_at', endIso),
-      supabaseAdmin
+        .lt('created_at', endIso)),
+      filterComposer(supabaseAdmin
         .from('studio_credit_topups')
         .select('id, composer_id, package_slug, music_quantity, credits, amount, currency, settlement_amount, settlement_currency, payment_gateway, payment_id, metadata, paid_at, created_at')
         .eq('status', 'paid')
         .gte('paid_at', startIso)
-        .lt('paid_at', endIso),
-      supabaseAdmin
+        .lt('paid_at', endIso)),
+      filterComposer(supabaseAdmin
         .from('studio_video_requests')
         .select('id, composer_id, project_id, amount, payment_id, metadata, paid_at, created_at')
         .gt('amount', 0)
         .not('paid_at', 'is', null)
         .gte('paid_at', startIso)
-        .lt('paid_at', endIso),
-      supabaseAdmin
+        .lt('paid_at', endIso)),
+      filterComposer(supabaseAdmin
         .from('studio_generations')
         .select('id, composer_id, provider_task_id, status, created_at')
         .gte('created_at', startIso)
-        .lt('created_at', endIso),
-      supabaseAdmin
+        .lt('created_at', endIso)),
+      filterComposer(supabaseAdmin
         .from('studio_credit_transactions')
         .select('id, composer_id, project_id, action, amount, metadata, created_at')
         .in('action', ['music_generation', 'free_music_generation'])
         .gte('created_at', startIso)
-        .lt('created_at', endIso),
-      supabaseAdmin
+        .lt('created_at', endIso)),
+      filterComposer(supabaseAdmin
         .from('studio_video_requests')
-        .select('id, provider_task_id, created_at')
+        .select('id, composer_id, provider_task_id, created_at')
         .not('provider_task_id', 'is', null)
         .gte('created_at', startIso)
-        .lt('created_at', endIso),
-      supabaseAdmin
+        .lt('created_at', endIso)),
+      filterComposer(supabaseAdmin
         .from('studio_credit_transactions')
-        .select('id, action, created_at')
+        .select('id, composer_id, action, created_at')
         .eq('action', 'premium_cover')
         .gte('created_at', startIso)
-        .lt('created_at', endIso),
-      supabaseAdmin
+        .lt('created_at', endIso)),
+      filterComposer(supabaseAdmin
         .from('studio_covers')
-        .select('id, provider, is_premium, created_at')
+        .select('id, composer_id, provider, is_premium, created_at')
         .eq('provider', 'openai')
         .eq('is_premium', false)
         .gte('created_at', startIso)
-        .lt('created_at', endIso),
-      supabaseAdmin
+        .lt('created_at', endIso)),
+      filterComposer(supabaseAdmin
         .from('studio_lyrics')
-        .select('id, prompt, created_at')
+        .select('id, composer_id, prompt, created_at')
         .not('prompt', 'is', null)
         .gte('created_at', startIso)
-        .lt('created_at', endIso),
+        .lt('created_at', endIso)),
       supabaseAdmin
         .from('dccmusic_email_events')
         .select('id, event_key, category, recipient, sent_at, created_at')
@@ -832,11 +848,16 @@ export async function GET(request: NextRequest) {
         .eq('status', 'sent')
         .gte('sent_at', startIso)
         .lt('sent_at', endIso),
-      supabaseAdmin
+      (country ? supabaseAdmin
+        .from('dccmusic_composers')
+        .select('id', { count: 'exact', head: true })
+        .ilike('country', country)
+        .gte('created_at', startIso)
+        .lt('created_at', endIso) : supabaseAdmin
         .from('dccmusic_composers')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', startIso)
-        .lt('created_at', endIso),
+        .lt('created_at', endIso)),
       getSunoCreditBalance(),
       getOpenAiCostSummary(startDate, endExclusive),
       getOpenAiCostSummary(monthStart, monthEnd, 900),
@@ -1121,6 +1142,7 @@ export async function GET(request: NextRequest) {
         startDate: startDate.toISOString().slice(0, 10),
         endDate: endDate.toISOString().slice(0, 10),
       },
+      country,
       revenue: {
         subscriptions: subscriptionRevenue,
         featured: featuredRevenue,

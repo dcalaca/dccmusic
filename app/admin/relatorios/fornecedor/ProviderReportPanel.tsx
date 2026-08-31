@@ -8,6 +8,7 @@ type ProviderDay = {
   label: string
   sunoapi: number
   mureka: number
+  lyria: number
   other: number
   total: number
 }
@@ -70,6 +71,8 @@ function ProviderBadge({ provider, label }: { provider: string; label: string })
     ? 'border-green-700 bg-green-950/50 text-green-300'
     : provider === 'mureka'
       ? 'border-purple-700 bg-purple-950/50 text-purple-300'
+      : provider === 'lyria'
+        ? 'border-blue-700 bg-blue-950/50 text-blue-300'
       : 'border-gray-700 bg-gray-900 text-gray-300'
 
   return (
@@ -95,6 +98,7 @@ function ProviderBarChart({ days }: { days: ProviderDay[] }) {
   const series = [
     { key: 'sunoapi' as const, label: 'Suno', color: '#22c55e' },
     { key: 'mureka' as const, label: 'Mureka', color: '#a855f7' },
+    { key: 'lyria' as const, label: 'Google Lyria', color: '#3b82f6' },
     { key: 'other' as const, label: 'Outros', color: '#64748b' },
   ]
   const selectedDay = selectedDate ? days.find(day => day.date === selectedDate) || null : null
@@ -130,6 +134,7 @@ function ProviderBarChart({ days }: { days: ProviderDay[] }) {
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-cyan-100">
             <span>Suno: <strong className="text-white">{formatNumber(selectedDay.sunoapi)}</strong></span>
             <span>Mureka: <strong className="text-white">{formatNumber(selectedDay.mureka)}</strong></span>
+            <span>Google Lyria: <strong className="text-white">{formatNumber(selectedDay.lyria)}</strong></span>
             <span>Outros: <strong className="text-white">{formatNumber(selectedDay.other)}</strong></span>
           </div>
         </div>
@@ -142,6 +147,7 @@ function ProviderBarChart({ days }: { days: ProviderDay[] }) {
               `${day.label} (${formatWeekdayShort(day.date)}): ${formatNumber(day.total)} total`,
               `Suno: ${formatNumber(day.sunoapi)}`,
               `Mureka: ${formatNumber(day.mureka)}`,
+              `Google Lyria: ${formatNumber(day.lyria)}`,
               `Outros: ${formatNumber(day.other)}`,
             ].join('\n')
             const isSelected = selectedDate === day.date
@@ -227,7 +233,7 @@ export default function ProviderReportPanel() {
           <p className="text-sm font-bold text-primary-300">Relatórios do admin</p>
           <h1 className="mt-2 text-3xl font-black text-white">Músicas por fornecedor</h1>
           <p className="mt-2 text-sm text-gray-400">
-            Conta solicitações criadas no Studio IA e separa Suno, Mureka e outros fornecedores.
+            Conta solicitações criadas no Studio IA e separa Suno, Mureka, Google Lyria e outros fornecedores.
           </p>
         </div>
         <button

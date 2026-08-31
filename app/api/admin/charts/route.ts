@@ -17,6 +17,7 @@ type ChartDay = {
   composerRegistrations: number
   siteUserRegistrations: number
   totalRegistrations: number
+  registrationsByCountry: Record<string, number>
 }
 
 type QueryResult<T> = {
@@ -88,6 +89,7 @@ function buildBuckets(startDate: Date, endExclusive: Date) {
       composerRegistrations: 0,
       siteUserRegistrations: 0,
       totalRegistrations: 0,
+      registrationsByCountry: {},
     })
     current = addDays(current, 1)
   }
@@ -210,7 +212,7 @@ export async function GET(request: NextRequest) {
       ),
       safeFetchPaged<any>('Cadastros de compositores', (from, to) => supabaseAdmin
         .from('dccmusic_composers')
-        .select('id, created_at')
+        .select('id, country, created_at')
         .gte('created_at', startIso)
         .lt('created_at', endIso)
         .range(from, to)
@@ -225,12 +227,23 @@ export async function GET(request: NextRequest) {
     for (const row of customCovers.rows) addToBucket(buckets, row.created_at, 'coversCustom')
     for (const row of voicesUploaded.rows) addToBucket(buckets, row.created_at, 'voicesUploaded')
     for (const row of voicesCompleted.rows) addToBucket(buckets, row.updated_at, 'voicesCompleted')
-    for (const row of composers.rows) addToBucket(buckets, row.created_at, 'composerRegistrations')
+    for (const row of composers.rows) {
+      addToBucket(buckets, row.created_at, 'composerRegistrations')
+      const date = row.created_at ? new Date(row.created_at) : null
+      const bucket = date && !Number.isNaN(date.getTime()) ? buckets.get(formatDayKey(date)) : null
+      if (!bucket) continue
+      const country = String(row.country || 'BR').trim().toUpperCase() || 'BR'
+      bucket.registrationsByCountry[country] = (bucket.registrationsByCountry[country] || 0) + 1
+    }
 
     const days = Array.from(buckets.values()).map(day => ({
       ...day,
       totalRegistrations: day.composerRegistrations,
     }))
+
+    const countryCodes = Array.from(new Set(
+      composers.rows.map((row: any) => String(row.country || 'BR').trim().toUpperCase() || 'BR')
+    )).sort()
 
     return NextResponse.json({
       period: {
@@ -238,6 +251,7 @@ export async function GET(request: NextRequest) {
         endDate: formatDayKey(endDate),
       },
       days,
+      countryCodes,
       totals: days.reduce((totals, day) => ({
         musicRequestsCompleted: totals.musicRequestsCompleted + day.musicRequestsCompleted,
         lyricsCreated: totals.lyricsCreated + day.lyricsCreated,
@@ -249,6 +263,7 @@ export async function GET(request: NextRequest) {
         composerRegistrations: totals.composerRegistrations + day.composerRegistrations,
         siteUserRegistrations: totals.siteUserRegistrations + day.siteUserRegistrations,
         totalRegistrations: totals.totalRegistrations + day.totalRegistrations,
+        registrationsByCountry: totals.registrationsByCountry,
       }), {
         musicRequestsCompleted: 0,
         lyricsCreated: 0,
@@ -260,6 +275,7 @@ export async function GET(request: NextRequest) {
         composerRegistrations: 0,
         siteUserRegistrations: 0,
         totalRegistrations: 0,
+        registrationsByCountry: {},
       }),
       warnings: [
         musicRequests.warning,

@@ -5,6 +5,15 @@ import { FiCalendar, FiCpu, FiDollarSign, FiTrendingUp, FiTrendingDown, FiRefres
 
 type Preset = 'yesterday' | 'today' | 'last30' | 'thisMonth' | 'lastMonth' | 'custom'
 
+const FINANCE_COUNTRIES = [
+  { code: '', label: 'Todos os países' },
+  { code: 'BR', label: '🇧🇷 Brasil' },
+  { code: 'PY', label: '🇵🇾 Paraguai' },
+  { code: 'CO', label: '🇨🇴 Colômbia' },
+  { code: 'MX', label: '🇲🇽 México' },
+  { code: 'PT', label: '🇵🇹 Portugal' },
+]
+
 type FinanceSummary = {
   period: {
     startDate: string
@@ -468,6 +477,7 @@ export default function FinancePanel() {
   const [expandedMetaGroups, setExpandedMetaGroups] = useState<Record<string, boolean>>({})
   const [showEmailCategories, setShowEmailCategories] = useState(false)
   const [paymentsPage, setPaymentsPage] = useState(1)
+  const [country, setCountry] = useState('')
 
   const PAYMENTS_PER_PAGE = 10
   const totalPayments = summary?.paymentDetails.length || 0
@@ -487,8 +497,9 @@ export default function FinancePanel() {
     const params = new URLSearchParams()
     params.set('startDate', range.startDate)
     params.set('endDate', range.endDate)
+    if (country) params.set('country', country)
     return params.toString()
-  }, [range])
+  }, [range, country])
 
   const loadSummary = async () => {
     try {
@@ -607,7 +618,7 @@ export default function FinancePanel() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
         <label className="block">
           <span className="text-xs text-gray-500 mb-1 flex items-center gap-1">
             <FiCalendar className="w-3 h-3" />
@@ -619,6 +630,20 @@ export default function FinancePanel() {
             onChange={event => updateCustomDate('startDate', event.target.value)}
             className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
           />
+        </label>
+        <label className="block">
+          <span className="text-xs text-gray-500 mb-1 block">País</span>
+          <select
+            value={country}
+            onChange={event => {
+              setCountry(event.target.value)
+              setSummary(null)
+              setError('')
+            }}
+            className="w-full bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
+          >
+            {FINANCE_COUNTRIES.map(option => <option key={option.code || 'all'} value={option.code}>{option.label}</option>)}
+          </select>
         </label>
 
         <label className="block">
