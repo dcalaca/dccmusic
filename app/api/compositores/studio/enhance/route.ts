@@ -71,14 +71,29 @@ function getStyle(input: {
   improvement?: string | null
   voice?: string | null
   voiceStyle?: string | null
+  voiceTone?: string | null
+  mood?: string | null
+  structure?: string | null
+  lineCount?: string | null
+  wantInstruments?: string | null
+  avoidInstruments?: string | null
   additionalInstructions?: string | null
 }) {
   const style = String(input.style || '').trim()
   const improvement = getImprovementPrompt(input.improvement)
   const additionalInstructions = String(input.additionalInstructions || '').trim()
+  const details = [
+    input.mood ? `clima ${String(input.mood).trim()}` : null,
+    input.voiceTone && input.voiceTone !== 'Deixar a IA escolher' ? `característica vocal ${String(input.voiceTone).trim()}` : null,
+    input.structure ? `estrutura ${String(input.structure).trim()}` : null,
+    input.lineCount ? `letra ${String(input.lineCount).trim()}` : null,
+    input.wantInstruments ? `instrumentos desejados: ${String(input.wantInstruments).trim()}` : null,
+    input.avoidInstruments ? `instrumentos a evitar: ${String(input.avoidInstruments).trim()}` : null,
+  ].filter(Boolean).join(', ')
   return [
     style || 'produção musical brasileira profissional',
     improvement,
+    details || null,
     additionalInstructions ? `INSTRUÇÕES ADICIONAIS: ${additionalInstructions}` : null,
     getVoicePrompt(input.voice),
     getVoiceStylePrompt(input.voiceStyle),
@@ -128,6 +143,12 @@ export async function POST(request: NextRequest) {
     let improvement = 'similar'
     let voice = 'same'
     let voiceStyle = 'natural'
+    let voiceTone = 'Deixar a IA escolher'
+    let mood = ''
+    let structure = ''
+    let lineCount = ''
+    let wantInstruments = ''
+    let avoidInstruments = ''
     let additionalInstructions = ''
     let lyric = ''
     let uploaded: {
@@ -145,6 +166,12 @@ export async function POST(request: NextRequest) {
       improvement = String(body?.improvement || 'similar')
       voice = String(body?.voice || 'same')
       voiceStyle = String(body?.voiceStyle || 'natural')
+      voiceTone = String(body?.voiceTone || 'Deixar a IA escolher').trim().slice(0, 80)
+      mood = String(body?.mood || '').trim().slice(0, 80)
+      structure = String(body?.structure || '').trim().slice(0, 120)
+      lineCount = String(body?.lineCount || '').trim().slice(0, 40)
+      wantInstruments = String(body?.wantInstruments || '').trim().slice(0, 250)
+      avoidInstruments = String(body?.avoidInstruments || '').trim().slice(0, 250)
       additionalInstructions = String(body?.additionalInstructions || '').trim().slice(0, MAX_ADDITIONAL_INSTRUCTIONS_LENGTH)
       lyric = String(body?.lyric || '').trim()
 
@@ -174,6 +201,12 @@ export async function POST(request: NextRequest) {
       improvement = String(formData.get('improvement') || 'similar')
       voice = String(formData.get('voice') || 'same')
       voiceStyle = String(formData.get('voiceStyle') || 'natural')
+      voiceTone = String(formData.get('voiceTone') || 'Deixar a IA escolher').trim().slice(0, 80)
+      mood = String(formData.get('mood') || '').trim().slice(0, 80)
+      structure = String(formData.get('structure') || '').trim().slice(0, 120)
+      lineCount = String(formData.get('lineCount') || '').trim().slice(0, 40)
+      wantInstruments = String(formData.get('wantInstruments') || '').trim().slice(0, 250)
+      avoidInstruments = String(formData.get('avoidInstruments') || '').trim().slice(0, 250)
       additionalInstructions = String(formData.get('additionalInstructions') || '').trim().slice(0, MAX_ADDITIONAL_INSTRUCTIONS_LENGTH)
       lyric = String(formData.get('lyric') || '').trim()
       uploaded = await uploadStudioInputAudio({
@@ -233,6 +266,11 @@ export async function POST(request: NextRequest) {
           'Projeto criado pela função Melhorar minha música.',
           'A IA deve tentar manter melodia, letra e essência do áudio original.',
           getImprovementPrompt(improvement),
+          mood ? `Clima: ${mood}.` : null,
+          structure ? `Estrutura: ${structure}.` : null,
+          lineCount ? `Tamanho da letra: ${lineCount}.` : null,
+          wantInstruments ? `Instrumentos desejados: ${wantInstruments}.` : null,
+          avoidInstruments ? `Instrumentos a evitar: ${avoidInstruments}.` : null,
           additionalInstructions ? `Instruções adicionais: ${additionalInstructions}` : null,
           `Preferência de voz: ${getVoicePrompt(voice)}.`,
           `Estilo vocal: ${getVoiceStylePrompt(voiceStyle)}.`,
@@ -267,7 +305,7 @@ export async function POST(request: NextRequest) {
       instrumental: false,
       // Em customMode, o campo prompt é exclusivamente a letra. Instruções ficam em style para não serem cantadas.
       prompt: lyric.slice(0, 5000),
-      style: getStyle({ style, improvement, voice, voiceStyle, additionalInstructions }),
+      style: getStyle({ style, improvement, voice, voiceStyle, voiceTone, mood, structure, lineCount, wantInstruments, avoidInstruments, additionalInstructions }),
       title,
       model: 'V5_5',
       callBackUrl: getStudioCallbackUrl('/api/studio/suno/callback'),
@@ -281,6 +319,13 @@ export async function POST(request: NextRequest) {
       instrumental: false,
       prompt: [
         improvementPrompt,
+        style || null,
+        mood ? `clima ${mood}` : null,
+        voiceTone !== 'Deixar a IA escolher' ? `característica vocal ${voiceTone}` : null,
+        structure ? `estrutura ${structure}` : null,
+        lineCount ? `letra ${lineCount}` : null,
+        wantInstruments ? `instrumentos desejados: ${wantInstruments}` : null,
+        avoidInstruments ? `instrumentos a evitar: ${avoidInstruments}` : null,
         additionalInstructions ? `INSTRUÇÕES ADICIONAIS: ${additionalInstructions}` : null,
         getVoicePrompt(voice),
         getVoiceStylePrompt(voiceStyle),
@@ -334,6 +379,12 @@ export async function POST(request: NextRequest) {
           additionalInstructions: additionalInstructions || null,
           voice,
           voiceStyle,
+          voiceTone,
+          mood,
+          structure,
+          lineCount,
+          wantInstruments,
+          avoidInstruments,
         },
         response_payload: result,
       })
