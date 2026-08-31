@@ -43,6 +43,13 @@ const adminGroups = [
         accent: 'green',
       },
       {
+        href: '/admin/conversao-clientes',
+        title: 'Conversão de clientes',
+        description: 'Cadastros que criam músicas, viram compradores e geram receita',
+        icon: FiTrendingUp,
+        accent: 'cyan',
+      },
+      {
         href: '/admin/compradores',
         title: 'Compradores Mercado Pago',
         description: 'Lista e CSV de compradores/recorrentes para campanhas no Meta',
