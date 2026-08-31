@@ -13,6 +13,7 @@ const filters = [
 ]
 
 const TRANSCRIPTIONS_FILTER = 'cifras'
+const ENHANCED_FILTER = 'melhoradas'
 
 const inspirationVariationOptions = [
   { id: 'similar', label: 'Manter parecido' },
@@ -582,7 +583,7 @@ function StudioProjectsContent() {
               <div className="hidden border-t border-gray-800 pt-3 lg:mt-3 lg:block">
                 <Link
                   href="/compositores/admin/minhas-vozes"
-                  className="flex items-center gap-2 rounded-xl border border-purple-800/70 bg-purple-950/25 px-4 py-3 text-sm font-bold text-purple-100 transition hover:border-purple-400 hover:bg-purple-900/40"
+                  className="flex items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 hover:bg-gray-900"
                 >
                   <FiMic />
                   <span>Minhas vozes</span>
@@ -595,33 +596,39 @@ function StudioProjectsContent() {
                 </Link>
                 <Link
                   href={`/compositores/admin/studio-ia/projetos?filter=${TRANSCRIPTIONS_FILTER}`}
-                  className={`mt-3 flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold transition ${
-                    currentFilter === TRANSCRIPTIONS_FILTER
-                      ? 'border-amber-400 bg-amber-500/20 text-amber-100'
-                      : 'border-amber-800/70 bg-amber-950/20 text-amber-100 hover:border-amber-400 hover:bg-amber-900/30'
-                  }`}
+                  className="mt-3 flex items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 hover:bg-gray-900"
                 >
                   <FiFileText />
                   Cifras
                 </Link>
+                <Link
+                  href={`/compositores/admin/studio-ia/projetos?filter=${ENHANCED_FILTER}`}
+                  className="mt-3 flex items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 hover:bg-gray-900"
+                >
+                  <FiMusic />
+                  Músicas melhoradas
+                </Link>
               </div>
               <Link
                 href="/compositores/admin/minhas-vozes"
-                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-purple-800/70 bg-purple-950/25 px-4 py-3 text-sm font-bold text-purple-100 transition hover:border-purple-400 lg:hidden"
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 lg:hidden"
               >
                 <FiMic />
                 Minhas vozes
               </Link>
               <Link
                 href={`/compositores/admin/studio-ia/projetos?filter=${TRANSCRIPTIONS_FILTER}`}
-                className={`inline-flex shrink-0 items-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold transition lg:hidden ${
-                  currentFilter === TRANSCRIPTIONS_FILTER
-                    ? 'border-amber-400 bg-amber-500/20 text-amber-100'
-                    : 'border-amber-800/70 bg-amber-950/20 text-amber-100 hover:border-amber-400'
-                }`}
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 lg:hidden"
               >
                 <FiFileText />
                 Cifras
+              </Link>
+              <Link
+                href={`/compositores/admin/studio-ia/projetos?filter=${ENHANCED_FILTER}`}
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 lg:hidden"
+              >
+                <FiMusic />
+                Músicas melhoradas
               </Link>
             </aside>
 
@@ -663,7 +670,7 @@ function StudioProjectsContent() {
 
               {loading ? (
                 <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">
-                  {currentFilter === TRANSCRIPTIONS_FILTER ? 'Carregando cifras...' : 'Carregando projetos...'}
+                  {currentFilter === TRANSCRIPTIONS_FILTER ? 'Carregando cifras...' : currentFilter === ENHANCED_FILTER ? 'Carregando músicas melhoradas...' : 'Carregando projetos...'}
                 </div>
               ) : currentFilter === TRANSCRIPTIONS_FILTER ? (
                 transcriptions.length === 0 ? (
