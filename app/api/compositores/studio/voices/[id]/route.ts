@@ -83,7 +83,8 @@ export async function PATCH(
       const expiredVoiceError = isStudioVoiceExpiredError(voice.error_message) ||
         String(voice.error_message || '').toLowerCase().includes('expir')
       const canReactivateReadyVoice = voice.status === 'ready' && voice.source_audio_path && voice.verify_audio_path
-      if (!expiredVoiceError && !canReactivateReadyVoice) {
+      const canRetryFailedReactivation = voice.status === 'failed' && voice.source_audio_path && Boolean(voice.provider_payload?.reactivationFree)
+      if (!expiredVoiceError && !canReactivateReadyVoice && !canRetryFailedReactivation) {
         return NextResponse.json({ error: 'Essa ação só está disponível para vozes expiradas ou já criadas anteriormente.' }, { status: 400 })
       }
       if (!voice.source_audio_path) {
