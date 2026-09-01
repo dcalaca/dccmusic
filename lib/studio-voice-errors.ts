@@ -41,6 +41,14 @@ export function translateStudioVoiceError(value?: string | null) {
   }
 
   if (
+    normalized.includes("didn't sound like you said the phrase") ||
+    normalized.includes('did not sound like you said the phrase') ||
+    normalized.includes('try reading it more clearly')
+  ) {
+    return 'Não conseguimos reconhecer a frase de verificação. Tente novamente falando exatamente a frase exibida, de forma clara e sem cantar.'
+  }
+
+  if (
     normalized.includes('verification phrase expired') ||
     normalized.includes('verification phrase') && normalized.includes('not found') ||
     normalized.includes('request a new phrase') ||
@@ -58,5 +66,11 @@ export function translateStudioVoiceError(value?: string | null) {
     return VOICE_PROCESSING_ERROR_MESSAGE
   }
 
-  return message
+  // Mensagens desconhecidas do fornecedor não devem aparecer cruas para o compositor.
+  // Mantemos apenas mensagens que já foram produzidas pelo próprio DCC em português.
+  if (/(não|áudio|frase|voz|envie|tente|erro|falhou|processar)/i.test(message)) {
+    return message
+  }
+
+  return VOICE_PROCESSING_ERROR_MESSAGE
 }
