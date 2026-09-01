@@ -1,8 +1,8 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { FiArrowLeft, FiEdit3, FiGlobe, FiLoader, FiMusic, FiUploadCloud, FiZap } from 'react-icons/fi'
 
 const improvementOptions = [
@@ -103,6 +103,7 @@ async function uploadAudioDirectToStorage(token: string, file: File, kind: 'enha
 
 export default function ImproveReadyMusicPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [submitting, setSubmitting] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
   const [error, setError] = useState('')
@@ -119,6 +120,28 @@ export default function ImproveReadyMusicPage() {
   const [additionalInstructions, setAdditionalInstructions] = useState('')
   const [lyric, setLyric] = useState('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
+  const [savedOriginal, setSavedOriginal] = useState<any>(null)
+  const sourceProjectId = searchParams.get('sourceProjectId') || ''
+
+  useEffect(() => {
+    if (!sourceProjectId) return
+    const token = localStorage.getItem('composer_token')
+    if (!token) return
+    fetch('/api/compositores/studio/projects?filter=originais', {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        const project = (data.projects || []).find((item: any) => item.id === sourceProjectId)
+        if (project?.originalAudio) {
+          setSavedOriginal({ ...project.originalAudio, title: project.title })
+          const titleInput = document.querySelector<HTMLInputElement>('input[name="title"]')
+          if (titleInput && !titleInput.value) titleInput.value = project.title || ''
+        }
+      })
+      .catch(() => undefined)
+  }, [sourceProjectId])
 
   const isLanguageAdaptation = selectedImprovement === 'language_adaptation'
 
@@ -134,7 +157,7 @@ export default function ImproveReadyMusicPage() {
   const transcribeAudio = async () => {
     const token = ensureToken()
     if (!token) return
-    if (!audioFile) {
+    if (!audioFile && !savedOriginal) {
       setError('Escolha o áudio da música antes de pedir para entender a letra.')
       return
     }
@@ -143,7 +166,7 @@ export default function ImproveReadyMusicPage() {
     setError('')
     setMessage('Enviando áudio e entendendo a letra...')
     try {
-      const uploaded = await uploadAudioDirectToStorage(token, audioFile, 'transcribe')
+      const uploaded = savedOriginal || await uploadAudioDirectToStorage(token, audioFile as File, 'transcribe')
       const response = await fetch('/api/compositores/studio/transcribe', {
         method: 'POST',
         headers: {
@@ -178,7 +201,7 @@ export default function ImproveReadyMusicPage() {
     const title = String(new FormData(form).get('title') || '').trim()
     const style = String(new FormData(form).get('style') || '').trim()
 
-    if (!audioFile || audioFile.size <= 0) {
+    if ((!audioFile || audioFile.size <= 0) && !savedOriginal) {
       setError('Escolha o áudio da música que deseja melhorar.')
       return
     }
@@ -186,7 +209,7 @@ export default function ImproveReadyMusicPage() {
       setError('Para adaptar para outro idioma, cole a letra já traduzida ou adaptada no campo “Letra da música”.')
       return
     }
-    const duration = await getAudioDurationSeconds(audioFile)
+    const duration = audioFile ? await getAudioDurationSeconds(audioFile) : null
     if (duration && duration > MAX_AUDIO_DURATION_SECONDS) {
       setError('Esse áudio passou de 4 minutos e 30 segundos. Envie uma versão mais curta para a IA trabalhar melhor.')
       return
@@ -198,7 +221,7 @@ export default function ImproveReadyMusicPage() {
       ? 'Enviando música...'
       : 'Enviando áudio, entendendo a letra e iniciando a melhoria...')
     try {
-      const uploaded = await uploadAudioDirectToStorage(token, audioFile, 'enhance-source')
+      const uploaded = savedOriginal || await uploadAudioDirectToStorage(token, audioFile as File, 'enhance-source')
       const response = await fetch('/api/compositores/studio/enhance', {
         method: 'POST',
         headers: {
@@ -286,10 +309,16 @@ export default function ImproveReadyMusicPage() {
 
             <label className="mt-4 block rounded-2xl border border-purple-800/70 bg-purple-950/20 p-4">
               <span className="mb-2 flex items-center gap-2 text-sm font-bold text-purple-100"><FiUploadCloud /> Áudio da música</span>
+              {savedOriginal && (
+                <div className="mb-3 rounded-xl border border-emerald-700/60 bg-emerald-950/30 p-3 text-sm text-emerald-100">
+                  Usando a música original salva: <strong>{savedOriginal.title}</strong>. Você não precisa enviar o arquivo novamente.
+                  {savedOriginal.audioUrl && <audio controls src={savedOriginal.audioUrl} className="mt-2 w-full" />}
+                </div>
+              )}
               <input
                 name="audio"
                 type="file"
-                required
+                required={!savedOriginal}
                 accept="audio/*"
                 onChange={(event) => setAudioFile(event.target.files?.[0] || null)}
                 className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white"
@@ -423,7 +452,7 @@ export default function ImproveReadyMusicPage() {
                   <button
                     type="button"
                     onClick={transcribeAudio}
-                    disabled={transcribing || submitting || !audioFile}
+                    disabled={transcribing || submitting || (!audioFile && !savedOriginal)}
                     className="inline-flex items-center gap-2 rounded-xl border border-emerald-600/50 bg-emerald-950/40 px-3 py-2 text-xs font-bold text-emerald-100 transition hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {transcribing ? <FiLoader className="animate-spin" /> : <FiEdit3 />}
