@@ -7,6 +7,16 @@ function getSunoApiKey() {
   return apiKey
 }
 
+// A resposta do provedor também pode conter `data.id`, mas esse campo não é a
+// persona de voz usada na geração musical. Só aceite os campos explícitos de voz.
+export function extractSunoVoiceId(payload: any) {
+  return payload?.data?.voiceId ||
+    payload?.data?.voice_id ||
+    payload?.voiceId ||
+    payload?.voice_id ||
+    null
+}
+
 async function callSuno(path: string, init: RequestInit) {
   const response = await fetch(`https://api.sunoapi.org${path}`, {
     ...init,

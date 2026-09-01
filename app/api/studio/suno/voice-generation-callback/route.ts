@@ -2,20 +2,12 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { chargeStudioVoiceCreationOnce, getStudioCallbackUrl, isValidStudioCallback } from '@/lib/studio'
 import { translateStudioVoiceError } from '@/lib/studio-voice-errors'
+import { extractSunoVoiceId } from '@/lib/suno-voice'
 
 export const dynamic = 'force-dynamic'
 
 function getTaskId(body: any) {
   return body?.data?.taskId || body?.data?.task_id || body?.taskId || body?.task_id
-}
-
-function getVoiceId(body: any) {
-  return body?.data?.voiceId ||
-    body?.data?.voice_id ||
-    body?.data?.id ||
-    body?.voiceId ||
-    body?.voice_id ||
-    null
 }
 
 async function retryGenerationAfterVoiceReactivation(voice: any, voiceId: string) {
@@ -113,7 +105,7 @@ export async function POST(request: Request) {
 
     const body = await request.json()
     const taskId = getTaskId(body)
-    const voiceId = getVoiceId(body)
+    const voiceId = extractSunoVoiceId(body)
     const status = body?.data?.status || body?.status || null
     const providerCode = Number(body?.code)
     const providerMessage = body?.data?.errorMessage || body?.errorMessage || (providerCode && providerCode !== 200 ? body?.msg : null)

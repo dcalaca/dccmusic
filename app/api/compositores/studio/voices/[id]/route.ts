@@ -3,7 +3,7 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { supabaseAdmin } from '@/lib/supabase'
 import { chargeStudioVoiceCreationOnce } from '@/lib/studio'
 import { createStudioVoiceAssetUrl, uploadStudioVoiceAsset, validateStudioVoiceUploadedAsset } from '@/lib/studio-voice-assets'
-import { checkSunoVoiceAvailability, createSunoCustomVoice, createSunoVoiceValidation, getSunoVoiceRecordInfo, getSunoVoiceValidationInfo } from '@/lib/suno-voice'
+import { checkSunoVoiceAvailability, createSunoCustomVoice, createSunoVoiceValidation, extractSunoVoiceId, getSunoVoiceRecordInfo, getSunoVoiceValidationInfo } from '@/lib/suno-voice'
 import { isStudioVoiceExpiredError, translateStudioVoiceError, VOICE_PROCESSING_ERROR_MESSAGE } from '@/lib/studio-voice-errors'
 
 export const runtime = 'nodejs'
@@ -16,15 +16,6 @@ function extractValidateInfo(payload: any) {
     payload?.data?.validationPhrase ||
     payload?.data?.phrase ||
     payload?.validateInfo ||
-    null
-}
-
-function extractVoiceId(payload: any) {
-  return payload?.data?.voiceId ||
-    payload?.data?.voice_id ||
-    payload?.data?.id ||
-    payload?.voiceId ||
-    payload?.voice_id ||
     null
 }
 
@@ -249,7 +240,7 @@ export async function PATCH(
     } else if (voice.voice_generation_task_id && ['voice_processing', 'failed'].includes(voice.status)) {
       const recordInfo = await getSunoVoiceRecordInfo(voice.voice_generation_task_id)
       const status = recordInfo?.data?.status
-      const voiceId = extractVoiceId(recordInfo) || voice.voice_id
+      const voiceId = extractSunoVoiceId(recordInfo) || voice.voice_id
       const isFailure = status === 'fail' || status === 'processing_validate_fail'
       let isAvailable = false
 
