@@ -11,13 +11,14 @@ import {
 } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
+import { createStudioAudioSignedUrl } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { formatMusicTitle } from '@/lib/normalize'
 import { normalizeStudioLyricStructure } from '@/lib/studio-lyric-normalizer'
 
 export const dynamic = 'force-dynamic'
 const STUDIO_TITLE_MAX_LENGTH = 30
-const ENHANCED_FILTER = 'melhoradas'
+const ORIGINALS_FILTER = 'originais'
 
 function buildProjectDescription(body: any) {
   const idea = typeof body.idea === 'string' ? body.idea.trim() : ''
@@ -75,17 +76,24 @@ export async function GET(request: NextRequest) {
     if (filter === 'drafts') query = query.eq('status', 'draft')
     if (filter === 'published') query = query.eq('status', 'published')
     if (filter === 'favorites') query = query.eq('favorite', true)
-    if (filter === ENHANCED_FILTER) {
+    let originalGenerationByProject = new Map<string, any>()
+    if (filter !== 'cifras') {
       const { data: enhancedGenerations, error: enhancedError } = await supabaseAdmin
         .from('studio_generations')
-        .select('project_id')
+        .select('project_id,request_payload,created_at')
         .eq('composer_id', composer.composerId)
         .eq('request_payload->>feature', 'enhance_music')
+        .order('created_at', { ascending: false })
 
       if (enhancedError) throw enhancedError
-      const enhancedProjectIds = [...new Set((enhancedGenerations || []).map((item: any) => item.project_id).filter(Boolean))]
-      if (enhancedProjectIds.length === 0) return NextResponse.json({ projects: [] })
-      query = query.in('id', enhancedProjectIds)
+      for (const generation of enhancedGenerations || []) {
+        if (!originalGenerationByProject.has(generation.project_id)) originalGenerationByProject.set(generation.project_id, generation)
+      }
+      if (filter === ORIGINALS_FILTER) {
+        const enhancedProjectIds = [...originalGenerationByProject.keys()]
+        if (enhancedProjectIds.length === 0) return NextResponse.json({ projects: [] })
+        query = query.in('id', enhancedProjectIds)
+      }
     }
 
     const { data, error } = await query
@@ -119,7 +127,14 @@ export async function GET(request: NextRequest) {
             }
           }))
 
-        return mapStudioProject(project, {
+        const originalGeneration = originalGenerationByProject.get(project.id)
+        const originalAudio = originalGeneration?.request_payload?.originalAudio
+        const originalAudioUrl = filter === ORIGINALS_FILTER && originalAudio?.path
+          ? await createStudioAudioSignedUrl(originalAudio.path, originalAudio.provider || 'r2')
+          : null
+
+        return {
+          ...mapStudioProject(project, {
           lyric: lyric?.content || null,
           version: version ? {
             id: version.id,
@@ -135,7 +150,18 @@ export async function GET(request: NextRequest) {
           } : null,
           versions: versionsWithAudio,
           versionCount: versionsWithAudio.length,
-        })
+          }),
+          createdFromOriginal: Boolean(originalAudio?.path),
+          ...(filter === ORIGINALS_FILTER && originalAudio?.path ? {
+            originalAudio: {
+              audioUrl: originalAudioUrl,
+              audioPath: originalAudio.path,
+              audioProvider: originalAudio.provider || 'r2',
+              audioContentType: originalAudio.contentType || 'audio/mpeg',
+              audioSizeBytes: Number(originalAudio.sizeBytes) || 0,
+            },
+          } : {}),
+        }
       })
     )
 
