@@ -1,10 +1,11 @@
 import * as db from '@/lib/db'
+import { Suspense } from 'react'
 import { cookies, headers } from 'next/headers'
 import { TikTokViewContent } from '@/components/TikTokEvents'
 import { FreeMusicPlanNotice, StudioCouponButton, StudioHeroActions, StudioPlanButton, StudioTopupButton } from './StudioActions'
-import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
-import { type StudioTopupCurrency } from '@/lib/studio-topups'
-import { getStudioPlanPriceFromPricing, getStudioTopupTiersFromPricing } from '@/lib/studio-pricing-server'
+import { COUNTRY_COOKIE, normalizeCountry, type DccCountry } from '@/lib/localization'
+import { getStudioPlanPriceQuote, type StudioTopupCurrency } from '@/lib/studio-topups'
+import { getStudioPlanPricesFromPricing, getStudioTopupTiersFromPricing } from '@/lib/studio-pricing-server'
 import {
   FiCheck,
   FiCpu,
@@ -77,6 +78,121 @@ async function getStudioPlans() {
   return plans.filter(isStudioPlan)
 }
 
+function StudioPricingFallback() {
+  return (
+    <section id="planos" className="min-h-[520px] scroll-mt-24 py-6 sm:py-10" aria-busy="true">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-6 text-center sm:mb-8">
+          <h2 className="text-2xl font-black sm:text-3xl"><span className="gradient-text">Planos DCC Studio IA</span></h2>
+          <p className="mt-2 text-sm text-gray-400">Carregando os melhores valores para você...</p>
+        </div>
+        <div className="animate-pulse space-y-6">
+          <div className="h-48 rounded-[1.5rem] border border-purple-700/30 bg-gray-950/70" />
+          <div className="grid gap-4 lg:grid-cols-3">
+            {[0, 1, 2].map((item) => (
+              <div key={item} className="h-64 rounded-[1.5rem] border border-gray-800 bg-gray-950/70" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+async function StudioPricingSection({ country }: { country: DccCountry }) {
+  const [plans, topupPricing, localizedPlanPrices] = await Promise.all([
+    getStudioPlans(),
+    getStudioTopupTiersFromPricing(country),
+    getStudioPlanPricesFromPricing(studioPlanSlugs, country),
+  ])
+  const topupTiers = topupPricing.tiers
+  const topupCurrency = topupPricing.currency
+  const topupPresentation = [
+    ['1 música', topupTiers[0].unitPrice],
+    ['2 a 8 músicas', topupTiers[1].unitPrice],
+    ['9 a 29 músicas', topupTiers[2].unitPrice],
+    ['A partir de 30', topupTiers[4].unitPrice],
+  ] as const
+  const plansWithPrices = plans.map((plan) => ({
+    plan,
+    priceQuote: localizedPlanPrices[plan.slug] || {
+      ...getStudioPlanPriceQuote(plan.price, country),
+      source: 'fallback' as const,
+    },
+  }))
+
+  return (
+    <section id="planos" className="scroll-mt-24 py-6 sm:py-10">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-6 text-center sm:mb-8">
+          <h2 className="text-2xl font-black sm:text-3xl"><span className="gradient-text">Planos DCC Studio IA</span></h2>
+          <p className="mt-2 text-sm text-gray-400">Escolha plano ou recarga avulsa para continuar criando.</p>
+          <FreeMusicPlanNotice />
+        </div>
+
+        <div className="mb-6 rounded-[1.5rem] border border-purple-700/50 bg-gradient-to-br from-purple-950/40 via-gray-950 to-black p-4 sm:mb-7 sm:p-6">
+          <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="mb-2 text-sm font-bold uppercase tracking-wide text-purple-300">Sem mensalidade</p>
+              <h3 className="text-xl font-black sm:text-2xl">Recarga avulsa de músicas</h3>
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-400">Para quem não quer assinar agora: escolha quantas músicas quer comprar e o sistema calcula o valor automaticamente.</p>
+            </div>
+            <div className="flex w-full flex-col gap-2 lg:w-auto lg:min-w-[260px]"><StudioTopupButton /><StudioCouponButton /></div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-4">
+            {topupPresentation.map(([label, price]) => (
+              <div key={label} className="rounded-2xl border border-gray-800 bg-black/50 p-3 sm:p-5">
+                <p className="text-xs text-gray-400 sm:text-sm">{label}</p>
+                <p className="mt-1 text-sm font-black text-white sm:mt-2 sm:text-xl">{formatCurrency(price, topupCurrency)} por música</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {plansWithPrices.length === 0 ? (
+          <div className="rounded-[2rem] border border-gray-800 bg-gray-950/70 p-10 text-center">
+            <p className="text-lg font-bold text-white">Nenhum plano Studio IA ativo no momento.</p>
+            <p className="mt-2 text-sm text-gray-400">Ative ou cadastre os planos no painel administrativo.</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-3">
+            {plansWithPrices.map(({ plan, priceQuote }) => {
+              const presentation = planPresentation[plan.slug] || planPresentation['dcc-studio-ia']
+              const planFeatures = Array.isArray(plan.features) ? plan.features : []
+
+              return (
+                <div key={plan.id} className={`relative rounded-[1.5rem] border p-5 sm:p-6 ${presentation.tone}`}>
+                  {presentation.highlight && (
+                    <div className="mb-3 inline-flex rounded-full border border-purple-300/60 bg-purple-500/20 px-3 py-1 text-xs font-bold text-purple-100 sm:absolute sm:right-6 sm:top-6 sm:mb-0">{presentation.highlight}</div>
+                  )}
+                  <h3 className="mb-1 text-xl font-black sm:text-2xl">{plan.name}</h3>
+                  <p className="mb-3 text-sm text-gray-400">Ideal para {presentation.ideal}</p>
+                  <div className="mb-4">
+                    <span className="text-3xl font-black text-white">{formatCurrency(priceQuote.amount, priceQuote.currency)}</span>
+                    <span className="text-gray-400">/{plan.durationMonths === 1 ? 'mês' : `${plan.durationMonths} meses`}</span>
+                  </div>
+                  {planFeatures.length > 0 && (
+                    <ul className="mb-5 space-y-2">
+                      {planFeatures.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2 text-sm leading-relaxed text-gray-300">
+                          <FiCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-300" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <StudioPlanButton planSlug={plan.slug} />
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
 export const metadata = {
   title: 'DCC Studio IA - Crie Músicas com Inteligência Artificial',
   description: 'Crie letras, músicas completas, capas e versões com IA. Organize projetos, publique no DCC Music e gere cifras das suas criações.',
@@ -91,7 +207,6 @@ export const metadata = {
 }
 
 export default async function StudioIALandingPage() {
-  const plans = await getStudioPlans()
   const requestHeaders = headers()
   const country = normalizeCountry(
     cookies().get(COUNTRY_COOKIE)?.value ||
@@ -99,20 +214,6 @@ export default async function StudioIALandingPage() {
     requestHeaders.get('x-vercel-ip-country') ||
     requestHeaders.get('cf-ipcountry')
   )
-  const topupPricing = await getStudioTopupTiersFromPricing(country)
-  const topupTiers = topupPricing.tiers
-  const topupCurrency = topupPricing.currency
-  const topupPresentation = [
-    ['1 música', topupTiers[0].unitPrice],
-    ['2 a 8 músicas', topupTiers[1].unitPrice],
-    ['9 a 29 músicas', topupTiers[2].unitPrice],
-    ['A partir de 30', topupTiers[4].unitPrice],
-  ] as const
-  const plansWithPrices = await Promise.all(plans.map(async (plan) => ({
-    plan,
-    priceQuote: await getStudioPlanPriceFromPricing(plan.slug, plan.price, country),
-  })))
-
   return (
     <div className="min-h-screen overflow-hidden bg-black">
       <TikTokViewContent contentId="studio_ia" contentName="DCC Studio IA" />
@@ -244,74 +345,9 @@ export default async function StudioIALandingPage() {
         </div>
       </section>
 
-      <section id="planos" className="scroll-mt-24 py-6 sm:py-10">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-6 text-center sm:mb-8">
-            <h2 className="text-2xl font-black sm:text-3xl"><span className="gradient-text">Planos DCC Studio IA</span></h2>
-            <p className="mt-2 text-sm text-gray-400">Escolha plano ou recarga avulsa para continuar criando.</p>
-            <FreeMusicPlanNotice />
-          </div>
-
-          <div className="mb-6 rounded-[1.5rem] border border-purple-700/50 bg-gradient-to-br from-purple-950/40 via-gray-950 to-black p-4 sm:mb-7 sm:p-6">
-            <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="mb-2 text-sm font-bold uppercase tracking-wide text-purple-300">Sem mensalidade</p>
-                <h3 className="text-xl font-black sm:text-2xl">Recarga avulsa de músicas</h3>
-                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-400">Para quem não quer assinar agora: escolha quantas músicas quer comprar e o sistema calcula o valor automaticamente.</p>
-              </div>
-              <div className="flex w-full flex-col gap-2 lg:w-auto lg:min-w-[260px]"><StudioTopupButton /><StudioCouponButton /></div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-4">
-              {topupPresentation.map(([label, price]) => (
-                <div key={label} className="rounded-2xl border border-gray-800 bg-black/50 p-3 sm:p-5">
-                  <p className="text-xs text-gray-400 sm:text-sm">{label}</p>
-                  <p className="mt-1 text-sm font-black text-white sm:mt-2 sm:text-xl">{formatCurrency(price, topupCurrency)} por música</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {plansWithPrices.length === 0 ? (
-            <div className="rounded-[2rem] border border-gray-800 bg-gray-950/70 p-10 text-center">
-              <p className="text-lg font-bold text-white">Nenhum plano Studio IA ativo no momento.</p>
-              <p className="mt-2 text-sm text-gray-400">Ative ou cadastre os planos no painel administrativo.</p>
-            </div>
-          ) : (
-            <div className="grid gap-4 lg:grid-cols-3">
-              {plansWithPrices.map(({ plan, priceQuote }) => {
-                const presentation = planPresentation[plan.slug] || planPresentation['dcc-studio-ia']
-                const planFeatures = Array.isArray(plan.features) ? plan.features : []
-
-                return (
-                  <div key={plan.id} className={`relative rounded-[1.5rem] border p-5 sm:p-6 ${presentation.tone}`}>
-                    {presentation.highlight && (
-                      <div className="mb-3 inline-flex rounded-full border border-purple-300/60 bg-purple-500/20 px-3 py-1 text-xs font-bold text-purple-100 sm:absolute sm:right-6 sm:top-6 sm:mb-0">{presentation.highlight}</div>
-                    )}
-                    <h3 className="mb-1 text-xl font-black sm:text-2xl">{plan.name}</h3>
-                    <p className="mb-3 text-sm text-gray-400">Ideal para {presentation.ideal}</p>
-                    <div className="mb-4">
-                      <span className="text-3xl font-black text-white">{formatCurrency(priceQuote.amount, priceQuote.currency)}</span>
-                      <span className="text-gray-400">/{plan.durationMonths === 1 ? 'mês' : `${plan.durationMonths} meses`}</span>
-                    </div>
-                    {planFeatures.length > 0 && (
-                      <ul className="mb-5 space-y-2">
-                        {planFeatures.map((feature) => (
-                          <li key={feature} className="flex items-start gap-2 text-sm leading-relaxed text-gray-300">
-                            <FiCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-purple-300" />
-                            {feature}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <StudioPlanButton planSlug={plan.slug} />
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </section>
+      <Suspense fallback={<StudioPricingFallback />}>
+        <StudioPricingSection country={country} />
+      </Suspense>
     </div>
   )
 }

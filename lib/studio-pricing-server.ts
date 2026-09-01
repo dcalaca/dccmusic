@@ -27,6 +27,18 @@ export type StudioTopupTier = {
 
 export type StudioPricingSource = 'supabase' | 'fallback'
 
+export type StudioPlanPriceQuote = {
+  amount: number
+  currency: StudioTopupCurrency
+  source: StudioPricingSource
+}
+
+type StudioPlanPriceRow = {
+  plan_slug: string
+  price: number | string
+  currency: StudioTopupCurrency
+}
+
 export async function getStudioTopupTiersFromPricing(country: DccCountry): Promise<{
   tiers: StudioTopupTier[]
   currency: StudioTopupCurrency
@@ -107,7 +119,7 @@ export async function getStudioPlanPriceFromPricing(
   planSlug: string,
   priceInBrl: number,
   country: DccCountry
-): Promise<{ amount: number; currency: StudioTopupCurrency; source: StudioPricingSource }> {
+): Promise<StudioPlanPriceQuote> {
   try {
     const { data, error } = await supabaseAdmin
       .from('studio_plan_country_pricing')
@@ -130,4 +142,42 @@ export async function getStudioPlanPriceFromPricing(
   }
 
   return { ...getStudioPlanPriceQuote(priceInBrl, country), source: 'fallback' }
+}
+
+/**
+ * Busca os preços localizados de todos os planos em uma única ida ao Supabase.
+ * A landing page usa esta versão para não criar uma requisição por card.
+ */
+export async function getStudioPlanPricesFromPricing(
+  planSlugs: string[],
+  country: DccCountry
+): Promise<Record<string, StudioPlanPriceQuote>> {
+  const uniqueSlugs = Array.from(new Set(planSlugs.filter(Boolean)))
+  if (uniqueSlugs.length === 0) return {}
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('studio_plan_country_pricing')
+      .select('plan_slug,price,currency')
+      .eq('country', country)
+      .eq('is_active', true)
+      .in('plan_slug', uniqueSlugs)
+
+    if (error) throw error
+
+    return ((data || []) as StudioPlanPriceRow[]).reduce<Record<string, StudioPlanPriceQuote>>((prices, row) => {
+      const amount = Number(row.price)
+      if (row.plan_slug && amount > 0) {
+        prices[row.plan_slug] = {
+          amount,
+          currency: row.currency,
+          source: 'supabase',
+        }
+      }
+      return prices
+    }, {})
+  } catch (error) {
+    console.error('[STUDIO PRICING] Falha ao ler preços dos planos em lote; usando fallback:', error)
+    return {}
+  }
 }
