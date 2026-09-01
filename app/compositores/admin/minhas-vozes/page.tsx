@@ -714,10 +714,14 @@ export default function ComposerVoicesPage() {
                   )}
 
                   <div className="flex flex-col gap-3 sm:flex-row">
-                    {voice.status === 'failed' && voice.sourceAudioUrl && String(voice.errorMessage || '').toLowerCase().includes('expir') && (
+                    {voice.status === 'failed' && voice.sourceAudioUrl && (
+                      String(voice.errorMessage || '').toLowerCase().includes('expir') ||
+                      String(voice.errorMessage || '').toLowerCase().includes('phrase') ||
+                      String(voice.errorMessage || '').toLowerCase().includes('frase')
+                    ) && (
                       <button onClick={() => reactivateExpiredVoice(voice.id)} disabled={refreshingId === voice.id} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-3 font-bold text-white disabled:opacity-60">
                         {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
-                        Reativar voz sem cobrança
+                        Tentar nova frase sem cobrança
                       </button>
                     )}
                     {voice.status === 'ready' && voice.sourceAudioUrl && voice.verifyAudioUrl && (
