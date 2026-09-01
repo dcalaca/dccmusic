@@ -128,6 +128,7 @@ export default function ComposerVoicesPage() {
   const sourceRecordingChunksRef = useRef<Blob[]>([])
   const sourceRecordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const sourceSubmittingRef = useRef(false)
+  const pendingVerificationVoice = voices.find((voice) => voice.status === 'awaiting_verification')
 
   const loadVoices = async () => {
     const token = localStorage.getItem('composer_token')
@@ -557,6 +558,14 @@ export default function ComposerVoicesPage() {
           {message && <div className="mb-6 rounded-xl border border-green-800 bg-green-950/50 p-4 text-green-200">{message}</div>}
           {error && <div className="mb-6 rounded-xl border border-red-800 bg-red-950/50 p-4 text-red-200">{error}</div>}
 
+          {pendingVerificationVoice ? (
+            <section className="mb-8 rounded-3xl border border-yellow-800/70 bg-yellow-950/20 p-5 sm:p-6">
+              <h2 className="text-xl font-black text-yellow-100">Finalize a voz que já está em andamento</h2>
+              <p className="mt-2 text-sm text-yellow-50/90">
+                A voz “{pendingVerificationVoice.displayName}” está aguardando a frase de verificação. Use o cartão logo abaixo para gravar a frase; não envie novamente o áudio-base.
+              </p>
+            </section>
+          ) : (
           <section className="mb-8 rounded-3xl border border-gray-800 bg-gray-950/70 p-5 sm:p-6">
             <h2 className="mb-4 text-xl font-black">Cadastrar nova voz</h2>
             <div className="mb-5">
@@ -631,6 +640,7 @@ export default function ComposerVoicesPage() {
               </button>
             </form>
           </section>
+          )}
 
           {loading ? (
             <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">Carregando vozes...</div>
