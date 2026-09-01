@@ -298,6 +298,7 @@ export async function GET(
       const audio = await getStudioVersionAudioUrls(item)
       return {
         id: item.id,
+        generationId: item.generation_id,
         audioUrl: audio.audioUrl,
         streamAudioUrl: audio.streamAudioUrl,
         duration: item.duration,
