@@ -6,6 +6,7 @@ import GenreCard from '@/components/GenreCard'
 import SiteStatsCompact from '@/components/SiteStatsCompact'
 import ComposerSignupCta from '@/components/ComposerSignupCta'
 import HeroImageCarousel from '@/components/HeroImageCarousel'
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { FiPlayCircle, FiMusic, FiArrowRight, FiZap } from 'react-icons/fi'
 
@@ -241,12 +242,78 @@ async function getSiteSummaryStats() {
   }
 }
 
-export default async function Home() {
+async function HomeDynamicContent() {
   const [{ featuredVideos, featuredMusics, topGenres }, siteStats] = await Promise.all([
     getFeaturedContent(),
     getSiteSummaryStats(),
   ])
 
+  return (
+    <>
+      {topGenres.length > 0 && (
+        <section className="bg-black py-9 sm:py-10">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="mb-5 text-center text-2xl font-bold sm:text-3xl"><span className="gradient-text">Top Gêneros</span></h2>
+            <div className="grid items-stretch grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
+              {topGenres.map((genre) => <GenreCard key={genre.id} genre={genre} count={genre.count} videosCount={genre.videosCount} musicsCount={genre.musicsCount} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {featuredVideos.length > 0 && (
+        <section className="bg-gray-950 py-9 sm:py-10">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">Vídeos em Destaque</span></h2>
+              <Link href="/videos" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>Ver todos</span><FiArrowRight className="h-5 w-5" /></Link>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+              {featuredVideos.map((video) => <VideoCard key={video.id} video={video} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {featuredMusics.length > 0 && (
+        <section className="bg-black py-9 sm:py-10">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">Músicas em Destaque</span></h2>
+              <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>Ver todas</span><FiArrowRight className="h-5 w-5" /></Link>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+              {featuredMusics.map((music) => <MusicCard key={music.id} music={music} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      <SiteStatsCompact
+        totalVideos={siteStats.totalVideos}
+        videoViews={siteStats.videoViews}
+        totalMusics={siteStats.totalMusics}
+        musicViews={siteStats.musicViews}
+        totalComposers={siteStats.totalComposers}
+        totalComments={siteStats.totalComments}
+        totalRatings={siteStats.totalRatings}
+        deliveredAiMusics={siteStats.deliveredAiMusics}
+        aiMusicDays={siteStats.aiMusicDays}
+      />
+
+      <section className="border-t border-purple-900 bg-black">
+        <div className="container mx-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex items-center gap-2.5 text-left sm:gap-3"><span className="text-xl leading-none sm:text-2xl" aria-hidden>🎤</span><div><p className="text-sm font-bold leading-tight text-white sm:text-base">É compositor? Publique suas músicas</p><p className="mt-0.5 text-xs text-gray-400">Receba avaliações e alcance novos ouvintes</p></div></div>
+            <ComposerSignupCta guestLabel="Cadastrar grátis" className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-white px-5 py-2 text-sm font-bold text-violet-950 transition hover:bg-gray-100 sm:w-auto" />
+          </div>
+        </div>
+      </section>
+    </>
+  )
+}
+
+export default async function Home() {
   return (
     <div className="min-h-screen">
       <section className="relative flex flex-col bg-black" aria-label="Destaque principal">
@@ -302,112 +369,9 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Top Gêneros */}
-      {topGenres.length > 0 && (
-        <section className="py-9 sm:py-10 bg-black">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-5 text-center">
-              <span className="gradient-text">Top Gêneros</span>
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 items-stretch">
-              {topGenres.map((genre) => (
-                <GenreCard 
-                  key={genre.id} 
-                  genre={genre} 
-                  count={genre.count} 
-                  videosCount={genre.videosCount}
-                  musicsCount={genre.musicsCount}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Destaques - Vídeos */}
-      {featuredVideos.length > 0 && (
-        <section className="py-9 sm:py-10 bg-gray-950">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-5 gap-3">
-              <h2 className="text-2xl sm:text-3xl font-bold">
-                <span className="gradient-text">Vídeos em Destaque</span>
-              </h2>
-              <Link
-                href="/videos"
-                className="text-primary-400 hover:text-primary-300 flex items-center space-x-2 transition-colors"
-              >
-                <span>Ver todos</span>
-                <FiArrowRight className="w-5 h-5" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-              {featuredVideos.map((video) => (
-                <VideoCard key={video.id} video={video} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Destaques - Músicas */}
-      {featuredMusics.length > 0 && (
-        <section className="py-9 sm:py-10 bg-black">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-5 gap-3">
-              <h2 className="text-2xl sm:text-3xl font-bold">
-                <span className="gradient-text">Músicas em Destaque</span>
-              </h2>
-              <Link
-                href="/musicas"
-                className="text-primary-400 hover:text-primary-300 flex items-center space-x-2 transition-colors"
-              >
-                <span>Ver todas</span>
-                <FiArrowRight className="w-5 h-5" />
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-              {featuredMusics.map((music) => (
-                <MusicCard key={music.id} music={music} />
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      <SiteStatsCompact
-        totalVideos={siteStats.totalVideos}
-        videoViews={siteStats.videoViews}
-        totalMusics={siteStats.totalMusics}
-        musicViews={siteStats.musicViews}
-        totalComposers={siteStats.totalComposers}
-        totalComments={siteStats.totalComments}
-        totalRatings={siteStats.totalRatings}
-        deliveredAiMusics={siteStats.deliveredAiMusics}
-        aiMusicDays={siteStats.aiMusicDays}
-      />
-
-      {/* CTA compositor — no final, para não competir com o Studio IA no topo */}
-      <section className="border-t border-purple-900 bg-black">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
-          <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div className="flex items-center gap-2.5 text-left sm:gap-3">
-              <span className="text-xl leading-none sm:text-2xl" aria-hidden>
-                🎤
-              </span>
-              <div>
-                <p className="text-sm font-bold leading-tight text-white sm:text-base">
-                  É compositor? Publique suas músicas
-                </p>
-                <p className="mt-0.5 text-xs text-gray-400">Receba avaliações e alcance novos ouvintes</p>
-              </div>
-            </div>
-            <ComposerSignupCta
-              guestLabel="Cadastrar grátis"
-              className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-white px-5 py-2 text-sm font-bold text-violet-950 transition hover:bg-gray-100 sm:w-auto"
-            />
-          </div>
-        </div>
-      </section>
+      <Suspense fallback={null}>
+        <HomeDynamicContent />
+      </Suspense>
     </div>
   )
 }
