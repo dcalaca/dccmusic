@@ -545,6 +545,11 @@ export default function StudioProjectDetailPage() {
       const projectVersions = Array.isArray(data.project.versions) ? data.project.versions : []
       const projectAudioUrl = data.project.version?.audioUrl || data.project.version?.streamAudioUrl
       const hasReadyAudio = Boolean(projectAudioUrl || projectVersions.some((version: any) => version.audioUrl || version.streamAudioUrl))
+      const activeGenerationHasReadyAudio = Boolean(
+        data.activeGeneration?.id && projectVersions.some((version: any) =>
+          version.generationId === data.activeGeneration.id && (version.audioUrl || version.streamAudioUrl)
+        )
+      )
       const activeGenerationRunning = Boolean(
         data.activeGeneration?.id &&
         ['pending', 'processing', 'first_ready'].includes(String(data.activeGeneration.status || ''))
@@ -552,7 +557,7 @@ export default function StudioProjectDetailPage() {
       setProject(data.project)
       setLyric(data.project.lyric || '')
 
-      if (activeGenerationRunning) {
+      if (activeGenerationRunning && !activeGenerationHasReadyAudio) {
         const createdAt = new Date(data.activeGeneration.createdAt).getTime()
         const elapsedSeconds = Math.max(0, Math.floor((Date.now() - createdAt) / 1000))
 
