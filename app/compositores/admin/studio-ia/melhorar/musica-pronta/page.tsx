@@ -30,6 +30,7 @@ const voiceStyleOptions = [
 const moodOptions = ['Romântica', 'Sofrência', 'Chiclete', 'Engraçada', 'Reflexiva', 'Balada', 'Triste', 'Motivacional']
 const voiceToneOptions = ['Deixar a IA escolher', 'Voz grave', 'Voz média', 'Voz aguda', 'Voz rouca', 'Voz suave', 'Voz forte']
 const structureOptions = ['Padrão', 'A/B/Refrão/C/Refrão', 'A/Refrão/A/Refrão']
+const genreOptions = ['Sertanejo', 'Sertanejo raiz', 'Moda de viola', 'Pagode', 'Samba', 'Arrocha', 'Gospel', 'Reggae', 'Pop', 'Rock', 'Funk', 'Trap', 'Forró', 'Guarania paraguaia', 'Livre', 'Outro / escrever meu estilo']
 
 const MAX_AUDIO_DURATION_SECONDS = 270
 
@@ -115,6 +116,8 @@ export default function ImproveReadyMusicPage() {
   const [voiceTone, setVoiceTone] = useState('Deixar a IA escolher')
   const [structure, setStructure] = useState('Padrão')
   const [lineCount, setLineCount] = useState('média')
+  const [selectedGenre, setSelectedGenre] = useState('')
+  const [customGenre, setCustomGenre] = useState('')
   const [wantInstruments, setWantInstruments] = useState('')
   const [avoidInstruments, setAvoidInstruments] = useState('')
   const [additionalInstructions, setAdditionalInstructions] = useState('')
@@ -166,7 +169,7 @@ export default function ImproveReadyMusicPage() {
     setError('')
     setMessage('Enviando áudio e entendendo a letra...')
     try {
-      const uploaded = savedOriginal || await uploadAudioDirectToStorage(token, audioFile as File, 'transcribe')
+      const uploaded = audioFile ? await uploadAudioDirectToStorage(token, audioFile, 'transcribe') : savedOriginal
       const response = await fetch('/api/compositores/studio/transcribe', {
         method: 'POST',
         headers: {
@@ -199,7 +202,7 @@ export default function ImproveReadyMusicPage() {
 
     const form = event.currentTarget
     const title = String(new FormData(form).get('title') || '').trim()
-    const style = String(new FormData(form).get('style') || '').trim()
+    const style = (selectedGenre === 'Outro / escrever meu estilo' ? customGenre : selectedGenre).trim()
 
     if ((!audioFile || audioFile.size <= 0) && !savedOriginal) {
       setError('Escolha o áudio da música que deseja melhorar.')
@@ -221,7 +224,7 @@ export default function ImproveReadyMusicPage() {
       ? 'Enviando música...'
       : 'Enviando áudio, entendendo a letra e iniciando a melhoria...')
     try {
-      const uploaded = savedOriginal || await uploadAudioDirectToStorage(token, audioFile as File, 'enhance-source')
+      const uploaded = audioFile ? await uploadAudioDirectToStorage(token, audioFile, 'enhance-source') : savedOriginal
       const response = await fetch('/api/compositores/studio/enhance', {
         method: 'POST',
         headers: {
@@ -302,8 +305,15 @@ export default function ImproveReadyMusicPage() {
                 <input name="title" required maxLength={30} placeholder="Ex.: Minha canção" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
               </label>
               <label className="block">
-                <span className="mb-2 block text-sm font-bold text-gray-300">Estilo desejado</span>
-                <input name="style" placeholder="Ex.: sertanejo, arrocha, gospel..." className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                <span className="mb-2 block text-sm font-bold text-gray-300">Gênero/ritmo desejado</span>
+                <select value={selectedGenre} onChange={(event) => setSelectedGenre(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
+                  <option value="">Manter o ritmo original</option>
+                  {genreOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select>
+                <span className="mt-2 block text-xs text-gray-500">Você pode transformar, por exemplo, reggae em samba.</span>
+                {selectedGenre === 'Outro / escrever meu estilo' && (
+                  <input value={customGenre} onChange={(event) => setCustomGenre(event.target.value)} placeholder="Escreva o gênero ou ritmo" className="mt-2 w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                )}
               </label>
             </div>
 
@@ -320,7 +330,11 @@ export default function ImproveReadyMusicPage() {
                 type="file"
                 required={!savedOriginal}
                 accept="audio/*"
-                onChange={(event) => setAudioFile(event.target.files?.[0] || null)}
+                onChange={(event) => {
+                  const file = event.target.files?.[0] || null
+                  setAudioFile(file)
+                  if (file) setSavedOriginal(null)
+                }}
                 className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white"
               />
               <span className="mt-2 block text-xs text-purple-100/80">
