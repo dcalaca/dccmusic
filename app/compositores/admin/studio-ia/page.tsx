@@ -41,7 +41,7 @@ export default function StudioDashboardPage() {
           headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
         }),
-        fetch('/api/compositores/studio/projects', {
+        fetch('/api/compositores/studio/projects?dashboard=1', {
           headers: { Authorization: `Bearer ${token}` },
           cache: 'no-store',
         }),
