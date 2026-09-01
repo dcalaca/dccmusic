@@ -172,9 +172,12 @@ export async function POST(request: NextRequest) {
 
     if (existingVoiceError) throw existingVoiceError
     if (existingVoice) {
+      const pendingVerification = existingVoice.status === 'awaiting_verification'
       return NextResponse.json(
         {
-          error: `Você já tem uma voz ativa chamada "${existingVoice.display_name}". Exclua a voz antiga ou use outro nome antes de enviar novamente.`,
+          error: pendingVerification
+            ? `A voz "${existingVoice.display_name}" já está aguardando a frase de verificação. Role a página até o cartão dela e grave a frase por lá — não é necessário enviar o áudio-base novamente.`
+            : `Você já tem uma voz cadastrada chamada "${existingVoice.display_name}". Exclua a voz antiga ou use outro nome antes de enviar novamente.`,
         },
         { status: 409 }
       )
