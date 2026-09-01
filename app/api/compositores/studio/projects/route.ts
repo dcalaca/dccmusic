@@ -66,12 +66,15 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const filter = searchParams.get('filter') || 'all'
+    const dashboardSummary = searchParams.get('dashboard') === '1'
 
     let query = supabaseAdmin
       .from('studio_projects')
-      .select('*')
+      .select(dashboardSummary ? 'id, title, style, mood, status, updated_at' : '*')
       .eq('composer_id', composer.composerId)
       .order('updated_at', { ascending: false })
+
+    if (dashboardSummary) query = query.range(0, 5)
 
     if (filter === 'drafts') query = query.eq('status', 'draft')
     if (filter === 'published') query = query.eq('status', 'published')
@@ -98,6 +101,41 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await query
     if (error) throw error
+
+    // The dashboard only needs six cards. Avoid loading every lyric, version,
+    // audio URL and signed asset from the full projects endpoint.
+    if (dashboardSummary) {
+      const projectIds = (data || []).map((project: any) => project.id)
+      const { data: covers, error: coversError } = projectIds.length > 0
+        ? await supabaseAdmin
+            .from('studio_covers')
+            .select('id, project_id, image_url, image_path, is_premium')
+            .eq('composer_id', composer.composerId)
+            .eq('is_current', true)
+            .in('project_id', projectIds)
+        : { data: [], error: null }
+      if (coversError) throw coversError
+
+      const coverByProject = new Map<string, any>()
+      for (const cover of covers || []) coverByProject.set(cover.project_id, cover)
+      const projects = await Promise.all((data || []).map(async (project: any) => {
+        const cover = coverByProject.get(project.id)
+        return {
+          id: project.id,
+          title: project.title,
+          style: project.style,
+          mood: project.mood,
+          status: project.status,
+          updatedAt: project.updated_at,
+          cover: cover ? {
+            id: cover.id,
+            imageUrl: await getStudioCoverImageUrl(cover),
+            isPremium: cover.is_premium,
+          } : null,
+        }
+      }))
+      return NextResponse.json({ projects })
+    }
 
     const projects = await Promise.all(
       (data || []).map(async (project: any) => {
