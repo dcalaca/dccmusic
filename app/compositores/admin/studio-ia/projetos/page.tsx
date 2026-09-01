@@ -721,23 +721,23 @@ function StudioProjectsContent() {
                     <p className="text-gray-400">Nenhuma música original salva ainda.</p>
                   </div>
                 ) : (
-                  <div className={viewMode === 'small' ? 'grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4' : 'grid gap-5 sm:grid-cols-2 xl:grid-cols-3'}>
+                  <div className="divide-y divide-gray-800 overflow-hidden rounded-2xl border border-gray-800 bg-gray-950/70">
                     {projects.map((project) => (
-                      <article key={project.id} className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-950/70">
-                        <div className={`flex items-center justify-center bg-gradient-to-br from-gray-900 to-purple-950 ${viewMode === 'small' ? 'aspect-[4/3]' : 'aspect-square'}`}>
-                          <FiMusic className="h-14 w-14 text-purple-300/70" />
-                        </div>
-                        <div className={viewMode === 'small' ? 'p-3' : 'p-4'}>
-                          <h3 className="truncate font-bold text-white">{project.title}</h3>
+                      <article key={project.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <FiMusic className="shrink-0 text-purple-300" />
+                            <h3 className="truncate font-bold text-white">{project.title}</h3>
+                          </div>
                           <p className="mt-1 text-xs text-gray-500">Enviada para melhorar em {formatDate(project.createdAt || project.updatedAt)}</p>
-                          {project.originalAudio?.audioUrl ? <audio controls src={project.originalAudio.audioUrl} className="mt-3 w-full" /> : <p className="mt-3 text-xs text-gray-500">Áudio original indisponível.</p>}
-                          <Link
-                            href={`/compositores/admin/studio-ia/melhorar/musica-pronta?sourceProjectId=${encodeURIComponent(project.id)}`}
-                            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-3 py-2 text-sm font-bold text-white hover:bg-primary-500"
-                          >
-                            <FiZap /> Usar para melhorar novamente
-                          </Link>
+                          {project.originalAudio?.audioUrl ? <audio controls src={project.originalAudio.audioUrl} className="mt-3 w-full max-w-xl" /> : <p className="mt-3 text-xs text-gray-500">Áudio original indisponível.</p>}
                         </div>
+                        <Link
+                          href={`/compositores/admin/studio-ia/melhorar/musica-pronta?sourceProjectId=${encodeURIComponent(project.id)}`}
+                          className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary-600 px-3 py-2 text-sm font-bold text-white hover:bg-primary-500"
+                        >
+                          <FiZap /> Usar para melhorar novamente
+                        </Link>
                       </article>
                     ))}
                   </div>
