@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FiArrowLeft, FiChevronLeft, FiChevronRight, FiDownload, FiFileText, FiHeadphones, FiHeart, FiInfo, FiLoader, FiLogIn, FiMic, FiMoreVertical, FiMusic, FiPlus, FiTrash2, FiX, FiZap } from 'react-icons/fi'
+import { FiArrowLeft, FiChevronLeft, FiChevronRight, FiDownload, FiFileText, FiHeadphones, FiHeart, FiInfo, FiLoader, FiLogIn, FiMic, FiMoreVertical, FiMusic, FiPlus, FiStar, FiTrash2, FiX, FiZap } from 'react-icons/fi'
 
 const filters = [
   { id: 'all', label: 'Todos' },
@@ -13,7 +13,7 @@ const filters = [
 ]
 
 const TRANSCRIPTIONS_FILTER = 'cifras'
-const ENHANCED_FILTER = 'melhoradas'
+const ORIGINALS_FILTER = 'originais'
 
 const inspirationVariationOptions = [
   { id: 'similar', label: 'Manter parecido' },
@@ -379,6 +379,7 @@ function StudioProjectsContent() {
               <span className="gradient-text">Meus Projetos</span>
             </h1>
             <p className="text-gray-400">Organize suas músicas por rascunhos, publicadas e favoritas.</p>
+            <p className="mt-2 text-xs text-emerald-300"><FiStar className="mr-1 inline-block" /> Estrela verde: projeto criado a partir de uma música original enviada para melhoria.</p>
           </div>
 
           {choosingPlayback && (
@@ -602,11 +603,11 @@ function StudioProjectsContent() {
                   Cifras
                 </Link>
                 <Link
-                  href={`/compositores/admin/studio-ia/projetos?filter=${ENHANCED_FILTER}`}
+                  href={`/compositores/admin/studio-ia/projetos?filter=${ORIGINALS_FILTER}`}
                   className="mt-3 flex items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 hover:bg-gray-900"
                 >
                   <FiMusic />
-                  Músicas melhoradas
+                  Músicas originais
                 </Link>
               </div>
               <Link
@@ -624,11 +625,11 @@ function StudioProjectsContent() {
                 Cifras
               </Link>
               <Link
-                href={`/compositores/admin/studio-ia/projetos?filter=${ENHANCED_FILTER}`}
+                href={`/compositores/admin/studio-ia/projetos?filter=${ORIGINALS_FILTER}`}
                 className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 lg:hidden"
               >
                 <FiMusic />
-                Músicas melhoradas
+                Músicas originais
               </Link>
             </aside>
 
@@ -670,7 +671,7 @@ function StudioProjectsContent() {
 
               {loading ? (
                 <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">
-                  {currentFilter === TRANSCRIPTIONS_FILTER ? 'Carregando cifras...' : currentFilter === ENHANCED_FILTER ? 'Carregando músicas melhoradas...' : 'Carregando projetos...'}
+                  {currentFilter === TRANSCRIPTIONS_FILTER ? 'Carregando cifras...' : currentFilter === ORIGINALS_FILTER ? 'Carregando músicas originais...' : 'Carregando projetos...'}
                 </div>
               ) : currentFilter === TRANSCRIPTIONS_FILTER ? (
                 transcriptions.length === 0 ? (
@@ -711,6 +712,33 @@ function StudioProjectsContent() {
                           </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
+                )
+              ) : currentFilter === ORIGINALS_FILTER ? (
+                projects.length === 0 ? (
+                  <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center">
+                    <p className="text-gray-400">Nenhuma música original salva ainda.</p>
+                  </div>
+                ) : (
+                  <div className={viewMode === 'small' ? 'grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4' : 'grid gap-5 sm:grid-cols-2 xl:grid-cols-3'}>
+                    {projects.map((project) => (
+                      <article key={project.id} className="overflow-hidden rounded-2xl border border-gray-800 bg-gray-950/70">
+                        <div className={`flex items-center justify-center bg-gradient-to-br from-gray-900 to-purple-950 ${viewMode === 'small' ? 'aspect-[4/3]' : 'aspect-square'}`}>
+                          <FiMusic className="h-14 w-14 text-purple-300/70" />
+                        </div>
+                        <div className={viewMode === 'small' ? 'p-3' : 'p-4'}>
+                          <h3 className="truncate font-bold text-white">{project.title}</h3>
+                          <p className="mt-1 text-xs text-gray-500">Enviada para melhorar em {formatDate(project.createdAt || project.updatedAt)}</p>
+                          {project.originalAudio?.audioUrl ? <audio controls src={project.originalAudio.audioUrl} className="mt-3 w-full" /> : <p className="mt-3 text-xs text-gray-500">Áudio original indisponível.</p>}
+                          <Link
+                            href={`/compositores/admin/studio-ia/melhorar/musica-pronta?sourceProjectId=${encodeURIComponent(project.id)}`}
+                            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-3 py-2 text-sm font-bold text-white hover:bg-primary-500"
+                          >
+                            <FiZap /> Usar para melhorar novamente
+                          </Link>
+                        </div>
+                      </article>
                     ))}
                   </div>
                 )
@@ -770,6 +798,7 @@ function StudioProjectsContent() {
                             />
                           )}
                           {project.favorite && <FiHeart className="absolute right-3 top-3 h-5 w-5 fill-red-400 text-red-400" />}
+                          {project.createdFromOriginal && <FiStar className="absolute left-3 top-3 h-5 w-5 fill-emerald-400 text-emerald-400" aria-label="Criado a partir de música original enviada" />}
                           {project.versionCount > 1 && (
                             <span className="absolute bottom-3 left-3 rounded-full bg-black/80 px-3 py-1 text-xs font-bold text-green-200">
                               {project.versionCount} versões
@@ -784,6 +813,7 @@ function StudioProjectsContent() {
                             </span>
                           </div>
                           <p className={viewMode === 'small' ? 'truncate text-xs text-gray-400' : 'text-sm text-gray-400'}>{project.style || 'Livre'} · {project.mood || 'Sem clima'}</p>
+                          {project.createdFromOriginal && <p className="mt-2 text-[11px] font-semibold text-emerald-300">★ Criado a partir de uma música original enviada</p>}
                           {project.versionCount > 1 && (
                             <p className="mt-2 rounded-lg border border-green-900/50 bg-green-950/20 px-2 py-1 text-xs font-bold text-green-200">
                               Abra para escolher entre {project.versionCount} versões geradas
