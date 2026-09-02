@@ -665,7 +665,7 @@ export default function ComposerVoicesPage() {
                     <div className="mb-4 rounded-2xl border border-primary-800 bg-primary-950/30 p-4">
                       <p className="text-xs font-bold uppercase text-primary-200">Frase para gravar</p>
                       <p className="mt-2 text-lg font-black text-white">{voice.validateInfo}</p>
-                      <p className="mt-2 text-sm text-gray-300">Grave você cantando ou falando exatamente essa frase e envie abaixo.</p>
+                      <p className="mt-2 text-sm text-gray-300">Cante exatamente essa frase, com voz clara e sem música de fundo, e envie abaixo.</p>
                       {(() => {
                         const secondsRemaining = getValidationSecondsRemaining(voice, nowMs)
                         const expired = secondsRemaining <= 0
@@ -691,7 +691,7 @@ export default function ComposerVoicesPage() {
                     <form onSubmit={(event) => uploadVerification(event, voice.id)} className="mb-4 space-y-3">
                       <div className="rounded-2xl border border-purple-800/70 bg-purple-950/20 p-4">
                         <p className="text-sm font-bold text-purple-100">Grave a frase direto por aqui</p>
-                        <p className="mt-1 text-xs text-purple-100/80">Clique em gravar, fale ou cante a frase acima e depois pare para enviar automaticamente.</p>
+                        <p className="mt-1 text-xs text-purple-100/80">Clique em gravar, cante a frase acima e depois pare para enviar automaticamente.</p>
                         {recordingVoiceId === voice.id ? (
                           <button type="button" onClick={stopRecordingVerification} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-3 font-bold text-white hover:bg-red-600">
                             <FiMic /> Parar e enviar ({recordingSeconds}s)
