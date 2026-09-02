@@ -132,13 +132,17 @@ function StatCard({ icon: Icon, label, value, detail }: {
   detail?: string
 }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4 shadow-lg shadow-black/10">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl border border-primary-300/20 bg-primary-400/10 text-primary-200">
-        <Icon className="h-5 w-5" />
+    <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-3 shadow-lg shadow-black/10 sm:p-4">
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary-300/20 bg-primary-400/10 text-primary-200 sm:h-10 sm:w-10 sm:rounded-2xl">
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-lg font-black leading-tight text-white sm:text-2xl">{value}</p>
+          <p className="mt-0.5 truncate text-xs font-bold text-gray-300 sm:text-sm">{label}</p>
+          {detail && <p className="mt-0.5 truncate text-[10px] text-gray-500 sm:text-xs">{detail}</p>}
+        </div>
       </div>
-      <p className="text-xl font-black text-white sm:text-2xl">{value}</p>
-      <p className="mt-1 text-sm font-bold text-gray-300">{label}</p>
-      {detail && <p className="mt-1 text-xs text-gray-500">{detail}</p>}
     </div>
   )
 }
@@ -733,7 +737,7 @@ export default function ComposerMyDataPage() {
 
           <PremiumDirectoryVisibilityCard />
 
-          <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="mb-5 grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-5">
             <StatCard
               icon={FiCreditCard}
               label="saldo do Studio IA"
