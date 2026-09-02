@@ -9,6 +9,7 @@ export default function PremiumDirectoryVisibilityCard() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [saved, setSaved] = useState(false)
+  const [showInfo, setShowInfo] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('composer_token')
@@ -77,7 +78,15 @@ export default function PremiumDirectoryVisibilityCard() {
         <div className="flex min-w-0 items-center gap-2">
           {visible ? <FiEye className="shrink-0 text-green-300" /> : <FiEyeOff className="shrink-0 text-gray-400" />}
           <span className="truncate text-sm font-bold text-gray-200">Visível na página de Compositores</span>
-          <span title="Controla apenas se seu perfil aparece na lista pública de Compositores Premium. O link direto continua funcionando." className="shrink-0 text-gray-500"><FiInfo /></span>
+          <button
+            type="button"
+            onClick={() => setShowInfo((current) => !current)}
+            aria-label="Saiba mais sobre a visibilidade do perfil"
+            aria-expanded={showInfo}
+            className="shrink-0 rounded-full p-0.5 text-gray-500 transition hover:text-gray-200"
+          >
+            <FiInfo />
+          </button>
         </div>
         <div className="w-auto shrink-0">
           <button
@@ -116,6 +125,11 @@ export default function PremiumDirectoryVisibilityCard() {
           {error && <p className="mt-2 text-xs font-semibold text-red-300">{error}</p>}
         </div>
       </div>
+      {showInfo && (
+        <p className="mt-2 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs leading-relaxed text-gray-400">
+          Controla apenas se seu perfil aparece na lista pública de Compositores Premium. O link direto da sua página continua funcionando.
+        </p>
+      )}
     </section>
   )
 }
