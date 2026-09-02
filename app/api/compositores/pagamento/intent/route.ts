@@ -11,11 +11,6 @@ import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
 export const dynamic = 'force-dynamic'
 
-function isStudioPlan(plan: db.Plan) {
-  const identity = `${plan.name || ''} ${plan.slug || ''}`.toLowerCase()
-  return ['studio-start', 'studio-pro', 'studio-elite', 'dcc-studio-ia'].includes(plan.slug) || identity.includes('studio ia') || identity.includes('dcc studio')
-}
-
 function getCustomerLocale(country: string) {
   if (country === 'PY') return 'es-PY'
   if (country === 'CO') return 'es-CO'
@@ -75,9 +70,7 @@ export async function POST(request: NextRequest) {
     }
 
     const subscription = await getOrCreatePendingSubscription(composerData.id, plan.id)
-    const priceQuote = isStudioPlan(plan)
-      ? await getStudioPlanPriceFromPricing(plan.slug, Number(plan.price) || 0, requestCountry)
-      : { amount: Number(plan.price) || 0, currency: 'BRL' as const, source: 'fallback' as const }
+    const priceQuote = await getStudioPlanPriceFromPricing(plan.slug, Number(plan.price) || 0, requestCountry)
     const amount = priceQuote.amount
     if (amount <= 0) return NextResponse.json({ error: 'Este plano não tem valor de pagamento configurado.' }, { status: 400 })
 

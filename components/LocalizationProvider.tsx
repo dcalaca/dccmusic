@@ -23,7 +23,9 @@ function translateCopy(value: string, country: DccCountry) {
 }
 
 function translatePriceText(value: string, country: DccCountry) {
-  if (String(country) === 'BR') return value
+  // US prices are always rendered explicitly from database-backed pricing.
+  // Never convert a BRL text node into a made-up USD amount.
+  if (String(country) === 'BR' || String(country) === 'US') return value
   return value.replace(/R\$\s*([\d.]+(?:,\d{1,2})?)/g, (_match, raw) => { const brl = Number(String(raw).replace(/\./g, '').replace(',', '.')); if (!Number.isFinite(brl)) return _match; const formatted = formatLocalizedMoney(brl, country); return String(country) === 'CO' ? `COP ${formatted}` : formatted })
 }
 

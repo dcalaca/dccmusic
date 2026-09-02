@@ -12,12 +12,8 @@ import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 
 export const dynamic = 'force-dynamic'
 
-function isStudioPlan(plan: db.Plan) {
-  const identity = `${plan.name || ''} ${plan.slug || ''}`.toLowerCase()
-  return ['studio-start', 'studio-pro', 'studio-elite', 'dcc-studio-ia'].includes(plan.slug) || identity.includes('studio ia') || identity.includes('dcc studio')
-}
-
 function getCustomerLocale(country: string) {
+  if (country === 'US') return 'en-US'
   if (country === 'PT') return 'pt-PT'
   if (country === 'MX') return 'es-MX'
   if (country === 'CO') return 'es-CO'
@@ -41,8 +37,9 @@ export async function POST(request: NextRequest) {
       request.headers.get('x-vercel-ip-country') ||
       request.headers.get('cf-ipcountry')
     )
-    if (customerCountry === 'BR') return NextResponse.json({ error: 'Stripe internacional disponível apenas fora do Brasil' }, { status: 400 })
-    const customerLocale = getCustomerLocale(customerCountry)
+    const customerCountryCode = String(customerCountry)
+    if (customerCountryCode === 'BR') return NextResponse.json({ error: 'Stripe internacional disponível apenas fora do Brasil' }, { status: 400 })
+    const customerLocale = getCustomerLocale(customerCountryCode)
 
     const body = await request.json()
     const planId = String(body.planId || '').trim()
@@ -61,13 +58,12 @@ export async function POST(request: NextRequest) {
     const subscription = await getOrCreatePendingSubscription(composer.id, plan.id)
     const snapshotAmount = Number(subscription.metadata?.checkout_amount)
     const snapshotCurrency = String(subscription.metadata?.checkout_currency || '').toUpperCase() as StudioTopupCurrency
-    const hasValidSnapshot = snapshotAmount > 0 && ['BRL','PYG','COP','EUR','MXN'].includes(snapshotCurrency)
+    const expectedCurrency: Record<string, StudioTopupCurrency> = { BR: 'BRL', PY: 'PYG', CO: 'COP', PT: 'EUR', MX: 'MXN', US: 'USD' }
+    const hasValidSnapshot = snapshotAmount > 0 && snapshotCurrency === (expectedCurrency[customerCountryCode] || 'BRL')
 
     const priceQuote = hasValidSnapshot
       ? { amount: snapshotAmount, currency: snapshotCurrency, source: String(subscription.metadata?.pricing_source || 'supabase') }
-      : isStudioPlan(plan)
-        ? await getStudioPlanPriceFromPricing(plan.slug, Number(plan.price) || 0, customerCountry)
-        : { amount: Number(plan.price) || 0, currency: 'BRL' as StudioTopupCurrency, source: 'fallback' }
+      : await getStudioPlanPriceFromPricing(plan.slug, Number(plan.price) || 0, customerCountry)
 
     const amount = priceQuote.amount
     if (amount <= 0) return NextResponse.json({ error: 'Valor do plano inválido' }, { status: 400 })
@@ -77,7 +73,7 @@ export async function POST(request: NextRequest) {
     params.set('ui_mode', 'embedded_page')
     params.set('redirect_on_completion', 'never')
     params.set('adaptive_pricing[enabled]', 'true')
-    params.set('locale', customerCountry === 'PT' ? 'pt' : 'es')
+    params.set('locale', customerCountryCode === 'US' ? 'en' : customerCountryCode === 'PT' ? 'pt' : 'es')
     const suffix = crypto.createHash('sha256').update(subscription.id).digest('hex').replace(/[0-9]/g, (digit) => String.fromCharCode(97 + Number(digit))).slice(0, 8)
     params.set('integration_identifier', `dccplan_${suffix}`)
     params.set('line_items[0][price_data][currency]', priceQuote.currency.toLowerCase())

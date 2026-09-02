@@ -30,7 +30,6 @@ const COUNTRY_BASE_PRICE: Record<string, { currency: StudioTopupCurrency; amount
   CO: { currency: 'COP', amount: 3200 },
   PT: { currency: 'EUR', amount: 1.99 },
   MX: { currency: 'MXN', amount: 17.68 },
-  US: { currency: 'USD', amount: 2.99 },
 }
 
 function roundLocalPrice(value: number, country: DccCountry) {
@@ -48,7 +47,6 @@ export const STUDIO_TOPUP_TIERS_PT = buildCountryTiers('PT')
 export const STUDIO_TOPUP_TIERS_PY = buildCountryTiers('PY')
 export const STUDIO_TOPUP_TIERS_CO = buildCountryTiers('CO')
 export const STUDIO_TOPUP_TIERS_MX = buildCountryTiers('MX')
-export const STUDIO_TOPUP_TIERS_US = buildCountryTiers('US' as DccCountry)
 
 export function getStudioTopupCurrency(country: DccCountry = 'BR'): StudioTopupCurrency {
   return COUNTRY_BASE_PRICE[String(country)]?.currency || 'BRL'
@@ -60,7 +58,6 @@ export function getStudioTopupTiers(country: DccCountry = 'BR') {
   if (code === 'PY') return STUDIO_TOPUP_TIERS_PY
   if (code === 'CO') return STUDIO_TOPUP_TIERS_CO
   if (code === 'MX') return STUDIO_TOPUP_TIERS_MX
-  if (code === 'US') return STUDIO_TOPUP_TIERS_US
   return STUDIO_TOPUP_TIERS
 }
 
@@ -79,7 +76,8 @@ export function getStudioTopupQuote(inputQuantity: number, country: DccCountry =
 export function getStudioPlanPriceQuote(priceInBrl: number, country: DccCountry = 'BR'): StudioPlanPriceQuote {
   const amountBrl = Math.max(0, Number(priceInBrl) || 0)
   const code = String(country)
-  if (code !== 'PY' && code !== 'CO' && code !== 'MX' && code !== 'US') return { amount: Number(amountBrl.toFixed(2)), currency: 'BRL' }
+  if (code === 'US') throw new Error('Preço em USD não configurado no banco de dados.')
+  if (code !== 'PY' && code !== 'CO' && code !== 'MX') return { amount: Number(amountBrl.toFixed(2)), currency: 'BRL' }
   const localBase = COUNTRY_BASE_PRICE[code]
   return { amount: roundLocalPrice(amountBrl * (localBase.amount / BRAZIL_BASE_PRICE), country), currency: localBase.currency }
 }

@@ -1,5 +1,4 @@
 import { FiMessageCircle, FiMusic, FiPlayCircle, FiUsers, FiZap } from 'react-icons/fi'
-import { formatIntegerPtBR } from '@/lib/utils'
 
 type AiMusicDay = {
   date: string
@@ -8,6 +7,7 @@ type AiMusicDay = {
 }
 
 export type SiteStatsCompactProps = {
+  locale?: string
   totalVideos: number
   videoViews: number
   totalMusics: number
@@ -20,6 +20,7 @@ export type SiteStatsCompactProps = {
 }
 
 export default function SiteStatsCompact({
+  locale = 'pt-BR',
   totalVideos,
   videoViews,
   totalMusics,
@@ -32,6 +33,7 @@ export default function SiteStatsCompact({
 }: SiteStatsCompactProps) {
   const totalInteractions = totalComments + totalRatings
   const maxAiDay = Math.max(1, ...aiMusicDays.map((day) => day.deliveredMusics))
+  const formatInteger = (value: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)
 
   return (
     <section className="overflow-hidden bg-black py-8 sm:py-12">
@@ -54,7 +56,7 @@ export default function SiteStatsCompact({
                   Músicas criadas na DCC
                 </p>
                 <p className="mt-1 text-3xl font-black leading-none text-white tabular-nums sm:text-4xl">
-                  {formatIntegerPtBR(deliveredAiMusics)}
+                  {formatInteger(deliveredAiMusics)}
                 </p>
                 <p className="mt-2 text-[11px] lowercase text-gray-500">atualização em tempo real</p>
               </div>
@@ -70,7 +72,7 @@ export default function SiteStatsCompact({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">Comunidade</p>
                 <p className="mt-1 text-2xl font-black leading-tight text-white tabular-nums sm:text-3xl">
-                  {formatIntegerPtBR(totalComposers)}
+                  {formatInteger(totalComposers)}
                 </p>
                 <p className="mt-1 text-[11px] text-gray-500 tabular-nums sm:text-xs">
                   compositores
@@ -85,10 +87,10 @@ export default function SiteStatsCompact({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">Interações</p>
                 <p className="mt-1 text-2xl font-black leading-tight text-white tabular-nums sm:text-3xl">
-                  {formatIntegerPtBR(totalInteractions)}
+                  {formatInteger(totalInteractions)}
                 </p>
                 <p className="mt-1 text-[11px] text-gray-500 tabular-nums sm:text-xs">
-                  {formatIntegerPtBR(totalComments)} comentários + {formatIntegerPtBR(totalRatings)} avaliações
+                  {formatInteger(totalComments)} comentários + {formatInteger(totalRatings)} avaliações
                 </p>
               </div>
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-yellow-950 text-yellow-300 sm:h-10 sm:w-10" aria-hidden>
@@ -128,10 +130,10 @@ export default function SiteStatsCompact({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">Total de vídeos</p>
                 <p className="mt-1 text-2xl font-black leading-tight text-white tabular-nums">
-                  {formatIntegerPtBR(totalVideos)}
+                  {formatInteger(totalVideos)}
                 </p>
                 <p className="mt-1 text-[11px] text-gray-500 tabular-nums sm:text-xs">
-                  Visualizações: {formatIntegerPtBR(videoViews)}
+                  Visualizações: {formatInteger(videoViews)}
                 </p>
               </div>
               <div
@@ -146,10 +148,10 @@ export default function SiteStatsCompact({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">Total de músicas</p>
                 <p className="mt-1 text-2xl font-black leading-tight text-white tabular-nums">
-                  {formatIntegerPtBR(totalMusics)}
+                  {formatInteger(totalMusics)}
                 </p>
                 <p className="mt-1 text-[11px] text-gray-500 tabular-nums sm:text-xs">
-                  Visualizações: {formatIntegerPtBR(musicViews)}
+                  Visualizações: {formatInteger(musicViews)}
                 </p>
               </div>
               <div

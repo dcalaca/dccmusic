@@ -8,12 +8,6 @@ import { trackTikTokEvent } from '@/components/TikTokEvents'
 const PROJECTS_URL = '/compositores/admin/studio-ia/projetos'
 const STUDIO_MUSIC_CREDITS = 10
 const SHOW_ACTIVE_NOTICE_EVENT = 'showActiveNotice'
-const STUDIO_PLAN_TIKTOK_VALUES: Record<string, { name: string; value: number }> = {
-  'studio-start': { name: 'Studio Start', value: 19.90 },
-  'studio-pro': { name: 'Studio Pro', value: 29.90 },
-  'studio-elite': { name: 'Studio Elite', value: 59.90 },
-  'dcc-studio-ia': { name: 'Plano DCC Studio IA', value: 19.90 },
-}
 
 function loginUrl(redirectTo: string) {
   return `/compositores/login?redirect=${encodeURIComponent(redirectTo)}`
@@ -240,10 +234,7 @@ export function StudioTopupButton() {
       content_name: 'Recarga Studio IA',
       content_category: 'Studio IA',
       event_id: `initiate_checkout:studio_topup:${Date.now()}`,
-      currency: 'BRL',
-      price: 1.99,
       quantity: 1,
-      value: 1.99,
     })
     router.push(token ? destination : loginUrl(destination))
   }
@@ -288,19 +279,12 @@ export function StudioPlanButton({ planSlug }: { planSlug: string }) {
   const handleClick = async () => {
     const token = localStorage.getItem('composer_token')
     const checkoutUrl = `/compositores/checkout?plan=${planSlug}`
-    const planEventData = STUDIO_PLAN_TIKTOK_VALUES[planSlug] || {
-      name: 'Plano DCC Studio IA',
-      value: 19.90,
-    }
     const checkoutEvent = {
       content_id: planSlug,
-      content_name: planEventData.name,
+      content_name: 'Plano DCC Studio IA',
       content_category: 'Studio IA',
-      currency: 'BRL',
       event_id: `initiate_checkout:${planSlug}:${Date.now()}`,
-      price: planEventData.value,
       quantity: 1,
-      value: planEventData.value,
     }
 
     if (!token) {

@@ -19,13 +19,15 @@ type TopupTier = {
 }
 
 function LocalizedMoney({ value, country }: { value: number; country: DccCountry }) {
-  const config = {
+  const configs: Record<string, { locale: string; currency: string; maximumFractionDigits: number }> = {
     BR: { locale: 'pt-BR', currency: 'BRL', maximumFractionDigits: 2 },
     PY: { locale: 'es-PY', currency: 'PYG', maximumFractionDigits: 0 },
     CO: { locale: 'es-CO', currency: 'COP', maximumFractionDigits: 0 },
     PT: { locale: 'pt-PT', currency: 'EUR', maximumFractionDigits: 2 },
     MX: { locale: 'es-MX', currency: 'MXN', maximumFractionDigits: 2 },
-  }[country]
+    US: { locale: 'en-US', currency: 'USD', maximumFractionDigits: 2 },
+  }
+  const config = configs[String(country)] || configs.BR
 
   return <>{new Intl.NumberFormat(config.locale, {
     style: 'currency',
@@ -58,7 +60,8 @@ export default function StudioTopupPage() {
     : country === 'PY' ? 'PYG'
       : country === 'CO' ? 'COP'
         : country === 'MX' ? 'MXN'
-          : 'BRL'
+          : String(country) === 'US' ? 'USD'
+            : 'BRL'
 
   const openStripeFallback = async (topupId: string, amount: number, email?: string | null) => {
     const token = localStorage.getItem('composer_token')
@@ -191,7 +194,8 @@ export default function StudioTopupPage() {
 
   const normalizedMusicQuantity = Math.max(1, Math.floor(Number(musicQuantity) || 1))
   const getCurrentTier = () => {
-    const fallbackUnitPrice = country === 'PT' ? 1.99
+    const fallbackUnitPrice = String(country) === 'US' ? 0
+      : country === 'PT' ? 1.99
       : country === 'PY' ? 5600
         : country === 'CO' ? 3200
           : country === 'MX' ? 17.68
@@ -454,7 +458,7 @@ export default function StudioTopupPage() {
               <button
                 type="button"
                 onClick={startRedirectCheckout}
-                disabled={checkoutLoading}
+                disabled={checkoutLoading || currentTier.unitPrice <= 0}
                 className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-4 font-bold text-white hover:from-primary-500 hover:to-purple-500 disabled:opacity-60"
               >
                 {checkoutLoading ? <FiLoader className="animate-spin" /> : <FiCreditCard />}

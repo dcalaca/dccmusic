@@ -27,6 +27,10 @@ export type StudioTopupTier = {
 
 export type StudioPricingSource = 'supabase' | 'fallback'
 
+function assertDatabaseManagedPricing(country: DccCountry, kind: 'recarga' | 'plano'): never {
+  throw new Error(`Preço de ${kind} em USD não configurado no banco de dados. Configure em /admin/precos.`)
+}
+
 export type StudioPlanPriceQuote = {
   amount: number
   currency: StudioTopupCurrency
@@ -70,8 +74,10 @@ export async function getStudioTopupTiersFromPricing(country: DccCountry): Promi
       if (tiers.length > 0) return { tiers, currency, source: 'supabase' }
     }
   } catch (error) {
-    console.error('[STUDIO PRICING] Falha ao ler recarga do Supabase; usando fallback:', error)
+    console.error('[STUDIO PRICING] Falha ao ler recarga do Supabase:', error)
   }
+
+  if (String(country) === 'US') return assertDatabaseManagedPricing(country, 'recarga')
 
   const fallbackQuote = getStudioTopupQuote(1, country)
   const fallbackTiers = getStudioTopupTiers(country).map((tier, index, all) => ({
@@ -97,6 +103,7 @@ export async function getStudioTopupQuoteFromPricing(
   const tier = pricing.tiers.find((item) => musicQuantity >= item.minMusicQuantity && musicQuantity <= item.maxMusicQuantity)
 
   if (!tier) {
+    if (String(country) === 'US') return assertDatabaseManagedPricing(country, 'recarga')
     return { ...getStudioTopupQuote(musicQuantity, country), source: 'fallback' }
   }
 
@@ -138,8 +145,10 @@ export async function getStudioPlanPriceFromPricing(
       }
     }
   } catch (error) {
-    console.error('[STUDIO PRICING] Falha ao ler plano do Supabase; usando fallback:', error)
+    console.error('[STUDIO PRICING] Falha ao ler plano do Supabase:', error)
   }
+
+  if (String(country) === 'US') return assertDatabaseManagedPricing(country, 'plano')
 
   return { ...getStudioPlanPriceQuote(priceInBrl, country), source: 'fallback' }
 }
@@ -177,7 +186,7 @@ export async function getStudioPlanPricesFromPricing(
       return prices
     }, {})
   } catch (error) {
-    console.error('[STUDIO PRICING] Falha ao ler preços dos planos em lote; usando fallback:', error)
+    console.error('[STUDIO PRICING] Falha ao ler preços dos planos em lote:', error)
     return {}
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const localeByCurrency: Record<string, string> = {
   BRL: 'pt-BR',
@@ -8,6 +8,7 @@ const localeByCurrency: Record<string, string> = {
   COP: 'es-CO',
   MXN: 'es-MX',
   EUR: 'pt-PT',
+  USD: 'en-US',
 }
 
 function formatCurrency(value: number, currency: string) {
@@ -44,6 +45,12 @@ export default function CurrencyPriceInput({
   const [raw, setRaw] = useState(String(initial))
   const [display, setDisplay] = useState(formatCurrency(initial, currency))
   const [focused, setFocused] = useState(false)
+
+  useEffect(() => {
+    const next = Number(value) || 0
+    setRaw(String(next))
+    setDisplay(formatCurrency(next, currency))
+  }, [currency, value])
 
   function handleFocus() {
     setFocused(true)

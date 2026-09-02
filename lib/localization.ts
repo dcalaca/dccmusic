@@ -52,13 +52,11 @@ export const BRL_TO_PYG_DISPLAY_RATE = 1160
 export const BRL_TO_COP_DISPLAY_RATE = 590
 export const BRL_TO_EUR_DISPLAY_RATE = 0.1662
 export const BRL_TO_MXN_DISPLAY_RATE = 3.29
-export const BRL_TO_USD_DISPLAY_RATE = 0.185
 
 export function brlToPygDisplay(value: number) { const converted = Math.max(0, Number(value) || 0) * BRL_TO_PYG_DISPLAY_RATE; return Math.round(converted / 100) * 100 }
 export function brlToCopDisplay(value: number) { const converted = Math.max(0, Number(value) || 0) * BRL_TO_COP_DISPLAY_RATE; return Math.round(converted / 100) * 100 }
 export function brlToEurDisplay(value: number) { const converted = Math.max(0, Number(value) || 0) * BRL_TO_EUR_DISPLAY_RATE; return Math.round(converted * 100) / 100 }
 export function brlToMxnDisplay(value: number) { const converted = Math.max(0, Number(value) || 0) * BRL_TO_MXN_DISPLAY_RATE; return Math.round(converted * 100) / 100 }
-export function brlToUsdDisplay(value: number) { const converted = Math.max(0, Number(value) || 0) * BRL_TO_USD_DISPLAY_RATE; return Math.round(converted * 100) / 100 }
 
 export function formatLocalizedMoney(valueInBrl: number, country: DccCountry) {
   const code = String(country)
@@ -66,6 +64,5 @@ export function formatLocalizedMoney(valueInBrl: number, country: DccCountry) {
   if (code === 'CO') return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(brlToCopDisplay(valueInBrl))
   if (code === 'PT') return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(brlToEurDisplay(valueInBrl))
   if (code === 'MX') return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(brlToMxnDisplay(valueInBrl))
-  if (code === 'US') return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(brlToUsdDisplay(valueInBrl))
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valueInBrl)
 }

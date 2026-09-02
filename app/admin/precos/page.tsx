@@ -13,14 +13,29 @@ const countries = [
   { code: 'CO', label: 'Colômbia', flag: '🇨🇴' },
   { code: 'MX', label: 'México', flag: '🇲🇽' },
   { code: 'PT', label: 'Portugal', flag: '🇵🇹' },
+  { code: 'US', label: 'Estados Unidos', flag: '🇺🇸' },
 ] as const
 
 const countryLabels: Record<string, string> = Object.fromEntries(countries.map((country) => [country.code, country.label]))
 const countryFlags: Record<string, string> = Object.fromEntries(countries.map((country) => [country.code, country.flag]))
+const currencyByCountry: Record<string, string> = {
+  BR: 'BRL', PY: 'PYG', CO: 'COP', MX: 'MXN', PT: 'EUR', US: 'USD',
+}
+const currencies = [
+  { code: 'BRL', label: 'Real brasileiro (R$)' },
+  { code: 'USD', label: 'Dólar americano (US$)' },
+  { code: 'EUR', label: 'Euro (€)' },
+  { code: 'PYG', label: 'Guarani paraguaio (₲)' },
+  { code: 'COP', label: 'Peso colombiano (COP)' },
+  { code: 'MXN', label: 'Peso mexicano (MX$)' },
+] as const
+const allowedCurrencies = new Set<string>(currencies.map((currency) => currency.code))
+const studioPlanSlugs = new Set(['studio-start', 'studio-pro', 'studio-elite', 'dcc-studio-ia'])
 
-function redirectAfterSave(country: string) {
+function redirectAfterSave(country: string, currency?: string) {
   const safeCountry = countries.some((item) => item.code === country) ? country : 'BR'
-  redirect(`/admin/precos?pais=${safeCountry}&updated=1`)
+  const safeCurrency = currency && allowedCurrencies.has(currency) ? currency : currencyByCountry[safeCountry]
+  redirect(`/admin/precos?pais=${safeCountry}&moeda=${safeCurrency}&updated=1`)
 }
 
 async function updateTopupPrice(formData: FormData) {
@@ -28,19 +43,20 @@ async function updateTopupPrice(formData: FormData) {
   await requireAuth()
   const id = String(formData.get('id') || '')
   const country = String(formData.get('country') || 'BR').toUpperCase()
+  const currency = String(formData.get('currency') || currencyByCountry[country] || 'BRL').toUpperCase()
   const price = Number(formData.get('price'))
-  if (!id || !Number.isFinite(price) || price <= 0) return
+  if (!id || !allowedCurrencies.has(currency) || !Number.isFinite(price) || price <= 0) return
 
   const { error } = await supabaseAdmin
     .from('studio_topup_pricing')
-    .update({ unit_price: price, updated_at: new Date().toISOString() })
+    .update({ unit_price: price, currency, updated_at: new Date().toISOString() })
     .eq('id', id)
   if (error) throw error
 
   revalidatePath('/admin/precos')
   revalidatePath('/studio-ia')
   revalidatePath('/compositores/planos')
-  redirectAfterSave(country)
+  redirectAfterSave(country, currency)
 }
 
 async function updateCountryPlanPrice(formData: FormData) {
@@ -49,14 +65,38 @@ async function updateCountryPlanPrice(formData: FormData) {
   const id = String(formData.get('id') || '')
   const slug = String(formData.get('slug') || '')
   const country = String(formData.get('country') || 'BR').toUpperCase()
+  const currency = String(formData.get('currency') || currencyByCountry[country] || '').toUpperCase()
   const price = Number(formData.get('price'))
-  if (!id || !slug || !Number.isFinite(price) || price <= 0) return
+  if (!slug || !allowedCurrencies.has(currency) || !Number.isFinite(price) || price <= 0) return
 
-  const { error } = await supabaseAdmin
-    .from('studio_plan_country_pricing')
-    .update({ price, updated_at: new Date().toISOString() })
-    .eq('id', id)
-  if (error) throw error
+  if (id) {
+    const { error } = await supabaseAdmin
+      .from('studio_plan_country_pricing')
+      .update({ price, currency, is_active: true, updated_at: new Date().toISOString() })
+      .eq('id', id)
+    if (error) throw error
+  } else {
+    const { data: existing, error: lookupError } = await supabaseAdmin
+      .from('studio_plan_country_pricing')
+      .select('id')
+      .eq('plan_slug', slug)
+      .eq('country', country)
+      .maybeSingle()
+    if (lookupError) throw lookupError
+
+    if (existing?.id) {
+      const { error } = await supabaseAdmin
+        .from('studio_plan_country_pricing')
+        .update({ price, currency, is_active: true, updated_at: new Date().toISOString() })
+        .eq('id', existing.id)
+      if (error) throw error
+    } else {
+      const { error } = await supabaseAdmin
+        .from('studio_plan_country_pricing')
+        .insert({ plan_slug: slug, country, currency, price, is_active: true })
+      if (error) throw error
+    }
+  }
 
   if (country === 'BR') {
     const { error: planError } = await supabaseAdmin
@@ -69,7 +109,7 @@ async function updateCountryPlanPrice(formData: FormData) {
   revalidatePath('/admin/precos')
   revalidatePath('/studio-ia')
   revalidatePath('/compositores/planos')
-  redirectAfterSave(country)
+  redirectAfterSave(country, currency)
 }
 
 async function updateBasePlanPrice(formData: FormData) {
@@ -87,13 +127,13 @@ async function updateBasePlanPrice(formData: FormData) {
 
   revalidatePath('/admin/precos')
   revalidatePath('/compositores/planos')
-  redirectAfterSave('BR')
+  redirectAfterSave('BR', 'BRL')
 }
 
 export default async function AdminPricingPage({
   searchParams,
 }: {
-  searchParams?: { pais?: string; updated?: string }
+  searchParams?: { pais?: string; moeda?: string; updated?: string }
 }) {
   await requireAuth()
 
@@ -102,6 +142,10 @@ export default async function AdminPricingPage({
     ? requestedCountry
     : 'BR'
   const showUpdatedToast = searchParams?.updated === '1'
+  const requestedCurrency = String(searchParams?.moeda || currencyByCountry[selectedCountry] || 'BRL').toUpperCase()
+  const selectedCurrency = allowedCurrencies.has(requestedCurrency)
+    ? requestedCurrency
+    : currencyByCountry[selectedCountry]
 
   const [{ data: topups, error: topupError }, { data: countryPlans, error: countryPlanError }, { data: plans, error: plansError }] = await Promise.all([
     supabaseAdmin
@@ -127,10 +171,14 @@ export default async function AdminPricingPage({
   if (plansError) throw plansError
 
   const planNames = new Map((plans || []).map((plan: any) => [plan.slug, plan.name]))
-  const studioSlugs = new Set((countryPlans || []).map((row: any) => row.plan_slug))
-  const generalPlans = (plans || []).filter((plan: any) => !studioSlugs.has(plan.slug))
+  const composerPlans = (plans || []).filter((plan: any) => !studioPlanSlugs.has(plan.slug) && plan.is_active)
   const filteredTopups = (topups || []).filter((row: any) => row.country === selectedCountry)
-  const filteredCountryPlans = (countryPlans || []).filter((row: any) => row.country === selectedCountry)
+  const filteredCountryPlans = (countryPlans || []).filter((row: any) => row.country === selectedCountry && studioPlanSlugs.has(row.plan_slug))
+  const composerCountryPrices = new Map(
+    (countryPlans || [])
+      .filter((row: any) => row.country === selectedCountry && !studioPlanSlugs.has(row.plan_slug))
+      .map((row: any) => [row.plan_slug, row])
+  )
   const selectedLabel = countryLabels[selectedCountry] || selectedCountry
   const selectedFlag = countryFlags[selectedCountry] || ''
 
@@ -173,6 +221,17 @@ export default async function AdminPricingPage({
             })}
           </div>
           <p className="mt-4 text-xs text-gray-500">Abaixo aparecem somente recargas e planos do país selecionado.</p>
+          <form method="get" className="mt-5 rounded-2xl border border-gray-800 bg-black/40 p-4">
+            <input type="hidden" name="pais" value={selectedCountry} />
+            <label htmlFor="pricing-currency" className="mb-2 block text-xs font-bold uppercase tracking-[0.14em] text-gray-500">Moeda usada neste país</label>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <select id="pricing-currency" name="moeda" defaultValue={selectedCurrency} className="min-h-12 flex-1 rounded-xl border border-gray-700 bg-gray-950 px-4 py-3 font-bold text-white">
+                {currencies.map((currency) => <option key={currency.code} value={currency.code}>{currency.label}</option>)}
+              </select>
+              <button className="rounded-xl bg-purple-600 px-5 py-3 font-black text-white hover:bg-purple-500">Aplicar moeda</button>
+            </div>
+            <p className="mt-2 text-xs text-gray-500">Os campos abaixo serão exibidos e salvos em {selectedCurrency}.</p>
+          </form>
         </section>
 
         <section className="mb-10 rounded-3xl border border-purple-800/60 bg-black/30 p-5 sm:p-7">
@@ -190,12 +249,13 @@ export default async function AdminPricingPage({
                 {filteredTopups.map((row: any) => (
                   <tr key={row.id} className="border-b border-gray-900">
                     <td className="p-3 font-bold text-white">{row.min_quantity}{row.max_quantity ? ` a ${row.max_quantity}` : '+'} músicas</td>
-                    <td className="p-3 text-gray-400">{row.currency}</td>
+                    <td className="p-3 text-gray-400">{selectedCurrency}</td>
                     <td className="p-3">
                       <form action={updateTopupPrice} className="flex items-center gap-2">
                         <input type="hidden" name="id" value={row.id} />
                         <input type="hidden" name="country" value={selectedCountry} />
-                        <CurrencyPriceInput value={Number(row.unit_price)} currency={row.currency} compact />
+                        <input type="hidden" name="currency" value={selectedCurrency} />
+                        <CurrencyPriceInput value={Number(row.unit_price)} currency={selectedCurrency} compact />
                         <button className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 font-bold text-white hover:bg-purple-500"><FiSave /> Salvar</button>
                       </form>
                     </td>
@@ -220,28 +280,37 @@ export default async function AdminPricingPage({
                 <input type="hidden" name="id" value={row.id} />
                 <input type="hidden" name="slug" value={row.plan_slug} />
                 <input type="hidden" name="country" value={row.country} />
+                <input type="hidden" name="currency" value={selectedCurrency} />
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <div><p className="font-black text-white">{planNames.get(row.plan_slug) || row.plan_slug}</p><p className="text-xs text-gray-500">{selectedFlag} {selectedLabel} · {row.currency}</p></div>
+                  <div><p className="font-black text-white">{planNames.get(row.plan_slug) || row.plan_slug}</p><p className="text-xs text-gray-500">{selectedFlag} {selectedLabel} · {selectedCurrency}</p></div>
                   <button className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-sm font-bold text-white hover:bg-purple-500"><FiSave /> Salvar</button>
                 </div>
-                <CurrencyPriceInput value={Number(row.price)} currency={row.currency} />
+                <CurrencyPriceInput value={Number(row.price)} currency={selectedCurrency} />
               </form>
             ))}
           </div>
         </section>
 
-        {selectedCountry === 'BR' && generalPlans.length > 0 ? (
+        {composerPlans.length > 0 ? (
           <section className="mb-10 rounded-3xl border border-gray-800 bg-black/30 p-5 sm:p-7">
-            <h2 className="text-2xl font-black text-white">Outros planos DCC Music · 🇧🇷 Brasil</h2>
-            <p className="mt-1 text-sm text-gray-400">Preço-base dos planos que não usam a tabela internacional do Studio.</p>
+            <h2 className="text-2xl font-black text-white">Planos Compositor Premium · {selectedFlag} {selectedLabel}</h2>
+            <p className="mt-1 text-sm text-gray-400">Valores usados na vitrine e cobrados no checkout deste país.</p>
             <div className="mt-6 grid gap-4 lg:grid-cols-2">
-              {generalPlans.map((plan: any) => (
-                <form key={plan.id} action={updateBasePlanPrice} className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4">
-                  <input type="hidden" name="id" value={plan.id} />
-                  <div className="mb-3 flex items-center justify-between"><div><p className="font-black text-white">{plan.name}</p><p className="text-xs text-gray-500">{plan.slug} · BRL</p></div><button className="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-3 py-2 text-sm font-bold hover:bg-gray-700"><FiSave /> Salvar</button></div>
-                  <CurrencyPriceInput value={Number(plan.price)} currency="BRL" />
-                </form>
-              ))}
+              {composerPlans.map((plan: any) => {
+                const countryPrice: any = composerCountryPrices.get(plan.slug)
+                const isBrazil = selectedCountry === 'BR'
+                const formCurrency = isBrazil ? 'BRL' : selectedCurrency
+                return (
+                  <form key={plan.id} action={isBrazil ? updateBasePlanPrice : updateCountryPlanPrice} className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4">
+                    <input type="hidden" name="id" value={isBrazil ? plan.id : countryPrice?.id || ''} />
+                    <input type="hidden" name="slug" value={plan.slug} />
+                    <input type="hidden" name="country" value={selectedCountry} />
+                    <input type="hidden" name="currency" value={formCurrency} />
+                    <div className="mb-3 flex items-center justify-between gap-3"><div><p className="font-black text-white">{plan.name}</p><p className="text-xs text-gray-500">{plan.slug} · {formCurrency}</p></div><button className="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-3 py-2 text-sm font-bold hover:bg-gray-700"><FiSave /> {countryPrice || isBrazil ? 'Salvar' : 'Cadastrar'}</button></div>
+                    <CurrencyPriceInput value={Number(isBrazil ? plan.price : countryPrice?.price || 0)} currency={formCurrency} />
+                  </form>
+                )
+              })}
             </div>
           </section>
         ) : null}

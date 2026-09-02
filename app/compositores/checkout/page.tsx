@@ -121,6 +121,7 @@ function CheckoutContent() {
         const productId = data.planId || planSlug || 'composer_plan'
         const productName = data.planName || (isStudioPlan(planSlug) ? 'Plano DCC Studio IA' : 'Compositor Premium')
         const planPrice = Number(data.planPrice || data.amount) || 0
+        const checkoutCurrency = String(data.currency || 'BRL').toUpperCase()
         const fbq = (window as any).fbq
         if (typeof fbq === 'function') {
           fbq('track', 'InitiateCheckout', {
@@ -131,7 +132,7 @@ function CheckoutContent() {
               id: productId,
               quantity: 1,
             }],
-            currency: 'BRL',
+            currency: checkoutCurrency,
             value: planPrice,
           }, {
             eventID: metaEventId,
@@ -141,7 +142,7 @@ function CheckoutContent() {
           content_id: productId,
           content_name: productName,
           content_category: isStudioPlan(planSlug) ? 'Studio IA' : 'Compositores Premium',
-          currency: 'BRL',
+          currency: checkoutCurrency,
           event_id: metaEventId,
           price: planPrice,
           quantity: 1,

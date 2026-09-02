@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { FiHelpCircle, FiChevronDown, FiCopy, FiCheck } from 'react-icons/fi'
 import { useLocalization } from '@/components/LocalizationProvider'
 import { faqsEsPy } from '@/lib/faq-es-py'
+import { faqsEnUs } from '@/lib/faq-en-us'
 import { faqsPtBr } from '@/lib/faq-pt-br'
 import { faqsPtPt } from '@/lib/faq-pt-pt'
 
@@ -11,34 +12,43 @@ export default function FAQPage() {
   const { country } = useLocalization()
   const isPortugal = country === 'PT'
   const isSpanish = country === 'PY' || country === 'CO'
-  const localizedFaqs = isPortugal ? faqsPtPt : isSpanish ? faqsEsPy : faqsPtBr
+  const isUS = String(country) === 'US'
+  const localizedFaqs = isUS ? faqsEnUs : isPortugal ? faqsPtPt : isSpanish ? faqsEsPy : faqsPtBr
 
-  const title = isPortugal
+  const title = isUS
+    ? 'Frequently Asked Questions'
+    : isPortugal
     ? 'Perguntas frequentes'
     : isSpanish
       ? 'Preguntas frecuentes'
       : 'Perguntas Frequentes'
 
-  const subtitle = isPortugal
+  const subtitle = isUS
+    ? 'Find answers about DCC Music, AI Studio, Song Chords, credits, projects, and support.'
+    : isPortugal
     ? 'Esclareça as suas dúvidas sobre o DCC Music, Studio IA, Cifras, créditos, projetos e apoio.'
     : isSpanish
       ? 'Resuelve tus dudas sobre DCC Music, Studio IA, Cifras, créditos, proyectos y soporte.'
       : 'Tire dúvidas sobre DCC Music, Studio IA, Cifra da Música, créditos, projetos e suporte.'
 
-  const supportTitle = isPortugal
+  const supportTitle = isUS
+    ? "Didn't find what you were looking for?"
+    : isPortugal
     ? 'Não encontrou o que procurava?'
     : isSpanish
       ? '¿No encontraste lo que buscabas?'
       : 'Não encontrou o que procurava?'
 
-  const supportText = isPortugal
+  const supportText = isUS
+    ? 'Contact support and include the email address connected to your account. For AI Studio or Song Chords questions, also include the project code.'
+    : isPortugal
     ? 'Contacte o apoio e indique o e-mail associado à sua conta. Se a questão for sobre o Studio IA ou Cifras, envie também o código do projeto.'
     : isSpanish
       ? 'Comunícate con soporte e informa el correo de tu cuenta. Si la consulta es sobre Studio IA o Cifras, envía también el código del proyecto.'
       : 'Fale com o suporte e informe seu email de cadastro. Se for sobre uma música do Studio IA ou Cifra da Música, envie também o código do projeto.'
 
-  const showEmailLabel = isPortugal ? 'Ver e-mail' : isSpanish ? 'Ver correo' : 'Ver Email'
-  const copyEmailLabel = isPortugal ? 'Copiar e-mail' : isSpanish ? 'Copiar correo' : 'Copiar email'
+  const showEmailLabel = isUS ? 'View email' : isPortugal ? 'Ver e-mail' : isSpanish ? 'Ver correo' : 'Ver Email'
+  const copyEmailLabel = isUS ? 'Copy email' : isPortugal ? 'Copiar e-mail' : isSpanish ? 'Copiar correo' : 'Copiar email'
 
   const faqSchema = {
     '@context': 'https://schema.org',

@@ -7,8 +7,10 @@ import SiteStatsCompact from '@/components/SiteStatsCompact'
 import ComposerSignupCta from '@/components/ComposerSignupCta'
 import HeroImageCarousel from '@/components/HeroImageCarousel'
 import { Suspense } from 'react'
+import { cookies, headers } from 'next/headers'
 import Link from 'next/link'
 import { FiPlayCircle, FiMusic, FiArrowRight, FiZap } from 'react-icons/fi'
+import { COUNTRY_COOKIE, COUNTRY_CONFIG, normalizeCountry, type DccCountry } from '@/lib/localization'
 
 export const metadata = {
   title: 'DCC Music - Músicas, Studio IA e Cifras',
@@ -67,9 +69,9 @@ function formatDayKey(date: Date) {
   }).format(date)
 }
 
-function formatDayLabel(dayKey: string) {
+function formatDayLabel(dayKey: string, locale: string) {
   const date = new Date(`${dayKey}T12:00:00-03:00`)
-  return new Intl.DateTimeFormat('pt-BR', {
+  return new Intl.DateTimeFormat(locale, {
     timeZone: TIME_ZONE,
     day: '2-digit',
     month: '2-digit',
@@ -125,7 +127,7 @@ async function countPublicRows(table: string) {
   }
 }
 
-async function getPublicAiMusicDays() {
+async function getPublicAiMusicDays(country: DccCountry) {
   const todayKey = formatDayKey(new Date())
   const startDate = addDays(new Date(`${todayKey}T00:00:00-03:00`), -13)
   const endExclusive = addDays(new Date(`${todayKey}T00:00:00-03:00`), 1)
@@ -135,7 +137,7 @@ async function getPublicAiMusicDays() {
     const date = formatDayKey(current)
     buckets.set(date, {
       date,
-      label: formatDayLabel(date),
+      label: formatDayLabel(date, COUNTRY_CONFIG[String(country)].locale),
       deliveredMusics: 0,
     })
   }
@@ -206,7 +208,7 @@ async function getFeaturedContent() {
   }
 }
 
-async function getSiteSummaryStats() {
+async function getSiteSummaryStats(country: DccCountry) {
   const [
     rVideos,
     rMusics,
@@ -226,7 +228,7 @@ async function getSiteSummaryStats() {
     countPublicRows('dccmusic_comments'),
     countPublicRows('dccmusic_ratings'),
     countPublicRows('studio_versions'),
-    getPublicAiMusicDays(),
+    getPublicAiMusicDays(country),
   ])
 
   return {
@@ -242,10 +244,10 @@ async function getSiteSummaryStats() {
   }
 }
 
-async function HomeDynamicContent() {
+async function HomeDynamicContent({ country }: { country: DccCountry }) {
   const [{ featuredVideos, featuredMusics, topGenres }, siteStats] = await Promise.all([
     getFeaturedContent(),
-    getSiteSummaryStats(),
+    getSiteSummaryStats(country),
   ])
 
   return (
@@ -290,6 +292,7 @@ async function HomeDynamicContent() {
       )}
 
       <SiteStatsCompact
+        locale={COUNTRY_CONFIG[String(country)].locale}
         totalVideos={siteStats.totalVideos}
         videoViews={siteStats.videoViews}
         totalMusics={siteStats.totalMusics}
@@ -314,6 +317,8 @@ async function HomeDynamicContent() {
 }
 
 export default async function Home() {
+  const requestHeaders = headers()
+  const country = normalizeCountry(cookies().get(COUNTRY_COOKIE)?.value || requestHeaders.get('x-dcc-country') || requestHeaders.get('x-vercel-ip-country') || requestHeaders.get('cf-ipcountry'))
   return (
     <div className="min-h-screen">
       <section className="relative flex flex-col bg-black" aria-label="Destaque principal">
@@ -370,7 +375,7 @@ export default async function Home() {
       </section>
 
       <Suspense fallback={null}>
-        <HomeDynamicContent />
+        <HomeDynamicContent country={country} />
       </Suspense>
     </div>
   )
