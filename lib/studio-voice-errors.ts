@@ -45,7 +45,7 @@ export function translateStudioVoiceError(value?: string | null) {
     normalized.includes('did not sound like you said the phrase') ||
     normalized.includes('try reading it more clearly')
   ) {
-    return 'Não conseguimos reconhecer a frase de verificação. Tente novamente falando exatamente a frase exibida, de forma clara e sem cantar.'
+    return 'Não conseguimos reconhecer a frase de verificação. Tente novamente cantando exatamente a frase exibida, com voz clara e sem música de fundo.'
   }
 
   if (
