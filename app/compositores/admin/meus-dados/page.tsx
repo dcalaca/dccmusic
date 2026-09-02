@@ -14,7 +14,6 @@ import {
   FiChevronsLeft,
   FiChevronsRight,
   FiCreditCard,
-  FiLogOut,
   FiMail,
   FiMusic,
   FiPlayCircle,
@@ -480,14 +479,6 @@ export default function ComposerMyDataPage() {
       .finally(() => setLoading(false))
   }, [router])
 
-  const handleLogout = () => {
-    localStorage.removeItem('composer_token')
-    localStorage.removeItem('composer_token_temp')
-    localStorage.removeItem('composer_data')
-    window.dispatchEvent(new Event('authChange'))
-    router.push('/compositores/login')
-  }
-
   const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null
     setPhotoFile(file)
@@ -789,16 +780,6 @@ export default function ComposerMyDataPage() {
           </div>
 
           <StatementSection statement={statement} />
-
-          <button
-            type="button"
-            onClick={handleLogout}
-            disabled={deletingAccount}
-            className="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-950/20 px-4 py-3 text-sm font-bold text-red-200 hover:bg-red-950/35 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            <FiLogOut />
-            Sair
-          </button>
 
           <section className="mt-5 rounded-[1.75rem] border border-red-500/25 bg-red-950/10 p-4 sm:p-5">
             <h2 className="text-lg font-black text-red-100 sm:text-xl">Excluir conta</h2>
