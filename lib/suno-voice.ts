@@ -61,6 +61,17 @@ export async function createSunoVoiceValidation(input: {
   })
 }
 
+export async function regenerateSunoVoiceValidation(taskId: string) {
+  return callSuno('/api/v1/voice/regenerate', {
+    method: 'POST',
+    body: JSON.stringify({
+      taskId,
+      // This endpoint uses the unusual `calBackUrl` spelling documented by Suno.
+      calBackUrl: getStudioCallbackUrl('/api/studio/suno/voice-validation-callback'),
+    }),
+  })
+}
+
 export async function createSunoCustomVoice(input: {
   taskId: string
   verifyUrl: string
