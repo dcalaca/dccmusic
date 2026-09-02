@@ -623,17 +623,6 @@ export default function ComposerMyDataPage() {
               </h1>
               <p className="mt-1 text-sm text-gray-400">Veja seus dados, saldo, plano e atalhos principais.</p>
             </div>
-            <div className="grid gap-2 sm:flex sm:gap-3">
-              <button
-                type="button"
-                onClick={handleLogout}
-                disabled={deletingAccount}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-950/20 px-4 py-3 text-sm font-bold text-red-200 hover:bg-red-950/35 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <FiLogOut />
-                Sair
-              </button>
-            </div>
           </div>
 
           <section className="mb-5 overflow-hidden rounded-[1.75rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.25),transparent_32%),linear-gradient(135deg,rgba(8,8,12,0.98),rgba(17,24,39,0.94),rgba(49,15,80,0.65))] p-4 shadow-2xl shadow-purple-950/25 sm:p-5">
@@ -800,6 +789,16 @@ export default function ComposerMyDataPage() {
           </div>
 
           <StatementSection statement={statement} />
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={deletingAccount}
+            className="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-950/20 px-4 py-3 text-sm font-bold text-red-200 hover:bg-red-950/35 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <FiLogOut />
+            Sair
+          </button>
 
           <section className="mt-5 rounded-[1.75rem] border border-red-500/25 bg-red-950/10 p-4 sm:p-5">
             <h2 className="text-lg font-black text-red-100 sm:text-xl">Excluir conta</h2>
