@@ -3,7 +3,7 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { supabaseAdmin } from '@/lib/supabase'
 import { chargeStudioVoiceCreationOnce } from '@/lib/studio'
 import { createStudioVoiceAssetUrl, uploadStudioVoiceAsset, validateStudioVoiceUploadedAsset } from '@/lib/studio-voice-assets'
-import { checkSunoVoiceAvailability, createSunoCustomVoice, createSunoVoiceValidation, extractSunoVoiceId, getSunoVoiceRecordInfo, getSunoVoiceValidationInfo } from '@/lib/suno-voice'
+import { checkSunoVoiceAvailability, createSunoCustomVoice, createSunoVoiceValidation, extractSunoVoiceId, getSunoVoiceRecordInfo, getSunoVoiceValidationInfo, regenerateSunoVoiceValidation } from '@/lib/suno-voice'
 import { isStudioVoiceExpiredError, translateStudioVoiceError, VOICE_PROCESSING_ERROR_MESSAGE } from '@/lib/studio-voice-errors'
 
 export const runtime = 'nodejs'
@@ -123,12 +123,14 @@ export async function PATCH(
       const voiceUrl = await createStudioVoiceAssetUrl(voice.source_audio_path, voice.source_audio_storage_provider)
       if (!voiceUrl) throw new Error('Não foi possível preparar o áudio salvo da voz.')
 
-      const validation = await createSunoVoiceValidation({
-        voiceUrl,
-        vocalStartS: Number(voice.vocal_start_s) || 0,
-        vocalEndS: Math.max((Number(voice.vocal_start_s) || 0) + 1, Number(voice.vocal_end_s) || 20),
-        language: voice.language || 'pt',
-      })
+      const validation = voice.validation_task_id
+        ? await regenerateSunoVoiceValidation(voice.validation_task_id)
+        : await createSunoVoiceValidation({
+            voiceUrl,
+            vocalStartS: Number(voice.vocal_start_s) || 0,
+            vocalEndS: Math.max((Number(voice.vocal_start_s) || 0) + 1, Number(voice.vocal_end_s) || 20),
+            language: voice.language || 'pt',
+          })
 
       updatePayload = {
         ...updatePayload,
@@ -158,12 +160,14 @@ export async function PATCH(
       const voiceUrl = await createStudioVoiceAssetUrl(voice.source_audio_path, voice.source_audio_storage_provider)
       if (!voiceUrl) throw new Error('Não foi possível preparar o áudio para validação.')
 
-      const validation = await createSunoVoiceValidation({
-        voiceUrl,
-        vocalStartS: Number(voice.vocal_start_s) || 0,
-        vocalEndS: Math.max((Number(voice.vocal_start_s) || 0) + 1, Number(voice.vocal_end_s) || 20),
-        language: voice.language || 'pt',
-      })
+      const validation = voice.validation_task_id
+        ? await regenerateSunoVoiceValidation(voice.validation_task_id)
+        : await createSunoVoiceValidation({
+            voiceUrl,
+            vocalStartS: Number(voice.vocal_start_s) || 0,
+            vocalEndS: Math.max((Number(voice.vocal_start_s) || 0) + 1, Number(voice.vocal_end_s) || 20),
+            language: voice.language || 'pt',
+          })
 
       updatePayload = {
         ...updatePayload,
