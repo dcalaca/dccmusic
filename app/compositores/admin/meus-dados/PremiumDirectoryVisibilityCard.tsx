@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FiCheckCircle, FiEye, FiEyeOff, FiLoader } from 'react-icons/fi'
+import { FiCheckCircle, FiEye, FiEyeOff, FiInfo, FiLoader } from 'react-icons/fi'
 
 export default function PremiumDirectoryVisibilityCard() {
   const [visible, setVisible] = useState(true)
@@ -72,27 +72,14 @@ export default function PremiumDirectoryVisibilityCard() {
   }
 
   return (
-    <section className="rounded-[1.75rem] border border-white/10 bg-[radial-gradient(circle_at_top_right,rgba(168,85,247,0.14),transparent_32%),rgba(3,7,18,0.92)] p-5 shadow-2xl shadow-black/20 sm:p-6">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="max-w-3xl">
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-purple-400/25 bg-purple-500/10 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-purple-100">
-            {visible ? <FiEye /> : <FiEyeOff />}
-            Privacidade do perfil
-          </div>
-          <h2 className="text-xl font-black text-white sm:text-2xl">
-            Visível na página de Compositores Premium
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-gray-400">
-            {visible
-              ? 'Seu perfil pode aparecer na lista pública de Compositores Premium enquanto seu plano estiver ativo.'
-              : 'Seu perfil está oculto da lista de Compositores Premium. Seu plano e suas músicas continuam normalmente ativos.'}
-          </p>
-          <p className="mt-2 text-xs leading-relaxed text-gray-500">
-            Esta opção controla somente a listagem em Compositores Premium. Seu link público direto continua funcionando.
-          </p>
+    <section className="mb-5 rounded-2xl border border-white/10 bg-white/[0.025] p-3 shadow-lg shadow-black/10 sm:p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          {visible ? <FiEye className="shrink-0 text-green-300" /> : <FiEyeOff className="shrink-0 text-gray-400" />}
+          <span className="truncate text-sm font-bold text-gray-200">Visível na página de Compositores</span>
+          <span title="Controla apenas se seu perfil aparece na lista pública de Compositores Premium. O link direto continua funcionando." className="shrink-0 text-gray-500"><FiInfo /></span>
         </div>
-
-        <div className="w-full lg:w-auto lg:min-w-[280px]">
+        <div className="w-auto shrink-0">
           <button
             type="button"
             role="switch"
@@ -106,14 +93,7 @@ export default function PremiumDirectoryVisibilityCard() {
                 : 'border-gray-700 bg-black/30 hover:bg-black/45'
             }`}
           >
-            <div>
-              <p className={`text-sm font-black ${visible ? 'text-green-200' : 'text-gray-200'}`}>
-                {saving ? 'Salvando...' : visible ? 'Perfil visível' : 'Perfil oculto'}
-              </p>
-              <p className="mt-1 text-xs text-gray-500">
-                {visible ? 'Clique para ocultar' : 'Clique para voltar a aparecer'}
-              </p>
-            </div>
+            <span className={`text-xs font-black ${visible ? 'text-green-200' : 'text-gray-200'}`}>{saving ? '...' : visible ? 'Visível' : 'Oculto'}</span>
 
             <span
               className={`relative inline-flex h-7 w-12 shrink-0 rounded-full p-1 transition ${
