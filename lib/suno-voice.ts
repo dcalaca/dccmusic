@@ -35,10 +35,14 @@ async function callSuno(path: string, init: RequestInit) {
       statusText: response.statusText,
       payload,
     })
-    throw new Error(
-      translateStudioVoiceError(payload?.data?.errorMessage || payload?.errorMessage || payload?.msg || payload?.message) ||
+    const providerMessage = payload?.data?.errorMessage || payload?.errorMessage || payload?.msg || payload?.message
+    const error = new Error(
+      translateStudioVoiceError(providerMessage) ||
       'Não conseguimos iniciar o processamento da voz agora. Tente atualizar o status em alguns minutos ou envie outro áudio.'
     )
+    ;(error as Error & { providerCode?: number; providerMessage?: string }).providerCode = Number(payload?.code || response.status)
+    ;(error as Error & { providerCode?: number; providerMessage?: string }).providerMessage = String(providerMessage || '')
+    throw error
   }
   return payload
 }
