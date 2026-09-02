@@ -187,6 +187,25 @@ const exact: Record<string, string> = {
   'Nome público': 'Public name',
   'Página pública': 'Public page',
   'Visível na página de compositores': 'Visible on the songwriter page',
+
+  // Home/public copy
+  'Músicas prontas': 'Songs ready',
+  'Músicas prontas para você gravar': 'Songs ready for you to record',
+  'para você gravar': 'for you to record',
+  'Catálogo em um só lugar: ouça, escolha e leve para o estúdio. Plataforma pensada para artistas e compositores que querem resultado com agilidade.': 'One catalog, all in one place: listen, choose, and take it to the studio. Built for artists and songwriters who want fast results.',
+  'Ver vídeos': 'Watch videos',
+  'Ouvir músicas': 'Listen to songs',
+  'Top Gêneros': 'Top Genres',
+  'Vídeos em Destaque': 'Featured Videos',
+  'Músicas em Destaque': 'Featured Songs',
+  'Ver todos': 'View all',
+  'Ver todas': 'View all',
+  'É compositor? Publique suas músicas': 'Are you a songwriter? Publish your songs',
+  'Receba avaliações e alcance novos ouvintes': 'Get ratings and reach new listeners',
+  'Cadastrar grátis': 'Sign up free',
+  'Cifra da song': 'Song Chords',
+  'Cifra da música': 'Song Chords',
+  'Cifra da Música': 'Song Chords',
 }
 
 type PhraseReplacement = string | ((match: string, plural?: string) => string)
@@ -231,6 +250,11 @@ const phrases: Array<[RegExp, PhraseReplacement]> = [
   [/\bfechar\b/gi, 'close'],
   [/\bsuporte\b/gi, 'support'],
   [/\bcontato\b/gi, 'contact'],
+  [/\bouça\b/gi, 'listen'],
+  [/\bescolha\b/gi, 'choose'],
+  [/\bestúdio\b/gi, 'studio'],
+  [/\bartistas\b/gi, 'artists'],
+  [/\bouvintes\b/gi, 'listeners'],
 ]
 
 function preserveOuterWhitespace(source: string, translated: string) {
