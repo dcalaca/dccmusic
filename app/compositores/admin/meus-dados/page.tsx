@@ -16,7 +16,6 @@ import {
   FiCreditCard,
   FiLogOut,
   FiMail,
-  FiMic,
   FiMusic,
   FiPlayCircle,
   FiTrash2,
@@ -25,6 +24,8 @@ import {
   FiX,
   FiZap,
 } from 'react-icons/fi'
+import ComposerPublicNameEditor from '@/components/ComposerPublicNameEditor'
+import PremiumDirectoryVisibilityCard from './PremiumDirectoryVisibilityCard'
 
 type StatementPreset = 'yesterday' | 'today' | 'last30' | 'thisMonth' | 'lastMonth' | 'custom'
 
@@ -619,13 +620,6 @@ export default function ComposerMyDataPage() {
               <p className="mt-1 text-sm text-gray-400">Veja seus dados, saldo, plano e atalhos principais.</p>
             </div>
             <div className="grid gap-2 sm:flex sm:gap-3">
-              <Link
-                href="/compositores/admin/minhas-vozes"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-3 text-sm font-bold text-white hover:from-primary-500 hover:to-purple-500"
-              >
-                <FiMic />
-                Minhas vozes
-              </Link>
               <button
                 type="button"
                 onClick={handleLogout}
@@ -731,15 +725,13 @@ export default function ComposerMyDataPage() {
                   Studio IA: {plan.hasStudioPlan ? 'Incluído no plano' : 'Sem plano Studio IA mensal'}
                   </p>
                 </div>
-                <Link
-                  href="/studio-ia#planos"
-                  className="mt-4 inline-flex w-full justify-center rounded-2xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 text-sm font-bold text-white"
-                >
-                  Ver planos Studio IA
-                </Link>
               </div>
             </div>
           </section>
+
+          <ComposerPublicNameEditor initialName={composer.name} />
+
+          <PremiumDirectoryVisibilityCard />
 
           <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
             <StatCard
@@ -789,9 +781,6 @@ export default function ComposerMyDataPage() {
               <div className="grid gap-3">
                 <Link href="/compositores/admin/studio-ia/projetos" className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 font-bold text-gray-100 hover:bg-white/[0.08]">
                   Abrir Studio IA
-                </Link>
-                <Link href="/compositores/admin/minhas-vozes" className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 font-bold text-gray-100 hover:bg-white/[0.08]">
-                  Minhas vozes
                 </Link>
                 <Link href="/compositores/admin/musicas" className="rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3 font-bold text-gray-100 hover:bg-white/[0.08]">
                   Músicas cadastradas
