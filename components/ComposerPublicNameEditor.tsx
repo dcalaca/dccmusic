@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FiCheckCircle, FiEdit3, FiUser } from 'react-icons/fi'
+import { FiCheckCircle, FiEdit3, FiInfo, FiUser } from 'react-icons/fi'
 
 export default function ComposerPublicNameEditor({ initialName }: { initialName?: string }) {
   const [name, setName] = useState(initialName || '')
@@ -9,6 +9,7 @@ export default function ComposerPublicNameEditor({ initialName }: { initialName?
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [showInfo, setShowInfo] = useState(false)
 
   useEffect(() => {
     if (initialName) return
@@ -74,20 +75,19 @@ export default function ComposerPublicNameEditor({ initialName }: { initialName?
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-7">
-      <div className="mx-auto max-w-6xl">
-        <section className="rounded-[1.75rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:p-5">
+        <section className="mb-5 rounded-[1.75rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:p-5">
           <div className="mb-4 flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-primary-300/20 bg-primary-400/10 text-primary-200">
               <FiUser className="h-5 w-5" />
             </div>
             <div>
               <h2 className="text-xl font-black text-white sm:text-2xl">Nome público</h2>
-              <p className="mt-1 text-sm leading-relaxed text-gray-400">
-                É o nome que aparece no seu perfil público e nas suas músicas. Você pode alterar quando quiser.
-              </p>
+              <button type="button" onClick={() => setShowInfo((current) => !current)} aria-label="Saiba mais sobre o nome público" aria-expanded={showInfo} className="mt-1 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-300">
+                <FiInfo className="h-4 w-4" /> Saiba mais
+              </button>
             </div>
           </div>
+          {showInfo && <p className="mb-3 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-xs leading-relaxed text-gray-400">É o nome que aparece no seu perfil público e nas suas músicas. Você pode alterar quando quiser.</p>}
 
           {loading ? (
             <div className="h-11 w-full animate-pulse rounded-2xl bg-white/[0.06]" />
@@ -133,7 +133,5 @@ export default function ComposerPublicNameEditor({ initialName }: { initialName?
             </p>
           )}
         </section>
-      </div>
-    </div>
   )
 }
