@@ -3,14 +3,15 @@
 import { useEffect, useState } from 'react'
 import { FiCheckCircle, FiEdit3, FiUser } from 'react-icons/fi'
 
-export default function ComposerPublicNameEditor() {
-  const [name, setName] = useState('')
-  const [loading, setLoading] = useState(true)
+export default function ComposerPublicNameEditor({ initialName }: { initialName?: string }) {
+  const [name, setName] = useState(initialName || '')
+  const [loading, setLoading] = useState(!initialName)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
 
   useEffect(() => {
+    if (initialName) return
     const token = localStorage.getItem('composer_token')
     if (!token) {
       setLoading(false)
@@ -28,7 +29,7 @@ export default function ComposerPublicNameEditor() {
       })
       .catch((err) => setError(err.message || 'Erro ao carregar nome público'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [initialName])
 
   const save = async () => {
     const token = localStorage.getItem('composer_token')
