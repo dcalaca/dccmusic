@@ -1601,6 +1601,11 @@ export default function StudioProjectDetailPage() {
                                         publicada
                                       </span>
                                     )}
+                                    {version.customVoice && (
+                                      <span title={`Feita com a voz: ${version.customVoice.name}`} className="inline-flex items-center gap-1 rounded-full border border-cyan-400/30 bg-cyan-950/30 px-2.5 py-1 text-[11px] font-bold text-cyan-100">
+                                        <FiMic className="h-3 w-3" /> Voz: {version.customVoice.name}
+                                      </span>
+                                    )}
                                   </div>
                                   <h3 className="mt-1 line-clamp-2 font-black text-white">
                                     {version.versionName || version.style || `Música gerada #${versionNumber}`}
