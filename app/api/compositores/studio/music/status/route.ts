@@ -251,7 +251,11 @@ export async function GET(request: NextRequest) {
         reason: 'timeout',
       })
       if (!fallback.started) {
-        await markStudioGenerationAsCommunicationFailure(generation)
+        const fallbackError = 'error' in fallback ? fallback.error : null
+        await markStudioGenerationAsCommunicationFailure(
+          generation,
+          fallbackError ? getStudioMusicGenerationFailureMessage(fallbackError) : undefined,
+        )
       }
     } else if (needsPolling && generation.provider === 'sunoapi' && generation.provider_task_id && process.env.SUNOAPI_KEY) {
       const response = await fetch(`https://api.sunoapi.org/api/v1/generate/record-info?taskId=${encodeURIComponent(generation.provider_task_id)}`, {
@@ -275,7 +279,8 @@ export async function GET(request: NextRequest) {
           reason: 'poll_failure',
         })
         if (!fallback.started) {
-          const providerError = getStudioGenerationProviderError(result) || result?.msg || status
+          const fallbackError = 'error' in fallback ? fallback.error : null
+          const providerError = fallbackError || getStudioGenerationProviderError(result) || result?.msg || status
           const friendlyError = getStudioMusicGenerationFailureMessage(providerError)
           await supabaseAdmin
             .from('studio_generations')
