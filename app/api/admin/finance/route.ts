@@ -24,7 +24,8 @@ const CURSOR_MONTHLY_USD = Number(process.env.CURSOR_MONTHLY_COST_USD || '20')
 const supabaseMonthlyFixedBrl = Number(process.env.SUPABASE_MONTHLY_FIXED_COST_BRL || '') || (SUPABASE_MONTHLY_USD * USD_TO_BRL)
 const vercelMonthlyFixedBrl = Number(process.env.VERCEL_MONTHLY_FIXED_COST_BRL || '') || (VERCEL_MONTHLY_USD * USD_TO_BRL)
 const resendMonthlyFixedBrl = Number(process.env.RESEND_MONTHLY_FIXED_COST_BRL || '') || (RESEND_MONTHLY_USD * USD_TO_BRL)
-const cursorMonthlyFixedBrl = Number(process.env.CURSOR_MONTHLY_FIXED_COST_BRL || '') || (CURSOR_MONTHLY_USD * USD_TO_BRL)
+// Cursor/Codex: custo mensal contratado em reais (mantemos override por env).
+const cursorMonthlyFixedBrl = Number(process.env.CURSOR_MONTHLY_FIXED_COST_BRL || '99') || (CURSOR_MONTHLY_USD * USD_TO_BRL)
 
 const COST_ASSUMPTIONS = {
   sunoCreditCostBrl: SUNO_CREDIT_COST_BRL,
