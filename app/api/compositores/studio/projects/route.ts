@@ -15,6 +15,7 @@ import { createStudioAudioSignedUrl } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { formatMusicTitle } from '@/lib/normalize'
 import { normalizeStudioLyricStructure } from '@/lib/studio-lyric-normalizer'
+import { getStudioVersionVoices } from '@/lib/studio-generation-voice'
 
 export const dynamic = 'force-dynamic'
 const STUDIO_TITLE_MAX_LENGTH = 30
@@ -164,6 +165,8 @@ export async function GET(request: NextRequest) {
               createdAt: item.created_at,
             }
           }))
+        const voiceByVersionId = await getStudioVersionVoices(composer.composerId, projectVersions || [])
+        const latestVoice = (projectVersions || []).map((item: any) => voiceByVersionId.get(item.id)).find(Boolean) || null
 
         const originalGeneration = originalGenerationByProject.get(project.id)
         const originalAudio = originalGeneration?.request_payload?.originalAudio
@@ -188,6 +191,7 @@ export async function GET(request: NextRequest) {
           } : null,
           versions: versionsWithAudio,
           versionCount: versionsWithAudio.length,
+          customVoice: latestVoice,
           }),
           createdFromOriginal: Boolean(originalAudio?.path),
           ...(filter === ORIGINALS_FILTER && originalAudio?.path ? {
