@@ -141,6 +141,36 @@ export async function startLyriaFallbackForSunoGeneration(input: {
 
   try {
     const request = generation.request_payload || {}
+    // O Lyria não recebe nem reproduz a persona/voz clonada da Suno. Nunca
+    // devemos trocar silenciosamente a voz escolhida pelo compositor.
+    if (request.personaId || request.personaModel === 'voice_persona' || request.studioVoice?.profileId) {
+      return {
+        started: false as const,
+        reason: 'custom_voice_requires_suno',
+        error: 'custom_voice_requires_suno',
+      }
+    }
+
+    // Callback e polling podem chegar juntos. A primeira chamada reserva o
+    // fallback antes de gerar o áudio; as demais apenas reconhecem a reserva.
+    const now = new Date().toISOString()
+    const fallbackTaskId = `lyria-${generation.id}`
+    const { data: claimedFallback, error: claimError } = await supabaseAdmin
+      .from('studio_generations')
+      .update({
+        provider: 'lyria',
+        status: 'processing',
+        provider_task_id: fallbackTaskId,
+        updated_at: now,
+      })
+      .eq('id', generation.id)
+      .eq('provider', 'sunoapi')
+      .select('id')
+      .maybeSingle()
+
+    if (claimError) throw claimError
+    if (!claimedFallback) return { started: true as const, taskId: fallbackTaskId, alreadyStarted: true }
+
     const lyrics = String(request.prompt || request.lyrics || '').trim()
     if (!lyrics) return { started: false as const, reason: 'missing_lyrics' }
     const bpm = Math.min(120, Math.max(90, Number(request.bpm) || 100))
@@ -161,7 +191,6 @@ export async function startLyriaFallbackForSunoGeneration(input: {
       generateLyriaVersion({ accessToken, prompt: `${common}\n\nVERSION B: create a clearly different intro, groove, arrangement and vocal interpretation while keeping the same lyrics and genre.` }),
     ])
 
-    const now = new Date().toISOString()
     const uploaded = await Promise.all(versions.map((version, index) => uploadStudioAudioBuffer({
       composerId: generation.composer_id,
       folder: 'audio',
@@ -193,16 +222,16 @@ export async function startLyriaFallbackForSunoGeneration(input: {
     const fallbackLog = { from: 'sunoapi', to: 'lyria', reason, startedAt: now, sunoFailure: sunoFailurePayload || generation.response_payload || null }
     await Promise.all([
       supabaseAdmin.from('studio_generations').update({
-        provider: 'lyria', status: 'completed', provider_task_id: `lyria-${generation.id}`,
+        provider: 'lyria', status: 'completed', provider_task_id: fallbackTaskId,
         error_message: null,
         request_payload: { ...request, providerAttemptLog: { ...(request.providerAttemptLog || {}), asyncFallback: fallbackLog, fallbackUsed: true } },
         response_payload: { provider: 'lyria', model: MODEL, versionCount: uploaded.length, timingPlan: timed.plan, asyncFallback: fallbackLog },
         updated_at: now,
-      }).eq('id', generation.id).eq('provider', 'sunoapi'),
+      }).eq('id', generation.id),
       supabaseAdmin.from('studio_projects').update({ status: 'ready', updated_at: now }).eq('id', generation.project_id),
     ])
     console.info('[Studio IA] Fallback Lyria concluído', { generationId: generation.id, reason, versions: uploaded.length })
-    return { started: true as const, taskId: `lyria-${generation.id}` }
+    return { started: true as const, taskId: fallbackTaskId }
   } catch (error: any) {
     console.error('[Studio IA] Falha ao iniciar fallback Lyria:', error)
     return { started: false as const, reason: 'fallback_exception', error: error?.message || String(error) }
