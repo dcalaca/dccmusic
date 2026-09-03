@@ -798,8 +798,8 @@ export async function POST(request: NextRequest) {
     const sunoPayload: any = {
       prompt: lyricForGeneration.slice(0, 5000),
       style: [
-        appendExtraInstructionsToStyle(baseSunoStyle, extraInstructionsForPrompt),
         customVoiceDirection,
+        appendExtraInstructionsToStyle(baseSunoStyle, extraInstructionsForPrompt),
       ].filter(Boolean).join(', ').slice(0, 1000),
       title: project.title.slice(0, STUDIO_TITLE_MAX_LENGTH),
       customMode: true,
