@@ -32,6 +32,7 @@ const MUSIC_GENERATION_BACKGROUND_MESSAGE = 'Recebemos sua solicitação. Assim 
 const MUSIC_GENERATION_COMMUNICATION_ERROR =
   'Houve uma falha na comunicação para geração da sua música. Fica tranquilo: não foi descontado do seu saldo. Favor gerar a música novamente.'
 const MUSIC_CREATION_UNAVAILABLE_MESSAGE = 'Sua letra foi salva, mas não conseguimos iniciar a criação da música agora. Tente novamente mais tarde.'
+const STUDIO_VOICE_INVALID_MESSAGE = 'Sua voz personalizada não está disponível para esta geração. É necessário recriar a voz antes de tentar novamente.'
 const STUDIO_MUSIC_CREDITS = 10
 const PUBLISH_PLAN_REQUIRED_MESSAGE =
   'A recarga e os créditos servem para criar músicas. Para publicar no DCC Music, é necessário ter um plano ativo (Studio IA ou Compositor Premium).'
@@ -370,6 +371,7 @@ export default function StudioProjectDetailPage() {
   const [message, setMessage] = useState('')
   const [studioStatus, setStudioStatus] = useState<any>(null)
   const [voices, setVoices] = useState<any[]>([])
+  const [invalidVoiceIds, setInvalidVoiceIds] = useState<string[]>([])
   const [selectedVoiceId, setSelectedVoiceId] = useState('')
   const [extraInstructions, setExtraInstructions] = useState('')
   const [selectedInspirationVariation, setSelectedInspirationVariation] = useState('similar')
@@ -762,6 +764,11 @@ export default function StudioProjectDetailPage() {
       return
     }
 
+    if (selectedVoiceId && invalidVoiceIds.includes(selectedVoiceId)) {
+      setError(STUDIO_VOICE_INVALID_MESSAGE)
+      return
+    }
+
     setProcessing('Criando música...')
     try {
       setError('')
@@ -806,6 +813,9 @@ export default function StudioProjectDetailPage() {
       }
 
       const rawErrorMessage = err.message || 'Erro ao criar música'
+      if (rawErrorMessage === STUDIO_VOICE_INVALID_MESSAGE && selectedVoiceId) {
+        setInvalidVoiceIds((current) => current.includes(selectedVoiceId) ? current : [...current, selectedVoiceId])
+      }
       const errorMessage = rawErrorMessage.toLowerCase().includes('fetch failed')
         ? MUSIC_CREATION_UNAVAILABLE_MESSAGE
         : rawErrorMessage
@@ -1868,9 +1878,10 @@ export default function StudioProjectDetailPage() {
                               key={voice.id}
                               type="button"
                               onClick={() => handleVoiceSelection(voice.id)}
-                              className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm transition ${selectedVoiceId === voice.id ? 'border-primary-400 bg-primary-950/50 text-white' : 'border-purple-800/70 bg-gray-950 text-purple-100 hover:border-purple-500'}`}
+                              disabled={invalidVoiceIds.includes(voice.id)}
+                              className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm transition ${invalidVoiceIds.includes(voice.id) ? 'cursor-not-allowed border-red-800/70 bg-red-950/30 text-red-200' : selectedVoiceId === voice.id ? 'border-primary-400 bg-primary-950/50 text-white' : 'border-purple-800/70 bg-gray-950 text-purple-100 hover:border-purple-500'}`}
                             >
-                              {voice.displayName}
+                              {voice.displayName}{invalidVoiceIds.includes(voice.id) ? ' — indisponível, recrie a voz' : ''}
                             </button>
                           ))}
                         </div>
@@ -1890,7 +1901,7 @@ export default function StudioProjectDetailPage() {
                       </div>
                     )}
                     {!audioUrl && (
-                      <button onClick={createMusic} disabled={Boolean(processing) || !canCreateMusic} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 px-4 py-3.5 font-black text-white shadow-lg shadow-purple-950/40 transition hover:from-primary-400 hover:via-purple-400 hover:to-fuchsia-400 disabled:opacity-60">
+                      <button onClick={createMusic} disabled={Boolean(processing) || !canCreateMusic || Boolean(selectedVoiceId && invalidVoiceIds.includes(selectedVoiceId))} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 px-4 py-3.5 font-black text-white shadow-lg shadow-purple-950/40 transition hover:from-primary-400 hover:via-purple-400 hover:to-fuchsia-400 disabled:opacity-60">
                         <FiMusic /> Criar música agora
                       </button>
                     )}
