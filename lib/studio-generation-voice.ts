@@ -26,11 +26,14 @@ export async function getStudioVersionVoices(composerId: string, versions: Studi
   if (generationIds.length === 0) return new Map<string, StudioGenerationVoice>()
 
   const { data: generations, error: generationsError } = await supabaseAdmin
-    .from('studio_generations').select('id, request_payload').eq('composer_id', composerId).in('id', generationIds)
+    .from('studio_generations').select('id, provider, request_payload').eq('composer_id', composerId).in('id', generationIds)
   if (generationsError) throw generationsError
 
   const snapshotsByGenerationId = new Map(
-    (generations || []).map((generation: any) => [generation.id, getVoiceSnapshot(generation.request_payload)])
+    (generations || []).map((generation: any) => [generation.id, {
+      ...getVoiceSnapshot(generation.request_payload),
+      provider: generation.provider,
+    }])
   )
   const personaIds = [...new Set([...snapshotsByGenerationId.values()].map((voice) => voice.personaId).filter((id): id is string => Boolean(id)))]
   const profileNamesByPersonaId = new Map<string, string>()
@@ -48,7 +51,7 @@ export async function getStudioVersionVoices(composerId: string, versions: Studi
   for (const version of versions) {
     if (!version.generation_id) continue
     const snapshot = snapshotsByGenerationId.get(version.generation_id)
-    if (!snapshot || (!snapshot.personaId && !snapshot.name)) continue
+    if (!snapshot || snapshot.provider === 'lyria' || (!snapshot.personaId && !snapshot.name)) continue
     voiceByVersionId.set(version.id, {
       profileId: snapshot.profileId,
       name: snapshot.name || (snapshot.personaId ? profileNamesByPersonaId.get(snapshot.personaId) || 'Voz cadastrada' : 'Voz cadastrada'),
