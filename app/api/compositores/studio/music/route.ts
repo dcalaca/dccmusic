@@ -311,6 +311,18 @@ function appendExtraInstructionsToStyle(stylePrompt: string, extraInstructions: 
   return `${stylePrompt}, instruções extras do compositor: ${extraInstructions}`.slice(0, 1000)
 }
 
+function getCustomVoiceDirection(voice: any) {
+  const savedDirection = String(voice?.provider_payload?.voiceDirection || '').trim()
+  if (savedDirection) return savedDirection.slice(0, 400)
+
+  const voiceName = String(voice?.display_name || '').trim().toLocaleLowerCase('pt-BR')
+  if (voiceName === 'voz que encanta') {
+    return 'PERFIL VOCAL OBRIGATÓRIO: voz masculina naturalmente aguda, timbre leve, claro e suave; interpretação mansa, calma e serena. Preserve a identidade da persona enviada. Priorize registro alto confortável e brilho vocal. Não transformar em voz grave, encorpada, de barítono ou baixo.'
+  }
+
+  return ''
+}
+
 function getSunoStyleWeight(description?: string | null) {
   return hasUserProductionDetails(description) ? 0.55 : 0.38
 }
@@ -779,12 +791,16 @@ export async function POST(request: NextRequest) {
       extraInstructionsForPrompt ? `Instruções extras do compositor: ${extraInstructionsForPrompt}` : null,
     ].filter(Boolean).join('\n')
     const baseSunoStyle = buildSunoStyle(project.style, project.mood, descriptionWithExtraInstructions)
+    const customVoiceDirection = getCustomVoiceDirection(selectedVoice)
     const sunoStyleWeight = getSunoStyleWeight(descriptionWithExtraInstructions)
     const sunoWeirdnessConstraint = getSunoWeirdnessConstraint(descriptionWithExtraInstructions)
 
     const sunoPayload: any = {
       prompt: lyricForGeneration.slice(0, 5000),
-      style: appendExtraInstructionsToStyle(baseSunoStyle, extraInstructionsForPrompt),
+      style: [
+        appendExtraInstructionsToStyle(baseSunoStyle, extraInstructionsForPrompt),
+        customVoiceDirection,
+      ].filter(Boolean).join(', ').slice(0, 1000),
       title: project.title.slice(0, STUDIO_TITLE_MAX_LENGTH),
       customMode: true,
       instrumental: false,
@@ -994,6 +1010,7 @@ export async function POST(request: NextRequest) {
         studioVoice: {
           profileId: selectedVoice.id,
           displayName: selectedVoice.display_name,
+          direction: customVoiceDirection || null,
         },
       } : {}),
     }
