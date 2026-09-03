@@ -798,7 +798,16 @@ function StudioProjectsContent() {
                             />
                           )}
                           {project.favorite && <FiHeart className="absolute right-3 top-3 h-5 w-5 fill-red-400 text-red-400" />}
-                          {project.createdFromOriginal && <FiStar className="absolute left-3 top-3 h-5 w-5 fill-emerald-400 text-emerald-400" aria-label="Criado a partir de música original enviada" />}
+                          {(project.createdFromOriginal || project.customVoice) && (
+                            <div className="absolute left-3 top-3 flex items-center gap-2">
+                              {project.createdFromOriginal && <FiStar className="h-5 w-5 fill-emerald-400 text-emerald-400" aria-label="Criado a partir de música original enviada" />}
+                              {project.customVoice && (
+                                <span title={`Feita com a voz: ${project.customVoice.name}`} className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-cyan-300/40 bg-black/75 text-cyan-200 shadow-lg" aria-label={`Feita com a voz: ${project.customVoice.name}`}>
+                                  <FiMic className="h-3.5 w-3.5" />
+                                </span>
+                              )}
+                            </div>
+                          )}
                           {project.versionCount > 1 && (
                             <span className="absolute bottom-3 left-3 rounded-full bg-black/80 px-3 py-1 text-xs font-bold text-green-200">
                               {project.versionCount} versões
