@@ -724,12 +724,6 @@ export default function ComposerVoicesPage() {
                         Tentar nova frase sem cobrança
                       </button>
                     )}
-                    {voice.status === 'ready' && voice.sourceAudioUrl && voice.verifyAudioUrl && (
-                      <button onClick={() => reactivateExpiredVoice(voice.id)} disabled={refreshingId === voice.id} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-purple-700 bg-purple-950/30 px-4 py-3 font-bold text-purple-100 hover:bg-purple-950/60 disabled:opacity-60">
-                        {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
-                        Recriar voz sem cobrança
-                      </button>
-                    )}
                     {voice.status !== 'ready' && (
                       <button onClick={() => refreshVoice(voice.id)} disabled={refreshingId === voice.id} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-700 bg-black/30 px-4 py-3 font-bold text-gray-100 hover:bg-gray-900 disabled:opacity-60">
                         {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
