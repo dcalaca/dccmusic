@@ -31,8 +31,11 @@ const COST_ASSUMPTIONS = {
   sunoMusicGenerationCredits: SUNO_MUSIC_GENERATION_CREDITS,
   sunoLyricVideoCredits: SUNO_LYRIC_VIDEO_CREDITS,
   sunoMaxCreditsPerCompleteMusic: SUNO_MUSIC_GENERATION_CREDITS + SUNO_LYRIC_VIDEO_CREDITS,
-  musicGeneration: Number(process.env.SUNO_MUSIC_GENERATION_COST_BRL || '0.32'),
-  lyricVideo: Number(process.env.SUNO_LYRIC_VIDEO_COST_BRL || (SUNO_LYRIC_VIDEO_CREDITS * SUNO_CREDIT_COST_BRL).toFixed(4)),
+  // Calibrated against the SunoAPI billing panel (20/08–02/09/2026),
+  // using a conservative USD→BRL multiplier of 5.5. Keep both values
+  // overrideable in Vercel environment variables.
+  musicGeneration: Number(process.env.SUNO_MUSIC_GENERATION_COST_BRL || '0.39'),
+  lyricVideo: Number(process.env.SUNO_LYRIC_VIDEO_COST_BRL || '0.06'),
   simpleCover: Number(process.env.STUDIO_COST_SIMPLE_COVER_BRL || '0.06'),
   premiumCover: Number(process.env.STUDIO_COST_PREMIUM_COVER_BRL || '0.95'),
   lyricGeneration: Number(process.env.STUDIO_COST_LYRIC_GENERATION_BRL || '0.0015'),
