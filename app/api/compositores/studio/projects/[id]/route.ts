@@ -7,6 +7,7 @@ import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { formatMusicTitle } from '@/lib/normalize'
+import { getStudioVersionVoices } from '@/lib/studio-generation-voice'
 import {
   getComposerEmailIdentity,
   sendStudioMusicReadyEmail,
@@ -310,6 +311,11 @@ export async function GET(
         createdAt: item.created_at,
       }
     }))
+    const voiceByVersionId = await getStudioVersionVoices(composer.composerId, availableVersions)
+    const versionsWithVoice = versionsWithAudio.map((version) => ({
+      ...version,
+      customVoice: voiceByVersionId.get(version.id) || null,
+    }))
 
     return NextResponse.json({
       project: mapStudioProject(project, {
@@ -322,7 +328,7 @@ export async function GET(
           versionName: currentVersion.version_name,
           style: currentVersion.style,
         } : null,
-        versions: versionsWithAudio,
+        versions: versionsWithVoice,
         cover: cover ? {
           id: cover.id,
           imageUrl: coverImageUrl,
