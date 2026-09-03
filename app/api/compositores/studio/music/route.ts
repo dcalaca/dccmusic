@@ -27,6 +27,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 const STUDIO_TITLE_MAX_LENGTH = 30
 const MUSIC_CREATION_UNAVAILABLE_MESSAGE = 'Sua letra foi salva, mas não conseguimos iniciar a criação da música agora. Tente novamente mais tarde.'
+const STUDIO_VOICE_INVALID_MESSAGE = 'Sua voz personalizada não está disponível para esta geração. É necessário recriar a voz antes de tentar novamente.'
 const MAX_STUDIO_MUSIC_DURATION_INSTRUCTION = 'Each returned audio track must contain only one complete song version, with a hard maximum duration of 4 minutes and 30 seconds. End each audio after the final section. Do not restart the song inside the same audio, do not repeat the entire song inside the same audio, do not append another full version in the same file, and do not create extended outros, long solos, or repeated loops.'
 const TWO_VERSION_VARIATION_INSTRUCTION = 'If the provider returns two audio tracks, make them two clearly different alternative versions of the same song: different intro, arrangement, instrumental details, vocal interpretation, dynamics, or groove. Keep the same lyrics, language, genre, and emotional intention, but avoid making the two returned tracks identical.'
 const STUDIO_CREATIVE_VARIATION_INSTRUCTION = 'criar melodia inédita e abordagem diferente a cada geração, mantendo o gênero escolhido e variando introdução, levada, arranjo, interpretação vocal e progressão melódica'
@@ -879,6 +880,14 @@ export async function POST(request: NextRequest) {
           const errorSummary = summarizeSunoError(response, result)
           console.error('[Studio IA] Erro no fornecedor Suno:', result)
           failedAttempts.push({ provider: 'sunoapi', errorSummary })
+          if (selectedVoice && (result?.code === 553 || result?.data?.code === 553 || String(result?.msg || result?.message || '').includes('Voice persona generation failed'))) {
+            await supabaseAdmin
+              .from('studio_voice_profiles')
+              .update({ status: 'error', is_available: false, provider_payload: { ...(selectedVoice.provider_payload || {}), lastErrorCode: 553, lastErrorMessage: STUDIO_VOICE_INVALID_MESSAGE, invalidatedAt: new Date().toISOString() } })
+              .eq('id', selectedVoice.id)
+              .eq('composer_id', composer.composerId)
+            selectedVoice.providerVoiceInvalid = true
+          }
         }
       } catch (error: any) {
         const errorSummary = {
@@ -960,7 +969,7 @@ export async function POST(request: NextRequest) {
       await sendAdminStudioAlertEmail({
         title: 'Falha ao iniciar música no Studio IA',
         message: `Os fornecedores musicais recusaram a geração do projeto "${project.title}".`,
-        eventKey: `studio-music-api-error/${project.id}/${Date.now()}`,
+        eventKey: `studio-music-api-error/${project.id}/${selectedVoice?.providerVoiceInvalid ? 'voice-553' : 'generation'}`,
         metadata: {
           composerId: composer.composerId,
           projectId: project.id,
@@ -977,7 +986,7 @@ export async function POST(request: NextRequest) {
         }),
       }).catch(() => null)
       return NextResponse.json(
-        { error: MUSIC_CREATION_UNAVAILABLE_MESSAGE },
+        { error: selectedVoice?.providerVoiceInvalid ? STUDIO_VOICE_INVALID_MESSAGE : MUSIC_CREATION_UNAVAILABLE_MESSAGE },
         { status: 500 }
       )
     }
