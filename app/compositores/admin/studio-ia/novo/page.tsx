@@ -38,6 +38,7 @@ const voiceGenders = ['Deixar a IA escolher', 'Voz masculina', 'Voz feminina', '
 const voiceTones = ['Deixar a IA escolher', 'Voz grave', 'Voz média', 'Voz aguda', 'Voz rouca', 'Voz suave', 'Voz forte']
 const studioMusicCredits = 10
 const songLanguages = [
+  'English (United States)',
   'Português (Brasil)',
   'Português (Portugal)',
   'Español (Paraguay)',
@@ -99,12 +100,34 @@ const mexicoStyles = [
   ...commonSpanishStyles,
   'Emo / Pop-punk',
 ]
+const unitedStatesStyles = [
+  'Pop',
+  'Hip-Hop / Rap',
+  'R&B',
+  'Country',
+  'Rock',
+  'Alternative / Indie',
+  'EDM / Dance',
+  'Gospel',
+  'Jazz',
+  'Blues',
+  'Folk',
+  'Soul',
+  'Funk',
+  'Metal',
+  'Punk',
+  'Latin Pop / Reggaeton',
+  'Other / enter my style',
+]
 const paraguayStyleOptions = [...paraguayStyles, customStyleOptionEs]
 const colombiaStyleOptions = [...colombiaStyles, customStyleOptionEs]
 const portugalStyleOptions = [...portugalStyles, customStyleOption]
 const mexicoStyleOptions = [...mexicoStyles, customStyleOptionEs]
 
 function getStudioCountryPreset(country: string) {
+  if (country === 'US') {
+    return { language: 'English (United States)', defaultStyle: 'Pop', styleOptions: unitedStatesStyles, isSpanish: false }
+  }
   if (country === 'PY') {
     return { language: 'Español (Paraguay)', defaultStyle: 'Guarania paraguaya', styleOptions: paraguayStyleOptions, isSpanish: true }
   }
