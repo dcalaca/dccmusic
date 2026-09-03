@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
           updatedAt: project.updated_at,
           cover: cover ? {
             id: cover.id,
-            imageUrl: await getStudioCoverImageUrl(cover),
+            imageUrl: await getStudioCoverImageUrl(cover, { preview: true }),
             isPremium: cover.is_premium,
           } : null,
         }
@@ -142,7 +142,9 @@ export async function GET(request: NextRequest) {
       (data || []).map(async (project: any) => {
         const { lyric, version, cover } = await getCurrentProjectAssets(project.id)
         const versionAudio = version ? await getStudioVersionAudioUrls(version) : null
-        const coverImageUrl = cover ? await getStudioCoverImageUrl(cover) : null
+        // A grade de projetos só precisa de uma miniatura; a imagem original
+        // continua sendo usada ao abrir ou baixar a capa no projeto.
+        const coverImageUrl = cover ? await getStudioCoverImageUrl(cover, { preview: true }) : null
         const { data: projectVersions } = await supabaseAdmin
           .from('studio_versions')
           .select('*')

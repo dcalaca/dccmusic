@@ -5,6 +5,16 @@ const STUDIO_COVER_BUCKET = 'studio-assets'
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 // 24h
 const SIGN_RETRY_DELAYS_MS = [0, 150, 500]
 
+/**
+ * Mantém a imagem no mesmo domínio da DCC. Em alguns navegadores móveis as
+ * URLs assinadas do Storage falham intermitentemente quando usadas direto no
+ * <img>, mesmo estando válidas. O proxy só aceita URLs assinadas desse bucket.
+ */
+function studioCoverProxyUrl(url: string) {
+  if (!isSupabaseSignedUrl(url)) return url
+  return `/api/compositores/studio/cover-proxy?url=${encodeURIComponent(url)}`
+}
+
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const part = token.split('.')[1]
@@ -77,7 +87,7 @@ function extractPathFromSignedUrl(url: string): string | null {
   }
 }
 
-async function createStudioCoverSignedUrl(path: string) {
+async function createStudioCoverSignedUrl(path: string, preview = false) {
   let lastError: any = null
 
   for (const delay of SIGN_RETRY_DELAYS_MS) {
@@ -85,7 +95,14 @@ async function createStudioCoverSignedUrl(path: string) {
 
     const { data, error } = await supabaseAdmin.storage
       .from(STUDIO_COVER_BUCKET)
-      .createSignedUrl(path, SIGNED_URL_TTL_SECONDS)
+      .createSignedUrl(path, SIGNED_URL_TTL_SECONDS, preview ? {
+        transform: {
+          width: 480,
+          height: 480,
+          resize: 'cover',
+          quality: 60,
+        },
+      } : undefined)
 
     if (!error && data?.signedUrl) return data.signedUrl
     lastError = error || new Error('URL assinada vazia')
@@ -96,13 +113,13 @@ async function createStudioCoverSignedUrl(path: string) {
   return null
 }
 
-export async function getStudioCoverImageUrl(cover: any) {
+export async function getStudioCoverImageUrl(cover: any, options?: { preview?: boolean }) {
   if (!cover) return null
 
   const pathFromColumn = typeof cover.image_path === 'string' ? cover.image_path.trim() : ''
   if (pathFromColumn) {
-    const signed = await createStudioCoverSignedUrl(pathFromColumn)
-    if (signed) return signed
+    const signed = await createStudioCoverSignedUrl(pathFromColumn, Boolean(options?.preview))
+    if (signed) return studioCoverProxyUrl(signed)
   }
 
   const fallbackUrl = typeof cover.image_url === 'string' ? cover.image_url.trim() : ''
@@ -112,11 +129,11 @@ export async function getStudioCoverImageUrl(cover: any) {
   if (isSupabaseSignedUrl(fallbackUrl)) {
     const pathFromUrl = extractPathFromSignedUrl(fallbackUrl)
     if (pathFromUrl) {
-      const resigned = await createStudioCoverSignedUrl(pathFromUrl)
-      if (resigned) return resigned
+      const resigned = await createStudioCoverSignedUrl(pathFromUrl, Boolean(options?.preview))
+      if (resigned) return studioCoverProxyUrl(resigned)
     }
     if (isExpiredSupabaseSignedUrl(fallbackUrl)) return null
   }
 
-  return fallbackUrl
+  return studioCoverProxyUrl(fallbackUrl)
 }
