@@ -987,12 +987,16 @@ export async function POST(request: NextRequest) {
     }
     const shouldAttachProviderAttemptLog =
       preferMureka || failedAttempts.length > 0 || lyricNormalization.changed || improveStructureForAi
-    const requestPayload = shouldAttachProviderAttemptLog
-      ? {
-          ...(typeof payload === 'object' && payload !== null ? payload : {}),
-          providerAttemptLog,
-        }
-      : payload
+    const requestPayload = {
+      ...(typeof payload === 'object' && payload !== null ? payload : {}),
+      ...(shouldAttachProviderAttemptLog ? { providerAttemptLog } : {}),
+      ...(selectedVoice ? {
+        studioVoice: {
+          profileId: selectedVoice.id,
+          displayName: selectedVoice.display_name,
+        },
+      } : {}),
+    }
     const responsePayload = shouldAttachProviderAttemptLog
       ? {
           ...(typeof result === 'object' && result !== null ? result : {}),
