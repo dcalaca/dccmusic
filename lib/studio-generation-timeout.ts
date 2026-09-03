@@ -50,6 +50,10 @@ export function getTransparentStudioGenerationError(providerError?: string | nul
 const ACTIVE_WITHOUT_AUDIO_STATUSES = new Set(['pending', 'processing'])
 
 export function getStudioMusicGenerationFailureMessage(providerError?: string | null) {
+  if (String(providerError || '').toLowerCase().includes('custom_voice_requires_suno')) {
+    return 'A voz cadastrada só pode ser usada na criação original. Tente novamente quando a geração estiver disponível. Nenhum crédito foi descontado.'
+  }
+
   if (isStudioVoiceExpiredError(providerError)) {
     return VOICE_EXPIRED_ERROR_MESSAGE
   }
