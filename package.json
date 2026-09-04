@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "postinstall": "node scripts/patch-high-voice-prompt.mjs",
     "predev": "node scripts/patch-high-voice-prompt.mjs",
     "dev": "next dev",
     "prebuild": "node scripts/patch-high-voice-prompt.mjs",
