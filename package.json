@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "postinstall": "node scripts/patch-ios-audio-picker.mjs && node scripts/patch-enhance-custom-voice.mjs",
-    "prebuild": "node scripts/patch-ios-audio-picker.mjs && node scripts/patch-enhance-custom-voice.mjs",
+    "postinstall": "node scripts/patch-ios-audio-picker.mjs && node scripts/patch-enhance-custom-voice.mjs && node scripts/patch-enhance-layout.mjs",
+    "prebuild": "node scripts/patch-ios-audio-picker.mjs && node scripts/patch-enhance-custom-voice.mjs && node scripts/patch-enhance-layout.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
