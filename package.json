@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/patch-high-voice-prompt.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/patch-high-voice-prompt.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -35,7 +37,7 @@
     "react-dom": "^18.2.0",
     "react-icons": "^4.12.0",
     "rehype-slug": "^6.0.0",
-    "remark-gfm": "^4.0.1",
+    "remark-gfm": "^4.0.3",
     "tailwind-merge": "^2.2.0",
     "xlsx": "^0.18.5",
     "zod": "^3.22.4"
