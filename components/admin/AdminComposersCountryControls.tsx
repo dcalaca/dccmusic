@@ -53,20 +53,6 @@ function patchComposerListFetch() {
   anyWindow[FETCH_PATCH_FLAG] = true
 }
 
-function simplifyStatsCards() {
-  const labels = new Set(['Letras IA', 'Músicas IA'])
-  document.querySelectorAll('p').forEach((element) => {
-    if (!labels.has((element.textContent || '').trim())) return
-    const card = element.parentElement
-    const grid = card?.parentElement
-    if (card) card.style.display = 'none'
-    if (grid) {
-      grid.classList.remove('lg:grid-cols-6')
-      grid.classList.add('lg:grid-cols-4')
-    }
-  })
-}
-
 function reloadComposerList() {
   const reloadButton = Array.from(document.querySelectorAll('button')).find(
     (button) => (button.textContent || '').trim() === 'Recarregar'
@@ -88,17 +74,11 @@ export default function AdminComposersCountryControls() {
     if (!isComposerAdmin) return
 
     setCountry(localStorage.getItem(STORAGE_KEY) || '')
-    simplifyStatsCards()
-
-    const observer = new MutationObserver(() => simplifyStatsCards())
-    observer.observe(document.body, { childList: true, subtree: true })
-
     const savedCountry = localStorage.getItem(STORAGE_KEY) || ''
     if (savedCountry) {
       window.setTimeout(reloadComposerList, 150)
     }
 
-    return () => observer.disconnect()
   }, [isComposerAdmin])
 
   if (!isComposerAdmin) return null

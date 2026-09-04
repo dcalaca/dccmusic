@@ -60,6 +60,7 @@ type AdminComposersSummary = {
   withStudio: number
   studioLyrics: number
   studioMusics: number
+  purchases: number
 }
 
 const EMPTY_SUMMARY: AdminComposersSummary = {
@@ -70,6 +71,7 @@ const EMPTY_SUMMARY: AdminComposersSummary = {
   withStudio: 0,
   studioLyrics: 0,
   studioMusics: 0,
+  purchases: 0,
 }
 
 export default function AdminComposersPage() {
@@ -711,31 +713,21 @@ export default function AdminComposersPage() {
         </div>
 
         {/* Estatísticas */}
-        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-6">
+        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
           <div className="rounded-xl border border-gray-800 bg-gray-900/60 p-4">
             <p className="text-xs text-gray-500">Total</p>
             <p className="mt-1 text-2xl font-black text-white">{summary.total}</p>
             <p className="text-xs text-gray-500">compositores</p>
           </div>
-          <div className="rounded-xl border border-green-800 bg-green-950/30 p-4">
-            <p className="text-xs text-green-300/70">Ativos</p>
-            <p className="mt-1 text-2xl font-black text-green-300">{summary.active}</p>
-            <p className="text-xs text-green-300/60">com acesso</p>
-          </div>
-          <div className="rounded-xl border border-red-900 bg-red-950/20 p-4">
-            <p className="text-xs text-red-300/70">Sem acesso</p>
-            <p className="mt-1 text-2xl font-black text-red-300">{summary.inactive}</p>
-            <p className="text-xs text-red-300/60">inativos</p>
-          </div>
-          <div className="rounded-xl border border-purple-800 bg-purple-950/30 p-4">
-            <p className="text-xs text-purple-300/70">Letras IA</p>
-            <p className="mt-1 text-2xl font-black text-purple-200">{summary.studioLyrics}</p>
-            <p className="text-xs text-purple-300/60">no Studio</p>
-          </div>
           <div className="rounded-xl border border-primary-800 bg-primary-950/30 p-4">
-            <p className="text-xs text-primary-300/70">Músicas IA</p>
+            <p className="text-xs text-primary-300/70">Músicas feitas</p>
             <p className="mt-1 text-2xl font-black text-primary-200">{summary.studioMusics}</p>
-            <p className="text-xs text-primary-300/60">gerações</p>
+            <p className="text-xs text-primary-300/60">no Studio IA</p>
+          </div>
+          <div className="rounded-xl border border-emerald-800 bg-emerald-950/30 p-4">
+            <p className="text-xs text-emerald-300/70">Quantidade de compras</p>
+            <p className="mt-1 text-2xl font-black text-emerald-200">{summary.purchases}</p>
+            <p className="text-xs text-emerald-300/60">pagamentos aprovados</p>
           </div>
           <div className="rounded-xl border border-yellow-800 bg-yellow-950/20 p-4">
             <p className="text-xs text-yellow-300/70">E-mail pendente</p>

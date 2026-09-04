@@ -2907,6 +2907,7 @@ export type AdminComposersSummary = {
   withStudio: number
   studioLyrics: number
   studioMusics: number
+  purchases: number
 }
 
 async function collectComposerIdsWithStudioActivity() {
@@ -2942,8 +2943,93 @@ async function collectComposerIdsWithStudioActivity() {
   return Array.from(ids)
 }
 
-export async function getAdminComposersSummary(): Promise<AdminComposersSummary> {
+async function collectAdminComposerIdsByCountry(country: string) {
+  const ids: string[] = []
+  const pageSize = 1000
+
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabaseAdmin
+      .from('dccmusic_composers')
+      .select('id')
+      .ilike('country', country)
+      .range(from, from + pageSize - 1)
+
+    if (error) throw error
+    ids.push(...(data || []).map((row: any) => row.id).filter(Boolean))
+    if ((data || []).length < pageSize) break
+  }
+
+  return ids
+}
+
+function chunkAdminComposerIds(ids: string[], size: number) {
+  const chunks: string[][] = []
+  for (let index = 0; index < ids.length; index += size) {
+    chunks.push(ids.slice(index, index + size))
+  }
+  return chunks
+}
+
+async function countRowsForComposerScope(
+  table: string,
+  composerIds: string[] | null,
+  applyFilters?: (query: any) => any
+) {
+  if (composerIds && composerIds.length === 0) return 0
+
+  const scopes = composerIds ? chunkAdminComposerIds(composerIds, 200) : [null]
+  const counts = await Promise.all(scopes.map(async (ids) => {
+    let query = supabaseAdmin.from(table).select('*', { count: 'exact', head: true })
+    if (ids) query = query.in('composer_id', ids)
+    if (applyFilters) query = applyFilters(query)
+    const { count, error } = await query
+    if (error) throw error
+    return count || 0
+  }))
+
+  return counts.reduce((total, count) => total + count, 0)
+}
+
+async function countAdminPurchases(composerIds: string[] | null) {
+  const [plans, featured, topups, videos] = await Promise.all([
+    countRowsForComposerScope('dccmusic_payments', composerIds, (query) => query.eq('status', 'paid')),
+    countRowsForComposerScope('dccmusic_featured_payments', composerIds, (query) => query.eq('payment_status', 'approved')),
+    countRowsForComposerScope('studio_credit_topups', composerIds, (query) => query.eq('status', 'paid')),
+    countRowsForComposerScope('studio_video_requests', composerIds, (query) => query.gt('amount', 0).not('paid_at', 'is', null)),
+  ])
+
+  return plans + featured + topups + videos
+}
+
+export async function getAdminComposersSummary(country = ''): Promise<AdminComposersSummary> {
   const now = new Date().toISOString()
+  const normalizedCountry = String(country || '').trim().toUpperCase()
+  const composerIds = normalizedCountry
+    ? await collectAdminComposerIdsByCountry(normalizedCountry)
+    : null
+
+  const withCountry = (query: any) => (
+    normalizedCountry ? query.ilike('country', normalizedCountry) : query
+  )
+
+  const totalQuery = withCountry(
+    supabaseAdmin.from('dccmusic_composers').select('*', { count: 'exact', head: true })
+  )
+  const activeQuery = withCountry(
+    supabaseAdmin
+      .from('dccmusic_composers')
+      .select('*', { count: 'exact', head: true })
+      .eq('has_active_subscription', true)
+      .eq('is_premium', true)
+      .or(`subscription_expires_at.is.null,subscription_expires_at.gt.${now}`)
+  )
+  const pendingQuery = withCountry(
+    supabaseAdmin
+      .from('dccmusic_composers')
+      .select('*', { count: 'exact', head: true })
+      .not('email', 'is', null)
+      .eq('email_verified', false)
+  )
 
   const [
     totalResult,
@@ -2952,22 +3038,15 @@ export async function getAdminComposersSummary(): Promise<AdminComposersSummary>
     lyricsResult,
     musicsResult,
     studioComposerIds,
+    purchases,
   ] = await Promise.all([
-    supabaseAdmin.from('dccmusic_composers').select('*', { count: 'exact', head: true }),
-    supabaseAdmin
-      .from('dccmusic_composers')
-      .select('*', { count: 'exact', head: true })
-      .eq('has_active_subscription', true)
-      .eq('is_premium', true)
-      .or(`subscription_expires_at.is.null,subscription_expires_at.gt.${now}`),
-    supabaseAdmin
-      .from('dccmusic_composers')
-      .select('*', { count: 'exact', head: true })
-      .not('email', 'is', null)
-      .eq('email_verified', false),
-    supabaseAdmin.from('studio_lyrics').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('studio_generations').select('*', { count: 'exact', head: true }).neq('status', 'failed'),
+    totalQuery,
+    activeQuery,
+    pendingQuery,
+    countRowsForComposerScope('studio_lyrics', composerIds),
+    countRowsForComposerScope('studio_generations', composerIds, (query) => query.neq('status', 'failed')),
     collectComposerIdsWithStudioActivity(),
+    countAdminPurchases(composerIds),
   ])
 
   const total = totalResult.count || 0
@@ -2978,9 +3057,12 @@ export async function getAdminComposersSummary(): Promise<AdminComposersSummary>
     active,
     inactive: Math.max(0, total - active),
     pendingEmail: pendingResult.count || 0,
-    withStudio: studioComposerIds.length,
-    studioLyrics: lyricsResult.count || 0,
-    studioMusics: musicsResult.count || 0,
+    withStudio: composerIds
+      ? studioComposerIds.filter((id) => composerIds.includes(id)).length
+      : studioComposerIds.length,
+    studioLyrics: lyricsResult,
+    studioMusics: musicsResult,
+    purchases,
   }
 }
 

@@ -213,7 +213,7 @@ export async function GET(request: Request) {
         country
           ? listComposersByCountry({ page, limit, search, status: safeStatus, country })
           : db.listAdminComposers({ page, limit, search, status: safeStatus }),
-        db.getAdminComposersSummary(),
+        db.getAdminComposersSummary(country),
       ])
 
       const statsByComposer = await buildStatsForComposers(listed.items)
