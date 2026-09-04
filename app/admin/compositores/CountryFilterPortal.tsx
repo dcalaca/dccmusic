@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
+import { useEffect, useRef, useState } from 'react'
 import { FiCheck, FiChevronDown, FiGlobe } from 'react-icons/fi'
 
 const COUNTRY_OPTIONS = [
@@ -11,6 +10,7 @@ const COUNTRY_OPTIONS = [
   { code: 'CO', label: 'Colômbia' },
   { code: 'PT', label: 'Portugal' },
   { code: 'MX', label: 'México' },
+  { code: 'US', label: 'Estados Unidos' },
 ]
 
 const FLAG_SVGS: Record<string, string> = {
@@ -19,6 +19,7 @@ const FLAG_SVGS: Record<string, string> = {
   CO: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="30" height="10" fill="#FCD116"/><rect width="30" height="5" y="10" fill="#003893"/><rect width="30" height="5" y="15" fill="#CE1126"/></svg>',
   PT: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="12" height="20" fill="#046A38"/><rect x="12" width="18" height="20" fill="#DA291C"/><circle cx="12" cy="10" r="3.3" fill="#FFCC00"/><circle cx="12" cy="10" r="2.25" fill="#fff"/><path d="M10.7 8.6h2.6v3h-2.6z" fill="#DA291C"/><path d="M11.1 9h1.8v2.2h-1.8z" fill="#fff"/></svg>',
   MX: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="10" height="20" fill="#006847"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#CE1126"/><circle cx="15" cy="10" r="2.2" fill="#8B5E3C"/><path d="M12.8 11.5c1.3 1.2 3.1 1.2 4.4 0" fill="none" stroke="#2E7D32" stroke-width=".75" stroke-linecap="round"/><path d="M14.2 8.6c.6-.9 1.5-1.2 2.2-.7-.4.4-.7.8-.9 1.4" fill="none" stroke="#2E7D32" stroke-width=".6" stroke-linecap="round"/></svg>',
+  US: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="30" height="20" fill="#fff"/><path d="M0 0h30v1.54H0zm0 3.08h30v1.54H0zm0 3.08h30V7.7H0zm0 3.08h30v1.54H0zm0 3.08h30v1.54H0zm0 3.08h30v1.54H0zm0 3.08h30V20H0z" fill="#B22234"/><rect width="12.5" height="10.78" fill="#3C3B6E"/><g fill="#fff"><circle cx="2" cy="2" r=".55"/><circle cx="5" cy="2" r=".55"/><circle cx="8" cy="2" r=".55"/><circle cx="11" cy="2" r=".55"/><circle cx="3.5" cy="4.7" r=".55"/><circle cx="6.5" cy="4.7" r=".55"/><circle cx="9.5" cy="4.7" r=".55"/><circle cx="2" cy="7.4" r=".55"/><circle cx="5" cy="7.4" r=".55"/><circle cx="8" cy="7.4" r=".55"/><circle cx="11" cy="7.4" r=".55"/></g></svg>',
 }
 
 function FlagIcon({ code, className = 'h-4 w-6' }: { code: string; className?: string }) {
@@ -67,48 +68,16 @@ function replaceCountryTextWithFlag() {
   })
 }
 
-export default function CountryFilterPortal() {
-  const [mountNode, setMountNode] = useState<HTMLElement | null>(null)
+export default function CountryFilter({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (country: string) => void
+}) {
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement | null>(null)
-  const selectedCountry = useMemo(() => {
-    if (typeof window === 'undefined') return ''
-    return String(new URLSearchParams(window.location.search).get('country') || '').toUpperCase()
-  }, [])
-  const selectedOption = COUNTRY_OPTIONS.find((option) => option.code === selectedCountry) || COUNTRY_OPTIONS[0]
-
-  useEffect(() => {
-    let attempts = 0
-    let anchor: HTMLDivElement | null = null
-
-    const findFilterButton = () => {
-      attempts += 1
-      const buttons = Array.from(document.querySelectorAll('button'))
-      const filterButton = buttons.find((button) => button.textContent?.trim() === 'Filtrar')
-
-      if (filterButton?.parentElement) {
-        anchor = document.createElement('div')
-        anchor.dataset.countryFilterAnchor = 'true'
-        anchor.className = 'relative shrink-0'
-        filterButton.parentElement.insertBefore(anchor, filterButton)
-        setMountNode(anchor)
-        return true
-      }
-
-      return attempts >= 100
-    }
-
-    if (findFilterButton()) return
-
-    const timer = window.setInterval(() => {
-      if (findFilterButton()) window.clearInterval(timer)
-    }, 50)
-
-    return () => {
-      window.clearInterval(timer)
-      if (anchor?.parentElement) anchor.parentElement.removeChild(anchor)
-    }
-  }, [])
+  const selectedOption = COUNTRY_OPTIONS.find((option) => option.code === value) || COUNTRY_OPTIONS[0]
 
   useEffect(() => {
     if (window.location.pathname !== '/admin/compositores') return
@@ -130,19 +99,12 @@ export default function CountryFilterPortal() {
   }, [])
 
   const selectCountry = (country: string) => {
-    const url = new URL(window.location.href)
-
-    if (country) url.searchParams.set('country', country)
-    else url.searchParams.delete('country')
-
     setOpen(false)
-    window.location.href = url.toString()
+    onChange(country)
   }
 
-  if (!mountNode) return null
-
-  return createPortal(
-    <div ref={menuRef} className="relative min-w-[190px] text-sm">
+  return (
+    <div ref={menuRef} className="relative min-w-[190px] shrink-0 text-sm">
       <button
         type="button"
         aria-haspopup="listbox"
@@ -188,7 +150,6 @@ export default function CountryFilterPortal() {
           })}
         </div>
       )}
-    </div>,
-    mountNode
+    </div>
   )
 }

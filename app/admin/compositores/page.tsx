@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { FiUser, FiMail, FiCalendar, FiXCircle, FiRefreshCw, FiSearch, FiEdit2, FiMusic, FiKey, FiFileText, FiDownload, FiTrash2, FiCreditCard, FiGift, FiFilter } from 'react-icons/fi'
+import CountryFilter from './CountryFilterPortal'
 
 interface Composer {
   id: string
@@ -82,6 +83,8 @@ export default function AdminComposersPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [appliedSearch, setAppliedSearch] = useState('')
+  const [countryFilter, setCountryFilter] = useState('')
+  const [countryFilterReady, setCountryFilterReady] = useState(false)
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'studio' | 'pending'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -108,8 +111,24 @@ export default function AdminComposersPage() {
   })
 
   useEffect(() => {
+    setCountryFilter(String(new URLSearchParams(window.location.search).get('country') || '').toUpperCase())
+    setCountryFilterReady(true)
+  }, [])
+
+  useEffect(() => {
     setCurrentPage(1)
-  }, [appliedSearch, statusFilter])
+  }, [appliedSearch, statusFilter, countryFilter])
+
+  const changeCountryFilter = (country: string) => {
+    const normalizedCountry = String(country || '').toUpperCase()
+    setCountryFilter(normalizedCountry)
+    setCurrentPage(1)
+
+    const url = new URL(window.location.href)
+    if (normalizedCountry) url.searchParams.set('country', normalizedCountry)
+    else url.searchParams.delete('country')
+    window.history.replaceState(null, '', `${url.pathname}${url.search}`)
+  }
 
   const applySearchFilter = () => {
     const nextSearch = searchTerm.trim()
@@ -118,6 +137,8 @@ export default function AdminComposersPage() {
   }
 
   const loadComposers = useCallback(async () => {
+    if (!countryFilterReady) return
+
     try {
       setLoading(true)
       const params = new URLSearchParams({
@@ -127,6 +148,9 @@ export default function AdminComposersPage() {
       })
       if (appliedSearch) {
         params.set('search', appliedSearch)
+      }
+      if (countryFilter) {
+        params.set('country', countryFilter)
       }
 
       const response = await fetch(`/api/admin/composers/list?${params.toString()}`, { cache: 'no-store' })
@@ -144,7 +168,7 @@ export default function AdminComposersPage() {
     } finally {
       setLoading(false)
     }
-  }, [currentPage, appliedSearch, statusFilter])
+  }, [currentPage, appliedSearch, statusFilter, countryFilter, countryFilterReady])
 
   useEffect(() => {
     loadComposers()
@@ -616,7 +640,14 @@ export default function AdminComposersPage() {
       let done = false
 
       while (!done) {
-        const exportResponse = await fetch(`/api/admin/composers/list?export=1&offset=${offset}&limit=${chunkSize}`, { cache: 'no-store' })
+        const exportParams = new URLSearchParams({
+          export: '1',
+          offset: String(offset),
+          limit: String(chunkSize),
+        })
+        if (countryFilter) exportParams.set('country', countryFilter)
+
+        const exportResponse = await fetch(`/api/admin/composers/list?${exportParams.toString()}`, { cache: 'no-store' })
         if (!exportResponse.ok) {
           const data = await exportResponse.json().catch(() => ({}))
           throw new Error(data.details || data.error || 'Erro ao buscar dados completos para exportação')
@@ -755,6 +786,7 @@ export default function AdminComposersPage() {
               className="w-full pl-10 pr-4 py-2 bg-gray-900 border border-gray-800 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
             />
             </div>
+            <CountryFilter value={countryFilter} onChange={changeCountryFilter} />
             <button
               type="button"
               onClick={applySearchFilter}
