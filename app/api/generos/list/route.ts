@@ -8,13 +8,16 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const genres = await db.getAllGenres()
+    const normalizedGenres = genres.map((g) => ({
+      id: g.id,
+      name: g.name,
+    }))
 
-    return NextResponse.json(
-      genres.map((g) => ({
-        id: g.id,
-        name: g.name,
-      }))
-    )
+    if (!normalizedGenres.some((genre) => genre.name.toLowerCase() === 'valsa')) {
+      normalizedGenres.push({ id: 'studio-valsa', name: 'Valsa' })
+    }
+
+    return NextResponse.json(normalizedGenres)
   } catch (error) {
     console.error('Erro ao buscar gêneros:', error)
     return NextResponse.json({ error: 'Erro ao buscar gêneros' }, { status: 500 })

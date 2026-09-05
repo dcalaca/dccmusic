@@ -30,7 +30,7 @@ const voiceStyleOptions = [
 const moodOptions = ['Romântica', 'Sofrência', 'Chiclete', 'Engraçada', 'Reflexiva', 'Balada', 'Triste', 'Motivacional']
 const voiceToneOptions = ['Deixar a IA escolher', 'Voz grave', 'Voz média', 'Voz aguda', 'Voz rouca', 'Voz suave', 'Voz forte']
 const structureOptions = ['Padrão', 'A/B/Refrão/C/Refrão', 'A/Refrão/A/Refrão']
-const genreOptions = ['Sertanejo', 'Sertanejo raiz', 'Moda de viola', 'Pagode', 'Samba', 'Arrocha', 'Gospel', 'Reggae', 'Pop', 'Rock', 'Funk', 'Trap', 'Forró', 'Guarania paraguaia', 'Livre', 'Outro / escrever meu estilo']
+const genreOptions = ['Sertanejo', 'Sertanejo raiz', 'Moda de viola', 'Pagode', 'Samba', 'Valsa', 'Arrocha', 'Gospel', 'Reggae', 'Pop', 'Rock', 'Funk', 'Trap', 'Forró', 'Guarania paraguaia', 'Livre', 'Outro / escrever meu estilo']
 
 const MAX_AUDIO_DURATION_SECONDS = 270
 
