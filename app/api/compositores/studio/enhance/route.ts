@@ -51,6 +51,15 @@ const voiceStylePrompts: Record<string, string> = {
   bright: 'voz mais aguda, clara e brilhante, bright clear vocal tone',
 }
 
+const songLanguagePrompts: Record<string, string> = {
+  'Português (Brasil)': 'IDIOMA E SOTAQUE OBRIGATÓRIOS: cante em português do Brasil, com pronúncia, dicção, sotaque e fraseado naturalmente brasileiros. Não use português europeu nem sotaque de Portugal.',
+  'Português (Portugal)': 'IDIOMA E SOTAQUE OBRIGATÓRIOS: cante em português europeu, com pronúncia, dicção, sotaque e fraseado naturais de Portugal. Não use sotaque brasileiro.',
+  'English (United States)': 'MANDATORY LANGUAGE AND ACCENT: sing in English with natural United States pronunciation, diction, accent, and phrasing.',
+  'Español (Paraguay)': 'IDIOMA Y ACENTO OBLIGATORIOS: cante en español paraguayo, con pronunciación, dicción, acento y fraseo naturales de Paraguay.',
+  'Español (Colombia)': 'IDIOMA Y ACENTO OBLIGATORIOS: cante en español colombiano, con pronunciación, dicción, acento y fraseo naturales de Colombia.',
+  'Español (México)': 'IDIOMA Y ACENTO OBLIGATORIOS: cante en español mexicano, con pronunciación, dicción, acento y fraseo naturales de México.',
+}
+
 function getImprovementPrompt(value: any) {
   const key = String(value || 'similar')
   return improvementPrompts[key] || improvementPrompts.similar
@@ -66,8 +75,18 @@ function getVoiceStylePrompt(value: any) {
   return voiceStylePrompts[key] || voiceStylePrompts.natural
 }
 
+function getSongLanguagePrompt(value: any) {
+  return songLanguagePrompts[String(value || '')] || songLanguagePrompts['Português (Brasil)']
+}
+
+function getSongLanguage(value: any) {
+  const language = String(value || '').trim()
+  return songLanguagePrompts[language] ? language : 'Português (Brasil)'
+}
+
 function getStyle(input: {
   style?: string | null
+  songLanguage?: string | null
   improvement?: string | null
   voice?: string | null
   voiceStyle?: string | null
@@ -97,6 +116,7 @@ function getStyle(input: {
     additionalInstructions ? `INSTRUÇÕES ADICIONAIS: ${additionalInstructions}` : null,
     getVoicePrompt(input.voice),
     getVoiceStylePrompt(input.voiceStyle),
+    getSongLanguagePrompt(input.songLanguage),
     'melhor qualidade de áudio',
     'voz clara',
     'dicção natural sem atropelar palavras',
@@ -140,6 +160,7 @@ export async function POST(request: NextRequest) {
     const contentTypeHeader = request.headers.get('content-type') || ''
     let rawTitle = 'Música melhorada'
     let style = ''
+    let songLanguage = 'Português (Brasil)'
     let improvement = 'similar'
     let voice = 'same'
     let voiceStyle = 'natural'
@@ -163,6 +184,7 @@ export async function POST(request: NextRequest) {
       const body = await request.json()
       rawTitle = String(body?.title || '').trim().slice(0, MAX_TITLE_LENGTH) || 'Música melhorada'
       style = String(body?.style || '').trim()
+      songLanguage = getSongLanguage(body?.songLanguage)
       improvement = String(body?.improvement || 'similar')
       voice = String(body?.voice || 'same')
       voiceStyle = String(body?.voiceStyle || 'natural')
@@ -198,6 +220,7 @@ export async function POST(request: NextRequest) {
       sourceFile = file
       rawTitle = String(formData.get('title') || '').trim().slice(0, MAX_TITLE_LENGTH) || 'Música melhorada'
       style = String(formData.get('style') || '').trim()
+      songLanguage = getSongLanguage(formData.get('songLanguage'))
       improvement = String(formData.get('improvement') || 'similar')
       voice = String(formData.get('voice') || 'same')
       voiceStyle = String(formData.get('voiceStyle') || 'natural')
@@ -265,6 +288,8 @@ export async function POST(request: NextRequest) {
         description: [
           'Projeto criado pela função Melhorar minha música.',
           'A IA deve tentar manter melodia, letra e essência do áudio original.',
+          `Idioma e sotaque obrigatórios da nova versão: ${songLanguage}.`,
+          getSongLanguagePrompt(songLanguage),
           getImprovementPrompt(improvement),
           mood ? `Clima: ${mood}.` : null,
           structure ? `Estrutura: ${structure}.` : null,
@@ -305,7 +330,7 @@ export async function POST(request: NextRequest) {
       instrumental: false,
       // Em customMode, o campo prompt é exclusivamente a letra. Instruções ficam em style para não serem cantadas.
       prompt: lyric.slice(0, 5000),
-      style: getStyle({ style, improvement, voice, voiceStyle, voiceTone, mood, structure, lineCount, wantInstruments, avoidInstruments, additionalInstructions }),
+      style: getStyle({ style, songLanguage, improvement, voice, voiceStyle, voiceTone, mood, structure, lineCount, wantInstruments, avoidInstruments, additionalInstructions }),
       title,
       model: 'V5_5',
       callBackUrl: getStudioCallbackUrl('/api/studio/suno/callback'),
@@ -319,6 +344,7 @@ export async function POST(request: NextRequest) {
       instrumental: false,
       prompt: [
         improvementPrompt,
+        getSongLanguagePrompt(songLanguage),
         style || null,
         mood ? `clima ${mood}` : null,
         voiceTone !== 'Deixar a IA escolher' ? `característica vocal ${voiceTone}` : null,
@@ -376,6 +402,7 @@ export async function POST(request: NextRequest) {
           feature: 'enhance_music',
           lyricSource,
           improvement,
+          songLanguage,
           additionalInstructions: additionalInstructions || null,
           voice,
           voiceStyle,
@@ -399,7 +426,7 @@ export async function POST(request: NextRequest) {
       action: isFreeGeneration ? 'free_music_generation' : 'music_generation',
       amount: isFreeGeneration ? 0 : STUDIO_MUSIC_CREDITS,
       description: isFreeGeneration ? 'Melhoria de música grátis no DCC Studio IA' : 'Melhoria de música no DCC Studio IA',
-      metadata: { taskId, free: isFreeGeneration, feature: 'enhance_music', lyricSource, improvement, additionalInstructions: additionalInstructions || null, voice, voiceStyle },
+      metadata: { taskId, free: isFreeGeneration, feature: 'enhance_music', lyricSource, improvement, songLanguage, additionalInstructions: additionalInstructions || null, voice, voiceStyle },
     })
 
     return NextResponse.json({

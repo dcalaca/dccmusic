@@ -31,6 +31,14 @@ const moodOptions = ['Romântica', 'Sofrência', 'Chiclete', 'Engraçada', 'Refl
 const voiceToneOptions = ['Deixar a IA escolher', 'Voz grave', 'Voz média', 'Voz aguda', 'Voz rouca', 'Voz suave', 'Voz forte']
 const structureOptions = ['Padrão', 'A/B/Refrão/C/Refrão', 'A/Refrão/A/Refrão']
 const genreOptions = ['Sertanejo', 'Sertanejo raiz', 'Moda de viola', 'Pagode', 'Samba', 'Valsa', 'Arrocha', 'Gospel', 'Reggae', 'Pop', 'Rock', 'Funk', 'Trap', 'Forró', 'Guarania paraguaia', 'Livre', 'Outro / escrever meu estilo']
+const songLanguageOptions = [
+  'Português (Brasil)',
+  'Português (Portugal)',
+  'English (United States)',
+  'Español (Paraguay)',
+  'Español (Colombia)',
+  'Español (México)',
+]
 
 const MAX_AUDIO_DURATION_SECONDS = 270
 
@@ -117,6 +125,7 @@ export default function ImproveReadyMusicPage() {
   const [structure, setStructure] = useState('Padrão')
   const [lineCount, setLineCount] = useState('média')
   const [selectedGenre, setSelectedGenre] = useState('')
+  const [songLanguage, setSongLanguage] = useState('Português (Brasil)')
   const [customGenre, setCustomGenre] = useState('')
   const [wantInstruments, setWantInstruments] = useState('')
   const [avoidInstruments, setAvoidInstruments] = useState('')
@@ -235,6 +244,7 @@ export default function ImproveReadyMusicPage() {
           title,
           style,
           improvement: selectedImprovement,
+          songLanguage,
           voice: selectedVoice,
           voiceStyle: selectedVoiceStyle,
           voiceTone,
@@ -314,6 +324,13 @@ export default function ImproveReadyMusicPage() {
                 {selectedGenre === 'Outro / escrever meu estilo' && (
                   <input value={customGenre} onChange={(event) => setCustomGenre(event.target.value)} placeholder="Escreva o gênero ou ritmo" className="mt-2 w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
                 )}
+              </label>
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold text-gray-300">Idioma e sotaque da nova versão</span>
+                <select value={songLanguage} onChange={(event) => setSongLanguage(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
+                  {songLanguageOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                </select>
+                <span className="mt-2 block text-xs text-gray-500">Define a pronúncia da voz. Ex.: escolha Português (Brasil) para não cantar com sotaque de Portugal.</span>
               </label>
             </div>
 
