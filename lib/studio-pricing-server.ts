@@ -35,6 +35,10 @@ function getPricingSourceCountry(country: DccCountry): DccCountry {
   return String(country) === 'ES' ? ('PT' as DccCountry) : country
 }
 
+function normalizePricingCurrency(country: DccCountry, currency: StudioTopupCurrency): StudioTopupCurrency {
+  return String(country) === 'ES' ? 'EUR' : currency
+}
+
 export type StudioPlanPriceQuote = {
   amount: number
   currency: StudioTopupCurrency
@@ -65,9 +69,10 @@ export async function getStudioTopupTiersFromPricing(country: DccCountry): Promi
 
     const rows = (data || []) as StudioTopupTierRow[]
     if (rows.length > 0) {
-      const currency = rows[0].currency
+      const sourceCurrency = rows[0].currency
+      const currency = normalizePricingCurrency(country, sourceCurrency)
       const tiers = rows
-        .filter((row) => row.currency === currency)
+        .filter((row) => row.currency === sourceCurrency)
         .map((row) => ({
           minMusicQuantity: Number(row.min_quantity),
           maxMusicQuantity: row.max_quantity == null ? Infinity : Number(row.max_quantity),
@@ -146,7 +151,7 @@ export async function getStudioPlanPriceFromPricing(
     if (data && Number(data.price) > 0) {
       return {
         amount: Number(data.price),
-        currency: data.currency as StudioTopupCurrency,
+        currency: normalizePricingCurrency(country, data.currency as StudioTopupCurrency),
         source: 'supabase',
       }
     }
@@ -186,7 +191,7 @@ export async function getStudioPlanPricesFromPricing(
       if (row.plan_slug && amount > 0) {
         prices[row.plan_slug] = {
           amount,
-          currency: row.currency,
+          currency: normalizePricingCurrency(country, row.currency),
           source: 'supabase',
         }
       }
