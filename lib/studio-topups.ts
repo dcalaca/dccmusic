@@ -29,6 +29,7 @@ const COUNTRY_BASE_PRICE: Record<string, { currency: StudioTopupCurrency; amount
   PY: { currency: 'PYG', amount: 5600 },
   CO: { currency: 'COP', amount: 3200 },
   PT: { currency: 'EUR', amount: 1.99 },
+  ES: { currency: 'EUR', amount: 1.99 },
   MX: { currency: 'MXN', amount: 17.68 },
 }
 
@@ -44,6 +45,7 @@ function buildCountryTiers(country: DccCountry): StudioTopupTier[] {
 }
 
 export const STUDIO_TOPUP_TIERS_PT = buildCountryTiers('PT')
+export const STUDIO_TOPUP_TIERS_ES = buildCountryTiers('ES' as DccCountry)
 export const STUDIO_TOPUP_TIERS_PY = buildCountryTiers('PY')
 export const STUDIO_TOPUP_TIERS_CO = buildCountryTiers('CO')
 export const STUDIO_TOPUP_TIERS_MX = buildCountryTiers('MX')
@@ -55,6 +57,7 @@ export function getStudioTopupCurrency(country: DccCountry = 'BR'): StudioTopupC
 export function getStudioTopupTiers(country: DccCountry = 'BR') {
   const code = String(country)
   if (code === 'PT') return STUDIO_TOPUP_TIERS_PT
+  if (code === 'ES') return STUDIO_TOPUP_TIERS_ES
   if (code === 'PY') return STUDIO_TOPUP_TIERS_PY
   if (code === 'CO') return STUDIO_TOPUP_TIERS_CO
   if (code === 'MX') return STUDIO_TOPUP_TIERS_MX
@@ -77,9 +80,11 @@ export function getStudioPlanPriceQuote(priceInBrl: number, country: DccCountry 
   const amountBrl = Math.max(0, Number(priceInBrl) || 0)
   const code = String(country)
   if (code === 'US') throw new Error('Preço em USD não configurado no banco de dados.')
-  if (code !== 'PY' && code !== 'CO' && code !== 'MX') return { amount: Number(amountBrl.toFixed(2)), currency: 'BRL' }
-  const localBase = COUNTRY_BASE_PRICE[code]
-  return { amount: roundLocalPrice(amountBrl * (localBase.amount / BRAZIL_BASE_PRICE), country), currency: localBase.currency }
+  if (code === 'PT' || code === 'ES' || code === 'PY' || code === 'CO' || code === 'MX') {
+    const localBase = COUNTRY_BASE_PRICE[code]
+    return { amount: roundLocalPrice(amountBrl * (localBase.amount / BRAZIL_BASE_PRICE), country), currency: localBase.currency }
+  }
+  return { amount: Number(amountBrl.toFixed(2)), currency: 'BRL' }
 }
 
 export function getStripeMinorUnitAmount(amount: number, currency: StudioTopupCurrency) {
