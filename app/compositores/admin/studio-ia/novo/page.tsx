@@ -45,6 +45,7 @@ const songLanguages = [
   'Español (Paraguay)',
   'Español (Colombia)',
   'Español (México)',
+  'Español (España)',
 ]
 const commonSpanishStyles = [
   'Pop latino',
@@ -101,6 +102,20 @@ const mexicoStyles = [
   ...commonSpanishStyles,
   'Emo / Pop-punk',
 ]
+const spainStyles = [
+  'Flamenco',
+  'Flamenco pop',
+  'Rumba flamenca',
+  'Pop español',
+  'Rock español',
+  'Indie español',
+  'Cantautor',
+  'Copla',
+  'Reggaetón',
+  'Urbano latino',
+  'Electrónica',
+  ...commonSpanishStyles,
+]
 const unitedStatesStyles = [
   'Pop',
   'Hip-Hop / Rap',
@@ -124,6 +139,7 @@ const paraguayStyleOptions = [...paraguayStyles, customStyleOptionEs]
 const colombiaStyleOptions = [...colombiaStyles, customStyleOptionEs]
 const portugalStyleOptions = [...portugalStyles, customStyleOption]
 const mexicoStyleOptions = [...mexicoStyles, customStyleOptionEs]
+const spainStyleOptions = [...spainStyles, customStyleOptionEs]
 
 function getStudioCountryPreset(country: string) {
   if (country === 'US') {
@@ -140,6 +156,9 @@ function getStudioCountryPreset(country: string) {
   }
   if (country === 'MX') {
     return { language: 'Español (México)', defaultStyle: 'Regional mexicano', styleOptions: mexicoStyleOptions, isSpanish: true }
+  }
+  if (country === 'ES') {
+    return { language: 'Español (España)', defaultStyle: 'Flamenco pop', styleOptions: spainStyleOptions, isSpanish: true }
   }
   return { language: 'Português (Brasil)', defaultStyle: 'Sertanejo', styleOptions: null as string[] | null, isSpanish: false }
 }
@@ -237,6 +256,7 @@ export default function NewStudioMusicPage() {
   const isColombia = country === 'CO'
   const isPortugal = country === 'PT'
   const isMexico = country === 'MX'
+  const isSpain = String(country) === 'ES'
   const isUnitedStates = String(country) === 'US'
   const countryPreset = getStudioCountryPreset(country)
   const isSpanish = countryPreset.isSpanish
@@ -727,7 +747,7 @@ export default function NewStudioMusicPage() {
                           <input
                             value={form.customStyle}
                             onChange={(e) => setForm({ ...form, customStyle: e.target.value })}
-                            placeholder={isUnitedStates ? 'Example: cinematic indie pop' : isMexico ? 'Ej.: corrido romántico con sierreño' : isPortugal ? 'Ex.: fado pop contemporâneo' : 'Ex: piseiro romântico'}
+                            placeholder={isUnitedStates ? 'Example: cinematic indie pop' : isMexico ? 'Ej.: corrido romántico con sierreño' : isSpain ? 'Ej.: flamenco pop con guitarra española' : isPortugal ? 'Ex.: fado pop contemporâneo' : 'Ex: piseiro romântico'}
                             className="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/55"
                           />
                         </div>

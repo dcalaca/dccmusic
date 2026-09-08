@@ -13,13 +13,14 @@ const countries = [
   { code: 'CO', label: 'Colômbia', flag: '🇨🇴' },
   { code: 'MX', label: 'México', flag: '🇲🇽' },
   { code: 'PT', label: 'Portugal', flag: '🇵🇹' },
+  { code: 'ES', label: 'Espanha', flag: '🇪🇸' },
   { code: 'US', label: 'Estados Unidos', flag: '🇺🇸' },
 ] as const
 
 const countryLabels: Record<string, string> = Object.fromEntries(countries.map((country) => [country.code, country.label]))
 const countryFlags: Record<string, string> = Object.fromEntries(countries.map((country) => [country.code, country.flag]))
 const currencyByCountry: Record<string, string> = {
-  BR: 'BRL', PY: 'PYG', CO: 'COP', MX: 'MXN', PT: 'EUR', US: 'USD',
+  BR: 'BRL', PY: 'PYG', CO: 'COP', MX: 'MXN', PT: 'EUR', ES: 'EUR', US: 'USD',
 }
 const currencies = [
   { code: 'BRL', label: 'Real brasileiro (R$)' },
