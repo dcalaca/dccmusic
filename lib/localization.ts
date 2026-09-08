@@ -16,19 +16,20 @@ type CountryRuntimeConfig = {
 }
 
 // Mantemos DccCountry com os países legados para não quebrar páginas antigas
-// que possuem mapas tipados exaustivamente. US é um país suportado em runtime.
+// que possuem mapas tipados exaustivamente. US e ES são suportados em runtime.
 export const COUNTRY_CONFIG: Record<string, CountryRuntimeConfig> = {
   BR: { country: 'BR', locale: 'pt-BR', currency: 'BRL', label: 'Brasil', flag: '🇧🇷', paymentProvider: 'mercadopago' },
   PY: { country: 'PY', locale: 'es-PY', currency: 'PYG', label: 'Paraguay', flag: '🇵🇾', paymentProvider: 'stripe' },
   CO: { country: 'CO', locale: 'es-CO', currency: 'COP', label: 'Colombia', flag: '🇨🇴', paymentProvider: 'stripe' },
   PT: { country: 'PT', locale: 'pt-PT', currency: 'EUR', label: 'Portugal', flag: '🇵🇹', paymentProvider: 'stripe' },
   MX: { country: 'MX', locale: 'es-MX', currency: 'MXN', label: 'México', flag: '🇲🇽', paymentProvider: 'stripe' },
+  ES: { country: 'ES', locale: 'es-MX', currency: 'EUR', label: 'España', flag: '🇪🇸', paymentProvider: 'stripe' },
   US: { country: 'US', locale: 'en-US', currency: 'USD', label: 'United States', flag: '🇺🇸', paymentProvider: 'stripe' },
 }
 
 export function normalizeCountry(value?: string | null): DccCountry {
   const normalized = String(value || '').toUpperCase()
-  if (normalized === 'PY' || normalized === 'CO' || normalized === 'PT' || normalized === 'MX' || normalized === 'US') {
+  if (normalized === 'PY' || normalized === 'CO' || normalized === 'PT' || normalized === 'MX' || normalized === 'ES' || normalized === 'US') {
     return normalized as DccCountry
   }
   return 'BR'
@@ -63,6 +64,7 @@ export function formatLocalizedMoney(valueInBrl: number, country: DccCountry) {
   if (code === 'PY') return new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', maximumFractionDigits: 0 }).format(brlToPygDisplay(valueInBrl))
   if (code === 'CO') return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(brlToCopDisplay(valueInBrl))
   if (code === 'PT') return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(brlToEurDisplay(valueInBrl))
+  if (code === 'ES') return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(brlToEurDisplay(valueInBrl))
   if (code === 'MX') return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(brlToMxnDisplay(valueInBrl))
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valueInBrl)
 }

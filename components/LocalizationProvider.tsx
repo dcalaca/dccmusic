@@ -16,7 +16,7 @@ const translatedAttributeValues = new WeakMap<Element, Map<string, string>>()
 function translateCopy(value: string, country: DccCountry) {
   const code = String(country)
   if (code === 'PT') return translateToEuropeanPortuguese(value)
-  if (code === 'MX') return translateToMexicanSpanish(value)
+  if (code === 'MX' || code === 'ES') return translateToMexicanSpanish(value)
   if (code === 'PY' || code === 'CO') return translateToParaguayanSpanish(value)
   if (code === 'US') return translateToAmericanEnglish(value)
   return value

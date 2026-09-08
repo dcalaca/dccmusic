@@ -31,6 +31,10 @@ function assertDatabaseManagedPricing(country: DccCountry, kind: 'recarga' | 'pl
   throw new Error(`Preço de ${kind} em USD não configurado no banco de dados. Configure em /admin/precos.`)
 }
 
+function getPricingSourceCountry(country: DccCountry): DccCountry {
+  return String(country) === 'ES' ? ('PT' as DccCountry) : country
+}
+
 export type StudioPlanPriceQuote = {
   amount: number
   currency: StudioTopupCurrency
@@ -48,11 +52,12 @@ export async function getStudioTopupTiersFromPricing(country: DccCountry): Promi
   currency: StudioTopupCurrency
   source: StudioPricingSource
 }> {
+  const pricingCountry = getPricingSourceCountry(country)
   try {
     const { data, error } = await supabaseAdmin
       .from('studio_topup_pricing')
       .select('min_quantity,max_quantity,unit_price,label,currency')
-      .eq('country', country)
+      .eq('country', pricingCountry)
       .eq('is_active', true)
       .order('min_quantity', { ascending: true })
 
@@ -127,12 +132,13 @@ export async function getStudioPlanPriceFromPricing(
   priceInBrl: number,
   country: DccCountry
 ): Promise<StudioPlanPriceQuote> {
+  const pricingCountry = getPricingSourceCountry(country)
   try {
     const { data, error } = await supabaseAdmin
       .from('studio_plan_country_pricing')
       .select('price,currency')
       .eq('plan_slug', planSlug)
-      .eq('country', country)
+      .eq('country', pricingCountry)
       .eq('is_active', true)
       .maybeSingle()
 
@@ -164,11 +170,12 @@ export async function getStudioPlanPricesFromPricing(
   const uniqueSlugs = Array.from(new Set(planSlugs.filter(Boolean)))
   if (uniqueSlugs.length === 0) return {}
 
+  const pricingCountry = getPricingSourceCountry(country)
   try {
     const { data, error } = await supabaseAdmin
       .from('studio_plan_country_pricing')
       .select('plan_slug,price,currency')
-      .eq('country', country)
+      .eq('country', pricingCountry)
       .eq('is_active', true)
       .in('plan_slug', uniqueSlugs)
 
