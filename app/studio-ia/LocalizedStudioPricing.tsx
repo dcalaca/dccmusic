@@ -8,7 +8,7 @@ function formatCurrency(value: number, currency: StudioTopupCurrency) {
     BRL: { locale: 'pt-BR', maximumFractionDigits: 2 },
     PYG: { locale: 'es-PY', maximumFractionDigits: 0 },
     COP: { locale: 'es-CO', maximumFractionDigits: 0 },
-    EUR: { locale: 'pt-PT', maximumFractionDigits: 2 },
+    EUR: { locale: 'es-ES', maximumFractionDigits: 2 },
     MXN: { locale: 'es-MX', maximumFractionDigits: 2 },
     USD: { locale: 'en-US', maximumFractionDigits: 2 },
   }
@@ -20,7 +20,7 @@ export function StudioTopupPricingGrid() {
   const { country } = useLocalization()
   const code = String(country)
   const tiers = getStudioTopupTiers(country)
-  const currency: StudioTopupCurrency = code === 'PY' ? 'PYG' : code === 'CO' ? 'COP' : code === 'MX' ? 'MXN' : code === 'PT' ? 'EUR' : code === 'US' ? 'USD' : 'BRL'
+  const currency: StudioTopupCurrency = code === 'PY' ? 'PYG' : code === 'CO' ? 'COP' : code === 'MX' ? 'MXN' : code === 'PT' || code === 'ES' ? 'EUR' : code === 'US' ? 'USD' : 'BRL'
   const presentation = code === 'US'
     ? [['1 song', tiers[0].unitPrice], ['2 to 8 songs', tiers[1].unitPrice], ['9 to 29 songs', tiers[2].unitPrice], ['30+ songs', tiers[4].unitPrice]] as const
     : [['1 música', tiers[0].unitPrice], ['2 a 8 músicas', tiers[1].unitPrice], ['9 a 29 músicas', tiers[2].unitPrice], ['A partir de 30', tiers[4].unitPrice]] as const
