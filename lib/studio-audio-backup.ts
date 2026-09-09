@@ -435,6 +435,7 @@ export async function getStudioVersionAudioUrls(version: any) {
   )
   const hasInternalStream = Boolean(streamSignedUrl && version?.stream_audio_path)
   const backupIsConfirmed = version?.audio_backup_status === 'backed_up'
+  const externalAudioIsReady = version?.audio_backup_status === 'external_ready'
 
   // Uma cópia confirmada no nosso armazenamento é a fonte canônica. Links de provedores
   // expiram e podem ser criptografados/removidos sem aviso; eles só servem de contingência
@@ -446,11 +447,11 @@ export async function getStudioVersionAudioUrls(version: any) {
       // URL do fornecedor pode existir antes de o arquivo estar liberado para
       // reprodução. Só mostramos áudio externo para registros antigos, que não
       // possuem o campo de backup; nos novos, esperamos a cópia confirmada.
-      : !backupIsConfirmed && version?.audio_backup_status ? null : audioSignedUrl || streamSignedUrl || providerFullUrl || providerStreamUrl || null
+      : !backupIsConfirmed && !externalAudioIsReady && version?.audio_backup_status ? null : audioSignedUrl || streamSignedUrl || providerFullUrl || providerStreamUrl || null
 
   return {
     audioUrl: fullAudioUrl,
-    streamAudioUrl: streamSignedUrl || audioSignedUrl || (!backupIsConfirmed && version?.audio_backup_status ? null : providerStreamUrl || providerFullUrl) || null,
+    streamAudioUrl: streamSignedUrl || audioSignedUrl || (!backupIsConfirmed && !externalAudioIsReady && version?.audio_backup_status ? null : providerStreamUrl || providerFullUrl) || null,
   }
 }
 
@@ -632,6 +633,28 @@ export async function backupStudioVersionAudio(input: {
     }
   } catch (error: any) {
     if (isBackupSchemaMissing(error)) return { backedUp: false, reason: 'setup_required' }
+
+    const isStorageSizeLimit = error?.status === 400 && error?.statusCode === '413' ||
+      String(error?.message || '').toLowerCase().includes('maximum allowed size')
+    if (isStorageSizeLimit) {
+      // O arquivo já foi baixado com sucesso do fornecedor; o único bloqueio é
+      // o limite do bucket. Mantém a URL externa para liberar a audição agora,
+      // sem fingir que existe uma cópia permanente no nosso storage.
+      await supabaseAdmin
+        .from('studio_versions')
+        .update({
+          audio_path: null,
+          stream_audio_path: null,
+          audio_storage_provider: null,
+          stream_audio_storage_provider: null,
+          audio_backup_status: 'external_ready',
+          audio_backup_error: 'Áudio disponível pelo fornecedor; backup interno excedeu o limite de tamanho do Storage.',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', input.versionId)
+
+      return { backedUp: true, reason: 'external_ready' }
+    }
 
     console.error('[Studio Audio Backup] Erro ao salvar backup interno:', error)
     try {
