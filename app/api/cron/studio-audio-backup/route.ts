@@ -47,7 +47,7 @@ async function reopenFailedBackups(limit: number) {
   const { data: failed, error } = await supabaseAdmin
     .from('studio_versions')
     .select('id, audio_backup_error, updated_at')
-    .eq('audio_backup_status', 'failed')
+    .in('audio_backup_status', ['failed', 'external_ready'])
     .or('audio_url.not.is.null,stream_audio_url.not.is.null')
     .order('updated_at', { ascending: true })
     .limit(Math.max(limit * 4, 8))
@@ -74,7 +74,7 @@ async function reopenFailedBackups(limit: number) {
       updated_at: new Date().toISOString(),
     })
     .in('id', ids)
-    .eq('audio_backup_status', 'failed')
+    .in('audio_backup_status', ['failed', 'external_ready'])
 
   if (updateError) throw updateError
   return ids.length
