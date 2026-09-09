@@ -35,7 +35,7 @@ replaceOnce(
 
 replaceOnce(
   "  const path = input.path ||\n    `${input.composerId}/${input.folder || 'uploads'}/${studioMonthKey()}/${input.fileName || `${randomUUID()}.mp3`}`\n  const r2 = getR2Client()\n\n  if (r2) {",
-  "  const path = input.path ||\n    `${input.composerId}/${input.folder || 'uploads'}/${studioMonthKey()}/${input.fileName || `${randomUUID()}.mp3`}`\n\n  // Saídas musicais geradas pela DCC passam pelo bucket privado `limpo`.\n  // Uploads de referência do usuário continuam no fluxo original.\n  if (input.folder === 'audio') {\n    return uploadCleanGeneratedAudio({ path, buffer: input.buffer, contentType })\n  }\n\n  const r2 = getR2Client()\n\n  if (r2) {",
+  "  const path = input.path ||\n    `${input.composerId}/${input.folder || 'uploads'}/${studioMonthKey()}/${input.fileName || `${randomUUID()}.mp3`}`\n\n  // Saídas musicais geradas pela DCC passam pelo bucket privado `limpo`.\n  // Uploads de referência do usuário continuam no fluxo original.\n  if (input.folder === 'audio') {\n    const clean = await uploadCleanGeneratedAudio({ path, buffer: input.buffer, contentType })\n    // Mantém o contrato TypeScript legado dos chamadores. Em runtime, o valor\n    // continua sendo `supabase-clean`, usado para rotear leitura e URL assinada.\n    return {\n      path: clean.path,\n      provider: clean.provider as 'r2' | 'supabase',\n      contentType: clean.contentType,\n      sizeBytes: clean.sizeBytes,\n    }\n  }\n\n  const r2 = getR2Client()\n\n  if (r2) {",
   'generated buffer upload'
 )
 
