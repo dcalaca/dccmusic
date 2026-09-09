@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "postinstall": "node scripts/patch-ios-audio-picker.mjs && node scripts/patch-enhance-custom-voice.mjs && node scripts/patch-enhance-layout.mjs",
-    "prebuild": "node scripts/patch-ios-audio-picker.mjs && node scripts/patch-enhance-custom-voice.mjs && node scripts/patch-enhance-layout.mjs",
+    "postinstall": "node scripts/patch-ios-audio-picker.mjs && node scripts/patch-enhance-custom-voice.mjs && node scripts/patch-enhance-layout.mjs && node scripts/patch-clean-generated-audio.mjs",
+    "prebuild": "node scripts/patch-ios-audio-picker.mjs && node scripts/patch-enhance-custom-voice.mjs && node scripts/patch-enhance-layout.mjs && node scripts/patch-clean-generated-audio.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -46,7 +46,6 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.46",
-    "@types/react-dom": "^18.2.18",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
