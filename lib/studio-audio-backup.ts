@@ -31,11 +31,19 @@ function isBackupSchemaMissing(error: any) {
 }
 
 function getR2Client() {
-  const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID || process.env.R2_ACCOUNT_ID
-  const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY_ID
-  const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || process.env.R2_SECRET_ACCESS_KEY
+  const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID || process.env.R2_ACCOUNT_ID
+  const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || process.env.CLOUDFLARE_R2_ACCESS_KEY || process.env.R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY
+  const secretAccessKey = process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || process.env.CLOUDFLARE_R2_SECRET_KEY || process.env.R2_SECRET_ACCESS_KEY || process.env.R2_SECRET_KEY
 
-  if (!accountId || !accessKeyId || !secretAccessKey || !R2_BUCKET) return null
+  if (!accountId || !accessKeyId || !secretAccessKey || !R2_BUCKET) {
+    console.error('[Studio Audio Backup] R2 indisponível na função.', {
+      hasAccountId: Boolean(accountId),
+      hasAccessKeyId: Boolean(accessKeyId),
+      hasSecretAccessKey: Boolean(secretAccessKey),
+      hasBucket: Boolean(R2_BUCKET),
+    })
+    return null
+  }
   if (!r2Client) {
     r2Client = new S3Client({
       region: 'auto',
