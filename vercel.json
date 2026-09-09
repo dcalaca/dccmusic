@@ -13,7 +13,7 @@
     },
     {
       "path": "/api/cron/studio-audio-backup",
-      "schedule": "*/10 * * * *"
+      "schedule": "* * * * *"
     },
     {
       "path": "/api/cron/studio-video-backup",
