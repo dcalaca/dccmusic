@@ -447,7 +447,8 @@ export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
       .eq('generation_id', input.generationId)
 
     const audioIsReady = !error && (versions || []).length === 2 && (versions || []).every((version: any) => (
-      version.audio_backup_status === 'backed_up' && Boolean(version.audio_path || version.stream_audio_path)
+      (version.audio_backup_status === 'backed_up' && Boolean(version.audio_path || version.stream_audio_path)) ||
+      version.audio_backup_status === 'external_ready'
     ))
 
     if (!audioIsReady) {
