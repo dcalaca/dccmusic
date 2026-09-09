@@ -437,6 +437,28 @@ export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
   projectSlug?: string | null
   audioUrl?: string | null
 }) {
+  // O callback do fornecedor pode chegar alguns segundos antes de o MP3 ficar
+  // realmente disponível. Não avisamos o cliente enquanto as duas versões não
+  // estiverem guardadas e reproduzíveis no nosso armazenamento.
+  if (input.generationId) {
+    const { data: versions, error } = await supabaseAdmin
+      .from('studio_versions')
+      .select('id, audio_backup_status, audio_path, stream_audio_path')
+      .eq('generation_id', input.generationId)
+
+    const audioIsReady = !error && (versions || []).length === 2 && (versions || []).every((version: any) => (
+      version.audio_backup_status === 'backed_up' && Boolean(version.audio_path || version.stream_audio_path)
+    ))
+
+    if (!audioIsReady) {
+      console.info('[Studio IA] E-mail de música pronta adiado: áudio ainda está sendo preparado.', {
+        generationId: input.generationId,
+        versions: versions?.length || 0,
+      })
+      return { sent: false, reason: 'audio_not_ready' }
+    }
+  }
+
   if (input.composerId && input.projectId) {
     await notifyMusicReady({
       composerId: input.composerId,
