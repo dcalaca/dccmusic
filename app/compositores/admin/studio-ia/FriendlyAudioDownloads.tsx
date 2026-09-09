@@ -2,6 +2,9 @@
 
 import { useEffect } from 'react'
 
+let prepareNextMp3Download = false
+let prepareResetTimer: number | null = null
+
 function isHttpUrl(value: string) {
   return /^https?:\/\//i.test(value)
 }
@@ -82,6 +85,63 @@ function friendlyFilename(currentName: string) {
   return `${parts.join(' - ')}${extension}`
 }
 
+function publicationFilename(currentName: string) {
+  const friendly = friendlyFilename(currentName)
+  return friendly.replace(/\.mp3$/i, ' - para publicação.mp3')
+}
+
+function hasAscii(bytes: Uint8Array, offset: number, value: string) {
+  if (offset < 0 || offset + value.length > bytes.length) return false
+  for (let index = 0; index < value.length; index += 1) {
+    if (bytes[offset + index] !== value.charCodeAt(index)) return false
+  }
+  return true
+}
+
+function synchsafeSize(bytes: Uint8Array, offset: number) {
+  return (
+    ((bytes[offset] & 0x7f) << 21) |
+    ((bytes[offset + 1] & 0x7f) << 14) |
+    ((bytes[offset + 2] & 0x7f) << 7) |
+    (bytes[offset + 3] & 0x7f)
+  )
+}
+
+function littleEndianUint32(bytes: Uint8Array, offset: number) {
+  return (
+    bytes[offset] |
+    (bytes[offset + 1] << 8) |
+    (bytes[offset + 2] << 16) |
+    (bytes[offset + 3] << 24)
+  ) >>> 0
+}
+
+async function stripMp3Metadata(blob: Blob) {
+  const bytes = new Uint8Array(await blob.arrayBuffer())
+  let start = 0
+  let end = bytes.length
+
+  if (bytes.length >= 10 && hasAscii(bytes, 0, 'ID3')) {
+    const payloadSize = synchsafeSize(bytes, 6)
+    const hasFooter = Boolean(bytes[5] & 0x10)
+    start = Math.min(bytes.length, 10 + payloadSize + (hasFooter ? 10 : 0))
+  }
+
+  if (end - start >= 128 && hasAscii(bytes, end - 128, 'TAG')) {
+    end -= 128
+  }
+
+  if (end - start >= 32 && hasAscii(bytes, end - 32, 'APETAGEX')) {
+    const apeSize = littleEndianUint32(bytes, end - 20)
+    if (apeSize >= 32 && apeSize <= end - start) {
+      end -= apeSize
+    }
+  }
+
+  if (start >= end) throw new Error('invalid_mp3')
+  return new Blob([bytes.slice(start, end)], { type: 'audio/mpeg' })
+}
+
 async function proxyDownload(url: string) {
   const token = localStorage.getItem('composer_token')
   if (!token) throw new Error('Sessão expirada')
@@ -98,13 +158,56 @@ async function proxyDownload(url: string) {
   return response
 }
 
+function armPublicationDownload() {
+  prepareNextMp3Download = true
+  if (prepareResetTimer) window.clearTimeout(prepareResetTimer)
+  prepareResetTimer = window.setTimeout(() => {
+    prepareNextMp3Download = false
+    prepareResetTimer = null
+  }, 30_000)
+}
+
+function clearPublicationDownload() {
+  prepareNextMp3Download = false
+  if (prepareResetTimer) {
+    window.clearTimeout(prepareResetTimer)
+    prepareResetTimer = null
+  }
+}
+
 export default function FriendlyAudioDownloads() {
   useEffect(() => {
     const originalAnchorClick = HTMLAnchorElement.prototype.click
 
     HTMLAnchorElement.prototype.click = function patchedClick() {
       if (this.download && this.href.startsWith('blob:') && /\.mp3$/i.test(this.download)) {
-        this.download = friendlyFilename(this.download)
+        const nextName = friendlyFilename(this.download)
+
+        if (prepareNextMp3Download) {
+          clearPublicationDownload()
+          const sourceUrl = this.href
+          void (async () => {
+            try {
+              const response = await fetch(sourceUrl)
+              if (!response.ok) throw new Error('blob_read_failed')
+              const cleanBlob = await stripMp3Metadata(await response.blob())
+              const cleanUrl = URL.createObjectURL(cleanBlob)
+              const cleanLink = document.createElement('a')
+              cleanLink.href = cleanUrl
+              cleanLink.download = publicationFilename(nextName)
+              document.body.appendChild(cleanLink)
+              originalAnchorClick.call(cleanLink)
+              cleanLink.remove()
+              window.setTimeout(() => URL.revokeObjectURL(cleanUrl), 60_000)
+              window.dispatchEvent(new CustomEvent('dcc-publication-download-finished'))
+            } catch {
+              window.dispatchEvent(new CustomEvent('dcc-publication-download-failed'))
+            }
+          })()
+          return
+        }
+
+        this.download = nextName
       }
       return originalAnchorClick.call(this)
     }
@@ -150,11 +253,81 @@ export default function FriendlyAudioDownloads() {
       }
     }
 
+    const addPublicationButtons = () => {
+      if (!window.location.pathname.includes('/studio-ia/projetos/')) return
+
+      const downloadButtons = Array.from(
+        document.querySelectorAll<HTMLButtonElement>('button[aria-label="Baixar música"]')
+      )
+
+      for (const downloadButton of downloadButtons) {
+        const player = downloadButton.closest('div.rounded-2xl') as HTMLElement | null
+        if (!player || player.querySelector('[data-dcc-publication-action]')) continue
+
+        const wrapper = document.createElement('div')
+        wrapper.dataset.dccPublicationAction = 'true'
+        wrapper.className = 'mt-3 flex flex-col gap-1 border-t border-gray-800 pt-3 sm:flex-row sm:items-center sm:justify-between'
+
+        const helper = document.createElement('span')
+        helper.className = 'text-xs text-gray-500'
+        helper.textContent = 'Baixa uma cópia sem metadados técnicos. O áudio original não é alterado.'
+
+        const button = document.createElement('button')
+        button.type = 'button'
+        button.className = 'inline-flex items-center justify-center gap-2 rounded-xl border border-primary-600/60 bg-primary-950/40 px-3 py-2 text-xs font-bold text-primary-200 transition hover:border-primary-400 hover:text-white disabled:cursor-wait disabled:opacity-60'
+        button.textContent = 'Preparar para publicação'
+        button.setAttribute('aria-label', 'Preparar música para publicação no YouTube ou distribuidoras')
+
+        button.addEventListener('click', () => {
+          if (button.disabled) return
+          button.disabled = true
+          button.textContent = 'Preparando...'
+          armPublicationDownload()
+          downloadButton.click()
+
+          window.setTimeout(() => {
+            if (!button.isConnected) return
+            button.disabled = false
+            button.textContent = 'Preparar para publicação'
+          }, 8_000)
+        })
+
+        wrapper.appendChild(helper)
+        wrapper.appendChild(button)
+        player.appendChild(wrapper)
+      }
+    }
+
+    const handlePublicationFinished = () => {
+      document.querySelectorAll<HTMLButtonElement>('[data-dcc-publication-action] button').forEach((button) => {
+        button.disabled = false
+        button.textContent = 'Preparar para publicação'
+      })
+    }
+
+    const handlePublicationFailed = () => {
+      clearPublicationDownload()
+      document.querySelectorAll<HTMLButtonElement>('[data-dcc-publication-action] button').forEach((button) => {
+        button.disabled = false
+        button.textContent = 'Tentar novamente'
+      })
+    }
+
     document.addEventListener('click', handleDownloadClick, true)
+    window.addEventListener('dcc-publication-download-finished', handlePublicationFinished)
+    window.addEventListener('dcc-publication-download-failed', handlePublicationFailed)
+
+    addPublicationButtons()
+    const observer = new MutationObserver(addPublicationButtons)
+    observer.observe(document.body, { childList: true, subtree: true })
 
     return () => {
+      clearPublicationDownload()
+      observer.disconnect()
       HTMLAnchorElement.prototype.click = originalAnchorClick
       document.removeEventListener('click', handleDownloadClick, true)
+      window.removeEventListener('dcc-publication-download-finished', handlePublicationFinished)
+      window.removeEventListener('dcc-publication-download-failed', handlePublicationFailed)
     }
   }, [])
 
