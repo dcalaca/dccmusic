@@ -434,6 +434,7 @@ export async function getStudioVersionAudioUrls(version: any) {
     !internalAudioIsStreamOnly
   )
   const hasInternalStream = Boolean(streamSignedUrl && version?.stream_audio_path)
+  const backupStillProcessing = ['pending', 'processing'].includes(String(version?.audio_backup_status || ''))
 
   // Uma cópia confirmada no nosso armazenamento é a fonte canônica. Links de provedores
   // expiram e podem ser criptografados/removidos sem aviso; eles só servem de contingência
@@ -442,11 +443,13 @@ export async function getStudioVersionAudioUrls(version: any) {
     ? audioSignedUrl
     : hasInternalStream
       ? streamSignedUrl
-      : audioSignedUrl || streamSignedUrl || providerFullUrl || providerStreamUrl || null
+      // URL do fornecedor pode existir antes de o arquivo estar liberado para
+      // reprodução. Nesse intervalo, não montamos um player de 00:00.
+      : backupStillProcessing ? null : audioSignedUrl || streamSignedUrl || providerFullUrl || providerStreamUrl || null
 
   return {
     audioUrl: fullAudioUrl,
-    streamAudioUrl: streamSignedUrl || audioSignedUrl || providerStreamUrl || providerFullUrl || null,
+    streamAudioUrl: streamSignedUrl || audioSignedUrl || (backupStillProcessing ? null : providerStreamUrl || providerFullUrl) || null,
   }
 }
 
