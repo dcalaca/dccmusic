@@ -480,6 +480,21 @@ export default function StudioProjectDetailPage() {
   }, [projectId, project?.cover?.imageUrl, project?.version?.audioUrl, project?.version?.streamAudioUrl, project?.versions?.length])
 
   useEffect(() => {
+    const versions = Array.isArray(project?.versions) ? project.versions : []
+    const hasAudio = versions.some((version: any) => version.audioUrl || version.streamAudioUrl)
+    const isFinalizing = Boolean(project?.status === 'ready' && versions.length > 0 && !hasAudio)
+    if (!isFinalizing) return
+
+    // O callback já pode ter confirmado a música, mas o MP3 ainda está sendo
+    // copiado para o storage. Atualiza sozinho até o player poder tocar.
+    const interval = window.setInterval(() => {
+      loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
+    }, 4000)
+
+    return () => window.clearInterval(interval)
+  }, [project?.status, project?.versions])
+
+  useEffect(() => {
     if (!generationId) {
       setGenerationMessageIndex(0)
       setGenerationElapsedSeconds(0)
@@ -1629,7 +1644,7 @@ export default function StudioProjectDetailPage() {
                               {versionAudioUrl ? (
                                 <StudioAudioPlayer src={versionAudioUrl} label={`Versão ${versionNumber}`} />
                               ) : (
-                                <p className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4 text-sm text-gray-500">Áudio sem URL registrada.</p>
+                                <p className="rounded-2xl border border-cyan-400/20 bg-cyan-950/20 p-4 text-sm text-cyan-100"><FiLoader className="mr-2 inline animate-spin" />Finalizando o áudio para você ouvir. Esta página atualiza automaticamente.</p>
                               )}
                               {versionAudioUrl && (
                                 <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
