@@ -2,24 +2,47 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { isValidStudioCallback } from '@/lib/studio'
 import { fetchSunoTaskTracks, saveSunoGenerationTracksEnsuringTwo } from '@/lib/studio-suno-versions'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
 
 /** Recuperação manual e pontual de áudios já concluídos no fornecedor. */
 export async function POST(request: NextRequest) {
-  if (!isValidStudioCallback(request)) {
+  const session = await getServerSession(authOptions)
+  if (!session && !isValidStudioCallback(request)) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
   const body = await request.json().catch(() => ({}))
-  const taskIds = [...new Set((Array.isArray(body?.taskIds) ? body.taskIds : [])
+  let taskIds = [...new Set((Array.isArray(body?.taskIds) ? body.taskIds : [])
     .map((value: unknown) => String(value || '').trim())
     .filter(Boolean))]
     .slice(0, 30)
 
   if (!taskIds.length) {
-    return NextResponse.json({ error: 'Informe os taskIds para recuperar.' }, { status: 400 })
+    const { data: affectedVersions, error: versionsError } = await supabaseAdmin
+      .from('studio_versions')
+      .select('generation_id')
+      .in('audio_backup_status', ['failed', 'external_ready'])
+      .not('generation_id', 'is', null)
+      .order('updated_at', { ascending: true })
+      .limit(60)
+    if (versionsError) throw versionsError
+
+    const generationIds = [...new Set((affectedVersions || []).map((version: any) => version.generation_id).filter(Boolean))]
+    if (!generationIds.length) {
+      return NextResponse.json({ success: true, results: [], message: 'Nenhum áudio pendente de recuperação.' })
+    }
+
+    const { data: affectedGenerations, error: generationsError } = await supabaseAdmin
+      .from('studio_generations')
+      .select('provider_task_id')
+      .in('id', generationIds)
+      .not('provider_task_id', 'is', null)
+    if (generationsError) throw generationsError
+    taskIds = [...new Set((affectedGenerations || []).map((generation: any) => generation.provider_task_id).filter(Boolean))].slice(0, 30)
   }
 
   const { data: generations, error } = await supabaseAdmin
