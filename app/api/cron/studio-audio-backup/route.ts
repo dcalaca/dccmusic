@@ -38,7 +38,11 @@ function isTransientBackupError(value: unknown) {
   )
 }
 
-/** Reabre apenas falhas transitórias. HTTP 4xx/links expirados não entram em loop eterno. */
+/**
+ * A Suno pode confirmar a geração antes de o MP3 responder no CDN. Reabre a
+ * tentativa por até 30 min: depois disso, um link realmente inválido não fica
+ * em loop eterno.
+ */
 async function reopenFailedBackups(limit: number) {
   const { data: failed, error } = await supabaseAdmin
     .from('studio_versions')
@@ -50,8 +54,13 @@ async function reopenFailedBackups(limit: number) {
 
   if (error) throw error
 
+  const retryWindowMs = 30 * 60 * 1000
+  const now = Date.now()
   const ids = (failed || [])
-    .filter((row: any) => isTransientBackupError(row.audio_backup_error))
+    .filter((row: any) => {
+      const updatedAt = new Date(row.updated_at).getTime()
+      return isTransientBackupError(row.audio_backup_error) || (Number.isFinite(updatedAt) && now - updatedAt <= retryWindowMs)
+    })
     .slice(0, limit)
     .map((row: any) => row.id)
 
