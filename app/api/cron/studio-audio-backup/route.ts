@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { backupStudioVersionAudio } from '@/lib/studio-audio-backup'
 import { supabaseAdmin } from '@/lib/supabase'
+import { getComposerEmailIdentity, sendStudioMusicReadyEmail } from '@/lib/dcc-emails'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -78,6 +79,32 @@ async function claimBackupBatch(limit: number) {
   return data || []
 }
 
+async function notifyMusicReadyAfterBackup(generationId?: string | null) {
+  if (!generationId) return
+
+  const { data: generation } = await supabaseAdmin
+    .from('studio_generations')
+    .select('id, project_id, composer_id')
+    .eq('id', generationId)
+    .maybeSingle()
+  if (!generation) return
+
+  const [{ data: project }, composer] = await Promise.all([
+    supabaseAdmin.from('studio_projects').select('id, title').eq('id', generation.project_id).maybeSingle(),
+    getComposerEmailIdentity(generation.composer_id),
+  ])
+  if (!project || !composer) return
+
+  // A própria função só envia quando ambas as versões já estiverem no storage.
+  // A chave por geração mantém a chamada segura em cada execução do cron.
+  await sendStudioMusicReadyEmail({
+    ...composer,
+    projectId: project.id,
+    generationId: generation.id,
+    projectTitle: project.title || 'Sua música',
+  })
+}
+
 export async function GET(request: NextRequest) {
   try {
     if (!isAuthorized(request)) {
@@ -95,7 +122,7 @@ export async function GET(request: NextRequest) {
     if (!versions.length) {
       const { data: pending, error } = await supabaseAdmin
         .from('studio_versions')
-        .select('id, composer_id, audio_url, stream_audio_url, audio_path, stream_audio_path, audio_storage_provider, stream_audio_storage_provider, audio_backup_status, created_at')
+        .select('id, generation_id, composer_id, audio_url, stream_audio_url, audio_path, stream_audio_path, audio_storage_provider, stream_audio_storage_provider, audio_backup_status, created_at')
         .eq('audio_backup_status', 'pending')
         .or('audio_url.not.is.null,stream_audio_url.not.is.null')
         .order('created_at', { ascending: true })
@@ -119,6 +146,17 @@ export async function GET(request: NextRequest) {
         versionId: version.id,
         ...result,
       })
+
+      if (result.backedUp) {
+        const generationId = version.generation_id || (await supabaseAdmin
+          .from('studio_versions')
+          .select('generation_id')
+          .eq('id', version.id)
+          .maybeSingle()).data?.generation_id
+        await notifyMusicReadyAfterBackup(generationId).catch((error) => {
+          console.error('[CRON STUDIO AUDIO BACKUP] Erro ao avisar música pronta:', error)
+        })
+      }
     }
 
     return NextResponse.json({
