@@ -6,7 +6,7 @@ create or replace function public.transfer_studio_project(
   p_from_composer_id uuid,
   p_to_composer_id uuid
 )
-returns table (project_id uuid, title text)
+returns table (transferred_project_id uuid, transferred_title text)
 language plpgsql
 security invoker
 set search_path = public, pg_temp
