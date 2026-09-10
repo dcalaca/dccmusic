@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { supabaseAdmin } from '@/lib/supabase'
+import { COUNTRY_COOKIE } from '@/lib/localization'
 import {
   getComposerEmailIdentity,
   sendStudioMusicReadyEmail,
@@ -210,6 +211,7 @@ export async function GET(request: NextRequest) {
     const composer = getComposerFromRequest(request)
     if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
+    const country = request.cookies.get(COUNTRY_COOKIE)?.value || 'BR'
     const { searchParams } = new URL(request.url)
     const generationId = searchParams.get('generationId')
     if (!generationId) return NextResponse.json({ error: 'generationId obrigatório' }, { status: 400 })
@@ -254,7 +256,7 @@ export async function GET(request: NextRequest) {
         const fallbackError = 'error' in fallback ? fallback.error : null
         await markStudioGenerationAsCommunicationFailure(
           generation,
-          fallbackError ? getStudioMusicGenerationFailureMessage(fallbackError) : undefined,
+          fallbackError ? getStudioMusicGenerationFailureMessage(fallbackError, country) : undefined,
         )
       }
     } else if (needsPolling && generation.provider === 'sunoapi' && generation.provider_task_id && process.env.SUNOAPI_KEY) {
@@ -281,7 +283,7 @@ export async function GET(request: NextRequest) {
         if (!fallback.started) {
           const fallbackError = 'error' in fallback ? fallback.error : null
           const providerError = fallbackError || getStudioGenerationProviderError(result) || result?.msg || status
-          const friendlyError = getStudioMusicGenerationFailureMessage(providerError)
+          const friendlyError = getStudioMusicGenerationFailureMessage(providerError, country)
           await supabaseAdmin
             .from('studio_generations')
             .update({
@@ -315,8 +317,18 @@ export async function GET(request: NextRequest) {
     const versionAudio = version ? await getStudioVersionAudioUrls(version) : null
     const coverImageUrl = cover ? await getStudioCoverImageUrl(cover) : null
 
+    const generationForUser = freshGeneration?.status === 'failed'
+      ? {
+          ...freshGeneration,
+          error_message: getStudioMusicGenerationFailureMessage(
+            getStudioGenerationProviderError(freshGeneration.response_payload) || freshGeneration.error_message,
+            country,
+          ),
+        }
+      : freshGeneration
+
     return NextResponse.json({
-      generation: freshGeneration,
+      generation: generationForUser,
       providerStatus,
       awaitingAudioSync: Boolean(providerFinished && !hasAnyAudio),
       version: version ? {
