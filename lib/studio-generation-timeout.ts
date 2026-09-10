@@ -2,7 +2,6 @@ import { supabaseAdmin } from '@/lib/supabase'
 import {
   isStudioVoiceExpiredError,
   STUDIO_AUDIO_CATALOG_MATCH_MESSAGE,
-  translateStudioVoiceError,
   VOICE_EXPIRED_ERROR_MESSAGE,
 } from '@/lib/studio-voice-errors'
 
@@ -25,21 +24,50 @@ function normalizeProviderError(providerError?: string | null) {
     .trim()
 }
 
+function isAudioCatalogMatchError(value?: string | null) {
+  const lower = String(value || '').toLowerCase()
+  return lower.includes('matches an existing recording') ||
+    lower.includes('existing recording in our catalog') ||
+    (lower.includes('existing recording') && lower.includes('catalog'))
+}
+
 /** Mensagem transparente para o usuário, sem revelar a infraestrutura utilizada. */
 export function getTransparentStudioGenerationError(providerError?: string | null) {
   const error = normalizeProviderError(providerError)
   const lower = error.toLowerCase()
 
   if (!error) return STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR
-  if (lower.includes('copyright') || lower.includes('copyrighted material') || lower.includes('direitos autorais')) {
-    return `A letra enviada contém trechos identificados como pertencentes a uma música já existente. Altere esses trechos e tente novamente.${NO_CREDIT_SUFFIX}`
+
+  if (isAudioCatalogMatchError(error)) {
+    return STUDIO_AUDIO_CATALOG_MATCH_MESSAGE
   }
+
+  if (lower.includes('copyrighted material') || lower.includes('copyright') || lower.includes('direitos autorais')) {
+    return `A letra enviada contém conteúdo identificado como protegido por direitos autorais. Altere o trecho indicado e tente novamente.${NO_CREDIT_SUFFIX}`
+  }
+
+  if (
+    lower.includes("don't reference specific artists") ||
+    lower.includes('do not reference specific artists') ||
+    lower.includes('specific artists') ||
+    lower.includes('artist name') ||
+    lower.includes('specific artist')
+  ) {
+    return `As instruções mencionam um artista específico, e esse tipo de referência não pode ser usado na geração. Remova o nome do artista e tente novamente.${NO_CREDIT_SUFFIX}`
+  }
+
+  if (lower.includes('internal error') || lower.includes('server exception') || lower.includes('please try again later')) {
+    return `O serviço de criação apresentou uma falha temporária. Tente novamente em alguns minutos.${NO_CREDIT_SUFFIX}`
+  }
+
   if (lower.includes('sensitive') || lower.includes('prohibited') || lower.includes('policy violation')) {
     return `A letra contém um trecho que não pôde ser processado pelas regras de conteúdo. Revise a letra e tente novamente.${NO_CREDIT_SUFFIX}`
   }
+
   if (lower.includes('timeout') || lower.includes('timed out')) {
     return `A criação demorou mais do que o esperado e não pôde ser concluída. Tente novamente.${NO_CREDIT_SUFFIX}`
   }
+
   if (lower.includes('temporarily unavailable') || lower.includes('unavailable') || lower.includes('overloaded')) {
     return `O serviço de criação está temporariamente indisponível. Tente novamente em alguns minutos.${NO_CREDIT_SUFFIX}`
   }
@@ -50,7 +78,10 @@ export function getTransparentStudioGenerationError(providerError?: string | nul
 const ACTIVE_WITHOUT_AUDIO_STATUSES = new Set(['pending', 'processing'])
 
 export function getStudioMusicGenerationFailureMessage(providerError?: string | null) {
-  if (String(providerError || '').toLowerCase().includes('custom_voice_requires_suno')) {
+  const rawError = String(providerError || '')
+  const lower = rawError.toLowerCase()
+
+  if (lower.includes('custom_voice_requires_suno')) {
     return 'A voz cadastrada só pode ser usada na criação original. Tente novamente quando a geração estiver disponível. Nenhum crédito foi descontado.'
   }
 
@@ -58,9 +89,10 @@ export function getStudioMusicGenerationFailureMessage(providerError?: string | 
     return VOICE_EXPIRED_ERROR_MESSAGE
   }
 
-  const translated = translateStudioVoiceError(providerError)
-  if (translated === STUDIO_AUDIO_CATALOG_MATCH_MESSAGE) {
-    return translated
+  // Erros de música não devem passar pelo tradutor de validação de voz.
+  // Isso evita, por exemplo, transformar um erro 500 genérico em mensagem de "áudio da voz".
+  if (isAudioCatalogMatchError(rawError)) {
+    return STUDIO_AUDIO_CATALOG_MATCH_MESSAGE
   }
 
   return getTransparentStudioGenerationError(providerError)
