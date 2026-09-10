@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FiArrowLeft, FiChevronLeft, FiChevronRight, FiDownload, FiFileText, FiHeadphones, FiHeart, FiInfo, FiLoader, FiLogIn, FiMic, FiMoreVertical, FiMusic, FiPlus, FiStar, FiTrash2, FiX, FiZap } from 'react-icons/fi'
+import { FiArrowLeft, FiChevronLeft, FiChevronRight, FiDownload, FiFileText, FiHeadphones, FiHeart, FiInfo, FiLoader, FiLogIn, FiMic, FiMoreVertical, FiMusic, FiPlus, FiSend, FiStar, FiTrash2, FiX, FiZap } from 'react-icons/fi'
 
 const filters = [
   { id: 'all', label: 'Todos' },
@@ -66,6 +66,10 @@ function StudioProjectsContent() {
   const [inspiringId, setInspiringId] = useState('')
   const [inspirationProject, setInspirationProject] = useState<any>(null)
   const [selectedInspirationVariation, setSelectedInspirationVariation] = useState('similar')
+  const [canTransferProjects, setCanTransferProjects] = useState(false)
+  const [transferProject, setTransferProject] = useState<any>(null)
+  const [transferEmail, setTransferEmail] = useState('')
+  const [transferringId, setTransferringId] = useState('')
   const inspirationPickerRef = useRef<HTMLDivElement | null>(null)
 
   const showSessionExpired = () => {
@@ -129,6 +133,15 @@ function StudioProjectsContent() {
   useEffect(() => {
     loadProjects()
   }, [currentFilter])
+
+  useEffect(() => {
+    try {
+      const composer = JSON.parse(localStorage.getItem('composer_data') || '{}')
+      setCanTransferProjects(String(composer?.email || '').trim().toLowerCase() === 'dcalaca@gmail.com')
+    } catch {
+      setCanTransferProjects(false)
+    }
+  }, [])
 
   const discardDraft = async (projectId: string, projectTitle: string) => {
     const confirmed = window.confirm(`Descartar o rascunho "${projectTitle}"? Essa ação não pode ser desfeita.`)
@@ -211,6 +224,59 @@ function StudioProjectsContent() {
     setError('')
     setMessage('')
     setProjectToDelete(project)
+  }
+
+  const openTransferConfirmation = (project: any) => {
+    setMenuProjectId('')
+    setError('')
+    setMessage('')
+    setTransferEmail('')
+    setTransferProject(project)
+  }
+
+  const transferSelectedProject = async () => {
+    if (!transferProject?.id) return
+
+    const recipientEmail = transferEmail.trim().toLowerCase()
+    if (!recipientEmail || !recipientEmail.includes('@')) {
+      setError('Informe o e-mail do compositor que vai receber o projeto.')
+      return
+    }
+
+    const token = localStorage.getItem('composer_token')
+    if (!token) {
+      setTransferProject(null)
+      showSessionExpired()
+      return
+    }
+
+    setTransferringId(transferProject.id)
+    setError('')
+    setMessage('')
+
+    try {
+      const response = await fetch(`/api/compositores/studio/projects/${transferProject.id}/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ recipientEmail }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (response.status === 401) {
+        setTransferProject(null)
+        showSessionExpired()
+        return
+      }
+      if (!response.ok) throw new Error(data.error || 'Não foi possível transferir o projeto.')
+
+      setProjects((currentProjects) => currentProjects.filter((project) => project.id !== transferProject.id))
+      setTransferProject(null)
+      setTransferEmail('')
+      setMessage(`Projeto transferido para ${data.recipient?.email || recipientEmail}.`)
+    } catch (err: any) {
+      setError(err.message || 'Não foi possível transferir o projeto.')
+    } finally {
+      setTransferringId('')
+    }
   }
 
   const deleteProject = async () => {
@@ -394,6 +460,31 @@ function StudioProjectsContent() {
 
           {message && <div className="mb-6 rounded-xl border border-green-800 bg-green-950/50 p-4 text-green-200">{message}</div>}
           {error && <div className="mb-6 rounded-xl border border-red-800 bg-red-950/50 p-4 text-red-200">{error}</div>}
+          {transferProject && (
+            <div className="fixed inset-0 z-[160] flex items-center justify-center bg-black/85 px-4 py-6 backdrop-blur-sm">
+              <div className="w-full max-w-lg rounded-3xl border border-amber-500/40 bg-gray-950 p-6 shadow-2xl shadow-black/60">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-200">Transferir projeto</p>
+                    <h2 className="mt-2 text-2xl font-black text-white">Enviar “{transferProject.title}”</h2>
+                  </div>
+                  <button type="button" onClick={() => setTransferProject(null)} disabled={Boolean(transferringId)} className="rounded-xl p-2 text-gray-400 hover:bg-gray-900 hover:text-white disabled:opacity-50" aria-label="Fechar">
+                    <FiX className="h-5 w-5" />
+                  </button>
+                </div>
+                <p className="mt-4 text-sm leading-6 text-gray-300">O compositor receberá o projeto, letra, versões, capa, vídeos e cifras já geradas. Créditos e histórico de cobrança não são transferidos.</p>
+                <label className="mt-5 block text-sm font-bold text-gray-200" htmlFor="transfer-recipient-email">E-mail do compositor que vai receber</label>
+                <input id="transfer-recipient-email" type="email" value={transferEmail} onChange={(event) => setTransferEmail(event.target.value)} placeholder="cliente@email.com" disabled={Boolean(transferringId)} className="mt-2 w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-amber-400 disabled:opacity-60" />
+                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                  <button type="button" onClick={() => setTransferProject(null)} disabled={Boolean(transferringId)} className="rounded-xl border border-gray-700 px-4 py-3 font-bold text-gray-200 hover:bg-gray-900 disabled:opacity-60">Cancelar</button>
+                  <button type="button" onClick={transferSelectedProject} disabled={Boolean(transferringId)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3 font-black text-gray-950 hover:bg-amber-400 disabled:opacity-60">
+                    {transferringId ? <FiLoader className="animate-spin" /> : <FiSend />}
+                    Confirmar transferência
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
           {projectToDelete && (
             <div
               className="fixed inset-0 z-[150] flex items-center justify-center bg-black/85 px-4 py-6 backdrop-blur-sm"
@@ -773,6 +864,17 @@ function StudioProjectsContent() {
                               <FiZap />
                               Usar de inspiração
                             </button>
+                            {canTransferProjects && (
+                              <button
+                                type="button"
+                                onClick={() => openTransferConfirmation(project)}
+                                disabled={transferringId === project.id}
+                                className="flex w-full items-center gap-2 border-t border-gray-800 px-4 py-3 text-left text-sm font-bold text-amber-200 transition hover:bg-amber-950/30 hover:text-amber-100 disabled:opacity-60"
+                              >
+                                {transferringId === project.id ? <FiLoader className="animate-spin" /> : <FiSend />}
+                                Transferir projeto
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => openDeleteConfirmation(project)}
