@@ -34,6 +34,7 @@ const COUNTRY_STYLE: Record<string, { label: string; color: string }> = {
   BR: { label: 'Brasil', color: '#22c55e' },
   PY: { label: 'Paraguai', color: '#ef4444' },
   CO: { label: 'Colômbia', color: '#facc15' },
+  ES: { label: 'Espanha', color: '#a855f7' },
   MX: { label: 'México', color: '#06b6d4' },
   PT: { label: 'Portugal', color: '#3b82f6' },
 }
