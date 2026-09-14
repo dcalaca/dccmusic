@@ -281,10 +281,10 @@ export default function NewStudioMusicPage() {
   const isPortugal = country === 'PT'
   const isMexico = country === 'MX'
   const isSpain = String(country) === 'ES'
-  const isUnitedStates = String(country) === 'US'
+  const isEnglish = String(country) === 'US' || String(country) === 'GB'
   const countryPreset = getStudioCountryPreset(country)
   const isSpanish = countryPreset.isSpanish
-  const localizedThemeSuggestions = isUnitedStates ? themeSuggestionsEn : isSpanish ? themeSuggestionsEsPy : themeSuggestions
+  const localizedThemeSuggestions = isEnglish ? themeSuggestionsEn : isSpanish ? themeSuggestionsEsPy : themeSuggestions
   const localizedStructures = isSpanish
     ? ['Estándar', 'A/B/Estribillo/C/Estribillo', 'A/Estribillo/A/Estribillo']
     : structures
@@ -472,19 +472,19 @@ export default function NewStudioMusicPage() {
   const handleSubmit = async () => {
     setError('')
     if (!form.title.trim()) {
-      showError(isUnitedStates ? 'Enter the song title.' : 'Informe o nome da música.')
+      showError(isEnglish ? 'Enter the song title.' : 'Informe o nome da música.')
       return
     }
     if (isCustomStyle && form.customStyle.trim().length < 3) {
-      showError(isUnitedStates ? 'Describe the music style you want.' : 'Escreva o estilo musical que você quer.')
+      showError(isEnglish ? 'Describe the music style you want.' : 'Escreva o estilo musical que você quer.')
       return
     }
     if (hasOwnLyric && existingLyric.trim().length < 40) {
-      showError(isUnitedStates ? 'Paste the complete lyrics before continuing.' : 'Cole a letra completa antes de continuar.')
+      showError(isEnglish ? 'Paste the complete lyrics before continuing.' : 'Cole a letra completa antes de continuar.')
       return
     }
     if (!hasOwnLyric && !form.idea.trim()) {
-      showError(isUnitedStates ? 'Describe what the song will be about.' : 'Descreva sobre o que será a música.')
+      showError(isEnglish ? 'Describe what the song will be about.' : 'Descreva sobre o que será a música.')
       return
     }
 
@@ -508,7 +508,7 @@ export default function NewStudioMusicPage() {
         if (fallbackStatus?.canCreateMusic) {
           window.dispatchEvent(new Event('studioBalanceChange'))
         } else {
-          showUpgradeModal(isUnitedStates
+          showUpgradeModal(isEnglish
             ? 'You have already used your free song and have no credits left. Choose a plan or buy a credit pack to keep creating.'
             : 'Você já usou sua música grátis e está sem saldo. Para continuar criando, escolha um plano ou compre uma recarga avulsa.')
           return
@@ -524,12 +524,12 @@ export default function NewStudioMusicPage() {
         body: JSON.stringify({
           ...form,
           style: effectiveStyle,
-          idea: hasOwnLyric ? form.idea || (isUnitedStates ? 'Lyrics provided by the songwriter.' : 'Letra informada pelo compositor.') : form.idea,
+          idea: hasOwnLyric ? form.idea || (isEnglish ? 'Lyrics provided by the songwriter.' : 'Letra informada pelo compositor.') : form.idea,
           lyric: hasOwnLyric ? existingLyric : undefined,
         }),
       })
       const projectData = await projectResponse.json()
-      if (!projectResponse.ok) throw new Error(projectData.error || (isUnitedStates ? 'Could not create the project' : 'Erro ao criar projeto'))
+      if (!projectResponse.ok) throw new Error(projectData.error || (isEnglish ? 'Could not create the project' : 'Erro ao criar projeto'))
 
       if (projectData.project?.id && form.voiceProfileId) {
         localStorage.setItem(`studio_selected_voice:${projectData.project.id}`, form.voiceProfileId)
@@ -555,16 +555,16 @@ export default function NewStudioMusicPage() {
         }),
       })
       const lyricData = await lyricResponse.json()
-      if (!lyricResponse.ok) throw new Error(lyricData.error || (isUnitedStates ? 'Could not generate the lyrics' : 'Erro ao gerar letra'))
+      if (!lyricResponse.ok) throw new Error(lyricData.error || (isEnglish ? 'Could not generate the lyrics' : 'Erro ao gerar letra'))
 
       router.push(`/compositores/admin/studio-ia/projetos/${projectData.project.id}`)
     } catch (err: any) {
-      const errorMessage = err.message || (isUnitedStates ? 'Could not create the song' : 'Erro ao criar música')
+      const errorMessage = err.message || (isEnglish ? 'Could not create the song' : 'Erro ao criar música')
       if (
         errorMessage.includes('Você já usou sua música grátis') ||
         errorMessage.toLowerCase().includes('recarga avulsa')
       ) {
-        showUpgradeModal(isUnitedStates
+        showUpgradeModal(isEnglish
           ? 'You have already used your free song and have no credits left. Choose a plan or buy a credit pack to keep creating.'
           : 'Você já usou sua música grátis e está sem saldo. Para continuar criando, escolha um plano ou compre uma recarga avulsa.')
         return
@@ -580,9 +580,9 @@ export default function NewStudioMusicPage() {
   const musicsFromCredits = Math.floor(creditsRemaining / studioMusicCredits)
   const planName = studioStatus?.planName as string | null | undefined
   const renewLabel = studioStatus?.renewalDate
-    ? new Date(studioStatus.renewalDate).toLocaleDateString(isUnitedStates ? 'en-US' : 'pt-BR')
+    ? new Date(studioStatus.renewalDate).toLocaleDateString(isEnglish ? 'en-US' : 'pt-BR')
     : studioStatus?.periodEnd
-      ? new Date(studioStatus.periodEnd).toLocaleDateString(isUnitedStates ? 'en-US' : 'pt-BR')
+      ? new Date(studioStatus.periodEnd).toLocaleDateString(isEnglish ? 'en-US' : 'pt-BR')
       : null
 
   const activeStep = (() => {
@@ -606,14 +606,14 @@ export default function NewStudioMusicPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl">
             <Link href="/studio-ia#planos" className="mb-6 inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 sm:mb-8">
-              <FiArrowLeft /> {isUnitedStates ? 'Back to plans' : 'Voltar para planos'}
+              <FiArrowLeft /> {isEnglish ? 'Back to plans' : 'Voltar para planos'}
             </Link>
 
             <div className="rounded-2xl border border-purple-700/60 bg-gradient-to-br from-purple-950/60 via-black to-gray-950 p-5 text-center sm:rounded-3xl sm:p-8">
               <FiZap className="mx-auto mb-4 h-14 w-14 text-purple-300" />
-              <h1 className="mb-3 text-2xl font-black sm:text-3xl">{isUnitedStates ? 'You are out of AI Studio credits' : 'Você está sem saldo no Studio IA'}</h1>
+              <h1 className="mb-3 text-2xl font-black sm:text-3xl">{isEnglish ? 'You are out of AI Studio credits' : 'Você está sem saldo no Studio IA'}</h1>
               <p className="mx-auto mb-6 max-w-xl text-gray-300">
-                {isUnitedStates
+                {isEnglish
                   ? 'To create new songs, choose an AI Studio plan or buy a credit pack. If you just paid, refresh this page in a few seconds.'
                   : 'Para criar novas músicas, escolha um plano Studio IA ou compre uma recarga avulsa. Se você acabou de pagar, atualize a página em alguns segundos.'}
               </p>
@@ -623,14 +623,14 @@ export default function NewStudioMusicPage() {
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white"
                 >
                   <FiZap />
-                  {isUnitedStates ? 'View plans' : 'Ver planos'}
+                  {isEnglish ? 'View plans' : 'Ver planos'}
                 </Link>
                 <Link
                   href="/compositores/admin/studio-ia/recarga"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-purple-700 px-5 py-3 font-bold text-purple-100 hover:bg-purple-950/40"
                 >
                   <FiCreditCard />
-                  {isUnitedStates ? 'Buy credit pack' : 'Comprar recarga avulsa'}
+                  {isEnglish ? 'Buy credit pack' : 'Comprar recarga avulsa'}
                 </Link>
               </div>
             </div>
@@ -646,7 +646,7 @@ export default function NewStudioMusicPage() {
       <div className="container relative mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <Link href="/compositores/admin/studio-ia" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-primary-300 transition hover:text-primary-200">
-            <FiArrowLeft /> {isUnitedStates ? 'Back to AI Studio' : 'Voltar ao Studio'}
+            <FiArrowLeft /> {isEnglish ? 'Back to AI Studio' : 'Voltar ao Studio'}
           </Link>
 
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
@@ -662,24 +662,24 @@ export default function NewStudioMusicPage() {
                 <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_240px] lg:items-center">
                   <div>
                     <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-300/20 bg-white/5 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-purple-100">
-                      <FiPenTool /> {isUnitedStates ? 'AI Studio' : 'Studio IA'}
+                      <FiPenTool /> {isEnglish ? 'AI Studio' : 'Studio IA'}
                     </div>
                     <h1 className="max-w-xl text-3xl font-black leading-tight text-white sm:text-5xl">
-                      {isUnitedStates ? 'Your next ' : 'Sua próxima '}
+                      {isEnglish ? 'Your next ' : 'Sua próxima '}
                       <span className="bg-gradient-to-r from-primary-300 via-fuchsia-300 to-pink-300 bg-clip-text text-transparent">
-                        {isUnitedStates ? 'song starts here' : 'música começa aqui'}
+                        {isEnglish ? 'song starts here' : 'música começa aqui'}
                       </span>
                     </h1>
                     <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
-                      {isUnitedStates
+                      {isEnglish
                         ? 'Share your idea in a few words and AI will create complete, ready-to-sing lyrics.'
                         : 'Conte sua ideia em poucas palavras e a IA cria uma letra completa, pronta para cantar.'}
                     </p>
                     <div className="mt-5 flex flex-wrap gap-2">
                       {([
-                        { label: isUnitedStates ? 'Professional lyrics' : 'Letra profissional', Icon: FiFileText },
-                        { label: isUnitedStates ? 'Ready to sing' : 'Pronta para cantar', Icon: FiMusic },
-                        { label: isUnitedStates ? 'In seconds' : 'Em segundos', Icon: FiClock },
+                        { label: isEnglish ? 'Professional lyrics' : 'Letra profissional', Icon: FiFileText },
+                        { label: isEnglish ? 'Ready to sing' : 'Pronta para cantar', Icon: FiMusic },
+                        { label: isEnglish ? 'In seconds' : 'Em segundos', Icon: FiClock },
                       ] as const).map(({ label, Icon }) => (
                         <div
                           key={label}
@@ -699,8 +699,8 @@ export default function NewStudioMusicPage() {
                           <FiPlay className="h-5 w-5" />
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-black text-white">{isUnitedStates ? 'False Key' : 'Chave Falsa'}</p>
-                          <p className="truncate text-xs text-purple-200/70">{isUnitedStates ? 'Country · Heartbreak' : 'Sertanejo · Sofrência'}</p>
+                          <p className="truncate text-sm font-black text-white">{isEnglish ? 'False Key' : 'Chave Falsa'}</p>
+                          <p className="truncate text-xs text-purple-200/70">{isEnglish ? 'Country · Heartbreak' : 'Sertanejo · Sofrência'}</p>
                         </div>
                       </div>
                       <div className="mt-4 flex items-end gap-1 px-1">
@@ -713,7 +713,7 @@ export default function NewStudioMusicPage() {
                         ))}
                       </div>
                       <div className="mt-3 flex items-center justify-between text-[11px] font-semibold text-purple-100/60">
-                        <span>{isUnitedStates ? 'Sample result' : 'Exemplo de resultado'}</span>
+                        <span>{isEnglish ? 'Sample result' : 'Exemplo de resultado'}</span>
                         <span>03:12</span>
                       </div>
                     </div>
@@ -721,7 +721,7 @@ export default function NewStudioMusicPage() {
                 </div>
               </motion.section>
 
-              <StepRail activeStep={activeStep} isEnglish={isUnitedStates} />
+              <StepRail activeStep={activeStep} isEnglish={isEnglish} />
 
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
@@ -735,80 +735,80 @@ export default function NewStudioMusicPage() {
                   <section className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
                     <SectionTitle
                       icon={<FiMusic />}
-                      title={isUnitedStates ? 'Song details' : 'Informações da música'}
-                      subtitle={isUnitedStates ? 'Add the basics so AI can create your lyrics.' : 'Preencha o básico para a IA criar a letra.'}
+                      title={isEnglish ? 'Song details' : 'Informações da música'}
+                      subtitle={isEnglish ? 'Add the basics so AI can create your lyrics.' : 'Preencha o básico para a IA criar a letra.'}
                     />
 
                     <div className="mt-5 grid gap-3 sm:grid-cols-2">
                       <div className="sm:col-span-2">
                         <div className="mb-1.5 flex items-center justify-between gap-3">
-                          <label className="block text-xs font-bold text-gray-100 sm:text-sm">{isUnitedStates ? 'Song title' : 'Nome da música'}</label>
+                          <label className="block text-xs font-bold text-gray-100 sm:text-sm">{isEnglish ? 'Song title' : 'Nome da música'}</label>
                           <span className="text-[11px] font-semibold text-gray-500">{form.title.length}/{titleMaxLength}</span>
                         </div>
                         <input
                           value={form.title}
                           onChange={(e) => setForm({ ...form, title: e.target.value.slice(0, titleMaxLength) })}
                           maxLength={titleMaxLength}
-                          placeholder={isUnitedStates ? 'Example: False Key' : 'Ex: Chave Falsa'}
+                          placeholder={isEnglish ? 'Example: False Key' : 'Ex: Chave Falsa'}
                           className="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/55"
                         />
                         <p className="mt-1.5 text-[11px] leading-relaxed text-gray-500">
-                          {isUnitedStates ? 'Use a short title to reduce errors during creation.' : 'Use um nome curto para reduzir erro na criação.'}
+                          {isEnglish ? 'Use a short title to reduce errors during creation.' : 'Use um nome curto para reduzir erro na criação.'}
                         </p>
                       </div>
 
                       <Select
                         label={loadingStyles
-                          ? (isUnitedStates ? 'Music style (loading...)' : 'Estilo musical (carregando...)')
-                          : (isUnitedStates ? 'Music style' : 'Estilo musical')}
+                          ? (isEnglish ? 'Music style (loading...)' : 'Estilo musical (carregando...)')
+                          : (isEnglish ? 'Music style' : 'Estilo musical')}
                         value={form.style}
                         options={styles}
                         onChange={(value) => setForm({ ...form, style: value })}
                       />
                       {isCustomStyle ? (
                         <div>
-                          <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{isUnitedStates ? 'Enter the style' : 'Digite o estilo'}</label>
+                          <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{isEnglish ? 'Enter the style' : 'Digite o estilo'}</label>
                           <input
                             value={form.customStyle}
                             onChange={(e) => setForm({ ...form, customStyle: e.target.value })}
-                            placeholder={isUnitedStates ? 'Example: cinematic indie pop' : isMexico ? 'Ej.: corrido romántico con sierreño' : isSpain ? 'Ej.: flamenco pop con guitarra española' : isPortugal ? 'Ex.: fado pop contemporâneo' : 'Ex: piseiro romântico'}
+                            placeholder={isEnglish ? 'Example: cinematic indie pop' : isMexico ? 'Ej.: corrido romántico con sierreño' : isSpain ? 'Ej.: flamenco pop con guitarra española' : isPortugal ? 'Ex.: fado pop contemporâneo' : 'Ex: piseiro romântico'}
                             className="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/55"
                           />
                         </div>
                       ) : (
-                        <Select label={isUnitedStates ? 'Song mood' : 'Clima da música'} value={form.mood} options={moods} optionLabels={isUnitedStates ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, mood: value })} />
+                        <Select label={isEnglish ? 'Song mood' : 'Clima da música'} value={form.mood} options={moods} optionLabels={isEnglish ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, mood: value })} />
                       )}
                       {isCustomStyle && (
-                        <Select label={isUnitedStates ? 'Song mood' : 'Clima da música'} value={form.mood} options={moods} optionLabels={isUnitedStates ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, mood: value })} />
+                        <Select label={isEnglish ? 'Song mood' : 'Clima da música'} value={form.mood} options={moods} optionLabels={isEnglish ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, mood: value })} />
                       )}
-                      <Select label={isUnitedStates ? 'Lyrics length' : 'Tamanho da letra'} value={form.lineCount} options={lineCounts} optionLabels={isUnitedStates ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, lineCount: value })} />
-                      <Select label={isUnitedStates ? 'Song language' : 'Idioma da música'} value={form.songLanguage} options={songLanguages} onChange={(value) => setForm({ ...form, songLanguage: value })} />
+                      <Select label={isEnglish ? 'Lyrics length' : 'Tamanho da letra'} value={form.lineCount} options={lineCounts} optionLabels={isEnglish ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, lineCount: value })} />
+                      <Select label={isEnglish ? 'Song language' : 'Idioma da música'} value={form.songLanguage} options={songLanguages} onChange={(value) => setForm({ ...form, songLanguage: value })} />
                     </div>
                   </section>
 
                   <section className="rounded-[1.5rem] border border-purple-300/15 bg-purple-950/[0.16] p-4 sm:p-5">
-                    <SectionTitle icon={<FiMic />} title={isUnitedStates ? 'Vocal direction' : 'Direção de voz'} subtitle={isUnitedStates ? 'Optional, but it helps improve the final result.' : 'Opcional, mas ajuda no resultado final.'} />
+                    <SectionTitle icon={<FiMic />} title={isEnglish ? 'Vocal direction' : 'Direção de voz'} subtitle={isEnglish ? 'Optional, but it helps improve the final result.' : 'Opcional, mas ajuda no resultado final.'} />
 
                     <div className="mt-5 grid gap-3">
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <Select label={isUnitedStates ? 'Voice type' : 'Tipo de voz'} value={form.voiceGender} options={voiceGenders} optionLabels={isUnitedStates ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, voiceGender: value })} />
-                        <Select label={isUnitedStates ? 'Vocal quality' : 'Característica'} value={form.voiceTone} options={voiceTones} optionLabels={isUnitedStates ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, voiceTone: value })} />
+                        <Select label={isEnglish ? 'Voice type' : 'Tipo de voz'} value={form.voiceGender} options={voiceGenders} optionLabels={isEnglish ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, voiceGender: value })} />
+                        <Select label={isEnglish ? 'Vocal quality' : 'Característica'} value={form.voiceTone} options={voiceTones} optionLabels={isEnglish ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, voiceTone: value })} />
                       </div>
 
                       <div className="rounded-2xl border border-purple-300/15 bg-black/30 p-3.5">
-                        <label className="mb-1.5 block text-xs font-bold text-purple-100 sm:text-sm">{isUnitedStates ? 'Saved voice' : 'Voz cadastrada'}</label>
+                        <label className="mb-1.5 block text-xs font-bold text-purple-100 sm:text-sm">{isEnglish ? 'Saved voice' : 'Voz cadastrada'}</label>
                         <select
                           value={form.voiceProfileId}
                           onChange={(e) => setForm({ ...form, voiceProfileId: e.target.value })}
                           className="w-full rounded-2xl border border-purple-300/20 bg-gray-950 px-4 py-3.5 text-sm text-white outline-none transition focus:border-primary-400"
                         >
-                          <option className="bg-gray-950 text-white" value="">{isUnitedStates ? 'Do not use a cloned voice' : 'Não usar voz clonada'}</option>
+                          <option className="bg-gray-950 text-white" value="">{isEnglish ? 'Do not use a cloned voice' : 'Não usar voz clonada'}</option>
                           {voices.map((voice) => (
                             <option className="bg-gray-950 text-white" key={voice.id} value={voice.id}>{voice.displayName}</option>
                           ))}
                         </select>
                         <p className="mt-2 text-[11px] leading-relaxed text-purple-100/70">
-                          {isUnitedStates
+                          {isEnglish
                             ? 'If you do not choose one, AI will follow only the voice type and vocal quality selected above.'
                             : 'Se não escolher, a IA segue apenas o tipo e característica de voz acima.'}
                         </p>
@@ -821,11 +821,11 @@ export default function NewStudioMusicPage() {
                       <SectionTitle
                         icon={<FiFileText />}
                         title={hasOwnLyric
-                          ? (isUnitedStates ? 'Lyrics ready' : isSpanish ? 'Letra lista' : 'Letra pronta')
-                          : (isUnitedStates ? 'Song idea' : isSpanish ? 'Idea de la canción' : 'Ideia da música')}
+                          ? (isEnglish ? 'Lyrics ready' : isSpanish ? 'Letra lista' : 'Letra pronta')
+                          : (isEnglish ? 'Song idea' : isSpanish ? 'Idea de la canción' : 'Ideia da música')}
                         subtitle={hasOwnLyric
-                          ? (isUnitedStates ? 'Paste the complete lyrics to create your project.' : isSpanish ? 'Pega la letra completa para crear el proyecto.' : 'Cole a letra completa para criar o projeto.')
-                          : (isUnitedStates ? 'Tell us about your idea, story, or feeling.' : isSpanish ? 'Cuéntanos tu idea, historia o sentimiento.' : 'Fale sobre sua ideia, história ou sentimento.')}
+                          ? (isEnglish ? 'Paste the complete lyrics to create your project.' : isSpanish ? 'Pega la letra completa para crear el proyecto.' : 'Cole a letra completa para criar o projeto.')
+                          : (isEnglish ? 'Tell us about your idea, story, or feeling.' : isSpanish ? 'Cuéntanos tu idea, historia o sentimiento.' : 'Fale sobre sua ideia, história ou sentimento.')}
                       />
                       <button
                         type="button"
@@ -836,14 +836,14 @@ export default function NewStudioMusicPage() {
                         className="inline-flex w-full items-center justify-center rounded-2xl border border-primary-400/30 bg-primary-500/10 px-4 py-2.5 text-xs font-black text-primary-100 transition hover:border-primary-300/60 hover:bg-primary-500/20 sm:w-fit"
                       >
                         {hasOwnLyric
-                          ? (isUnitedStates ? 'Create with AI instead' : isSpanish ? 'Quiero crearla con IA' : 'Quero gerar com IA')
-                          : (isUnitedStates ? 'I already have lyrics' : isSpanish ? 'Ya tengo la letra' : 'Já tenho a letra')}
+                          ? (isEnglish ? 'Create with AI instead' : isSpanish ? 'Quiero crearla con IA' : 'Quero gerar com IA')
+                          : (isEnglish ? 'I already have lyrics' : isSpanish ? 'Ya tengo la letra' : 'Já tenho a letra')}
                       </button>
                     </div>
 
                     {!hasOwnLyric && (
                       <div className="mb-3">
-                        <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-gray-500">{isUnitedStates ? 'THEME IDEAS' : isSpanish ? 'IDEAS DE TEMAS' : 'Sugestões de temas'}</p>
+                        <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-gray-500">{isEnglish ? 'THEME IDEAS' : isSpanish ? 'IDEAS DE TEMAS' : 'Sugestões de temas'}</p>
                         <div className="flex flex-wrap gap-2">
                           {localizedThemeSuggestions.map((theme) => (
                             <button
@@ -877,8 +877,8 @@ export default function NewStudioMusicPage() {
                         rows={hasOwnLyric ? 10 : 6}
                         maxLength={hasOwnLyric ? undefined : ideaMaxLength}
                         placeholder={hasOwnLyric
-                          ? (isUnitedStates ? 'Paste the complete song lyrics here...' : isSpanish ? 'Pega aquí la letra completa de la canción...' : 'Cole aqui a letra completa da música...')
-                          : (isUnitedStates ? 'Example: A songwriter realizes the person they loved kept walking in and out of their life...' : isSpanish ? 'Ej.: Un compositor descubre que la persona que amaba usaba una llave falsa para entrar y salir de su vida...' : 'Ex: Um compositor descobre que a pessoa que ele amava usava uma chave falsa para entrar e sair da vida dele...')}
+                          ? (isEnglish ? 'Paste the complete song lyrics here...' : isSpanish ? 'Pega aquí la letra completa de la canción...' : 'Cole aqui a letra completa da música...')
+                          : (isEnglish ? 'Example: A songwriter realizes the person they loved kept walking in and out of their life...' : isSpanish ? 'Ej.: Un compositor descubre que la persona que amaba usaba una llave falsa para entrar y salir de su vida...' : 'Ex: Um compositor descobre que a pessoa que ele amava usava uma chave falsa para entrar e sair da vida dele...')}
                         className="w-full resize-none rounded-[1.35rem] border border-white/10 bg-black/40 px-4 py-4 text-sm leading-relaxed text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/55"
                       />
                       {!hasOwnLyric && (
@@ -890,7 +890,7 @@ export default function NewStudioMusicPage() {
 
                     {hasOwnLyric && (
                       <p className="mt-3 text-xs font-semibold text-green-300">
-                        {isUnitedStates
+                        {isEnglish
                           ? 'In this mode, we save your lyrics without generating new ones. The system only reorganizes line breaks to help AI sing them better, without changing any words.'
                           : isSpanish
                           ? 'En este modo guardamos tu letra sin generar una nueva con IA. El sistema solamente reorganiza los saltos de línea para que la IA cante mejor, sin cambiar ninguna palabra.'
@@ -906,7 +906,7 @@ export default function NewStudioMusicPage() {
                       className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-left text-sm font-black text-gray-100 transition hover:border-primary-400/50 hover:bg-white/[0.06]"
                     >
                       <span className="inline-flex items-center gap-2">
-                        <FiSliders className="text-primary-300" /> {isUnitedStates ? 'Advanced settings' : isSpanish ? 'Ajustes avanzados' : 'Ajustes finos'}
+                        <FiSliders className="text-primary-300" /> {isEnglish ? 'Advanced settings' : isSpanish ? 'Ajustes avanzados' : 'Ajustes finos'}
                       </span>
                       <FiChevronDown className={`h-4 w-4 transition-transform ${showLyricOptions ? 'rotate-180' : ''}`} />
                     </button>
@@ -915,12 +915,12 @@ export default function NewStudioMusicPage() {
                       <div className="mt-3 space-y-3">
                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                           {[
-                            ['avoidCliches', isUnitedStates ? 'Avoid clichés' : isSpanish ? 'Evitar clichés' : 'Evitar clichês'],
-                            ['avoidChildishRhymes', isUnitedStates ? 'Avoid childish rhymes' : isSpanish ? 'Evitar rimas infantiles' : 'Evitar rimas infantis'],
-                            ['avoidRepeatedWords', isUnitedStates ? 'Avoid repeated words' : isSpanish ? 'Evitar palabras repetidas' : 'Evitar palavras repetidas'],
-                            ['stickyChorus', isUnitedStates ? 'Make the chorus catchier' : isSpanish ? 'Estribillo más pegadizo' : 'Refrão mais chiclete'],
-                            ['popularLanguage', isUnitedStates ? 'Use everyday language' : isSpanish ? 'Lenguaje más popular' : 'Linguagem mais popular'],
-                            ['sophisticatedLanguage', isUnitedStates ? 'Use sophisticated language' : isSpanish ? 'Lenguaje más sofisticado' : 'Linguagem mais sofisticada'],
+                            ['avoidCliches', isEnglish ? 'Avoid clichés' : isSpanish ? 'Evitar clichés' : 'Evitar clichês'],
+                            ['avoidChildishRhymes', isEnglish ? 'Avoid childish rhymes' : isSpanish ? 'Evitar rimas infantiles' : 'Evitar rimas infantis'],
+                            ['avoidRepeatedWords', isEnglish ? 'Avoid repeated words' : isSpanish ? 'Evitar palabras repetidas' : 'Evitar palavras repetidas'],
+                            ['stickyChorus', isEnglish ? 'Make the chorus catchier' : isSpanish ? 'Estribillo más pegadizo' : 'Refrão mais chiclete'],
+                            ['popularLanguage', isEnglish ? 'Use everyday language' : isSpanish ? 'Lenguaje más popular' : 'Linguagem mais popular'],
+                            ['sophisticatedLanguage', isEnglish ? 'Use sophisticated language' : isSpanish ? 'Lenguaje más sofisticado' : 'Linguagem mais sofisticada'],
                           ].map(([key, label]) => (
                             <label key={key} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/25 px-3 py-2.5 text-xs font-bold text-gray-200 transition hover:border-primary-400/30 sm:text-sm">
                               <input
@@ -935,9 +935,9 @@ export default function NewStudioMusicPage() {
                         </div>
 
                         <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                          <Select label={isUnitedStates ? 'Song structure' : isSpanish ? 'Estructura de la canción' : 'Estrutura da música'} value={form.structure} options={localizedStructures} optionLabels={isUnitedStates ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, structure: value })} />
+                          <Select label={isEnglish ? 'Song structure' : isSpanish ? 'Estructura de la canción' : 'Estrutura da música'} value={form.structure} options={localizedStructures} optionLabels={isEnglish ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, structure: value })} />
                           <p className="mt-1.5 text-[11px] leading-relaxed text-gray-500">
-                            {isUnitedStates
+                            {isEnglish
                               ? 'Use Standard to let AI choose the best song structure.'
                               : isSpanish
                               ? 'Usa Estándar para que la IA elija la mejor organización de la canción.'
@@ -947,7 +947,7 @@ export default function NewStudioMusicPage() {
 
                         <div className="grid gap-3 md:grid-cols-2">
                           <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                            <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{isUnitedStates ? 'Instruments you want (optional)' : isSpanish ? 'Instrumentos que quieres (opcional)' : 'Instrumentos que você quer (opcional)'}</label>
+                            <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{isEnglish ? 'Instruments you want (optional)' : isSpanish ? 'Instrumentos que quieres (opcional)' : 'Instrumentos que você quer (opcional)'}</label>
                             <input
                               value={form.wantInstruments}
                               onChange={(e) => setForm({ ...form, wantInstruments: e.target.value })}
@@ -959,7 +959,7 @@ export default function NewStudioMusicPage() {
                                     ? 'Ej.: acordeón, bajo sexto, trompeta, tololoche'
                                     : isPortugal
                                       ? 'Ex.: guitarra portuguesa, viola, piano'
-                                      : isUnitedStates
+                                      : isEnglish
                                         ? 'Example: acoustic guitar, piano, strings'
                                         : 'Ex: viola, violão, piano'}
                               className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/50"
@@ -967,11 +967,11 @@ export default function NewStudioMusicPage() {
                           </div>
 
                           <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                            <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{isUnitedStates ? 'Instruments to avoid (optional)' : isSpanish ? 'Instrumentos que quieres evitar (opcional)' : 'Instrumentos para evitar (opcional)'}</label>
+                            <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{isEnglish ? 'Instruments to avoid (optional)' : isSpanish ? 'Instrumentos que quieres evitar (opcional)' : 'Instrumentos para evitar (opcional)'}</label>
                             <input
                               value={form.avoidInstruments}
                               onChange={(e) => setForm({ ...form, avoidInstruments: e.target.value })}
-                              placeholder={isUnitedStates ? 'Example: synthesizer, electric guitar' : isSpanish ? 'Ej.: sintetizador, guitarra eléctrica' : 'Ex: acordeon, sanfona'}
+                              placeholder={isEnglish ? 'Example: synthesizer, electric guitar' : isSpanish ? 'Ej.: sintetizador, guitarra eléctrica' : 'Ex: acordeon, sanfona'}
                               className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/50"
                             />
                           </div>
@@ -979,7 +979,7 @@ export default function NewStudioMusicPage() {
 
                         <div className="rounded-2xl border border-purple-300/15 bg-black/25 p-3">
                           <label className="block text-xs font-bold text-purple-100 sm:text-sm" htmlFor="new-studio-extra-instructions">
-                            {isUnitedStates ? 'Additional song instructions' : isSpanish ? 'Otras instrucciones para la canción' : 'Outras instruções para a música'}
+                            {isEnglish ? 'Additional song instructions' : isSpanish ? 'Otras instrucciones para la canción' : 'Outras instruções para a música'}
                           </label>
                           <textarea
                             id="new-studio-extra-instructions"
@@ -987,7 +987,7 @@ export default function NewStudioMusicPage() {
                             onChange={(e) => setForm({ ...form, extraInstructions: e.target.value.slice(0, 700) })}
                             rows={3}
                             maxLength={700}
-                            placeholder={isUnitedStates
+                            placeholder={isEnglish
                               ? 'Example: use my saved voice with a calm, expressive male performance.'
                               : isSpanish
                               ? 'Ej.: usar mi voz registrada con una interpretación masculina tranquila y expresiva.'
@@ -1014,11 +1014,11 @@ export default function NewStudioMusicPage() {
                     <div>
                       <p className="text-sm font-bold text-white">
                         {hasOwnLyric
-                          ? (isUnitedStates ? 'Save lyrics and open project' : 'Salvar letra e abrir o projeto')
-                          : (isUnitedStates ? 'Generate professional lyrics' : 'Gerar letra profissional')}
+                          ? (isEnglish ? 'Save lyrics and open project' : 'Salvar letra e abrir o projeto')
+                          : (isEnglish ? 'Generate professional lyrics' : 'Gerar letra profissional')}
                       </p>
                       <p className="mt-1 text-xs leading-relaxed text-gray-300">
-                        {isUnitedStates ? (
+                        {isEnglish ? (
                           <>Generating lyrics <span className="font-bold text-green-300">uses no credits</span>. Creating the song afterward costs{' '}
                             <span className="font-bold text-purple-200">{studioMusicCredits} credits</span>.</>
                         ) : (
@@ -1035,11 +1035,11 @@ export default function NewStudioMusicPage() {
                     >
                       {loading ? <FiLoader className="animate-spin" /> : <FiArrowRight />}
                       {loading
-                        ? (hasOwnLyric ? (isUnitedStates ? 'Saving lyrics...' : 'Salvando letra...') : (isUnitedStates ? 'Creating lyrics...' : 'Criando letra...'))
-                        : (hasOwnLyric ? (isUnitedStates ? 'Save and Create Project' : 'Salvar e Criar Projeto') : (isUnitedStates ? 'Create my song' : 'Criar minha música'))}
+                        ? (hasOwnLyric ? (isEnglish ? 'Saving lyrics...' : 'Salvando letra...') : (isEnglish ? 'Creating lyrics...' : 'Criando letra...'))
+                        : (hasOwnLyric ? (isEnglish ? 'Save and Create Project' : 'Salvar e Criar Projeto') : (isEnglish ? 'Create my song' : 'Criar minha música'))}
                       {!loading && !hasOwnLyric && (
                         <span className="rounded-full bg-black/25 px-2.5 py-1 text-[11px] font-bold text-purple-50">
-                          {isUnitedStates ? 'Free lyrics' : 'Letra grátis'}
+                          {isEnglish ? 'Free lyrics' : 'Letra grátis'}
                         </span>
                       )}
                     </button>
@@ -1056,7 +1056,7 @@ export default function NewStudioMusicPage() {
                       {planName || 'Studio IA'}
                     </p>
                     <p className="mt-2 text-3xl font-black text-white">{creditsRemaining}</p>
-                    <p className="text-sm font-semibold text-purple-100/80">{isUnitedStates ? 'credits available' : 'créditos disponíveis'}</p>
+                    <p className="text-sm font-semibold text-purple-100/80">{isEnglish ? 'credits available' : 'créditos disponíveis'}</p>
                   </div>
                   <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-purple-300/20 bg-purple-500/10 text-purple-200">
                     <FiZap className="h-5 w-5" />
@@ -1065,17 +1065,17 @@ export default function NewStudioMusicPage() {
 
                 <div className="mt-4 space-y-2 text-sm text-gray-300">
                   <p>
-                    {isUnitedStates ? (
+                    {isEnglish ? (
                       <>You can create about <span className="font-bold text-white">{musicsFromCredits}</span> song{musicsFromCredits === 1 ? '' : 's'}.</>
                     ) : (
                       <>Dá para criar cerca de <span className="font-bold text-white">{musicsFromCredits}</span> música{musicsFromCredits === 1 ? '' : 's'}.</>
                     )}
                   </p>
                   {freeMusicRemaining > 0 && (
-                    <p className="font-bold text-green-300">+ {freeMusicRemaining} {isUnitedStates ? `free song${freeMusicRemaining === 1 ? '' : 's'}` : 'música grátis'}</p>
+                    <p className="font-bold text-green-300">+ {freeMusicRemaining} {isEnglish ? `free song${freeMusicRemaining === 1 ? '' : 's'}` : 'música grátis'}</p>
                   )}
                   {renewLabel && (
-                    <p className="text-xs text-gray-500">{isUnitedStates ? 'Renewal / period' : 'Renovação / período'}: {renewLabel}</p>
+                    <p className="text-xs text-gray-500">{isEnglish ? 'Renewal / period' : 'Renovação / período'}: {renewLabel}</p>
                   )}
                 </div>
 
@@ -1083,29 +1083,29 @@ export default function NewStudioMusicPage() {
                   href="/compositores/admin/studio-ia/recarga"
                   className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-purple-400/30 bg-white/5 px-4 py-3 text-sm font-bold text-purple-100 transition hover:bg-white/10"
                 >
-                  <FiCreditCard /> {isUnitedStates ? 'View my credits' : 'Ver meus créditos'}
+                  <FiCreditCard /> {isEnglish ? 'View my credits' : 'Ver meus créditos'}
                 </Link>
               </div>
 
               <div className="rounded-[1.5rem] border border-white/10 bg-gray-950/90 p-5">
                 <div className="mb-4 flex items-center gap-2">
                   <FiHeart className="text-fuchsia-300" />
-                  <h2 className="text-base font-black text-white">{isUnitedStates ? 'Sample result' : 'Exemplo de resultado'}</h2>
+                  <h2 className="text-base font-black text-white">{isEnglish ? 'Sample result' : 'Exemplo de resultado'}</h2>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
-                  <p className="text-sm font-black text-white">{isUnitedStates ? 'A Heart in Silence' : 'Coração em Silêncio'}</p>
-                  <p className="mt-1 text-xs text-gray-400">{isUnitedStates ? 'Country · Romantic' : 'Sertanejo · Romântica'}</p>
+                  <p className="text-sm font-black text-white">{isEnglish ? 'A Heart in Silence' : 'Coração em Silêncio'}</p>
+                  <p className="mt-1 text-xs text-gray-400">{isEnglish ? 'Country · Romantic' : 'Sertanejo · Romântica'}</p>
                   <div className="mt-4 grid gap-3">
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500">{isUnitedStates ? 'You write' : 'Você escreve'}</p>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500">{isEnglish ? 'You write' : 'Você escreve'}</p>
                       <p className="mt-1 text-xs leading-relaxed text-gray-400">
-                        {isUnitedStates ? 'Someone loves in silence but is afraid to say it.' : 'Alguém ama em silêncio e não tem coragem de dizer.'}
+                        {isEnglish ? 'Someone loves in silence but is afraid to say it.' : 'Alguém ama em silêncio e não tem coragem de dizer.'}
                       </p>
                     </div>
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary-300">{isUnitedStates ? 'AI creates' : 'A IA cria'}</p>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary-300">{isEnglish ? 'AI creates' : 'A IA cria'}</p>
                       <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-gray-200">
-                        {isUnitedStates
+                        {isEnglish
                           ? `[Verse]
 I keep a secret in my heart
 I never found the words to say
@@ -1132,7 +1132,7 @@ Só sabe te amar`}
             <UpgradeModal
               message={upgradeModalMessage}
               onClose={() => setUpgradeModalMessage('')}
-              isEnglish={isUnitedStates}
+              isEnglish={isEnglish}
             />
           )}
         </div>
