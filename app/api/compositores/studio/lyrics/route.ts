@@ -143,6 +143,8 @@ function buildPrompt(input: any, existingLyric?: string) {
   const colombianSpanish = selectedLanguage.includes('colombia')
   const paraguayanSpanish = selectedLanguage.includes('paraguay')
   const europeanPortuguese = selectedLanguage.includes('portugal')
+  const britishEnglish = selectedLanguage.includes('united kingdom')
+  const englishLanguage = selectedLanguage.includes('english')
   const spanishLanguage = mexicanSpanish || colombianSpanish || paraguayanSpanish || selectedLanguage.includes('espa')
   const culturalInstruction = mexicanSpanish
     ? `
@@ -169,6 +171,16 @@ Idioma e identidade cultural obrigatórios:
 - não usar português brasileiro e não usar espanhol artificial traduzido literalmente;
 - respeitar o gênero escolhido e, quando for guarania, polca ou cumbia paraguaia, refletir a identidade musical do Paraguai;
 - não inserir palavras em guarani, a menos que o usuário peça explicitamente.`
+    : britishEnglish
+      ? `
+Idioma e identidade cultural obrigatórios:
+- escrever toda a letra em inglês natural do Reino Unido;
+- usar inglês britânico, com construções e vocabulário naturais, sem tradução literal do português;
+- respeitar o gênero escolhido, especialmente UK Pop, Indie Rock, Britpop, Grime, UK Drill, UK Garage e Drum and Bass quando forem selecionados.`
+      : englishLanguage
+        ? `
+Idioma obrigatório:
+- escrever toda a letra em inglês natural, sem tradução literal do português.`
         : europeanPortuguese
           ? `
 Idioma e identidade cultural obrigatórios:
@@ -223,6 +235,12 @@ Responda somente com a letra completa, organizada por partes.
 
 function getSystemComposerInstruction(songLanguage?: string) {
   const language = normalizeLanguage(songLanguage)
+  if (language.includes('united kingdom')) {
+    return 'You are a professional British songwriter. Write natural, singable songs in British English with authentic UK phrasing and musical identity, ready for radio and streaming.'
+  }
+  if (language.includes('english')) {
+    return 'You are a professional English-language songwriter. Write natural, singable songs in English, ready for radio and streaming.'
+  }
   if (language.includes('mexico')) {
     return 'Eres un compositor profesional mexicano. Escribes canciones naturales en español de México, con identidad local real, listas para radio y streaming, respetando con precisión el género seleccionado.'
   }
