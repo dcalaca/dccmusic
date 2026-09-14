@@ -12,6 +12,7 @@ const COUNTRY_OPTIONS = [
   { code: 'MX', label: 'México' },
   { code: 'US', label: 'Estados Unidos' },
   { code: 'GB', label: 'Inglaterra' },
+  { code: 'ES', label: 'Espanha' },
 ]
 
 const FLAG_SVGS: Record<string, string> = {
@@ -21,6 +22,8 @@ const FLAG_SVGS: Record<string, string> = {
   PT: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="12" height="20" fill="#046A38"/><rect x="12" width="18" height="20" fill="#DA291C"/><circle cx="12" cy="10" r="3.3" fill="#FFCC00"/><circle cx="12" cy="10" r="2.25" fill="#fff"/><path d="M10.7 8.6h2.6v3h-2.6z" fill="#DA291C"/><path d="M11.1 9h1.8v2.2h-1.8z" fill="#fff"/></svg>',
   MX: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="10" height="20" fill="#006847"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#CE1126"/><circle cx="15" cy="10" r="2.2" fill="#8B5E3C"/><path d="M12.8 11.5c1.3 1.2 3.1 1.2 4.4 0" fill="none" stroke="#2E7D32" stroke-width=".75" stroke-linecap="round"/><path d="M14.2 8.6c.6-.9 1.5-1.2 2.2-.7-.4.4-.7.8-.9 1.4" fill="none" stroke="#2E7D32" stroke-width=".6" stroke-linecap="round"/></svg>',
   US: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="30" height="20" fill="#fff"/><path d="M0 0h30v1.54H0zm0 3.08h30v1.54H0zm0 3.08h30V7.7H0zm0 3.08h30v1.54H0zm0 3.08h30v1.54H0zm0 3.08h30v1.54H0zm0 3.08h30V20H0z" fill="#B22234"/><rect width="12.5" height="10.78" fill="#3C3B6E"/><g fill="#fff"><circle cx="2" cy="2" r=".55"/><circle cx="5" cy="2" r=".55"/><circle cx="8" cy="2" r=".55"/><circle cx="11" cy="2" r=".55"/><circle cx="3.5" cy="4.7" r=".55"/><circle cx="6.5" cy="4.7" r=".55"/><circle cx="9.5" cy="4.7" r=".55"/><circle cx="2" cy="7.4" r=".55"/><circle cx="5" cy="7.4" r=".55"/><circle cx="8" cy="7.4" r=".55"/><circle cx="11" cy="7.4" r=".55"/></g></svg>',
+  GB: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="30" height="20" fill="#012169"/><path d="M0 0 30 20M30 0 0 20" stroke="#fff" stroke-width="4"/><path d="M0 0 30 20M30 0 0 20" stroke="#C8102E" stroke-width="2"/><path d="M15 0v20M0 10h30" stroke="#fff" stroke-width="6"/><path d="M15 0v20M0 10h30" stroke="#C8102E" stroke-width="3.5"/></svg>',
+  ES: '<svg viewBox="0 0 30 20" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="30" height="20" fill="#AA151B"/><rect y="5" width="30" height="10" fill="#F1BF00"/><path d="M6.4 8.2h2.3v4H6.4z" fill="#AA151B"/><path d="M6.8 7.2h1.5v1.1H6.8z" fill="#AA151B"/><circle cx="7.55" cy="10.1" r=".55" fill="#F1BF00"/></svg>',
 }
 
 function FlagIcon({ code, className = 'h-4 w-6' }: { code: string; className?: string }) {
