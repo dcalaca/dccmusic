@@ -40,6 +40,7 @@ const voiceTones = ['Deixar a IA escolher', 'Voz grave', 'Voz média', 'Voz agud
 const studioMusicCredits = 10
 const songLanguages = [
   'English (United States)',
+  'English (United Kingdom)',
   'Português (Brasil)',
   'Português (Portugal)',
   'Español (Paraguay)',
@@ -135,6 +136,26 @@ const unitedStatesStyles = [
   'Latin Pop / Reggaeton',
   customStyleOptionEn,
 ]
+const unitedKingdomStyles = [
+  'UK Pop',
+  'Indie Rock',
+  'Alternative Rock',
+  'Britpop',
+  'Grime',
+  'UK Drill',
+  'UK Garage',
+  'Drum and Bass',
+  'Electronic / Dance',
+  'R&B',
+  'Soul',
+  'Folk',
+  'Singer-Songwriter',
+  'Rock',
+  'Punk',
+  'Metal',
+  'Gospel',
+  customStyleOptionEn,
+]
 const paraguayStyleOptions = [...paraguayStyles, customStyleOptionEs]
 const colombiaStyleOptions = [...colombiaStyles, customStyleOptionEs]
 const portugalStyleOptions = [...portugalStyles, customStyleOption]
@@ -144,6 +165,9 @@ const spainStyleOptions = [...spainStyles, customStyleOptionEs]
 function getStudioCountryPreset(country: string) {
   if (country === 'US') {
     return { language: 'English (United States)', defaultStyle: 'Pop', styleOptions: unitedStatesStyles, isSpanish: false }
+  }
+  if (country === 'GB') {
+    return { language: 'English (United Kingdom)', defaultStyle: 'UK Pop', styleOptions: unitedKingdomStyles, isSpanish: false }
   }
   if (country === 'PY') {
     return { language: 'Español (Paraguay)', defaultStyle: 'Guarania paraguaya', styleOptions: paraguayStyleOptions, isSpanish: true }
