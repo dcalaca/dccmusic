@@ -159,7 +159,7 @@ export default function Footer() {
                 )}
                 <div className="mt-4 flex flex-wrap gap-3">
                   <a
-                    href="https://www.youtube.com/@dcalaca"
+                    href="https://www.youtube.com/@dccmusic.online"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-950 text-gray-400 transition-colors hover:text-neon-purple"
@@ -186,7 +186,7 @@ export default function Footer() {
                     <FiMusic className="w-5 h-5" />
                   </a>
                   <a
-                    href="https://www.tiktok.com/@douglascris_?lang=pt-BR"
+                    href="https://www.tiktok.com/@dccmusic.online?lang=pt-BR"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex h-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-950 px-3 text-sm font-bold text-gray-400 transition-colors hover:text-neon-purple"
