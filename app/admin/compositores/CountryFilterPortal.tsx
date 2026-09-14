@@ -11,6 +11,7 @@ const COUNTRY_OPTIONS = [
   { code: 'PT', label: 'Portugal' },
   { code: 'MX', label: 'México' },
   { code: 'US', label: 'Estados Unidos' },
+  { code: 'GB', label: 'Inglaterra' },
 ]
 
 const FLAG_SVGS: Record<string, string> = {

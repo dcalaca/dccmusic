@@ -1,5 +1,5 @@
-export type DccCountry = 'BR' | 'PY' | 'CO' | 'PT' | 'MX'
-export type DccLocale = 'pt-BR' | 'es-PY' | 'es-CO' | 'pt-PT' | 'es-MX' | 'en-US'
+export type DccCountry = 'BR' | 'PY' | 'CO' | 'PT' | 'MX' | 'ES' | 'US' | 'GB'
+export type DccLocale = 'pt-BR' | 'es-PY' | 'es-CO' | 'pt-PT' | 'es-MX' | 'en-US' | 'en-GB'
 
 export const DEFAULT_COUNTRY: DccCountry = 'BR'
 export const DEFAULT_LOCALE: DccLocale = 'pt-BR'
@@ -9,7 +9,7 @@ export const COUNTRY_COOKIE = 'dcc_country'
 type CountryRuntimeConfig = {
   country: string
   locale: DccLocale
-  currency: 'BRL' | 'PYG' | 'COP' | 'EUR' | 'MXN' | 'USD'
+  currency: 'BRL' | 'PYG' | 'COP' | 'EUR' | 'MXN' | 'USD' | 'GBP'
   label: string
   flag: string
   paymentProvider: 'mercadopago' | 'stripe'
@@ -25,11 +25,12 @@ export const COUNTRY_CONFIG: Record<string, CountryRuntimeConfig> = {
   MX: { country: 'MX', locale: 'es-MX', currency: 'MXN', label: 'México', flag: '🇲🇽', paymentProvider: 'stripe' },
   ES: { country: 'ES', locale: 'es-MX', currency: 'EUR', label: 'España', flag: '🇪🇸', paymentProvider: 'stripe' },
   US: { country: 'US', locale: 'en-US', currency: 'USD', label: 'United States', flag: '🇺🇸', paymentProvider: 'stripe' },
+  GB: { country: 'GB', locale: 'en-GB', currency: 'GBP', label: 'United Kingdom', flag: '🇬🇧', paymentProvider: 'stripe' },
 }
 
 export function normalizeCountry(value?: string | null): DccCountry {
   const normalized = String(value || '').toUpperCase()
-  if (normalized === 'PY' || normalized === 'CO' || normalized === 'PT' || normalized === 'MX' || normalized === 'ES' || normalized === 'US') {
+  if (normalized === 'PY' || normalized === 'CO' || normalized === 'PT' || normalized === 'MX' || normalized === 'ES' || normalized === 'US' || normalized === 'GB') {
     return normalized as DccCountry
   }
   return 'BR'

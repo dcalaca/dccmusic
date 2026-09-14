@@ -1,7 +1,7 @@
 import { STUDIO_MUSIC_CREDITS } from './studio'
 import type { DccCountry } from './localization'
 
-export type StudioTopupCurrency = 'BRL' | 'EUR' | 'PYG' | 'COP' | 'MXN' | 'USD'
+export type StudioTopupCurrency = 'BRL' | 'EUR' | 'PYG' | 'COP' | 'MXN' | 'USD' | 'GBP'
 
 export type StudioTopupQuote = {
   musicQuantity: number
@@ -79,7 +79,7 @@ export function getStudioTopupQuote(inputQuantity: number, country: DccCountry =
 export function getStudioPlanPriceQuote(priceInBrl: number, country: DccCountry = 'BR'): StudioPlanPriceQuote {
   const amountBrl = Math.max(0, Number(priceInBrl) || 0)
   const code = String(country)
-  if (code === 'US') throw new Error('Preço em USD não configurado no banco de dados.')
+  if (code === 'US' || code === 'GB') throw new Error('Preço internacional não configurado no banco de dados.')
   if (code === 'PT' || code === 'ES' || code === 'PY' || code === 'CO' || code === 'MX') {
     const localBase = COUNTRY_BASE_PRICE[code]
     return { amount: roundLocalPrice(amountBrl * (localBase.amount / BRAZIL_BASE_PRICE), country), currency: localBase.currency }

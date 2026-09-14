@@ -13,7 +13,7 @@ import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 export const dynamic = 'force-dynamic'
 
 function getCustomerLocale(country: string) {
-  if (country === 'US') return 'en-US'
+  if (country === 'US' || country === 'GB') return country === 'GB' ? 'en-GB' : 'en-US'
   if (country === 'PT') return 'pt-PT'
   if (country === 'MX') return 'es-MX'
   if (country === 'CO') return 'es-CO'
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     const subscription = await getOrCreatePendingSubscription(composer.id, plan.id)
     const snapshotAmount = Number(subscription.metadata?.checkout_amount)
     const snapshotCurrency = String(subscription.metadata?.checkout_currency || '').toUpperCase() as StudioTopupCurrency
-    const expectedCurrency: Record<string, StudioTopupCurrency> = { BR: 'BRL', PY: 'PYG', CO: 'COP', PT: 'EUR', MX: 'MXN', US: 'USD' }
+    const expectedCurrency: Record<string, StudioTopupCurrency> = { BR: 'BRL', PY: 'PYG', CO: 'COP', PT: 'EUR', MX: 'MXN', US: 'USD', GB: 'GBP' }
     const hasValidSnapshot = snapshotAmount > 0 && snapshotCurrency === (expectedCurrency[customerCountryCode] || 'BRL')
 
     const priceQuote = hasValidSnapshot
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     params.set('ui_mode', 'embedded_page')
     params.set('redirect_on_completion', 'never')
     params.set('adaptive_pricing[enabled]', 'true')
-    params.set('locale', customerCountryCode === 'US' ? 'en' : customerCountryCode === 'PT' ? 'pt' : 'es')
+    params.set('locale', customerCountryCode === 'US' || customerCountryCode === 'GB' ? 'en' : customerCountryCode === 'PT' ? 'pt' : 'es')
     const suffix = crypto.createHash('sha256').update(subscription.id).digest('hex').replace(/[0-9]/g, (digit) => String.fromCharCode(97 + Number(digit))).slice(0, 8)
     params.set('integration_identifier', `dccplan_${suffix}`)
     params.set('line_items[0][price_data][currency]', priceQuote.currency.toLowerCase())

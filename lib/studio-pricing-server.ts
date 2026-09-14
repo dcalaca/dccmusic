@@ -28,7 +28,7 @@ export type StudioTopupTier = {
 export type StudioPricingSource = 'supabase' | 'fallback'
 
 function assertDatabaseManagedPricing(country: DccCountry, kind: 'recarga' | 'plano'): never {
-  throw new Error(`Preço de ${kind} em USD não configurado no banco de dados. Configure em /admin/precos.`)
+  throw new Error(`Preço de ${kind} internacional não configurado no banco de dados. Configure em /admin/precos.`)
 }
 
 function getPricingSourceCountry(country: DccCountry): DccCountry {
@@ -87,7 +87,7 @@ export async function getStudioTopupTiersFromPricing(country: DccCountry): Promi
     console.error('[STUDIO PRICING] Falha ao ler recarga do Supabase:', error)
   }
 
-  if (String(country) === 'US') return assertDatabaseManagedPricing(country, 'recarga')
+  if (String(country) === 'US' || String(country) === 'GB') return assertDatabaseManagedPricing(country, 'recarga')
 
   const fallbackQuote = getStudioTopupQuote(1, country)
   const fallbackTiers = getStudioTopupTiers(country).map((tier, index, all) => ({
@@ -113,7 +113,7 @@ export async function getStudioTopupQuoteFromPricing(
   const tier = pricing.tiers.find((item) => musicQuantity >= item.minMusicQuantity && musicQuantity <= item.maxMusicQuantity)
 
   if (!tier) {
-    if (String(country) === 'US') return assertDatabaseManagedPricing(country, 'recarga')
+    if (String(country) === 'US' || String(country) === 'GB') return assertDatabaseManagedPricing(country, 'recarga')
     return { ...getStudioTopupQuote(musicQuantity, country), source: 'fallback' }
   }
 
@@ -159,7 +159,7 @@ export async function getStudioPlanPriceFromPricing(
     console.error('[STUDIO PRICING] Falha ao ler plano do Supabase:', error)
   }
 
-  if (String(country) === 'US') return assertDatabaseManagedPricing(country, 'plano')
+  if (String(country) === 'US' || String(country) === 'GB') return assertDatabaseManagedPricing(country, 'plano')
 
   return { ...getStudioPlanPriceQuote(priceInBrl, country), source: 'fallback' }
 }

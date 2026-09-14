@@ -15,16 +15,18 @@ const countries = [
   { code: 'PT', label: 'Portugal', flag: '🇵🇹' },
   { code: 'ES', label: 'Espanha', flag: '🇪🇸' },
   { code: 'US', label: 'Estados Unidos', flag: '🇺🇸' },
+  { code: 'GB', label: 'Inglaterra', flag: '🇬🇧' },
 ] as const
 
 const countryLabels: Record<string, string> = Object.fromEntries(countries.map((country) => [country.code, country.label]))
 const countryFlags: Record<string, string> = Object.fromEntries(countries.map((country) => [country.code, country.flag]))
 const currencyByCountry: Record<string, string> = {
-  BR: 'BRL', PY: 'PYG', CO: 'COP', MX: 'MXN', PT: 'EUR', ES: 'EUR', US: 'USD',
+  BR: 'BRL', PY: 'PYG', CO: 'COP', MX: 'MXN', PT: 'EUR', ES: 'EUR', US: 'USD', GB: 'GBP',
 }
 const currencies = [
   { code: 'BRL', label: 'Real brasileiro (R$)' },
   { code: 'USD', label: 'Dólar americano (US$)' },
+  { code: 'GBP', label: 'Libra esterlina (£)' },
   { code: 'EUR', label: 'Euro (€)' },
   { code: 'PYG', label: 'Guarani paraguaio (₲)' },
   { code: 'COP', label: 'Peso colombiano (COP)' },

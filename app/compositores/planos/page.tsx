@@ -34,6 +34,7 @@ function formatCurrency(value: number, currency: StudioTopupCurrency = 'BRL') {
     EUR: { locale: 'pt-PT', maximumFractionDigits: 2 },
     MXN: { locale: 'es-MX', maximumFractionDigits: 2 },
     USD: { locale: 'en-US', maximumFractionDigits: 2 },
+    GBP: { locale: 'en-GB', maximumFractionDigits: 2 },
   }
   const selected = config[currency]
   return new Intl.NumberFormat(selected.locale, { style: 'currency', currency, maximumFractionDigits: selected.maximumFractionDigits }).format(value)
@@ -52,7 +53,7 @@ export default async function PlansPage() {
   const composerPlans = allPlans.filter((plan) => !isStudioPlan(plan))
   const requestHeaders = headers()
   const country = normalizeCountry(requestHeaders.get('x-dcc-country') || cookies().get(COUNTRY_COOKIE)?.value || requestHeaders.get('x-vercel-ip-country') || requestHeaders.get('cf-ipcountry'))
-  const isUS = String(country) === 'US'
+  const isUS = String(country) === 'US' || String(country) === 'GB'
   const topupPricing = await getStudioTopupTiersFromPricing(country)
   const topupTiers = topupPricing.tiers
   const topupPresentation = isUS

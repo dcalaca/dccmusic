@@ -8,7 +8,7 @@ import { translateToMexicanSpanish } from '@/lib/i18n-es-mx'
 import { translateToEuropeanPortuguese } from '@/lib/i18n-pt-pt'
 import { translateToAmericanEnglish } from '@/lib/i18n-en-us'
 
-type LocalizationContextValue = { country: DccCountry; locale: DccLocale; currency: 'BRL' | 'PYG' | 'COP' | 'EUR' | 'MXN' | 'USD'; paymentProvider: 'mercadopago' | 'stripe'; setCountry: (country: DccCountry) => void; formatMoney: (brlValue: number) => string }
+type LocalizationContextValue = { country: DccCountry; locale: DccLocale; currency: 'BRL' | 'PYG' | 'COP' | 'EUR' | 'MXN' | 'USD' | 'GBP'; paymentProvider: 'mercadopago' | 'stripe'; setCountry: (country: DccCountry) => void; formatMoney: (brlValue: number) => string }
 const LocalizationContext = createContext<LocalizationContextValue | null>(null)
 const translatedTextValues = new WeakMap<Node, string>()
 const translatedAttributeValues = new WeakMap<Element, Map<string, string>>()
@@ -18,14 +18,14 @@ function translateCopy(value: string, country: DccCountry) {
   if (code === 'PT') return translateToEuropeanPortuguese(value)
   if (code === 'MX' || code === 'ES') return translateToMexicanSpanish(value)
   if (code === 'PY' || code === 'CO') return translateToParaguayanSpanish(value)
-  if (code === 'US') return translateToAmericanEnglish(value)
+  if (code === 'US' || code === 'GB') return translateToAmericanEnglish(value)
   return value
 }
 
 function translatePriceText(value: string, country: DccCountry) {
   // US prices are always rendered explicitly from database-backed pricing.
   // Never convert a BRL text node into a made-up USD amount.
-  if (String(country) === 'BR' || String(country) === 'US') return value
+  if (String(country) === 'BR' || String(country) === 'US' || String(country) === 'GB') return value
   return value.replace(/R\$\s*([\d.]+(?:,\d{1,2})?)/g, (_match, raw) => { const brl = Number(String(raw).replace(/\./g, '').replace(',', '.')); if (!Number.isFinite(brl)) return _match; const formatted = formatLocalizedMoney(brl, country); return String(country) === 'CO' ? `COP ${formatted}` : formatted })
 }
 

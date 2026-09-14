@@ -26,6 +26,7 @@ function LocalizedMoney({ value, country }: { value: number; country: DccCountry
     PT: { locale: 'pt-PT', currency: 'EUR', maximumFractionDigits: 2 },
     MX: { locale: 'es-MX', currency: 'MXN', maximumFractionDigits: 2 },
     US: { locale: 'en-US', currency: 'USD', maximumFractionDigits: 2 },
+    GB: { locale: 'en-GB', currency: 'GBP', maximumFractionDigits: 2 },
   }
   const config = configs[String(country)] || configs.BR
 
@@ -60,7 +61,7 @@ export default function StudioTopupPage() {
     : country === 'PY' ? 'PYG'
       : country === 'CO' ? 'COP'
         : country === 'MX' ? 'MXN'
-          : String(country) === 'US' ? 'USD'
+          : String(country) === 'US' ? 'USD' : String(country) === 'GB' ? 'GBP'
             : 'BRL'
 
   const openStripeFallback = async (topupId: string, amount: number, email?: string | null) => {
@@ -194,7 +195,7 @@ export default function StudioTopupPage() {
 
   const normalizedMusicQuantity = Math.max(1, Math.floor(Number(musicQuantity) || 1))
   const getCurrentTier = () => {
-    const fallbackUnitPrice = String(country) === 'US' ? 0
+    const fallbackUnitPrice = String(country) === 'US' || String(country) === 'GB' ? 0
       : country === 'PT' ? 1.99
       : country === 'PY' ? 5600
         : country === 'CO' ? 3200

@@ -8,7 +8,7 @@ import { useLocalization } from '@/components/LocalizationProvider'
 function selectorLanguage(country: DccCountry) {
   const code = String(country)
   if (code === 'PY' || code === 'CO' || code === 'MX' || code === 'ES') return 'Español'
-  if (code === 'US') return 'English'
+  if (code === 'US' || code === 'GB') return 'English'
   return 'Português'
 }
 
@@ -20,7 +20,7 @@ export default function CountrySelector({ compact = false }: { compact?: boolean
   const code = String(country)
   const current = COUNTRY_CONFIG[code]
   const isSpanish = code === 'PY' || code === 'CO' || code === 'MX' || code === 'ES'
-  const isEnglish = code === 'US'
+  const isEnglish = code === 'US' || code === 'GB'
   const changeCountryLabel = isEnglish ? 'Change country' : isSpanish ? 'Cambiar país' : 'Mudar país'
   const countryPrefix = isEnglish ? 'Country:' : 'País:'
   const chooseCountryLabel = isEnglish ? 'Choose your country' : isSpanish ? 'Elige tu país' : 'Escolha o seu país'

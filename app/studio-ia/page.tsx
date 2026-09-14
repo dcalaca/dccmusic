@@ -51,6 +51,7 @@ function formatCurrency(value: number, currency: StudioTopupCurrency) {
     EUR: { locale: 'pt-PT', maximumFractionDigits: 2 },
     MXN: { locale: 'es-MX', maximumFractionDigits: 2 },
     USD: { locale: 'en-US', maximumFractionDigits: 2 },
+    GBP: { locale: 'en-GB', maximumFractionDigits: 2 },
   }
   const selected = config[currency]
   return new Intl.NumberFormat(selected.locale, { style: 'currency', currency, maximumFractionDigits: selected.maximumFractionDigits }).format(value)
@@ -67,13 +68,13 @@ async function StudioPricingSection({ country }: { country: DccCountry }) {
   const [plans, topupPricing, localizedPlanPrices] = await Promise.all([getStudioPlans(), getStudioTopupTiersFromPricing(country), getStudioPlanPricesFromPricing(studioPlanSlugs, country)])
   const topupTiers = topupPricing.tiers
   const topupCurrency = topupPricing.currency
-  const topupPresentation = code === 'US'
+  const topupPresentation = code === 'US' || code === 'GB'
     ? [['1 song', topupTiers[0].unitPrice], ['2 to 8 songs', topupTiers[1].unitPrice], ['9 to 29 songs', topupTiers[2].unitPrice], ['30+ songs', topupTiers[4].unitPrice]] as const
     : [['1 música', topupTiers[0].unitPrice], ['2 a 8 músicas', topupTiers[1].unitPrice], ['9 a 29 músicas', topupTiers[2].unitPrice], ['A partir de 30', topupTiers[4].unitPrice]] as const
   const plansWithPrices = plans.flatMap((plan) => {
     const databasePrice = localizedPlanPrices[plan.slug]
     if (databasePrice) return [{ plan, priceQuote: databasePrice }]
-    if (code === 'US') return []
+    if (code === 'US' || code === 'GB') return []
     return [{ plan, priceQuote: { ...getStudioPlanPriceQuote(plan.price, country), source: 'fallback' as const } }]
   })
 

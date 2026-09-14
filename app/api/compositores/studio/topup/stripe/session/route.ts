@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const amount = Number(topup.amount)
     const currency = String(topup.currency || '').toUpperCase() as StudioTopupCurrency
     if (!(amount > 0)) return NextResponse.json({ error: 'Valor da recarga inválido' }, { status: 400 })
-    if (!['BRL','PYG','COP','EUR','MXN','USD'].includes(currency)) return NextResponse.json({ error: 'Moeda da recarga inválida' }, { status: 400 })
+    if (!['BRL','PYG','COP','EUR','MXN','USD','GBP'].includes(currency)) return NextResponse.json({ error: 'Moeda da recarga inválida' }, { status: 400 })
 
     const params = new URLSearchParams()
     params.set('mode', 'payment')
@@ -49,14 +49,14 @@ export async function POST(request: NextRequest) {
     params.set('line_items[0][price_data][currency]', currency.toLowerCase())
     params.set('line_items[0][price_data][unit_amount]', String(getStripeMinorUnitAmount(amount, currency)))
     const isSpanish = customerCountryCode === 'PY' || customerCountryCode === 'CO' || customerCountryCode === 'MX'
-    params.set('line_items[0][price_data][product_data][name]', customerCountryCode === 'US'
+    params.set('line_items[0][price_data][product_data][name]', customerCountryCode === 'US' || customerCountryCode === 'GB'
       ? `DCC Music Credits - ${topup.music_quantity} song(s)`
       : isSpanish
         ? `Recarga DCC Music - ${topup.music_quantity} canción(es)`
         : topup.metadata?.package_name || `Recarga DCC Music - ${topup.music_quantity} música(s)`)
     if (isSpanish) params.set('locale', 'es')
     if (customerCountryCode === 'PT') params.set('locale', 'pt')
-    if (customerCountryCode === 'US') params.set('locale', 'en')
+    if (customerCountryCode === 'US' || customerCountryCode === 'GB') params.set('locale', 'en')
     params.set('line_items[0][quantity]', '1')
     params.set('metadata[topup_id]', topup.id)
     params.set('metadata[external_reference]', topup.external_reference)

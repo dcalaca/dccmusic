@@ -42,7 +42,7 @@ export function StripePaymentOverlay({
   const [ready, setReady] = useState(false)
 
   const isSpanish = ['MX', 'PY', 'CO'].includes(String(country))
-  const isEnglish = String(country) === 'US'
+  const isEnglish = String(country) === 'US' || String(country) === 'GB'
   const copy = isEnglish
     ? {
         title: 'Card payment',
