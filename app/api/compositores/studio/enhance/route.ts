@@ -55,6 +55,7 @@ const songLanguagePrompts: Record<string, string> = {
   'Português (Brasil)': 'IDIOMA E SOTAQUE OBRIGATÓRIOS: cante em português do Brasil, com pronúncia, dicção, sotaque e fraseado naturalmente brasileiros. Não use português europeu nem sotaque de Portugal.',
   'Português (Portugal)': 'IDIOMA E SOTAQUE OBRIGATÓRIOS: cante em português europeu, com pronúncia, dicção, sotaque e fraseado naturais de Portugal. Não use sotaque brasileiro.',
   'English (United States)': 'MANDATORY LANGUAGE AND ACCENT: sing in English with natural United States pronunciation, diction, accent, and phrasing.',
+  'English (United Kingdom)': 'MANDATORY LANGUAGE AND ACCENT: sing in English with natural United Kingdom pronunciation, diction, accent, and phrasing.',
   'Español (Paraguay)': 'IDIOMA Y ACENTO OBLIGATORIOS: cante en español paraguayo, con pronunciación, dicción, acento y fraseo naturales de Paraguay.',
   'Español (Colombia)': 'IDIOMA Y ACENTO OBLIGATORIOS: cante en español colombiano, con pronunciación, dicción, acento y fraseo naturales de Colombia.',
   'Español (México)': 'IDIOMA Y ACENTO OBLIGATORIOS: cante en español mexicano, con pronunciación, dicción, acento y fraseo naturales de México.',
