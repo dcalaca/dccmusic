@@ -35,7 +35,7 @@ function extractRegenerateTaskId(init: RequestInit) {
   }
 }
 
-async function callSuno(path: string, init: RequestInit) {
+async function callSuno(path: string, init: RequestInit): Promise<any> {
   const response = await fetch(`https://api.sunoapi.org${path}`, {
     ...init,
     headers: {
