@@ -17,7 +17,25 @@ export function extractSunoVoiceId(payload: any) {
     null
 }
 
-async function callSuno(path: string, init: RequestInit) {
+function isBenignRegenerateState(payload: any) {
+  if (Number(payload?.code) !== 400) return false
+  const message = String(payload?.data?.errorMessage || payload?.errorMessage || payload?.msg || payload?.message || '').toLowerCase()
+  return message.includes('record is not found') ||
+    message.includes('does not need to be rebuilt') ||
+    message.includes('does not require a retry')
+}
+
+function extractRegenerateTaskId(init: RequestInit) {
+  if (typeof init.body !== 'string') return null
+  try {
+    const body = JSON.parse(init.body)
+    return typeof body?.taskId === 'string' && body.taskId.trim() ? body.taskId.trim() : null
+  } catch {
+    return null
+  }
+}
+
+async function callSuno(path: string, init: RequestInit): Promise<any> {
   const response = await fetch(`https://api.sunoapi.org${path}`, {
     ...init,
     headers: {
@@ -28,6 +46,38 @@ async function callSuno(path: string, init: RequestInit) {
     cache: 'no-store',
   })
   const payload = await response.json().catch(() => null)
+
+  // Suno sometimes answers /voice/regenerate with HTTP 200 + code 400 saying
+  // the record no longer needs rebuilding. This can be a transient/race state:
+  // before creating a brand-new validation task, re-read the existing task once.
+  if (response.ok && path === '/api/v1/voice/regenerate' && isBenignRegenerateState(payload)) {
+    const taskId = extractRegenerateTaskId(init)
+    if (taskId) {
+      try {
+        const currentState = await callSuno(`/api/v1/voice/validate-info?taskId=${encodeURIComponent(taskId)}`, {
+          method: 'GET',
+        })
+        console.warn('[Studio Voice Provider] Regenerate retornou estado ambíguo; tarefa existente reutilizada', {
+          taskId,
+          providerCode: payload?.code,
+        })
+        return {
+          ...currentState,
+          data: {
+            ...(currentState?.data || {}),
+            taskId,
+          },
+        }
+      } catch (refreshError) {
+        // Keep the previous behavior when the task really cannot be recovered:
+        // the caller may decide to create a fresh validation task.
+        console.warn('[Studio Voice Provider] Não foi possível confirmar tarefa após regenerate ambíguo', {
+          taskId,
+        })
+      }
+    }
+  }
+
   if (!response.ok || payload?.code !== 200) {
     console.error('[Studio Voice Provider] Erro na API de voz:', {
       path,
