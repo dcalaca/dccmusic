@@ -57,6 +57,21 @@ svg {
   max-width: 100%;
 }
 
+/* Ícone do Spotify no item "Spotify e Plataformas" do menu. */
+a[href="/distribuicao-digital"] > svg {
+  display: none;
+}
+
+a[href="/distribuicao-digital"]::before {
+  content: '';
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 1rem;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='white'/%3E%3Cpath d='M6.5 8.7c3.8-1.1 7.8-.8 11.1.9' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round'/%3E%3Cpath d='M7.2 12c3.1-.8 6.5-.5 9.4.9' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'/%3E%3Cpath d='M7.9 15.1c2.6-.6 5.3-.3 7.8.8' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='white'/%3E%3Cpath d='M6.5 8.7c3.8-1.1 7.8-.8 11.1.9' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round'/%3E%3Cpath d='M7.2 12c3.1-.8 6.5-.5 9.4.9' fill='none' stroke='black' stroke-width='1.7' stroke-linecap='round'/%3E%3Cpath d='M7.9 15.1c2.6-.6 5.3-.3 7.8.8' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
