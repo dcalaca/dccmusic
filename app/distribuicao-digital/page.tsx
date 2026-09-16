@@ -15,9 +15,9 @@ import {
 } from 'react-icons/fi'
 
 export const metadata: Metadata = {
-  title: 'Distribuição Digital | DCC Music + SomVibe',
+  title: 'Spotify e Plataformas | DCC Music + SomVibe',
   description:
-    'Distribua sua música no Spotify, Apple Music, TikTok, YouTube e mais de 45 plataformas com a SomVibe, parceira da DCC Music.',
+    'Leve sua música para Spotify, Apple Music, Deezer e muito mais com a SomVibe, parceira da DCC Music.',
   keywords: [
     'distribuição digital',
     'SomVibe',
@@ -31,9 +31,9 @@ export const metadata: Metadata = {
     canonical: '/distribuicao-digital',
   },
   openGraph: {
-    title: 'Distribuição Digital | DCC Music + SomVibe',
+    title: 'Spotify e Plataformas | DCC Music + SomVibe',
     description:
-      'Envie sua música para mais de 45 plataformas de streaming com a SomVibe, parceira da DCC Music.',
+      'Leve sua música para Spotify, Apple Music, Deezer e muito mais com a SomVibe, parceira da DCC Music.',
     url: 'https://www.dccmusic.online/distribuicao-digital',
     type: 'website',
   },
@@ -171,10 +171,10 @@ export default function DistribuicaoDigitalPage() {
             </p>
 
             <h1 className="mb-4 text-3xl font-black leading-tight sm:text-5xl">
-              <span className="gradient-text">Distribuição Digital</span>
+              <span className="gradient-text">Imagine sua música no Spotify!</span>
             </h1>
             <p className="mx-auto mb-3 max-w-3xl text-base font-semibold leading-snug text-gray-100 sm:text-xl">
-              Envie sua música para mais de 45 plataformas de streaming.
+              Leve sua música para Spotify, Apple Music, Deezer e muito mais.
             </p>
             <p className="mx-auto mb-7 max-w-3xl text-sm leading-relaxed text-gray-400 sm:text-base">
               A DCC Music é parceira da SomVibe para ajudar artistas independentes a lançar no Spotify,
