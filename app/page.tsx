@@ -13,16 +13,16 @@ import { FiPlayCircle, FiMusic, FiArrowRight, FiZap } from 'react-icons/fi'
 import { COUNTRY_COOKIE, COUNTRY_CONFIG, normalizeCountry, type DccCountry } from '@/lib/localization'
 
 export const metadata = {
-  title: 'DCC Music - Músicas, Studio IA e Cifras',
+  title: 'Criar Música com IA Online | DCC Music',
   description:
-    'Ouça lançamentos, crie músicas com Studio IA e gere cifras. Plataforma completa para compositores e ouvintes.',
+    'Crie música com inteligência artificial a partir de uma ideia ou letra. Use o Studio IA da DCC Music e experimente sua primeira criação grátis.',
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'DCC Music - Músicas, Studio IA e Cifras',
+    title: 'Criar Música com IA Online | DCC Music',
     description:
-      'Catálogo musical, criação com IA e cifras em um só lugar.',
+      'Digite sua ideia ou letra e transforme em uma música completa com inteligência artificial.',
     url: 'https://www.dccmusic.online',
     type: 'website',
   },
@@ -333,14 +333,13 @@ export default async function Home() {
             <div className="flex flex-1 flex-col items-center justify-center px-4 pt-7 pb-12 sm:px-6 sm:pt-9 sm:pb-14">
               <div className="w-full max-w-2xl text-center">
                 <h1 className="text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl md:text-4xl [text-shadow:0_2px_8px_rgba(0,0,0,0.95),0_4px_24px_rgba(0,0,0,0.85)]">
-                  <span className="text-white">Músicas prontas </span>
+                  <span className="text-white">Crie sua música com </span>
                   <span className="font-bold text-fuchsia-400 sm:text-fuchsia-300 [text-shadow:0_1px_0_rgba(0,0,0,0.9),0_2px_12px_rgba(0,0,0,0.85)]">
-                    para você gravar
+                    inteligência artificial
                   </span>
                 </h1>
                 <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-gray-100 sm:mt-4 sm:text-base [text-shadow:0_1px_6px_rgba(0,0,0,0.95),0_2px_16px_rgba(0,0,0,0.8)]">
-                  Catálogo em um só lugar: ouça, escolha e leve para o estúdio. Plataforma pensada para artistas e
-                  compositores que querem resultado com agilidade.
+                  Digite sua ideia ou letra e transforme em uma música completa. Cadastre-se e experimente sua primeira criação grátis.
                 </p>
                 <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-7 sm:flex-row sm:flex-wrap">
                   <Link
@@ -348,7 +347,7 @@ export default async function Home() {
                     className="group inline-flex w-full max-w-xs items-center justify-center rounded-lg bg-purple-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 sm:w-auto"
                   >
                     <FiZap className="mr-2 h-5 w-5 shrink-0" />
-                    Studio IA
+                    Criar música com IA
                     <FiArrowRight className="ml-2 h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                   <Link
