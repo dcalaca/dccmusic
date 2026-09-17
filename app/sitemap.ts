@@ -36,6 +36,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: baseUrl, changeFrequency: 'daily', priority: 1 },
     { url: `${baseUrl}/studio-ia`, changeFrequency: 'weekly', priority: 0.95 },
+    { url: `${baseUrl}/criar-musica-com-ia`, changeFrequency: 'monthly', priority: 0.92 },
+    { url: `${baseUrl}/gerador-de-musica-ia`, changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${baseUrl}/criar-musica-gratis`, changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${baseUrl}/criar-musica-online`, changeFrequency: 'monthly', priority: 0.88 },
     { url: `${baseUrl}/transcricao-musical`, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${baseUrl}/distribuicao-digital`, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${baseUrl}/videos`, changeFrequency: 'daily', priority: 0.9 },
