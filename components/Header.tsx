@@ -43,7 +43,7 @@ function HeaderComposerAvatar({
 
 const siteNavItems = [
   { href: '/', label: 'Home', icon: FiHome },
-  { href: '/studio-ia', label: 'Studio IA', icon: FiZap },
+  { href: '/studio-ia', label: 'Crie sua música', mobileLabel: 'Criar música', icon: FiZap },
   { href: '/transcricao-musical', label: 'Cifra da Música', mobileLabel: 'Cifra', icon: FiFileText },
   { href: '/distribuicao-digital', label: 'Spotify e Plataformas', mobileLabel: 'Spotify', icon: FiGlobe },
   { href: '/compositores', label: 'Compositores Premium', mobileLabel: 'Compositores', icon: FiUsers },
