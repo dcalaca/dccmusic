@@ -103,12 +103,15 @@ function creditActionLabel(action?: string | null) {
     music_transcription: 'Partitura e cifra',
     lyric_generation_free: 'Letra grátis',
     audio_lyric_transcription: 'Entender letra do áudio',
+    lyric_video_generation: 'Vídeo com letra',
+    lyric_video_refund: 'Estorno de vídeo com letra',
+    lyric_video_transition_free: 'Vídeo com letra de transição',
   }
   return labels[action || ''] || action || 'Movimentação'
 }
 
 function isCreditMovement(action?: string | null) {
-  return action === 'credit_topup' || action === 'manual_credit'
+  return action === 'credit_topup' || action === 'manual_credit' || action === 'lyric_video_refund'
 }
 
 function dedupeCreditMovements(rows: any[]) {
