@@ -1384,7 +1384,7 @@ export default function StudioProjectDetailPage() {
       : project.cover?.imageUrl
         ? [{ ...project.cover, isCurrent: true }]
         : []
-  )
+  ).sort((a: any, b: any) => Number(Boolean(b.isCurrent)) - Number(Boolean(a.isCurrent)))
   const shouldShowVersionList = projectVersions.length > 0
   const isGeneratingCover = processing.toLowerCase().includes('capa')
   const generationMessage = musicGenerationMessages[generationMessageIndex % musicGenerationMessages.length]
