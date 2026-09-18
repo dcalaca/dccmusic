@@ -331,6 +331,9 @@ export default function AdminChartsPanel() {
         Email: row.email,
         'País': row.country,
         'Músicas criadas': row.musicCreated,
+        'Letras criadas': row.lyricsCreated,
+        'Capas criadas': row.coversCreated,
+        'Músicas transcritas': row.musicTranscribed,
         'Projetos com músicas': row.projectsWithVersions,
         'Compras realizadas': row.purchaseCount,
         'Músicas compradas': row.musicPurchased,
@@ -338,7 +341,8 @@ export default function AdminChartsPanel() {
       })))
       worksheet['!cols'] = [
         { wch: 28 }, { wch: 34 }, { wch: 12 }, { wch: 18 },
-        { wch: 22 }, { wch: 20 }, { wch: 20 }, { wch: 18 },
+        { wch: 18 }, { wch: 18 }, { wch: 22 }, { wch: 22 },
+        { wch: 20 }, { wch: 20 }, { wch: 18 },
       ]
       const workbook = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Cadastros')
