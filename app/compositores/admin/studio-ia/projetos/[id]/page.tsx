@@ -251,7 +251,7 @@ function LearnYourMusicAd({
   studioVersionId?: string
   studioProjectId?: string
 }) {
-  const items = ['Cifra', 'Partitura da melodia', 'MusicXML', 'Tom', 'BPM']
+  const items = ['Cifra', 'Tom', 'BPM']
   const transcriptionParams = new URLSearchParams()
   if (studioVersionId) transcriptionParams.set('studioVersionId', studioVersionId)
   if (studioProjectId) transcriptionParams.set('studioProjectId', studioProjectId)
@@ -262,11 +262,11 @@ function LearnYourMusicAd({
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-amber-400/40 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.22),transparent_38%),linear-gradient(135deg,rgba(76,29,149,0.45),rgba(15,23,42,0.95),rgba(0,0,0,0.95))] p-4 shadow-xl shadow-amber-950/20">
       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-300/50 bg-amber-400/15 px-3 py-1 text-xs font-black uppercase tracking-wide text-amber-100">
-        <FiMusic /> Partitura e Cifra
+        <FiMusic /> Cifra
       </div>
       <h2 className="text-xl font-black text-white">Aprenda a tocar sua música</h2>
       <p className="mt-2 text-sm leading-relaxed text-gray-300">
-        Gere os arquivos para estudar, tocar, imprimir ou abrir em programas de partitura.
+        Gere a cifra da sua música para estudar e tocar.
       </p>
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         {items.map((item) => (
@@ -279,13 +279,13 @@ function LearnYourMusicAd({
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Preço</p>
-          <p className="text-2xl font-black text-amber-200">25 créditos</p>
+          <p className="text-2xl font-black text-amber-200">10 créditos</p>
         </div>
         <Link
           href={transcriptionHref}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 px-4 py-3 text-sm font-black text-black hover:from-amber-300 hover:to-yellow-400"
         >
-          <FiFileText /> Gerar partitura e cifra
+          <FiFileText /> Gerar cifra
         </Link>
       </div>
     </div>
