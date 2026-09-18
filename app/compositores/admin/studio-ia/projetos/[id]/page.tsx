@@ -297,6 +297,25 @@ function extractVoicePreferences(description?: string | null) {
   return match?.[1]?.trim() || ''
 }
 
+function dedupeProjectCovers(covers: any[]) {
+  if (!Array.isArray(covers)) return []
+
+  const seenIds = new Set<string>()
+  const seenUrls = new Set<string>()
+
+  return covers.filter((cover: any) => {
+    const id = String(cover?.id || '').trim()
+    const url = String(cover?.imageUrl || '').split('?')[0]
+
+    if (id && seenIds.has(id)) return false
+    if (url && seenUrls.has(url)) return false
+
+    if (id) seenIds.add(id)
+    if (url) seenUrls.add(url)
+    return Boolean(id || url)
+  })
+}
+
 function dedupeStudioVersions(versions: any[]) {
   if (!Array.isArray(versions)) return []
 
@@ -1095,7 +1114,17 @@ export default function StudioProjectDetailPage() {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao melhorar capa')
-      setProject((currentProject: any) => ({ ...currentProject, cover: data.cover }))
+      setProject((currentProject: any) => ({
+        ...currentProject,
+        cover: data.cover,
+        covers: [
+          { ...data.cover, isCurrent: true, createdAt: new Date().toISOString() },
+          ...(Array.isArray(currentProject?.covers)
+            ? currentProject.covers.map((item: any) => ({ ...item, isCurrent: false })).filter((item: any) => item.id !== data.cover.id)
+            : []),
+        ],
+      }))
+      await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
       setStudioStatus((currentStatus: any) => currentStatus ? ({
         ...currentStatus,
         stats: {
@@ -1188,8 +1217,8 @@ export default function StudioProjectDetailPage() {
     }
   }
 
-  const downloadCoverImage = async () => {
-    const coverUrl = project?.cover?.imageUrl
+  const downloadCoverImage = async (coverUrlOverride?: string) => {
+    const coverUrl = coverUrlOverride || project?.cover?.imageUrl
     if (!coverUrl) return
 
     try {
@@ -1206,6 +1235,39 @@ export default function StudioProjectDetailPage() {
       URL.revokeObjectURL(url)
     } catch {
       window.open(coverUrl, '_blank', 'noopener,noreferrer')
+    }
+  }
+
+  const manageProjectCover = async (action: 'select' | 'delete', coverId: string) => {
+    const token = localStorage.getItem('composer_token')
+    if (!token) return
+
+    if (action === 'delete' && !window.confirm('Excluir esta capa do projeto? As outras capas continuarão salvas.')) {
+      return
+    }
+
+    setError('')
+    setMessage('')
+    setProcessing(action === 'select' ? 'Alterando capa principal...' : 'Excluindo capa...')
+
+    try {
+      const response = await fetch('/api/compositores/studio/covers/manage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ projectId, coverId, action }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Erro ao gerenciar capa')
+
+      await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
+      setMessage(action === 'select' ? 'Capa principal atualizada.' : 'Capa excluída.')
+    } catch (err: any) {
+      setError(err.message || 'Erro ao gerenciar capa')
+    } finally {
+      setProcessing('')
     }
   }
 
@@ -1307,6 +1369,13 @@ export default function StudioProjectDetailPage() {
 
   const audioUrl = project.version?.audioUrl || project.version?.streamAudioUrl
   const projectVersions = dedupeStudioVersions(project.versions)
+  const projectCovers = dedupeProjectCovers(
+    Array.isArray(project.covers) && project.covers.length > 0
+      ? project.covers
+      : project.cover?.imageUrl
+        ? [{ ...project.cover, isCurrent: true }]
+        : []
+  )
   const shouldShowVersionList = projectVersions.length > 0
   const isGeneratingCover = processing.toLowerCase().includes('capa')
   const generationMessage = musicGenerationMessages[generationMessageIndex % musicGenerationMessages.length]
@@ -1565,8 +1634,58 @@ export default function StudioProjectDetailPage() {
             <aside className="space-y-4">
               <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-gray-950/85 shadow-2xl shadow-black/30 sm:rounded-[1.75rem]">
                 <div className="relative aspect-[4/3] bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.28),transparent_34%),linear-gradient(135deg,#111827,#1f1235,#020617)] sm:aspect-square">
-                  {project.cover?.imageUrl ? (
-                    <img src={project.cover.imageUrl} alt={project.title} className="h-full w-full object-cover" />
+                  {projectCovers.length > 0 ? (
+                    <>
+                      <div className="flex h-full snap-x snap-mandatory overflow-x-auto scroll-smooth sm:hidden">
+                        {projectCovers.map((cover: any, index: number) => (
+                          <div key={cover.id || cover.imageUrl} className="relative h-full min-w-full snap-center">
+                            <img src={cover.imageUrl} alt={`${project.title} - capa ${index + 1}`} className="h-full w-full object-cover" />
+                            <div className="absolute left-3 top-3 flex gap-2">
+                              {cover.isCurrent && <span className="rounded-full bg-green-600/90 px-3 py-1 text-[11px] font-black text-white">PRINCIPAL</span>}
+                              {cover.isPremium && <span className="rounded-full bg-purple-600/90 px-3 py-1 text-[11px] font-black text-white">PRO</span>}
+                            </div>
+                            <span className="absolute right-3 top-3 rounded-full bg-black/65 px-3 py-1 text-xs font-bold text-white">
+                              {index + 1}/{projectCovers.length}
+                            </span>
+                            <div className="absolute inset-x-3 bottom-3 flex gap-2 rounded-2xl bg-black/70 p-2 backdrop-blur">
+                              {!cover.isCurrent && (
+                                <button
+                                  type="button"
+                                  onClick={() => manageProjectCover('select', cover.id)}
+                                  disabled={Boolean(processing)}
+                                  className="flex-1 rounded-xl bg-green-600 px-3 py-2 text-xs font-black text-white disabled:opacity-60"
+                                >
+                                  Usar como principal
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => downloadCoverImage(cover.imageUrl)}
+                                className="rounded-xl border border-white/20 bg-black/40 px-3 py-2 text-xs font-bold text-white"
+                              >
+                                <FiDownload />
+                              </button>
+                              {projectCovers.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => manageProjectCover('delete', cover.id)}
+                                  disabled={Boolean(processing)}
+                                  className="rounded-xl border border-red-500/40 bg-red-950/70 px-3 py-2 text-xs font-bold text-red-100 disabled:opacity-60"
+                                >
+                                  Excluir
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <img
+                        src={(projectCovers.find((cover: any) => cover.isCurrent) || projectCovers[0]).imageUrl}
+                        alt={project.title}
+                        className="hidden h-full w-full object-cover sm:block"
+                      />
+                    </>
                   ) : (
                     <div className="flex h-full flex-col items-center justify-center px-8 text-center text-gray-400">
                       <div className="flex h-20 w-20 items-center justify-center rounded-3xl border border-white/10 bg-white/5 text-purple-200">
@@ -1588,6 +1707,42 @@ export default function StudioProjectDetailPage() {
                     </div>
                   )}
                 </div>
+                {projectCovers.length > 1 && (
+                  <div className="hidden border-t border-white/10 bg-black/30 p-3 sm:block">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-xs font-black uppercase tracking-wide text-purple-200">Suas capas</p>
+                      <p className="text-xs text-gray-500">{projectCovers.length} versões</p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 lg:grid-cols-5">
+                      {projectCovers.map((cover: any, index: number) => (
+                        <div key={cover.id || cover.imageUrl} className={`overflow-hidden rounded-xl border ${cover.isCurrent ? 'border-green-400 ring-1 ring-green-400/40' : 'border-white/10'}`}>
+                          <div className="relative aspect-square">
+                            <img src={cover.imageUrl} alt={`${project.title} - capa ${index + 1}`} className="h-full w-full object-cover" />
+                            {cover.isCurrent && <span className="absolute left-1.5 top-1.5 rounded-full bg-green-600 px-2 py-0.5 text-[9px] font-black text-white">PRINCIPAL</span>}
+                          </div>
+                          <div className="grid gap-1 bg-gray-950 p-1.5">
+                            {!cover.isCurrent && (
+                              <button type="button" onClick={() => manageProjectCover('select', cover.id)} disabled={Boolean(processing)} className="rounded-lg bg-green-700 px-2 py-1.5 text-[10px] font-black text-white disabled:opacity-60">
+                                Tornar principal
+                              </button>
+                            )}
+                            <div className="grid grid-cols-2 gap-1">
+                              <button type="button" onClick={() => downloadCoverImage(cover.imageUrl)} className="rounded-lg border border-white/10 px-2 py-1.5 text-[10px] font-bold text-gray-200">
+                                Baixar
+                              </button>
+                              {projectCovers.length > 1 && (
+                                <button type="button" onClick={() => manageProjectCover('delete', cover.id)} disabled={Boolean(processing)} className="rounded-lg border border-red-800 px-2 py-1.5 text-[10px] font-bold text-red-200 disabled:opacity-60">
+                                  Excluir
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
