@@ -224,6 +224,9 @@ function durationSeconds(version: any) {
 }
 
 export async function renderInternalStudioVideo(videoRequestId: string) {
+  // A mesma solicitação pode ser vista por mais de uma execução do cron. A
+  // mudança condicional de status funciona como um "claim" atômico: só a
+  // primeira função que pegou o trabalho pode continuar e cobrar a OpenAI.
   const { data: videoRequest, error: requestError } = await supabaseAdmin
     .from('studio_video_requests')
     .select('*')
@@ -232,14 +235,37 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
   if (requestError) throw requestError
   if (!videoRequest) throw new Error('Solicitação de vídeo não encontrada.')
 
-  const versionId = getStudioVideoRequestVersionId(videoRequest)
+  const { data: claimedRequest, error: claimError } = await supabaseAdmin
+    .from('studio_video_requests')
+    .update({
+      status: 'in_production',
+      error_message: null,
+      request_payload: {
+        ...(videoRequest.request_payload || {}),
+        provider: 'dcc-internal',
+        format: 'static-cover-lyrics-v5',
+        internal_render_started_at: new Date().toISOString(),
+      },
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', videoRequestId)
+    .in('status', ['requested', 'retry_pending'])
+    .select('*')
+    .maybeSingle()
+  if (claimError) throw claimError
+  if (!claimedRequest) {
+    console.info('[Studio Video Interno] Tentativa duplicada ignorada.', { videoRequestId })
+    return videoRequest
+  }
+
+  const versionId = getStudioVideoRequestVersionId(claimedRequest)
   const [{ data: project }, { data: composer }, { data: version }, { data: lyric }] = await Promise.all([
-    supabaseAdmin.from('studio_projects').select('title').eq('id', videoRequest.project_id).maybeSingle(),
-    supabaseAdmin.from('dccmusic_composers').select('name').eq('id', videoRequest.composer_id).maybeSingle(),
+    supabaseAdmin.from('studio_projects').select('title').eq('id', claimedRequest.project_id).maybeSingle(),
+    supabaseAdmin.from('dccmusic_composers').select('name').eq('id', claimedRequest.composer_id).maybeSingle(),
     versionId
-      ? supabaseAdmin.from('studio_versions').select('*').eq('id', versionId).eq('project_id', videoRequest.project_id).maybeSingle()
-      : supabaseAdmin.from('studio_versions').select('*').eq('project_id', videoRequest.project_id).eq('is_current', true).maybeSingle(),
-    supabaseAdmin.from('studio_lyrics').select('content').eq('project_id', videoRequest.project_id).eq('is_current', true).maybeSingle(),
+      ? supabaseAdmin.from('studio_versions').select('*').eq('id', versionId).eq('project_id', claimedRequest.project_id).maybeSingle()
+      : supabaseAdmin.from('studio_versions').select('*').eq('project_id', claimedRequest.project_id).eq('is_current', true).maybeSingle(),
+    supabaseAdmin.from('studio_lyrics').select('content').eq('project_id', claimedRequest.project_id).eq('is_current', true).maybeSingle(),
   ])
   if (!version) throw new Error('Versão da música não encontrada.')
 
@@ -250,7 +276,7 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
   if (!videoVersion.audio_path || videoVersion.audio_backup_status !== 'backed_up') {
     const backup = await backupStudioVersionAudio({
       versionId: videoVersion.id,
-      composerId: videoRequest.composer_id,
+      composerId: claimedRequest.composer_id,
       audioUrl: videoVersion.audio_url,
       streamAudioUrl: videoVersion.stream_audio_url,
       forceFullAudioUpgrade: true,
@@ -272,7 +298,7 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
 
   const audio = await downloadStudioAudioBuffer(videoVersion.audio_path, videoVersion.audio_storage_provider)
   if (!audio?.buffer.byteLength) throw new Error('O áudio permanente está vazio.')
-  const cover = await getCoverBuffer(videoRequest)
+  const cover = await getCoverBuffer(claimedRequest)
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'dcc-lyric-video-'))
   const audioPath = path.join(tempDir, 'audio')
   const coverPath = path.join(tempDir, 'cover')
@@ -283,34 +309,52 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
   const fontCacheDir = path.join(tempDir, 'font-cache')
   const outputPath = path.join(tempDir, 'video.mp4')
 
-  await supabaseAdmin.from('studio_video_requests').update({
-    status: 'in_production',
-    error_message: null,
-    request_payload: {
-      ...(videoRequest.request_payload || {}),
-      provider: 'dcc-internal',
-      format: 'static-cover-lyrics-v5',
-    },
-    updated_at: new Date().toISOString(),
-  }).eq('id', videoRequest.id)
-
   try {
     const fontDir = tempDir
-    let timedSegments: StudioTimedLyricSegment[] = []
+    const cachedSegments = claimedRequest.request_payload?.timed_lyric_segments
+    let timedSegments: StudioTimedLyricSegment[] = Array.isArray(cachedSegments)
+      ? cachedSegments
+        .map((segment: any) => ({
+          text: String(segment?.text || '').trim(),
+          start: Number(segment?.start),
+          end: Number(segment?.end),
+        }))
+        .filter((segment: StudioTimedLyricSegment) => (
+          segment.text && Number.isFinite(segment.start) && Number.isFinite(segment.end) && segment.end > segment.start
+        ))
+      : []
     try {
-      timedSegments = await transcribeStudioTimedLyricSegments({
-        buffer: audio.buffer,
-        fileName: audio.contentType === 'audio/mp4' ? 'musica.m4a' : 'musica.mp3',
-        contentType: audio.contentType,
-        lyricHint: String(lyric?.content || ''),
-      })
-      console.log('[Studio Video Interno] Letra sincronizada pelo áudio.', {
-        videoRequestId: videoRequest.id,
-        segments: timedSegments.length,
-      })
+      if (timedSegments.length) {
+        console.info('[Studio Video Interno] Reutilizando sincronização já salva.', {
+          videoRequestId: claimedRequest.id,
+          segments: timedSegments.length,
+        })
+      } else {
+        timedSegments = await transcribeStudioTimedLyricSegments({
+          buffer: audio.buffer,
+          fileName: audio.contentType === 'audio/mp4' ? 'musica.m4a' : 'musica.mp3',
+          contentType: audio.contentType,
+          lyricHint: String(lyric?.content || ''),
+        })
+        console.log('[Studio Video Interno] Letra sincronizada pelo áudio.', {
+          videoRequestId: claimedRequest.id,
+          segments: timedSegments.length,
+        })
+        // A sincronização é cara por minuto. Persistimos no próprio pedido para
+        // que retry de FFmpeg/upload não transcreva o mesmo áudio outra vez.
+        await supabaseAdmin.from('studio_video_requests').update({
+          request_payload: {
+            ...(claimedRequest.request_payload || {}),
+            timed_lyric_segments: timedSegments,
+            timed_lyric_version_id: videoVersion.id,
+            timed_lyric_saved_at: new Date().toISOString(),
+          },
+          updated_at: new Date().toISOString(),
+        }).eq('id', claimedRequest.id)
+      }
     } catch (syncError) {
       console.warn('[Studio Video Interno] Sincronização indisponível; usando distribuição proporcional.', {
-        videoRequestId: videoRequest.id,
+        videoRequestId: claimedRequest.id,
         error: syncError instanceof Error ? syncError.message : String(syncError),
       })
     }
@@ -328,8 +372,8 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
 </fontconfig>
 `, 'utf8'),
       fs.writeFile(assPath, buildInternalVideoAss({
-        title: wrapVideoText(String(project?.title || videoRequest?.metadata?.project_title || 'DCC Music'), 22, 2),
-        artist: `Compositor: ${wrapVideoText(String(composer?.name || videoRequest?.metadata?.composer_name || 'DCC Music'), 34, 1)}`,
+        title: wrapVideoText(String(project?.title || claimedRequest?.metadata?.project_title || 'DCC Music'), 22, 2),
+        artist: `Compositor: ${wrapVideoText(String(composer?.name || claimedRequest?.metadata?.composer_name || 'DCC Music'), 34, 1)}`,
         lyrics: String(lyric?.content || ''),
         durationSeconds: durationSeconds(videoVersion),
         timedSegments,
@@ -369,10 +413,10 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
 
     const output = await fs.readFile(outputPath)
     if (output.byteLength < 10_000) throw new Error('O arquivo de vídeo gerado ficou inválido.')
-    return await saveInternalStudioVideo({ videoRequest, buffer: output })
+    return await saveInternalStudioVideo({ videoRequest: claimedRequest, buffer: output })
   } catch (error: any) {
     console.error('[Studio Video Interno] Renderização falhou.', {
-      videoRequestId: videoRequest.id,
+      videoRequestId: claimedRequest.id,
       code: error?.code || null,
       signal: error?.signal || null,
       stderr: String(error?.stderr || '').slice(-4000),
@@ -382,7 +426,7 @@ export async function renderInternalStudioVideo(videoRequestId: string) {
       error_message: 'Estamos preparando o vídeo novamente.',
       video_backup_error: error?.message || String(error),
       updated_at: new Date().toISOString(),
-    }).eq('id', videoRequest.id)
+    }).eq('id', claimedRequest.id)
     throw error
   } finally {
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => undefined)
