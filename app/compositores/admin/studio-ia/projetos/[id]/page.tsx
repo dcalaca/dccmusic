@@ -1981,75 +1981,79 @@ export default function StudioProjectDetailPage() {
                         </button>
                       </div>
                     )}
-                    <div className="flex items-center gap-2">
-                      <button onClick={improveCover} disabled={Boolean(processing) || !canGeneratePremiumCover} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100 transition hover:border-purple-400/40 hover:bg-white/[0.09] disabled:opacity-60">
-                        {isGeneratingCover ? (
-                          <>
-                            <FiLoader className="animate-spin" /> Gerando capa...
-                          </>
-                        ) : (
-                          <>
-                            <FiZap /> Criar capa profissional
-                          </>
-                        )}
-                      </button>
-                      <div className="group relative">
-                        <button
-                          type="button"
-                          aria-label="Informação sobre capas"
-                          className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-gray-900 text-sm font-black text-gray-300 hover:border-purple-500 hover:text-white"
-                        >
-                          ?
-                        </button>
-                        <div className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden w-64 rounded-xl border border-purple-700/60 bg-gray-950 px-4 py-3 text-xs leading-relaxed text-purple-100 shadow-xl shadow-black/40 group-hover:block">
-                          A capa profissional é uma imagem mais bonita feita por IA. Ela depende do seu plano.
-                        </div>
-                      </div>
-                    </div>
-                    {!studioStatus ? (
-                      <p className="text-center text-xs text-gray-500">
-                        Carregando permissões do plano...
-                      </p>
-                    ) : (
-                      premiumCoverLimit > 0 && <p className="text-center text-xs text-gray-500">
-                        Capas profissionais usadas neste mês: {premiumCoverGenerations} / {premiumCoverLimit}
-                      </p>
-                    )}
-                    {project.status === 'published' ? (
-                      <button onClick={unpublishProject} disabled={Boolean(processing)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-yellow-500/40 bg-yellow-950/30 px-4 py-3 font-bold text-yellow-100 transition hover:bg-yellow-900/40 disabled:opacity-60">
-                        <FiEyeOff /> Despublicar música
-                      </button>
-                    ) : (
+                    {audioUrl && (
+                      <>
                       <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={publishProject}
-                          disabled={Boolean(processing) || !studioStatus}
-                          title={!canPublishOnDcc ? PUBLISH_PLAN_REQUIRED_MESSAGE : undefined}
-                          className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 font-bold text-white transition disabled:opacity-60 ${
-                            canPublishOnDcc
-                              ? 'bg-green-700 hover:bg-green-600'
-                              : 'bg-green-900/70 ring-1 ring-amber-400/40 hover:bg-green-800/80'
-                          }`}
-                        >
-                          {canPublishOnDcc ? <FiZap /> : <FiLock />}
-                          Publicar música no DCC Music
+                        <button onClick={improveCover} disabled={Boolean(processing) || !canGeneratePremiumCover} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100 transition hover:border-purple-400/40 hover:bg-white/[0.09] disabled:opacity-60">
+                          {isGeneratingCover ? (
+                            <>
+                              <FiLoader className="animate-spin" /> Gerando capa...
+                            </>
+                          ) : (
+                            <>
+                              <FiZap /> Criar capa profissional
+                            </>
+                          )}
                         </button>
                         <div className="group relative">
                           <button
                             type="button"
-                            aria-label="Informação sobre publicação"
-                            onClick={() => setShowPublishPlanModal(true)}
-                            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-gray-900 text-sm font-black text-gray-300 hover:border-amber-500 hover:text-white"
+                            aria-label="Informação sobre capas"
+                            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-gray-900 text-sm font-black text-gray-300 hover:border-purple-500 hover:text-white"
                           >
                             ?
                           </button>
-                          <div className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden w-64 rounded-xl border border-amber-500/50 bg-gray-950 px-4 py-3 text-xs leading-relaxed text-amber-50 shadow-xl shadow-black/40 group-hover:block">
-                            <p className="font-bold text-amber-200">Sobre publicar</p>
-                            <p className="mt-1.5">{PUBLISH_PLAN_REQUIRED_MESSAGE}</p>
+                          <div className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden w-64 rounded-xl border border-purple-700/60 bg-gray-950 px-4 py-3 text-xs leading-relaxed text-purple-100 shadow-xl shadow-black/40 group-hover:block">
+                            A capa profissional é uma imagem mais bonita feita por IA. Ela depende do seu plano.
                           </div>
                         </div>
                       </div>
+                      {!studioStatus ? (
+                        <p className="text-center text-xs text-gray-500">
+                          Carregando permissões do plano...
+                        </p>
+                      ) : (
+                        premiumCoverLimit > 0 && <p className="text-center text-xs text-gray-500">
+                          Capas profissionais usadas neste mês: {premiumCoverGenerations} / {premiumCoverLimit}
+                        </p>
+                      )}
+                      {project.status === 'published' ? (
+                        <button onClick={unpublishProject} disabled={Boolean(processing)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-yellow-500/40 bg-yellow-950/30 px-4 py-3 font-bold text-yellow-100 transition hover:bg-yellow-900/40 disabled:opacity-60">
+                          <FiEyeOff /> Despublicar música
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={publishProject}
+                            disabled={Boolean(processing) || !studioStatus}
+                            title={!canPublishOnDcc ? PUBLISH_PLAN_REQUIRED_MESSAGE : undefined}
+                            className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 font-bold text-white transition disabled:opacity-60 ${
+                              canPublishOnDcc
+                                ? 'bg-green-700 hover:bg-green-600'
+                                : 'bg-green-900/70 ring-1 ring-amber-400/40 hover:bg-green-800/80'
+                            }`}
+                          >
+                            {canPublishOnDcc ? <FiZap /> : <FiLock />}
+                            Publicar música no DCC Music
+                          </button>
+                          <div className="group relative">
+                            <button
+                              type="button"
+                              aria-label="Informação sobre publicação"
+                              onClick={() => setShowPublishPlanModal(true)}
+                              className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-gray-900 text-sm font-black text-gray-300 hover:border-amber-500 hover:text-white"
+                            >
+                              ?
+                            </button>
+                            <div className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden w-64 rounded-xl border border-amber-500/50 bg-gray-950 px-4 py-3 text-xs leading-relaxed text-amber-50 shadow-xl shadow-black/40 group-hover:block">
+                              <p className="font-bold text-amber-200">Sobre publicar</p>
+                              <p className="mt-1.5">{PUBLISH_PLAN_REQUIRED_MESSAGE}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                        </>
                     )}
                     {project.status === 'published' && project.publicSlug && (
                       <Link href={`/studio/${project.publicSlug}`} target="_blank" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100">
