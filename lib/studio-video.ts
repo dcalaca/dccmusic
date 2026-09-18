@@ -85,6 +85,7 @@ function isExistingMp4Conflict(result: any, response: Response) {
 }
 
 const SUNO_VIDEO_TEMPORARILY_UNAVAILABLE = 'O gerador de vídeo com letra está temporariamente indisponível. Tente novamente em alguns minutos.'
+const HISTORICAL_SUNO_AUDIO_AGE_MS = 21 * 24 * 60 * 60 * 1000
 
 function isTransientVideoStartError(result: any, response: Response) {
   const message = String(result?.msg || result?.message || result?.error?.message || '').toLowerCase()
@@ -540,6 +541,64 @@ export async function startStudioVideoGenerationWithProviderIds(input: {
 
   if (updateError) throw updateError
   return updatedRequest
+}
+
+
+// O MP4 da Suno pode não conseguir mais acessar tarefas de áudio antigas. Em
+// vez de renderizar o vídeo na DCC, renovamos o áudio no próprio fornecedor e
+// só fazemos isso uma vez por pedido, para não transformar uma instabilidade
+// normal em consumo recorrente de créditos.
+export async function refreshHistoricalStudioVideoFromOriginalAudio(videoRequestId: string) {
+  const { data: videoRequest, error: requestError } = await supabaseAdmin
+    .from('studio_video_requests')
+    .select('*')
+    .eq('id', videoRequestId)
+    .maybeSingle()
+
+  if (requestError) throw requestError
+  if (!videoRequest || videoRequest.metadata?.suno_audio_refresh_attempted_at) return null
+
+  const requestedVersionId = getStudioVideoRequestVersionId(videoRequest)
+  const [{ data: project }, { data: composer }, { data: requestedVersion }, { data: currentVersion }] = await Promise.all([
+    supabaseAdmin.from('studio_projects').select('id, title').eq('id', videoRequest.project_id).maybeSingle(),
+    supabaseAdmin.from('dccmusic_composers').select('name').eq('id', videoRequest.composer_id).maybeSingle(),
+    requestedVersionId
+      ? supabaseAdmin.from('studio_versions').select('*').eq('id', requestedVersionId).eq('project_id', videoRequest.project_id).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabaseAdmin.from('studio_versions').select('*').eq('project_id', videoRequest.project_id).eq('is_current', true).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+  ])
+
+  const version = requestedVersionId ? requestedVersion : currentVersion
+  if (!version) return null
+
+  const { data: generation } = await supabaseAdmin
+    .from('studio_generations')
+    .select('created_at')
+    .eq('id', version.generation_id || '')
+    .maybeSingle()
+
+  const sourceCreatedAt = generation?.created_at || version.created_at
+  const sourceAge = sourceCreatedAt ? Date.now() - new Date(sourceCreatedAt).getTime() : 0
+  if (!sourceCreatedAt || sourceAge < HISTORICAL_SUNO_AUDIO_AGE_MS) return null
+
+  const metadata = {
+    ...(videoRequest.metadata || {}),
+    suno_audio_refresh_attempted_at: new Date().toISOString(),
+    suno_audio_refresh_source_created_at: sourceCreatedAt,
+  }
+  const { error: lockError } = await supabaseAdmin
+    .from('studio_video_requests')
+    .update({ metadata, updated_at: new Date().toISOString() })
+    .eq('id', videoRequest.id)
+  if (lockError) throw lockError
+
+  return startLyricVideoRefreshFromOriginalAudio({
+    videoRequest: { ...videoRequest, metadata },
+    version,
+    project,
+    composerName: String(composer?.name || '').trim() || 'DCC Music',
+    songTitle: formatMusicTitle(String(project?.title || '').trim()) || 'DCC Music',
+  })
 }
 
 async function startLyricVideoRefreshFromOriginalAudio(input: {
