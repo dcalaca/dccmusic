@@ -7,6 +7,7 @@ import { translateToParaguayanSpanish } from '@/lib/i18n-es-py'
 import { translateToMexicanSpanish } from '@/lib/i18n-es-mx'
 import { translateToEuropeanPortuguese } from '@/lib/i18n-pt-pt'
 import { translateToAmericanEnglish } from '@/lib/i18n-en-us'
+import { translateEnglishOverride } from '@/lib/i18n-en-overrides'
 
 type LocalizationContextValue = { country: DccCountry; locale: DccLocale; currency: 'BRL' | 'PYG' | 'COP' | 'EUR' | 'MXN' | 'USD' | 'GBP'; paymentProvider: 'mercadopago' | 'stripe'; setCountry: (country: DccCountry) => void; formatMoney: (brlValue: number) => string }
 const LocalizationContext = createContext<LocalizationContextValue | null>(null)
@@ -18,7 +19,7 @@ function translateCopy(value: string, country: DccCountry) {
   if (code === 'PT') return translateToEuropeanPortuguese(value)
   if (code === 'MX' || code === 'ES') return translateToMexicanSpanish(value)
   if (code === 'PY' || code === 'CO') return translateToParaguayanSpanish(value)
-  if (code === 'US' || code === 'GB') return translateToAmericanEnglish(value)
+  if (code === 'US' || code === 'GB') return translateEnglishOverride(value) ?? translateToAmericanEnglish(value)
   return value
 }
 
