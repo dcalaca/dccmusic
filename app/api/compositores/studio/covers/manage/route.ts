@@ -36,6 +36,10 @@ export async function POST(request: NextRequest) {
     if (!cover) return NextResponse.json({ error: 'Capa não encontrada.' }, { status: 404 })
 
     if (action === 'select') {
+      if (cover.deleted_at) {
+        return NextResponse.json({ error: 'Restaure esta capa antes de torná-la principal.' }, { status: 400 })
+      }
+
       await supabaseAdmin
         .from('studio_covers')
         .update({ is_current: false })
