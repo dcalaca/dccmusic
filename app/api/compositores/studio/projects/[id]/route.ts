@@ -207,6 +207,7 @@ export async function GET(
       .select('*')
       .eq('project_id', project.id)
       .eq('composer_id', composer.composerId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
 
     const { data: videoRequests } = await supabaseAdmin
