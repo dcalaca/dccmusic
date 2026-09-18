@@ -202,6 +202,13 @@ export async function GET(
       .eq('composer_id', composer.composerId)
       .order('created_at', { ascending: false })
 
+    const { data: covers } = await supabaseAdmin
+      .from('studio_covers')
+      .select('*')
+      .eq('project_id', project.id)
+      .eq('composer_id', composer.composerId)
+      .order('created_at', { ascending: false })
+
     const { data: videoRequests } = await supabaseAdmin
       .from('studio_video_requests')
       .select('*')
@@ -295,6 +302,21 @@ export async function GET(
     const currentVersion = availableVersions.find((item: any) => item.is_current) || availableVersions[0] || version
     const versionAudio = currentVersion ? await getStudioVersionAudioUrls(currentVersion) : null
     const coverImageUrl = cover ? await getStudioCoverImageUrl(cover) : null
+    const seenCoverKeys = new Set<string>()
+    const coversWithUrls = (await Promise.all((covers || []).map(async (item: any) => {
+      const imageUrl = await getStudioCoverImageUrl(item)
+      const key = String(item.image_path || imageUrl || item.image_url || '').split('?')[0]
+      if (!key || seenCoverKeys.has(key)) return null
+      seenCoverKeys.add(key)
+      return {
+        id: item.id,
+        imageUrl,
+        isPremium: Boolean(item.is_premium),
+        isCurrent: Boolean(item.is_current),
+        provider: item.provider || null,
+        createdAt: item.created_at,
+      }
+    }))).filter(Boolean)
     const versionsWithAudio = await Promise.all(availableVersions.map(async (item: any) => {
       const audio = await getStudioVersionAudioUrls(item)
       return {
@@ -334,6 +356,7 @@ export async function GET(
           imageUrl: coverImageUrl,
           isPremium: cover.is_premium,
         } : null,
+        covers: coversWithUrls,
         videoRequest,
         videoRequests: mappedVideoRequests,
         inspiration: inspirationRequest ? {
