@@ -305,7 +305,7 @@ function dedupeProjectCovers(covers: any[]) {
 
   return covers.filter((cover: any) => {
     const id = String(cover?.id || '').trim()
-    const url = String(cover?.imageUrl || '').split('?')[0]
+    const url = String(cover?.imageUrl || '').trim()
 
     if (id && seenIds.has(id)) return false
     if (url && seenUrls.has(url)) return false
@@ -423,6 +423,7 @@ export default function StudioProjectDetailPage() {
   const [preselectedInspirationVersionId, setPreselectedInspirationVersionId] = useState('')
   const backgroundMessageRef = useRef<HTMLDivElement | null>(null)
   const inspirationPickerRef = useRef<HTMLDivElement | null>(null)
+  const coverCarouselRef = useRef<HTMLDivElement | null>(null)
   const lastFocusedMessageRef = useRef('')
 
   useEffect(() => {
@@ -1007,6 +1008,14 @@ export default function StudioProjectDetailPage() {
   const scrollInspirationPicker = (direction: 'left' | 'right') => {
     inspirationPickerRef.current?.scrollBy({
       left: direction === 'left' ? -360 : 360,
+      behavior: 'smooth',
+    })
+  }
+
+  const scrollCoverCarousel = (direction: 'left' | 'right') => {
+    const width = coverCarouselRef.current?.clientWidth || 320
+    coverCarouselRef.current?.scrollBy({
+      left: direction === 'left' ? -width : width,
       behavior: 'smooth',
     })
   }
@@ -1636,7 +1645,7 @@ export default function StudioProjectDetailPage() {
                 <div className="relative aspect-[4/3] bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.28),transparent_34%),linear-gradient(135deg,#111827,#1f1235,#020617)] sm:aspect-square">
                   {projectCovers.length > 0 ? (
                     <>
-                      <div className="flex h-full snap-x snap-mandatory overflow-x-auto scroll-smooth sm:hidden">
+                      <div ref={coverCarouselRef} className="flex h-full snap-x snap-mandatory overflow-x-auto scroll-smooth sm:hidden">
                         {projectCovers.map((cover: any, index: number) => (
                           <div key={cover.id || cover.imageUrl} className="relative h-full min-w-full snap-center">
                             <img src={cover.imageUrl} alt={`${project.title} - capa ${index + 1}`} className="h-full w-full object-cover" />
@@ -1679,6 +1688,30 @@ export default function StudioProjectDetailPage() {
                           </div>
                         ))}
                       </div>
+
+                      {projectCovers.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => scrollCoverCarousel('left')}
+                            aria-label="Ver capa anterior"
+                            className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/55 text-xl text-white shadow-lg backdrop-blur sm:hidden"
+                          >
+                            <FiChevronLeft />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => scrollCoverCarousel('right')}
+                            aria-label="Ver próxima capa"
+                            className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/55 text-xl text-white shadow-lg backdrop-blur sm:hidden"
+                          >
+                            <FiChevronRight />
+                          </button>
+                          <div className="pointer-events-none absolute bottom-[5.6rem] left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[11px] font-bold text-white backdrop-blur sm:hidden">
+                            Deslize para ver outras capas
+                          </div>
+                        </>
+                      )}
 
                       <img
                         src={(projectCovers.find((cover: any) => cover.isCurrent) || projectCovers[0]).imageUrl}
