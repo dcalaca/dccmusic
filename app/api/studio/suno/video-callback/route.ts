@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { isValidStudioCallback } from '@/lib/studio'
 import { backupStudioVideoRequest } from '@/lib/studio-video-backup'
 import { refreshHistoricalStudioVideoFromOriginalAudio } from '@/lib/studio-video'
+import { addStudioCreditTransaction } from '@/lib/studio'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -13,6 +14,36 @@ function getVideoTaskId(body: any) {
 
 function getVideoUrl(body: any) {
   return body?.data?.video_url || body?.data?.videoUrl || body?.video_url || body?.videoUrl || null
+}
+
+async function refundStudioLyricVideoIfCharged(videoRequest: any) {
+  const { data: transactions, error } = await supabaseAdmin
+    .from('studio_credit_transactions')
+    .select('id, amount, metadata')
+    .eq('composer_id', videoRequest.composer_id)
+    .eq('action', 'lyric_video_generation')
+  if (error) throw error
+
+  const charge = (transactions || []).find((item: any) => item.metadata?.videoRequestId === videoRequest.id)
+  if (!charge) return false
+
+  const { data: refunds, error: refundsError } = await supabaseAdmin
+    .from('studio_credit_transactions')
+    .select('id, metadata')
+    .eq('composer_id', videoRequest.composer_id)
+    .eq('action', 'lyric_video_refund')
+  if (refundsError) throw refundsError
+  if ((refunds || []).some((item: any) => item.metadata?.videoRequestId === videoRequest.id)) return false
+
+  await addStudioCreditTransaction({
+    composerId: videoRequest.composer_id,
+    projectId: videoRequest.project_id,
+    action: 'lyric_video_refund',
+    amount: Number(charge.amount) || 0,
+    description: 'Estorno automático — vídeo com letra não entregue',
+    metadata: { feature: 'studio_lyric_video', videoRequestId: videoRequest.id, chargeTransactionId: charge.id },
+  })
+  return true
 }
 
 export async function POST(request: Request) {
@@ -48,6 +79,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ received: true, processed: true, refreshedHistoricalAudio: true })
       }
 
+      const refunded = await refundStudioLyricVideoIfCharged(videoRequest)
+
       // Não produzimos mais o vídeo pelo renderizador interno enquanto o Suno
       // estiver instável. Isso evita custo de transcrição e, principalmente,
       // nunca confirma uma entrega que não existe.
@@ -66,7 +99,7 @@ export async function POST(request: Request) {
         })
         .eq('id', videoRequest.id)
       if (unavailableError) throw unavailableError
-      return NextResponse.json({ received: true, processed: true, unavailable: true })
+      return NextResponse.json({ received: true, processed: true, unavailable: true, refunded })
     }
 
     const { data: completedRequest, error: completionError } = await supabaseAdmin
