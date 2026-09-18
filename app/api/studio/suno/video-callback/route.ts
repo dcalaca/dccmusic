@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { isValidStudioCallback } from '@/lib/studio'
 import { backupStudioVideoRequest } from '@/lib/studio-video-backup'
-import { renderInternalStudioVideo } from '@/lib/studio-video-internal'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -40,61 +39,25 @@ export async function POST(request: Request) {
     }
 
     if (!videoUrl) {
-      // A Suno aceitou a tarefa, mas não entregou o MP4. A partir daqui o
-      // renderizador próprio da DCC assume automaticamente. A marca no metadata
-      // evita render duplicado caso o provedor repita o callback e também deixa
-      // o cron existente como rede de segurança se a função for interrompida.
-      if (videoRequest.metadata?.video_fallback_started_at) {
-        return NextResponse.json({
-          received: true,
-          processed: false,
-          fallback: 'dcc-internal',
-          fallbackInProgress: true,
-        })
-      }
-
-      const fallbackStartedAt = new Date().toISOString()
-      const { data: fallbackRequest, error: fallbackUpdateError } = await supabaseAdmin
+      // Não produzimos mais o vídeo pelo renderizador interno enquanto o Suno
+      // estiver instável. Isso evita custo de transcrição e, principalmente,
+      // nunca confirma uma entrega que não existe.
+      const { error: unavailableError } = await supabaseAdmin
         .from('studio_video_requests')
         .update({
-          status: 'requested',
+          status: 'failed',
           response_payload: body,
-          error_message: null,
+          error_message: 'O gerador de vídeo com letra está temporariamente indisponível. Tente novamente em alguns minutos.',
           metadata: {
             ...(videoRequest.metadata || {}),
-            internal_video_pilot: true,
-            video_fallback_provider: 'dcc-internal',
-            video_fallback_reason: body?.msg || body?.message || 'Callback da Suno sem URL de vídeo.',
-            video_fallback_started_at: fallbackStartedAt,
+            video_provider_unavailable_at: new Date().toISOString(),
+            video_provider_unavailable_reason: body?.msg || body?.message || 'Callback da Suno sem URL de vídeo.',
           },
-          updated_at: fallbackStartedAt,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', videoRequest.id)
-        .select('*')
-        .single()
-
-      if (fallbackUpdateError) throw fallbackUpdateError
-
-      try {
-        const internalVideo = await renderInternalStudioVideo(fallbackRequest.id)
-        return NextResponse.json({
-          received: true,
-          processed: true,
-          fallback: 'dcc-internal',
-          videoReady: internalVideo?.status === 'completed',
-        })
-      } catch (fallbackError: any) {
-        console.error('[Studio IA] Fallback DCC após callback da Suno falhou; retry mantido.', {
-          videoRequestId: videoRequest.id,
-          error: fallbackError?.message || String(fallbackError),
-        })
-        return NextResponse.json({
-          received: true,
-          processed: false,
-          fallback: 'dcc-internal',
-          fallbackInProgress: true,
-        })
-      }
+      if (unavailableError) throw unavailableError
+      return NextResponse.json({ received: true, processed: true, unavailable: true })
     }
 
     const { data: completedRequest, error: completionError } = await supabaseAdmin
