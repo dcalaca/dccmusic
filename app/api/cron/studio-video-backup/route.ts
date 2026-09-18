@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { backupStudioVideoRequest } from '@/lib/studio-video-backup'
-import { renderInternalStudioVideo } from '@/lib/studio-video-internal'
+import { startStudioVideoGeneration } from '@/lib/studio-video'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -12,87 +12,35 @@ function isAuthorized(request: NextRequest) {
   return request.headers.get('authorization') === `Bearer ${secret}`
 }
 
-function rawVideoFailure(video: any) {
-  return [
-    video?.error_message,
-    video?.video_backup_error,
-    video?.response_payload?.msg,
-    video?.response_payload?.message,
-    video?.response_payload?.error?.message,
-    video?.metadata?.video_retry_reason,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase()
-}
-
-function isMp4OutageFailure(video: any) {
-  const message = rawVideoFailure(video)
-  return (
-    message.includes('failed to add suno mp4 generation task') ||
-    message.includes('temporarily unavailable') ||
-    message.includes('try again later')
-  )
-}
-
 export async function GET(request: NextRequest) {
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
   }
 
   try {
-    // Recoloca automaticamente na fila solicitações recentes que ficaram como
-    // "failed" durante a indisponibilidade do endpoint MP4 do provedor.
-    // Fazemos isso somente para mensagens conhecidas como transitórias para não
-    // ressuscitar erros permanentes (versão ausente, dados inválidos etc.).
-    const failedCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
-    const { data: recentFailed, error: failedError } = await supabaseAdmin
-      .from('studio_video_requests')
-      .select('*')
-      .eq('status', 'failed')
-      .gte('created_at', failedCutoff)
-      .order('created_at', { ascending: true })
-      .limit(50)
-
-    if (failedError) throw failedError
-
-    const outageFailed = (recentFailed || []).filter(isMp4OutageFailure)
-    let requeued = 0
-    if (outageFailed.length) {
-      const outageIds = outageFailed.map((video: any) => video.id)
-      const now = new Date().toISOString()
-      const { error: requeueError } = await supabaseAdmin
-        .from('studio_video_requests')
-        .update({
-          status: 'retry_pending',
-          error_message: null,
-          updated_at: now,
-        })
-        .in('id', outageIds)
-
-      if (requeueError) throw requeueError
-      requeued = outageIds.length
-      console.log('[CRON STUDIO VIDEO BACKUP] Solicitações MP4 reativadas:', outageIds)
-    }
-
-    const retryLimit = 1
-    // Nunca reinicie automaticamente um vídeo apenas porque ele passou de seis
-    // minutos. Um render lento era transcrito novamente a cada cron e gerava
-    // custo repetido na OpenAI. Falhas reais mudam o status para retry_pending.
+    // Reenvios para o Suno são inseridos manualmente pelo suporte, com uma
+    // marca explícita. Não há retentativa automática nem renderização própria.
     const { data: retryVideos, error: queuedError } = await supabaseAdmin
       .from('studio_video_requests')
       .select('*')
-      .in('status', ['requested', 'retry_pending'])
-      .contains('metadata', { internal_video_pilot: true })
+      .eq('status', 'retry_pending')
+      .contains('metadata', { force_suno_video_retry: true })
       .order('updated_at', { ascending: true })
-      .limit(retryLimit)
+      .limit(4)
 
     if (queuedError) throw queuedError
 
     const retryResults = []
     for (const video of retryVideos) {
       try {
-        const retried = await renderInternalStudioVideo(video.id)
+        await supabaseAdmin
+          .from('studio_video_requests')
+          .update({
+            metadata: { ...(video.metadata || {}), force_suno_video_retry: false, suno_video_retry_started_at: new Date().toISOString() },
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', video.id)
+        const retried = await startStudioVideoGeneration(video.id)
         retryResults.push({ videoRequestId: video.id, status: retried?.status || 'unknown' })
       } catch (error: any) {
         retryResults.push({ videoRequestId: video.id, status: 'failed', error: error?.message || String(error) })
@@ -120,8 +68,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      outageFailuresFound: outageFailed.length,
-      requeued,
+      outageFailuresFound: 0,
+      requeued: 0,
       retriesChecked: retryVideos?.length || 0,
       retryResults,
       checked: videos?.length || 0,
