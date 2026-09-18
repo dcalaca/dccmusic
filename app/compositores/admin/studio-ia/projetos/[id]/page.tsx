@@ -2239,7 +2239,7 @@ export default function StudioProjectDetailPage() {
                       </Link>
                     )}
                     {project.cover?.imageUrl && (
-                      <button type="button" onClick={downloadCoverImage} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100">
+                      <button type="button" onClick={() => downloadCoverImage()} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100">
                         <FiDownload /> Baixar capa
                       </button>
                     )}
