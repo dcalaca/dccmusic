@@ -1698,7 +1698,7 @@ export default function StudioProjectDetailPage() {
                       </div>
                       <h2 className="text-lg font-black text-white">Criar vídeo com letra</h2>
                       <p className="mt-2 text-sm leading-relaxed text-gray-300">
-                        Gera um vídeo simples com capa, nome da música e letra acompanhando o áudio. Cada versão pode ter 1 vídeo.
+                        Gera um vídeo simples com capa, nome da música e letra acompanhando o áudio. Cada versão pode ter 1 vídeo. Para projetos novos, custa 5 créditos.
                       </p>
                       {videoReadyVersions.length > 1 && (
                         <div className="mt-4">
@@ -1756,7 +1756,7 @@ export default function StudioProjectDetailPage() {
                             </>
                           ) : (
                             <>
-                              <FiVideo /> {selectedVideoVersionNumber ? `Gerar vídeo da Versão ${selectedVideoVersionNumber}` : 'Gerar vídeo com letra'}
+                              <FiVideo /> {selectedVideoVersionNumber ? `Gerar vídeo da Versão ${selectedVideoVersionNumber} · 5 créditos` : 'Gerar vídeo com letra · 5 créditos'}
                             </>
                           )}
                         </button>
