@@ -20,6 +20,10 @@
       "schedule": "*/2 * * * *"
     },
     {
+      "path": "/api/cron/studio-video-suno-retry",
+      "schedule": "*/2 * * * *"
+    },
+    {
       "path": "/api/cron/email-campaigns",
       "schedule": "*/5 * * * *"
     },
