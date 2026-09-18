@@ -137,6 +137,14 @@ async function tryInternalStudioVideoFallback(videoRequestId: string, providerRe
       videoRequestId,
       providerMessage: providerResult?.msg || providerResult?.message || null,
     })
+    // O fornecedor normalmente já deixou a solicitação como in_production.
+    // Recolocamos explicitamente na fila para o renderizador interno assumir o
+    // trabalho uma única vez com o claim atômico dele.
+    await supabaseAdmin
+      .from('studio_video_requests')
+      .update({ status: 'retry_pending', updated_at: new Date().toISOString() })
+      .eq('id', videoRequestId)
+      .eq('status', 'in_production')
     const { renderInternalStudioVideo } = await import('@/lib/studio-video-internal')
     return await renderInternalStudioVideo(videoRequestId)
   } catch (error: any) {
