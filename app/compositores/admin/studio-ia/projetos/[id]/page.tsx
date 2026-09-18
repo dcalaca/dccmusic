@@ -376,6 +376,7 @@ export default function StudioProjectDetailPage() {
   const [extraInstructions, setExtraInstructions] = useState('')
   const [selectedInspirationVariation, setSelectedInspirationVariation] = useState('similar')
   const [videoCheckoutLoading, setVideoCheckoutLoading] = useState(false)
+  const [videoCreditConfirmation, setVideoCreditConfirmation] = useState<{ replaceExisting: boolean } | null>(null)
   const [selectedVideoVersionId, setSelectedVideoVersionId] = useState('')
   const [upgradeModalMessage, setUpgradeModalMessage] = useState('')
   const [showPublishPlanModal, setShowPublishPlanModal] = useState(false)
@@ -1262,6 +1263,13 @@ export default function StudioProjectDetailPage() {
     }
   }
 
+  const confirmVideoCredit = () => {
+    if (!videoCreditConfirmation) return
+    const { replaceExisting } = videoCreditConfirmation
+    setVideoCreditConfirmation(null)
+    void requestVideoClip(replaceExisting)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -1355,6 +1363,43 @@ export default function StudioProjectDetailPage() {
 
           {showPublishPlanModal && (
             <PublishPlanModal onClose={() => setShowPublishPlanModal(false)} />
+          )}
+
+          {videoCreditConfirmation && (
+            <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/85 px-4 backdrop-blur-sm">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.96, y: 16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="w-full max-w-md rounded-[2rem] border border-fuchsia-400/30 bg-[radial-gradient(circle_at_top,rgba(192,38,211,0.25),transparent_45%),linear-gradient(135deg,#080712,#15071d)] p-6 shadow-2xl shadow-fuchsia-950/60"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-500/20 text-fuchsia-200">
+                  <FiVideo className="h-6 w-6" />
+                </div>
+                <h2 className="mt-4 text-xl font-black text-white">Gerar vídeo com letra?</h2>
+                <p className="mt-2 text-sm leading-relaxed text-gray-300">
+                  A geração deste vídeo consome <strong className="text-white">5 créditos</strong>. Deseja continuar?
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-fuchsia-100/80">
+                  Projetos anteriores à virada e a cortesia de transição são identificados automaticamente e não terão créditos descontados.
+                </p>
+                <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setVideoCreditConfirmation(null)}
+                    className="rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-gray-200 transition hover:bg-white/[0.06]"
+                  >
+                    Agora não
+                  </button>
+                  <button
+                    type="button"
+                    onClick={confirmVideoCredit}
+                    className="rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-3 text-sm font-black text-white transition hover:from-fuchsia-500 hover:to-purple-500"
+                  >
+                    Continuar
+                  </button>
+                </div>
+              </motion.div>
+            </div>
           )}
 
           {showInspirationPicker && (
@@ -1742,7 +1787,7 @@ export default function StudioProjectDetailPage() {
                       {!selectedVideoIsReady && (
                         <button
                           type="button"
-                          onClick={() => requestVideoClip(false)}
+                          onClick={() => setVideoCreditConfirmation({ replaceExisting: false })}
                           disabled={videoCheckoutLoading || hasActiveVideoRequest || !resolvedVideoVersionId}
                           className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-3 font-bold text-white hover:from-fuchsia-500 hover:to-purple-500 disabled:opacity-70"
                         >
@@ -1764,7 +1809,7 @@ export default function StudioProjectDetailPage() {
                       {selectedVideoIsReady && canRegenerateSelectedVideo && (
                         <button
                           type="button"
-                          onClick={() => requestVideoClip(true)}
+                          onClick={() => setVideoCreditConfirmation({ replaceExisting: true })}
                           disabled={videoCheckoutLoading || hasActiveVideoRequest || !resolvedVideoVersionId}
                           className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-3 font-bold text-white hover:from-fuchsia-500 hover:to-purple-500 disabled:opacity-70"
                         >
