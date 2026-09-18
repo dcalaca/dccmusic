@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { isValidStudioCallback } from '@/lib/studio'
 import { backupStudioVideoRequest } from '@/lib/studio-video-backup'
+import { refreshHistoricalStudioVideoFromOriginalAudio } from '@/lib/studio-video'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -39,6 +40,14 @@ export async function POST(request: Request) {
     }
 
     if (!videoUrl) {
+      const refreshed = await refreshHistoricalStudioVideoFromOriginalAudio(videoRequest.id).catch((error) => {
+        console.error('[Studio IA] Erro ao renovar áudio histórico para vídeo:', error)
+        return null
+      })
+      if (refreshed) {
+        return NextResponse.json({ received: true, processed: true, refreshedHistoricalAudio: true })
+      }
+
       // Não produzimos mais o vídeo pelo renderizador interno enquanto o Suno
       // estiver instável. Isso evita custo de transcrição e, principalmente,
       // nunca confirma uma entrega que não existe.
