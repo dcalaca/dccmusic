@@ -76,31 +76,18 @@ export async function GET(request: NextRequest) {
     }
 
     const retryLimit = 1
-    const staleProductionCutoff = new Date(Date.now() - 6 * 60 * 1000).toISOString()
-    const [{ data: queuedVideos, error: queuedError }, { data: staleVideos, error: staleError }] = await Promise.all([
-      supabaseAdmin
-        .from('studio_video_requests')
-        .select('*')
-        .in('status', ['requested', 'retry_pending'])
-        .contains('metadata', { internal_video_pilot: true })
-        .order('updated_at', { ascending: true })
-        .limit(retryLimit),
-      supabaseAdmin
-        .from('studio_video_requests')
-        .select('*')
-        .eq('status', 'in_production')
-        .contains('metadata', { internal_video_pilot: true })
-        .lte('updated_at', staleProductionCutoff)
-        .order('updated_at', { ascending: true })
-        .limit(retryLimit),
-    ])
+    // Nunca reinicie automaticamente um vídeo apenas porque ele passou de seis
+    // minutos. Um render lento era transcrito novamente a cada cron e gerava
+    // custo repetido na OpenAI. Falhas reais mudam o status para retry_pending.
+    const { data: retryVideos, error: queuedError } = await supabaseAdmin
+      .from('studio_video_requests')
+      .select('*')
+      .in('status', ['requested', 'retry_pending'])
+      .contains('metadata', { internal_video_pilot: true })
+      .order('updated_at', { ascending: true })
+      .limit(retryLimit)
 
     if (queuedError) throw queuedError
-    if (staleError) throw staleError
-
-    const retryVideos = [...(staleVideos || []), ...(queuedVideos || [])]
-      .filter((video, index, list) => list.findIndex((item) => item.id === video.id) === index)
-      .slice(0, retryLimit)
 
     const retryResults = []
     for (const video of retryVideos) {
