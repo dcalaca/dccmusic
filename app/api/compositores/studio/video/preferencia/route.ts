@@ -9,9 +9,19 @@ import {
   studioVideoCanRegenerate,
 } from '@/lib/studio-video'
 import { supabaseAdmin } from '@/lib/supabase'
+import {
+  addStudioCreditTransaction,
+  getStudioAccess,
+  getStudioCreditUsage,
+} from '@/lib/studio'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
+
+const STUDIO_LYRIC_VIDEO_CREDITS = 5
+// Projetos e contas anteriores a esta virada mantêm a expectativa de vídeo
+// gratuito. A data fica no servidor para não poder ser manipulada no browser.
+const STUDIO_LYRIC_VIDEO_PRICING_STARTED_AT = new Date('2026-09-18T14:00:00.000Z')
 
 function getVersionNumber(versions: any[], versionId: string) {
   const sorted = [...versions].sort(
@@ -45,6 +55,68 @@ async function createVideoRequest(input: {
 
   if (error) throw error
   return data
+}
+
+async function resolveStudioLyricVideoBilling(input: {
+  composerId: string
+  composerCreatedAt?: string | null
+  projectCreatedAt?: string | null
+  courtesyRegenerate: boolean
+}) {
+  if (input.courtesyRegenerate) {
+    return { type: 'courtesy_regenerate', credits: 0, label: 'Cortesia de substituição' }
+  }
+
+  const projectCreatedAt = input.projectCreatedAt ? new Date(input.projectCreatedAt) : null
+  if (projectCreatedAt && projectCreatedAt < STUDIO_LYRIC_VIDEO_PRICING_STARTED_AT) {
+    return { type: 'legacy_project', credits: 0, label: 'Projeto criado antes da cobrança' }
+  }
+
+  const composerCreatedAt = input.composerCreatedAt ? new Date(input.composerCreatedAt) : null
+  if (composerCreatedAt && composerCreatedAt < STUDIO_LYRIC_VIDEO_PRICING_STARTED_AT) {
+    const { data: transitionTransactions, error } = await supabaseAdmin
+      .from('studio_credit_transactions')
+      .select('id, metadata')
+      .eq('composer_id', input.composerId)
+      .eq('action', 'lyric_video_transition_free')
+
+    if (error) throw error
+    if (!(transitionTransactions || []).some((item: any) => item.metadata?.feature === 'studio_lyric_video')) {
+      return { type: 'legacy_transition', credits: 0, label: '1º vídeo de transição' }
+    }
+  }
+
+  return { type: 'paid', credits: STUDIO_LYRIC_VIDEO_CREDITS, label: 'Vídeo com letra' }
+}
+
+async function chargeStudioLyricVideoOnce(input: {
+  composerId: string
+  projectId: string
+  videoRequestId: string
+  credits: number
+}) {
+  if (input.credits <= 0) return { charged: false }
+
+  const { data: existing, error } = await supabaseAdmin
+    .from('studio_credit_transactions')
+    .select('id, metadata')
+    .eq('composer_id', input.composerId)
+    .eq('action', 'lyric_video_generation')
+  if (error) throw error
+
+  if ((existing || []).some((item: any) => item.metadata?.videoRequestId === input.videoRequestId)) {
+    return { charged: false }
+  }
+
+  await addStudioCreditTransaction({
+    composerId: input.composerId,
+    projectId: input.projectId,
+    action: 'lyric_video_generation',
+    amount: input.credits,
+    description: `Vídeo com letra — ${input.credits} créditos`,
+    metadata: { feature: 'studio_lyric_video', videoRequestId: input.videoRequestId },
+  })
+  return { charged: true }
 }
 
 export async function POST(request: NextRequest) {
@@ -86,7 +158,7 @@ export async function POST(request: NextRequest) {
 
     const { data: composerData } = await supabaseAdmin
       .from('dccmusic_composers')
-      .select('email, name')
+      .select('email, name, created_at')
       .eq('id', composer.composerId)
       .maybeSingle()
     const isInternalPilot = isInternalStudioVideoPilot(composerData)
@@ -174,6 +246,26 @@ export async function POST(request: NextRequest) {
     }
 
     const versionNumber = getVersionNumber(versions || [], version.id)
+    const courtesyRegenerate = Boolean(replaceExisting && canReplace)
+    const billing = await resolveStudioLyricVideoBilling({
+      composerId: composer.composerId,
+      composerCreatedAt: composerData?.created_at,
+      projectCreatedAt: project.created_at,
+      courtesyRegenerate,
+    })
+
+    if (billing.credits > 0) {
+      const { limits } = await getStudioAccess(composer.composerId)
+      const usage = await getStudioCreditUsage(composer.composerId, limits)
+      if (usage.remaining < billing.credits) {
+        return NextResponse.json({
+          error: `Vídeo com letra custa ${billing.credits} créditos. Seu saldo é insuficiente.`,
+          creditsRequired: billing.credits,
+          creditsRemaining: usage.remaining,
+        }, { status: 402 })
+      }
+    }
+
     const metadata = {
       type: 'studio_lyric_video',
       composer_id: composer.composerId,
@@ -185,8 +277,10 @@ export async function POST(request: NextRequest) {
       version_number: versionNumber,
       music_audio_url: version.audio_url || version.stream_audio_url,
       cover_url: cover?.image_url || null,
-      amount: 0,
-      courtesy_regenerate: Boolean(replaceExisting && canReplace),
+      amount: billing.credits,
+      billing_type: billing.type,
+      billing_label: billing.label,
+      courtesy_regenerate: courtesyRegenerate,
       internal_video_pilot: isInternalPilot,
     }
 
@@ -215,13 +309,34 @@ export async function POST(request: NextRequest) {
     const startedVideoRequest = await startStudioVideoGeneration(videoRequest.id, {
       skipRecover: Boolean(replaceExisting && canReplace),
     })
+    if (billing.type === 'legacy_transition') {
+      await addStudioCreditTransaction({
+        composerId: composer.composerId,
+        projectId: project.id,
+        action: 'lyric_video_transition_free',
+        amount: 0,
+        description: 'Cortesia de transição — vídeo com letra',
+        metadata: { feature: 'studio_lyric_video', videoRequestId: videoRequest.id },
+      })
+    } else {
+      await chargeStudioLyricVideoOnce({
+        composerId: composer.composerId,
+        projectId: project.id,
+        videoRequestId: videoRequest.id,
+        credits: billing.credits,
+      })
+    }
     const readyNow = startedVideoRequest?.status === 'completed'
 
     return NextResponse.json({
       success: true,
       message: readyNow
         ? 'Vídeo com letra recuperado com sucesso.'
-        : 'Vídeo com letra em produção.',
+        : billing.credits > 0
+          ? `Vídeo com letra em produção. Foram debitados ${billing.credits} créditos.`
+          : 'Vídeo com letra em produção.',
+      creditsCharged: billing.credits,
+      billingType: billing.type,
       videoRequest: await mapStudioVideoRequest(startedVideoRequest),
     })
   } catch (error: any) {
