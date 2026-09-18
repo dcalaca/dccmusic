@@ -297,6 +297,25 @@ function extractVoicePreferences(description?: string | null) {
   return match?.[1]?.trim() || ''
 }
 
+function dedupeStudioVersions(versions: any[]) {
+  if (!Array.isArray(versions)) return []
+
+  const seenIds = new Set<string>()
+  const seenAudio = new Set<string>()
+
+  return versions.filter((version: any) => {
+    const id = String(version?.id || '').trim()
+    const audioKey = String(version?.audioUrl || version?.streamAudioUrl || '').trim()
+
+    if (id && seenIds.has(id)) return false
+    if (audioKey && seenAudio.has(audioKey)) return false
+
+    if (id) seenIds.add(id)
+    if (audioKey) seenAudio.add(audioKey)
+    return true
+  })
+}
+
 function getStudioVersionNumber(versions: any[], versionId?: string | null) {
   if (!versionId || !Array.isArray(versions) || versions.length === 0) return 0
   const index = versions.findIndex((version) => version.id === versionId)
@@ -560,8 +579,12 @@ export default function StudioProjectDetailPage() {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao carregar projeto')
-      const projectVersions = Array.isArray(data.project.versions) ? data.project.versions : []
-      const projectAudioUrl = data.project.version?.audioUrl || data.project.version?.streamAudioUrl
+      const projectVersions = dedupeStudioVersions(data.project.versions)
+      const normalizedProject = {
+        ...data.project,
+        versions: projectVersions,
+      }
+      const projectAudioUrl = normalizedProject.version?.audioUrl || normalizedProject.version?.streamAudioUrl
       const hasReadyAudio = Boolean(projectAudioUrl || projectVersions.some((version: any) => version.audioUrl || version.streamAudioUrl))
       const activeGenerationHasReadyAudio = Boolean(
         data.activeGeneration?.id && projectVersions.some((version: any) =>
@@ -572,8 +595,8 @@ export default function StudioProjectDetailPage() {
         data.activeGeneration?.id &&
         ['pending', 'processing', 'first_ready'].includes(String(data.activeGeneration.status || ''))
       )
-      setProject(data.project)
-      setLyric(data.project.lyric || '')
+      setProject(normalizedProject)
+      setLyric(normalizedProject.lyric || '')
 
       if (activeGenerationRunning && !activeGenerationHasReadyAudio) {
         const createdAt = new Date(data.activeGeneration.createdAt).getTime()
@@ -616,7 +639,7 @@ export default function StudioProjectDetailPage() {
 
       await refreshStudioStatus(token)
 
-      return data
+      return { ...data, project: normalizedProject }
     } catch (err: any) {
       if (!options?.suppressError) {
         setError(err.message || 'Erro ao carregar projeto')
@@ -1283,7 +1306,7 @@ export default function StudioProjectDetailPage() {
   }
 
   const audioUrl = project.version?.audioUrl || project.version?.streamAudioUrl
-  const projectVersions = Array.isArray(project.versions) ? project.versions : []
+  const projectVersions = dedupeStudioVersions(project.versions)
   const shouldShowVersionList = projectVersions.length > 0
   const isGeneratingCover = processing.toLowerCase().includes('capa')
   const generationMessage = musicGenerationMessages[generationMessageIndex % musicGenerationMessages.length]
