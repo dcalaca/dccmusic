@@ -53,7 +53,9 @@ const INTERNAL_STUDIO_VIDEO_PILOT_EMAILS = new Set([
 
 export function isInternalStudioVideoPilot(composer: { email?: string | null } | null | undefined) {
   const email = String(composer?.email || '').trim().toLowerCase()
-  return process.env.STUDIO_INTERNAL_VIDEO_PILOT !== 'false' && INTERNAL_STUDIO_VIDEO_PILOT_EMAILS.has(email)
+  // O renderizador próprio está temporariamente desativado. Só volta a ser
+  // usado quando for ligado explicitamente no ambiente.
+  return process.env.STUDIO_INTERNAL_VIDEO_PILOT === 'true' && INTERNAL_STUDIO_VIDEO_PILOT_EMAILS.has(email)
 }
 
 export function studioVideoCanRegenerate(videoRequest: any, project: { id?: string; title?: string } | null) {
@@ -82,7 +84,7 @@ function isExistingMp4Conflict(result: any, response: Response) {
   return response.status === 409 || result?.code === 409 || message.includes('already exists')
 }
 
-const MAX_STUDIO_VIDEO_START_RETRIES = 6
+const SUNO_VIDEO_TEMPORARILY_UNAVAILABLE = 'O gerador de vídeo com letra está temporariamente indisponível. Tente novamente em alguns minutos.'
 
 function isTransientVideoStartError(result: any, response: Response) {
   const message = String(result?.msg || result?.message || result?.error?.message || '').toLowerCase()
@@ -97,63 +99,12 @@ function isTransientVideoStartError(result: any, response: Response) {
   )
 }
 
-async function scheduleVideoStartRetry(videoRequest: any, result: any) {
-  const retryCount = Math.max(0, Number(videoRequest?.metadata?.video_retry_count || 0)) + 1
-  if (retryCount > MAX_STUDIO_VIDEO_START_RETRIES) return null
-
-  const rawProviderError = String(
-    result?.msg || result?.message || result?.error?.message || 'Falha temporária ao iniciar vídeo.'
-  ).slice(0, 500)
-  const { data, error } = await supabaseAdmin
-    .from('studio_video_requests')
-    .update({
-      status: 'retry_pending',
-      metadata: {
-        ...(videoRequest.metadata || {}),
-        video_retry_count: retryCount,
-        video_retry_reason: rawProviderError,
-        video_retry_scheduled_at: new Date().toISOString(),
-      },
-      response_payload: result,
-      error_message: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', videoRequest.id)
-    .select('*')
-    .single()
-
-  if (error) throw error
-  console.warn('[Studio Video] Início reagendado automaticamente', {
-    videoRequestId: videoRequest.id,
-    retryCount,
-    providerError: rawProviderError,
-  })
-  return data
-}
-
 async function tryInternalStudioVideoFallback(videoRequestId: string, providerResult: any) {
-  try {
-    console.warn('[Studio Video] Provedor recusou o MP4; iniciando gerador interno.', {
-      videoRequestId,
-      providerMessage: providerResult?.msg || providerResult?.message || null,
-    })
-    // O fornecedor normalmente já deixou a solicitação como in_production.
-    // Recolocamos explicitamente na fila para o renderizador interno assumir o
-    // trabalho uma única vez com o claim atômico dele.
-    await supabaseAdmin
-      .from('studio_video_requests')
-      .update({ status: 'retry_pending', updated_at: new Date().toISOString() })
-      .eq('id', videoRequestId)
-      .eq('status', 'in_production')
-    const { renderInternalStudioVideo } = await import('@/lib/studio-video-internal')
-    return await renderInternalStudioVideo(videoRequestId)
-  } catch (error: any) {
-    console.error('[Studio Video] Gerador interno também falhou.', {
-      videoRequestId,
-      error: error?.message || String(error),
-    })
-    return null
-  }
+  console.warn('[Studio Video] Fallback interno temporariamente desativado.', {
+    videoRequestId,
+    providerMessage: providerResult?.msg || providerResult?.message || null,
+  })
+  return null
 }
 
 async function markVideoRequestCompleted(videoRequestId: string, input: {
@@ -458,18 +409,9 @@ export async function startStudioVideoGeneration(videoRequestId: string, options
   }
 
   if (!response.ok || result?.code !== 200) {
-    const internalVideo = await tryInternalStudioVideoFallback(videoRequest.id, result)
-    if (internalVideo) return internalVideo
-
-    if (isTransientVideoStartError(result, response)) {
-      const scheduledRetry = await scheduleVideoStartRetry(videoRequest, result)
-      if (scheduledRetry) return scheduledRetry
-    }
-
-    const errorMessage = translateStudioVideoProviderError(
-      result?.msg,
-      'Não consegui iniciar a geração do vídeo com letra agora.'
-    )
+    const errorMessage = isTransientVideoStartError(result, response)
+      ? SUNO_VIDEO_TEMPORARILY_UNAVAILABLE
+      : translateStudioVideoProviderError(result?.msg, 'Não consegui iniciar a geração do vídeo com letra agora.')
     await supabaseAdmin
       .from('studio_video_requests')
       .update({
@@ -569,15 +511,9 @@ export async function startStudioVideoGenerationWithProviderIds(input: {
   }
 
   if (!response.ok || result?.code !== 200) {
-    if (isTransientVideoStartError(result, response)) {
-      const scheduledRetry = await scheduleVideoStartRetry(videoRequest, result)
-      if (scheduledRetry) return scheduledRetry
-    }
-
-    const errorMessage = translateStudioVideoProviderError(
-      result?.msg,
-      'Não consegui iniciar a geração do vídeo com letra agora.'
-    )
+    const errorMessage = isTransientVideoStartError(result, response)
+      ? SUNO_VIDEO_TEMPORARILY_UNAVAILABLE
+      : translateStudioVideoProviderError(result?.msg, 'Não consegui iniciar a geração do vídeo com letra agora.')
     await supabaseAdmin
       .from('studio_video_requests')
       .update({
