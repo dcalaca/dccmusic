@@ -84,6 +84,7 @@ async function ensureSimpleStudioCoverInternal(input: {
     .eq('project_id', input.projectId)
     .eq('composer_id', input.composerId)
     .eq('is_current', true)
+    .is('deleted_at', null)
     .maybeSingle()
 
   const hasStoredCover = Boolean(currentCover?.image_path || currentCover?.image_url)
