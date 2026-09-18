@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const coverId = String(body.coverId || '')
     const action = String(body.action || '')
 
-    if (!projectId || !coverId || !['select', 'delete'].includes(action)) {
+    if (!projectId || !coverId || !['select', 'delete', 'restore'].includes(action)) {
       return NextResponse.json({ error: 'Ação de capa inválida.' }, { status: 400 })
     }
 
@@ -65,11 +65,37 @@ export async function POST(request: NextRequest) {
       })
     }
 
+    if (action === 'restore') {
+      const { data: restored, error } = await supabaseAdmin
+        .from('studio_covers')
+        .update({ deleted_at: null })
+        .eq('id', coverId)
+        .eq('project_id', projectId)
+        .eq('composer_id', composer.composerId)
+        .select('*')
+        .single()
+
+      if (error) throw error
+
+      return NextResponse.json({
+        success: true,
+        cover: {
+          id: restored.id,
+          imageUrl: await getStudioCoverImageUrl(restored),
+          isPremium: Boolean(restored.is_premium),
+          isCurrent: Boolean(restored.is_current),
+          provider: restored.provider || null,
+          createdAt: restored.created_at,
+        },
+      })
+    }
+
     const { data: remainingCovers, error: remainingError } = await supabaseAdmin
       .from('studio_covers')
       .select('*')
       .eq('project_id', projectId)
       .eq('composer_id', composer.composerId)
+      .is('deleted_at', null)
       .neq('id', coverId)
       .order('created_at', { ascending: false })
 
@@ -99,16 +125,15 @@ export async function POST(request: NextRequest) {
 
     const { error: deleteError } = await supabaseAdmin
       .from('studio_covers')
-      .delete()
+      .update({
+        is_current: false,
+        deleted_at: new Date().toISOString(),
+      })
       .eq('id', coverId)
       .eq('project_id', projectId)
       .eq('composer_id', composer.composerId)
 
     if (deleteError) throw deleteError
-
-    if (cover.image_path) {
-      await supabaseAdmin.storage.from('studio-assets').remove([cover.image_path]).catch(() => null)
-    }
 
     const currentCover = nextCurrent
       ? {
