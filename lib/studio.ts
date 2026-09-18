@@ -459,6 +459,7 @@ export async function getStudioCreditUsage(composerId: string, limits = getStudi
     'credit_topup_refund',
     'manual_credit',
     'stem_separation_refund',
+    'lyric_video_refund',
   ])
   const otherUsed = transactions
     .filter((transaction: any) => (
@@ -496,7 +497,8 @@ export async function getStudioCreditUsage(composerId: string, limits = getStudi
       date: transaction.created_at || null,
     })),
     ...transactions
-      .filter((transaction: any) => transaction.action === 'stem_separation_refund')
+      .filter((transaction: any) => transaction.action === 'stem_separation_refund' ||
+        transaction.action === 'lyric_video_refund')
       .map((transaction: any) => ({
         id: transaction.id,
         amount: Number(transaction.amount) || 0,
@@ -507,7 +509,8 @@ export async function getStudioCreditUsage(composerId: string, limits = getStudi
       .filter((transaction: any) => (
         transaction.action !== 'credit_topup' &&
         transaction.action !== 'manual_credit' &&
-        transaction.action !== 'stem_separation_refund'
+        transaction.action !== 'stem_separation_refund' &&
+        transaction.action !== 'lyric_video_refund'
       ))
       .map((transaction: any) => ({
         id: transaction.id,
