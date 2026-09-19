@@ -252,23 +252,12 @@ async function HomeDynamicContent({ country }: { country: DccCountry }) {
 
   return (
     <>
-      {topGenres.length > 0 && (
-        <section className="bg-black py-9 sm:py-10">
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="mb-5 text-center text-2xl font-bold sm:text-3xl"><span className="gradient-text">{country === 'US' || country === 'GB' ? 'Top Genres' : 'Top Gêneros'}</span></h2>
-            <div className="grid items-stretch grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
-              {topGenres.map((genre) => <GenreCard key={genre.id} genre={genre} count={genre.count} videosCount={genre.videosCount} musicsCount={genre.musicsCount} />)}
-            </div>
-          </div>
-        </section>
-      )}
-
       {featuredVideos.length > 0 && (
         <section className="bg-gray-950 py-9 sm:py-10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{country === 'US' || country === 'GB' ? 'Featured Videos' : 'Vídeos em Destaque'}</span></h2>
-              <Link href="/videos" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{country === 'US' || country === 'GB' ? 'See all' : 'Ver todos'}</span><FiArrowRight className="h-5 w-5" /></Link>
+              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{country === 'US' || country === 'GB' ? 'Community inspiration' : 'Inspiração da comunidade'}</span></h2>
+              <Link href="/videos" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{country === 'US' || country === 'GB' ? 'Explore videos' : 'Explorar vídeos'}</span><FiArrowRight className="h-5 w-5" /></Link>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {featuredVideos.map((video) => <VideoCard key={video.id} video={video} />)}
@@ -281,8 +270,8 @@ async function HomeDynamicContent({ country }: { country: DccCountry }) {
         <section className="bg-black py-9 sm:py-10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{country === 'US' || country === 'GB' ? 'Featured Songs' : 'Músicas em Destaque'}</span></h2>
-              <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{country === 'US' || country === 'GB' ? 'See all' : 'Ver todas'}</span><FiArrowRight className="h-5 w-5" /></Link>
+              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{country === 'US' || country === 'GB' ? 'Songs created by the community' : 'Músicas criadas pela comunidade'}</span></h2>
+              <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{country === 'US' || country === 'GB' ? 'Explore songs' : 'Explorar músicas'}</span><FiArrowRight className="h-5 w-5" /></Link>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {featuredMusics.map((music) => <MusicCard key={music.id} music={music} />)}
@@ -369,6 +358,24 @@ export default async function Home() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-purple-900/60 bg-gradient-to-r from-purple-950/50 via-black to-primary-950/40">
+        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-5 text-center sm:flex-row sm:px-6 sm:py-6 sm:text-left lg:px-8">
+          <div>
+            <p className="text-base font-bold text-white sm:text-lg">{country === 'US' || country === 'GB' ? 'Your next song can start here.' : 'Sua próxima música pode começar aqui.'}</p>
+            <p className="mt-1 text-sm text-gray-300">{country === 'US' || country === 'GB' ? 'Create your first song free, then explore what the community is making.' : 'Crie sua primeira música grátis e depois explore o que a comunidade está criando.'}</p>
+          </div>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            <Link href="/studio-ia" className="inline-flex min-h-[42px] items-center justify-center rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-purple-500">
+              {country === 'US' || country === 'GB' ? 'Start creating' : 'Começar a criar'}
+              <FiArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+            <Link href="/explorar" className="inline-flex min-h-[42px] items-center justify-center rounded-lg border border-gray-600 px-5 py-2.5 text-sm font-semibold text-gray-200 transition hover:border-purple-400 hover:text-white">
+              {country === 'US' || country === 'GB' ? 'Explore' : 'Explorar'}
+            </Link>
           </div>
         </div>
       </section>
