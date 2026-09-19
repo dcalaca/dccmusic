@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useLocalization } from '@/components/LocalizationProvider'
 import { FiArrowLeft, FiEdit3, FiGlobe, FiLoader, FiMusic, FiUploadCloud, FiZap } from 'react-icons/fi'
 
 const improvementOptions = [
@@ -35,9 +36,11 @@ const songLanguageOptions = [
   'Português (Brasil)',
   'Português (Portugal)',
   'English (United States)',
+  'English (United Kingdom)',
   'Español (Paraguay)',
   'Español (Colombia)',
   'Español (México)',
+  'Español (España)',
 ]
 
 const MAX_AUDIO_DURATION_SECONDS = 270
@@ -113,6 +116,7 @@ async function uploadAudioDirectToStorage(token: string, file: File, kind: 'enha
 export default function ImproveReadyMusicPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { country } = useLocalization()
   const [submitting, setSubmitting] = useState(false)
   const [transcribing, setTranscribing] = useState(false)
   const [error, setError] = useState('')
@@ -125,7 +129,16 @@ export default function ImproveReadyMusicPage() {
   const [structure, setStructure] = useState('Padrão')
   const [lineCount, setLineCount] = useState('média')
   const [selectedGenre, setSelectedGenre] = useState('')
-  const [songLanguage, setSongLanguage] = useState('Português (Brasil)')
+  const [songLanguage, setSongLanguage] = useState(() => {
+    if (String(country) === 'GB') return 'English (United Kingdom)'
+    if (String(country) === 'US') return 'English (United States)'
+    if (String(country) === 'PT') return 'Português (Portugal)'
+    if (String(country) === 'PY') return 'Español (Paraguay)'
+    if (String(country) === 'CO') return 'Español (Colombia)'
+    if (String(country) === 'MX') return 'Español (México)'
+    if (String(country) === 'ES') return 'Español (España)'
+    return 'Português (Brasil)'
+  })
   const [customGenre, setCustomGenre] = useState('')
   const [wantInstruments, setWantInstruments] = useState('')
   const [avoidInstruments, setAvoidInstruments] = useState('')
