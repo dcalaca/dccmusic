@@ -3,6 +3,8 @@ import VideoCard from '@/components/VideoCard'
 import VideoFilters from '@/components/VideoFilters'
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
+import { normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600 // Revalidar a cada hora
@@ -62,6 +64,15 @@ interface VideosPageProps {
 }
 
 export default async function VideosPage({ searchParams = {} }: VideosPageProps) {
+  const country = normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))
+  const isEnglish = country === 'US' || country === 'GB'
+  const isSpanish = country === 'PY' || country === 'CO' || country === 'MX' || country === 'ES'
+  const copy = isEnglish
+    ? { title: 'Videos', subtitle: 'Explore music videos', loading: 'Loading filters...', empty: 'No videos found.', foundOne: 'video found', foundMany: 'videos found', previous: 'Previous', page: 'Page', next: 'Next' }
+    : isSpanish
+      ? { title: 'Vídeos', subtitle: 'Explora vídeos musicales', loading: 'Cargando filtros...', empty: 'No se encontraron vídeos.', foundOne: 'vídeo encontrado', foundMany: 'vídeos encontrados', previous: 'Anterior', page: 'Página', next: 'Siguiente' }
+      : { title: 'Vídeos', subtitle: 'Explore vídeos musicais', loading: '{copy.loading}', empty: '{copy.empty}', foundOne: 'vídeo encontrado', foundMany: 'vídeos encontrados', previous: 'Anterior', page: 'Página', next: 'Próxima' }
+
   // Buscar TODOS os vídeos sem filtros no banco
   const allVideos = await db.getVideos({ ordem: 'recentes' })
   
@@ -194,10 +205,10 @@ export default async function VideosPage({ searchParams = {} }: VideosPageProps)
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-              <span className="gradient-text">Vídeos</span>
+              <span className="gradient-text">{copy.title}</span>
             </h1>
             <p className="text-gray-400">
-              Explore minha coleção completa de vídeos musicais
+              {copy.subtitle}
             </p>
           </div>
 
@@ -218,7 +229,7 @@ export default async function VideosPage({ searchParams = {} }: VideosPageProps)
             ) : (
               <>
                 <div className="mb-4 text-sm text-gray-400">
-                  {total} vídeo{total !== 1 ? 's' : ''} encontrado{total !== 1 ? 's' : ''}
+                  {total} {total === 1 ? copy.foundOne : copy.foundMany}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {paginatedVideos.map((video) => (
@@ -234,18 +245,18 @@ export default async function VideosPage({ searchParams = {} }: VideosPageProps)
                         href={buildPaginationUrl(pagina - 1)}
                         className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
                       >
-                        Anterior
+                        {copy.previous}
                       </a>
                     )}
                     <span className="px-4 py-2 text-gray-400">
-                      Página {pagina} de {totalPages}
+                      {copy.page} {pagina} de {totalPages}
                     </span>
                     {pagina < totalPages && (
                       <a
                         href={buildPaginationUrl(pagina + 1)}
                         className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
                       >
-                        Próxima
+                        {copy.next}
                       </a>
                     )}
                   </div>

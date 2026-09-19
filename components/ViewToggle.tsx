@@ -12,6 +12,12 @@ export default function ViewToggle({ defaultView = 'lista' }: ViewToggleProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [view, setView] = useState<'lista' | 'grid'>(defaultView)
+  const [language, setLanguage] = useState<'pt' | 'en' | 'es'>('pt')
+  useEffect(() => {
+    const lang = document.documentElement.lang || ''
+    setLanguage(lang.startsWith('en') ? 'en' : lang.startsWith('es') ? 'es' : 'pt')
+  }, [])
+  const copy = language === 'en' ? { list: 'List', grid: 'Grid', listAria: 'List view', gridAria: 'Grid view' } : language === 'es' ? { list: 'Lista', grid: 'Cuadrícula', listAria: 'Vista de lista', gridAria: 'Vista de cuadrícula' } : { list: 'Lista', grid: 'Grade', listAria: 'Visualização em lista', gridAria: 'Visualização em grade' }
 
   useEffect(() => {
     const viewParam = searchParams.get('visualizacao')
@@ -36,10 +42,10 @@ export default function ViewToggle({ defaultView = 'lista' }: ViewToggleProps) {
             ? 'bg-primary-600 text-white'
             : 'text-gray-400 hover:text-white hover:bg-gray-800'
         }`}
-        aria-label="Visualização em lista"
+        aria-label={copy.listAria}
       >
         <FiList className="w-4 h-4" />
-        <span className="text-sm">Lista</span>
+        <span className="text-sm">{copy.list}</span>
       </button>
       <button
         onClick={() => toggleView('grid')}
@@ -48,10 +54,10 @@ export default function ViewToggle({ defaultView = 'lista' }: ViewToggleProps) {
             ? 'bg-primary-600 text-white'
             : 'text-gray-400 hover:text-white hover:bg-gray-800'
         }`}
-        aria-label="Visualização em grade"
+        aria-label={copy.gridAria}
       >
         <FiGrid className="w-4 h-4" />
-        <span className="text-sm">Grade</span>
+        <span className="text-sm">{copy.grid}</span>
       </button>
     </div>
   )

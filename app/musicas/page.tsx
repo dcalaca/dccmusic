@@ -5,6 +5,8 @@ import ViewToggle from '@/components/ViewToggle'
 import { Suspense } from 'react'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
+import { headers } from 'next/headers'
+import { normalizeCountry } from '@/lib/localization'
 import Link from 'next/link'
 import { FiPlayCircle } from 'react-icons/fi'
 
@@ -76,6 +78,15 @@ async function getPublishedStudioMusics() {
 }
 
 export default async function MusicasPage({ searchParams = {} }: MusicasPageProps) {
+  const country = normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))
+  const isEnglish = country === 'US' || country === 'GB'
+  const isSpanish = country === 'PY' || country === 'CO' || country === 'MX' || country === 'ES'
+  const copy = isEnglish
+    ? { title: 'Explore songs', subtitle: 'Discover songs created by the DCC Music community.', videos: 'Featured music videos' }
+    : isSpanish
+      ? { title: 'Explorar canciones', subtitle: 'Descubre canciones creadas por la comunidad DCC Music.', videos: 'Vídeos musicales destacados' }
+      : { title: 'Explorar músicas', subtitle: '{copy.subtitle}', videos: 'Vídeos musicais em destaque' }
+
   // Buscar TODAS as músicas sem filtros no banco, incluindo músicas publicadas do Studio IA
   const [catalogMusics, studioMusics] = await Promise.all([
     db.getMusics({ ordem: 'recentes' }),
@@ -183,7 +194,7 @@ export default async function MusicasPage({ searchParams = {} }: MusicasPageProp
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-              <span className="gradient-text">Explorar músicas</span>
+              <span className="gradient-text">{copy.title}</span>
             </h1>
             <p className="text-gray-400">
               Descubra músicas criadas pela comunidade DCC Music.
@@ -191,7 +202,7 @@ export default async function MusicasPage({ searchParams = {} }: MusicasPageProp
           </div>
           <Link href="/videos" className="inline-flex min-h-[42px] items-center justify-center gap-2 self-start rounded-lg border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-200 transition hover:border-purple-400 hover:text-white sm:self-auto">
             <FiPlayCircle className="h-4 w-4" />
-            Ver vídeos em destaque
+            {copy.videos}
           </Link>
         </div>
 

@@ -60,9 +60,12 @@ export default function Header() {
   const [showBell, setShowBell] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [surface, setSurface] = useState<'blog' | 'site'>('site')
+  const [uiLanguage, setUiLanguage] = useState<'pt' | 'en' | 'es'>('pt')
 
   useEffect(() => {
     setMounted(true)
+    const lang = document.documentElement.lang || ''
+    setUiLanguage(lang.startsWith('en') ? 'en' : lang.startsWith('es') ? 'es' : 'pt')
     const host = window.location.hostname
     const isBlog = host.startsWith('blog.') || window.location.pathname.startsWith('/blog')
     setSurface(isBlog ? 'blog' : 'site')
@@ -198,10 +201,16 @@ export default function Header() {
     window.dispatchEvent(new Event('authChange'))
   }
 
-  const composerDisplayName = composer?.name || composer?.email || 'Compositor'
+  const composerDisplayName = composer?.name || composer?.email || copy.composer
   const composerBalanceLabel = composerStudioBalance === null ? null : `${composerStudioBalance} créditos`
   const composerIsPremium = Boolean(composer?.isPremium)
   const isLocal = mounted && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  const copy = uiLanguage === 'en'
+    ? { composer: 'Composer', studioBalance: 'Studio IA balance', myStudio: 'My AI Studio', compositions: 'Compositions', addSong: 'Add song', mySongs: 'My songs', myVideos: 'My videos', premiumCompositions: 'Premium compositions', viewPlans: 'View composer plans', account: 'Account and statement', logout: 'Log out' }
+    : uiLanguage === 'es'
+      ? { composer: 'Compositor', studioBalance: 'Saldo Studio IA', myStudio: 'Mi Studio IA', compositions: 'Composiciones', addSong: 'Registrar canción', mySongs: 'Mis canciones', myVideos: 'Mis vídeos', premiumCompositions: 'Composiciones Premium', viewPlans: 'Ver aviso y planes de compositor', account: 'Cuenta y extracto', logout: 'Salir' }
+      : { composer: 'Compositor', studioBalance: 'Saldo Studio IA', myStudio: 'Meu Studio IA', compositions: 'Composições', addSong: 'Cadastrar música', mySongs: 'Minhas músicas', myVideos: 'Meus vídeos', premiumCompositions: 'Composições Premium', viewPlans: 'Ver aviso e planos de compositor', account: 'Conta e extrato', logout: 'Sair' }
+  const showBlog = !mounted || uiLanguage === 'pt'
   const blogHomeHref = !mounted
     ? '/blog'
     : surface === 'blog'
@@ -219,11 +228,7 @@ export default function Header() {
       icon: FiHome,
     },
     ...siteNavItems.filter((item) => item.href !== '/'),
-    {
-      href: blogHomeHref,
-      label: 'Blog',
-      icon: FiBookOpen,
-    },
+    ...(showBlog ? [{ href: blogHomeHref, label: 'Blog', icon: FiBookOpen }] : []),
   ]
   const logoHref = surface === 'blog' ? (pathname.startsWith('/blog') ? '/blog' : '/') : '/'
 
@@ -322,7 +327,7 @@ export default function Header() {
                       <div className="truncate text-xs text-gray-400">{composer.email}</div>
                       {composerBalanceLabel && (
                         <div className="mt-2 inline-flex rounded-full border border-green-700 bg-green-950/40 px-3 py-1 text-xs font-bold text-green-200">
-                          Saldo Studio IA: {composerBalanceLabel}
+                          {copy.studioBalance}: {composerBalanceLabel}
                         </div>
                       )}
                     </div>
@@ -332,7 +337,7 @@ export default function Header() {
                       className="flex items-center space-x-2 border-b border-gray-800 px-4 py-3 transition-colors hover:bg-gray-800"
                     >
                       <FiZap className="w-4 h-4" />
-                      <span>Meu Studio IA</span>
+                      <span>{copy.myStudio}</span>
                     </Link>
                     <div className="border-b border-gray-800 py-2">
                       <div className="px-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-500">
@@ -346,7 +351,7 @@ export default function Header() {
                             className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                           >
                             <FiPlusCircle className="w-4 h-4" />
-                            <span>Cadastrar música</span>
+                            <span>{copy.addSong}</span>
                           </Link>
                           <Link
                             href="/compositores/admin/musicas"
@@ -354,7 +359,7 @@ export default function Header() {
                             className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                           >
                             <FiMusic className="w-4 h-4" />
-                            <span>Minhas músicas</span>
+                            <span>{copy.mySongs}</span>
                           </Link>
                           <Link
                             href="/compositores/admin/videos"
@@ -362,7 +367,7 @@ export default function Header() {
                             className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                           >
                             <FiPlayCircle className="w-4 h-4" />
-                            <span>Meus vídeos</span>
+                            <span>{copy.myVideos}</span>
                           </Link>
                         </>
                       ) : (
@@ -373,8 +378,8 @@ export default function Header() {
                         >
                           <FiLock className="mt-0.5 w-4 h-4" />
                           <span>
-                            <span className="block">Composições Premium</span>
-                            <span className="block text-xs text-gray-400">Ver aviso e planos de compositor</span>
+                            <span className="block">{copy.premiumCompositions}</span>
+                            <span className="block text-xs text-gray-400">{copy.viewPlans}</span>
                           </span>
                         </Link>
                       )}
@@ -386,14 +391,14 @@ export default function Header() {
                         className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                       >
                         <FiUser className="w-4 h-4" />
-                        <span>Conta e extrato</span>
+                        <span>{copy.account}</span>
                       </Link>
                       <button
                         onClick={handleComposerLogout}
                         className="flex w-full items-center space-x-2 px-4 py-2.5 text-left text-red-400 transition-colors hover:bg-gray-800"
                       >
                         <FiLogOut className="w-4 h-4" />
-                        <span>Sair</span>
+                        <span>{copy.logout}</span>
                       </button>
                     </div>
                   </div>
@@ -464,7 +469,7 @@ export default function Header() {
                       <div className="truncate text-xs text-gray-400">{composer.email}</div>
                       {composerBalanceLabel && (
                         <div className="mt-2 inline-flex rounded-full border border-green-700 bg-green-950/40 px-3 py-1 text-xs font-bold text-green-200">
-                          Saldo Studio IA: {composerBalanceLabel}
+                          {copy.studioBalance}: {composerBalanceLabel}
                         </div>
                       )}
                     </div>
@@ -474,7 +479,7 @@ export default function Header() {
                       className="flex items-center space-x-2 border-b border-gray-800 px-4 py-3 transition-colors hover:bg-gray-800"
                     >
                       <FiZap className="w-4 h-4" />
-                      <span>Meu Studio IA</span>
+                      <span>{copy.myStudio}</span>
                     </Link>
                     <div className="border-b border-gray-800 py-2">
                       <div className="px-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-500">
@@ -488,7 +493,7 @@ export default function Header() {
                             className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                           >
                             <FiPlusCircle className="w-4 h-4" />
-                            <span>Cadastrar música</span>
+                            <span>{copy.addSong}</span>
                           </Link>
                           <Link
                             href="/compositores/admin/musicas"
@@ -496,7 +501,7 @@ export default function Header() {
                             className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                           >
                             <FiMusic className="w-4 h-4" />
-                            <span>Minhas músicas</span>
+                            <span>{copy.mySongs}</span>
                           </Link>
                           <Link
                             href="/compositores/admin/videos"
@@ -504,7 +509,7 @@ export default function Header() {
                             className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                           >
                             <FiPlayCircle className="w-4 h-4" />
-                            <span>Meus vídeos</span>
+                            <span>{copy.myVideos}</span>
                           </Link>
                         </>
                       ) : (
@@ -515,8 +520,8 @@ export default function Header() {
                         >
                           <FiLock className="mt-0.5 w-4 h-4" />
                           <span>
-                            <span className="block">Composições Premium</span>
-                            <span className="block text-xs text-gray-400">Ver aviso e planos de compositor</span>
+                            <span className="block">{copy.premiumCompositions}</span>
+                            <span className="block text-xs text-gray-400">{copy.viewPlans}</span>
                           </span>
                         </Link>
                       )}
@@ -528,14 +533,14 @@ export default function Header() {
                         className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                       >
                         <FiUser className="w-4 h-4" />
-                        <span>Conta e extrato</span>
+                        <span>{copy.account}</span>
                       </Link>
                       <button
                         onClick={handleComposerLogout}
                         className="flex w-full items-center space-x-2 px-4 py-2.5 text-left text-red-400 transition-colors hover:bg-gray-800"
                       >
                         <FiLogOut className="w-4 h-4" />
-                        <span>Sair</span>
+                        <span>{copy.logout}</span>
                       </button>
                     </div>
                   </div>
