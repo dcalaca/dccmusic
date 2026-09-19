@@ -245,7 +245,7 @@ async function getSiteSummaryStats(country: DccCountry) {
 }
 
 async function HomeDynamicContent({ country }: { country: DccCountry }) {
-  const [{ featuredVideos, featuredMusics, topGenres }, siteStats] = await Promise.all([
+  const [{ featuredVideos, featuredMusics }, siteStats] = await Promise.all([
     getFeaturedContent(),
     getSiteSummaryStats(country),
   ])
