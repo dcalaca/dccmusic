@@ -7,7 +7,7 @@ import { useLocalization } from '@/components/LocalizationProvider'
 export default function StudioTopupFailurePage() {
   const { country } = useLocalization()
   const isSpanish = ['MX', 'PY', 'CO'].includes(String(country))
-  const isEnglish = String(country) === 'US'
+  const isEnglish = String(country) === 'US' || String(country) === 'GB'
   const copy = isEnglish
     ? {
         title: 'Payment declined',
