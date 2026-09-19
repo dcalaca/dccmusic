@@ -121,7 +121,7 @@ async function compressReferenceImage(file: File, index: number, isEnglish: bool
 export default function StudioCoverArtPage() {
   const router = useRouter()
   const { country } = useLocalization()
-  const isUnitedStates = String(country) === 'US'
+  const isUnitedStates = String(country) === 'US' || String(country) === 'GB'
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState('')
