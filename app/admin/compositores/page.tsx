@@ -844,7 +844,14 @@ export default function AdminComposersPage() {
         {/* Lista de Compositores */}
         <div className="bg-gray-900/50 border border-gray-800 rounded-lg overflow-hidden">
           <div className="max-h-[70vh] overflow-auto">
-            <table className="min-w-[760px] w-full">
+            <table className="min-w-[760px] w-full table-fixed">
+              <colgroup>
+                <col className="w-[24%]" />
+                <col className="w-[12%]" />
+                <col className="w-[25%]" />
+                <col className="w-[20%]" />
+                <col className="w-[19%]" />
+              </colgroup>
               <thead className="sticky top-0 z-20 bg-gray-900 shadow-[0_1px_0_rgba(31,41,55,1)]">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -876,19 +883,19 @@ export default function AdminComposersPage() {
                     return (
                       <tr key={composer.id} className="hover:bg-gray-800/30 transition-colors">
                         <td className="px-4 py-2 whitespace-nowrap">
-                          <div className="flex items-center">
+                          <div className="flex min-w-0 items-center">
                             <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-600">
                               <FiUser className="h-4 w-4 text-white" />
                             </div>
-                            <div className="ml-3 flex items-baseline gap-2">
+                            <div className="ml-3 min-w-0 flex-1">
                               <Link
                                 href={`/admin/compositores/${composer.id}`}
-                                className="text-sm font-semibold text-white transition hover:text-primary-300"
-                                title="Abrir perfil administrativo do compositor"
+                                className="block max-w-full truncate text-sm font-semibold text-white transition hover:text-primary-300"
+                                title={composer.name}
                               >
                                 {composer.name}
                               </Link>
-                              <span className="text-xs text-gray-500">/{composer.slug}</span>
+                              <span className="block max-w-full truncate text-xs text-gray-500" title={`/${composer.slug}`}>/{composer.slug}</span>
                             </div>
                           </div>
                         </td>
