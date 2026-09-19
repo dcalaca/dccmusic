@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { FiMusic, FiPlayCircle, FiHome, FiShield, FiUsers, FiUser, FiLogOut, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe, FiBookOpen } from 'react-icons/fi'
+import { FiMusic, FiPlayCircle, FiHome, FiCompass, FiShield, FiUsers, FiUser, FiLogOut, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe, FiBookOpen } from 'react-icons/fi'
 import NotificationBell from './NotificationBell'
 import CountrySelector from './CountrySelector'
 import {
@@ -43,6 +43,7 @@ function HeaderComposerAvatar({
 
 const siteNavItems = [
   { href: '/', label: 'Home', icon: FiHome },
+  { href: '/explorar', label: 'Explorar', mobileLabel: 'Explorar', icon: FiCompass },
   { href: '/studio-ia', label: 'Crie sua música', mobileLabel: 'Criar música', icon: FiZap },
   { href: '/transcricao-musical', label: 'Cifra da Música', mobileLabel: 'Cifra', icon: FiFileText },
   { href: '/distribuicao-digital', label: 'Spotify e Plataformas', mobileLabel: 'Spotify', icon: FiGlobe },
