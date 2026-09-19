@@ -6,7 +6,7 @@ import { useLocalization } from '@/components/LocalizationProvider'
 
 export default function ImproveMusicPage() {
   const { country } = useLocalization()
-  const isUnitedStates = String(country) === 'US'
+  const isUnitedStates = String(country) === 'US' || String(country) === 'GB'
 
   return (
     <div className="min-h-screen py-5 sm:py-7">
