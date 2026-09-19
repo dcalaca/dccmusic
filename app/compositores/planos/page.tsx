@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import * as db from '@/lib/db'
 import Link from 'next/link'
 import { cookies, headers } from 'next/headers'
@@ -6,6 +7,36 @@ import { PlanPurchaseLink } from '@/components/PlanPurchaseLink'
 import { COUNTRY_COOKIE, normalizeCountry } from '@/lib/localization'
 import { getStudioPlanPriceFromPricing, getStudioPlanPricesFromPricing, getStudioTopupTiersFromPricing } from '@/lib/studio-pricing-server'
 import type { StudioTopupCurrency } from '@/lib/studio-topups'
+
+
+export const metadata: Metadata = {
+  title: 'DCC Music - Planos para Criar Músicas com IA',
+  description: 'Crie sua primeira música grátis e conheça os planos do DCC Music para criar músicas com inteligência artificial.',
+  alternates: {
+    canonical: 'https://www.dccmusic.online/compositores/planos',
+  },
+  openGraph: {
+    title: 'DCC Music - Crie sua primeira música grátis',
+    description: 'Transforme sua ideia ou letra em uma música completa com inteligência artificial.',
+    url: 'https://www.dccmusic.online/compositores/planos',
+    siteName: 'DCC Music',
+    type: 'website',
+    images: [
+      {
+        url: 'https://www.dccmusic.online/Est%C3%BAdio%20de%20grava%C3%A7%C3%A3o%20com%20luzes%20neon-2560x1440.png',
+        width: 2560,
+        height: 1440,
+        alt: 'DCC Music - Crie músicas com inteligência artificial',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'DCC Music - Crie sua primeira música grátis',
+    description: 'Transforme sua ideia ou letra em uma música completa com inteligência artificial.',
+    images: ['https://www.dccmusic.online/Est%C3%BAdio%20de%20grava%C3%A7%C3%A3o%20com%20luzes%20neon-2560x1440.png'],
+  },
+}
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
