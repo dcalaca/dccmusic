@@ -43,14 +43,13 @@ function HeaderComposerAvatar({
 
 const siteNavItems = [
   { href: '/', label: 'Home', icon: FiHome },
-  { href: '/musicas', label: 'Explorar', mobileLabel: 'Explorar', icon: FiCompass },
   { href: '/studio-ia', label: 'Crie sua música', mobileLabel: 'Criar música', icon: FiZap },
-  { href: '/transcricao-musical', label: 'Cifra da Música', mobileLabel: 'Cifra', icon: FiFileText },
   { href: '/distribuicao-digital', label: 'Spotify e Plataformas', mobileLabel: 'Spotify', icon: FiGlobe },
-  { href: '/compositores', label: 'Compositores Premium', mobileLabel: 'Compositores', icon: FiUsers },
   { href: '/compositores/planos', label: 'Planos', icon: FiCreditCard },
+  { href: '/musicas', label: 'Explorar', mobileLabel: 'Explorar', icon: FiCompass },
+  { href: '/transcricao-musical', label: 'Cifra da Música', mobileLabel: 'Cifra', icon: FiFileText },
+  { href: '/compositores', label: 'Compositores Premium', mobileLabel: 'Compositores', icon: FiUsers },
 ]
-
 export default function Header() {
   const pathname = usePathname()
   const router = useRouter()
