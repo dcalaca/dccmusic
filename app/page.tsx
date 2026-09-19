@@ -172,9 +172,12 @@ async function getPublicAiMusicDays(country: DccCountry) {
 
 async function getFeaturedContent() {
   try {
-    const result = await db.getMusics({ ordem: 'mais-vistos', limit: 8 })
+    const result = await db.getMusics({ ordem: 'recentes', limit: 100 })
+    const mostPlayed = Array.isArray(result)
+      ? [...result].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0)).slice(0, 8)
+      : []
     return {
-      featuredMusics: Array.isArray(result) ? result : [],
+      featuredMusics: mostPlayed,
     }
   } catch (error) {
     console.error('Erro ao buscar músicas em destaque:', error)
