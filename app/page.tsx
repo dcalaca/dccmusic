@@ -172,37 +172,13 @@ async function getPublicAiMusicDays(country: DccCountry) {
 
 async function getFeaturedContent() {
   try {
-    const [featuredVideosResult, featuredMusicsResult, topGenresResult] = await Promise.allSettled([
-      db.getVideos({ featured: true, limit: 6, ordem: 'recentes' }),
-      db.getMusics({ featured: true, limit: 6, ordem: 'recentes' }),
-      db.getTopGenres(6),
-    ])
-
-    const featuredVideos = featuredVideosResult.status === 'fulfilled' 
-      ? (featuredVideosResult.value || [])
-      : []
-    
-    const featuredMusics = featuredMusicsResult.status === 'fulfilled'
-      ? (featuredMusicsResult.value || [])
-      : []
-    
-    const topGenres = topGenresResult.status === 'fulfilled'
-      ? (topGenresResult.value || [])
-      : []
-
+    const result = await db.getMusics({ ordem: 'mais-vistos', limit: 8 })
     return {
-      featuredVideos: Array.isArray(featuredVideos) ? featuredVideos : [],
-      featuredMusics: Array.isArray(featuredMusics) ? featuredMusics : [],
-      topGenres: Array.isArray(topGenres) ? topGenres : [],
+      featuredMusics: Array.isArray(result) ? result : [],
     }
   } catch (error) {
-    // Se as tabelas não existirem ainda, retornar arrays vazios
-    console.error('Erro ao buscar conteúdo:', error)
-    return {
-      featuredVideos: [],
-      featuredMusics: [],
-      topGenres: [],
-    }
+    console.error('Erro ao buscar músicas em destaque:', error)
+    return { featuredMusics: [] }
   }
 }
 
@@ -254,8 +230,8 @@ async function HomeDynamicContent({ country }: { country: DccCountry }) {
         <section className="bg-black py-9 sm:py-10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{country === 'US' || country === 'GB' ? 'Songs created by the community' : 'Músicas criadas pela comunidade'}</span></h2>
-              <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{country === 'US' || country === 'GB' ? 'Explore songs' : 'Explorar músicas'}</span><FiArrowRight className="h-5 w-5" /></Link>
+              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{country === 'US' || country === 'GB' ? 'Most-played songs' : 'Músicas mais ouvidas'}</span></h2>
+              <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{country === 'US' || country === 'GB' ? 'Explore all songs' : 'Explorar todas as músicas'}</span><FiArrowRight className="h-5 w-5" /></Link>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {featuredMusics.map((music) => <MusicCard key={music.id} music={music} />)}
@@ -312,7 +288,7 @@ export default async function Home() {
                   </span>
                 </h1>
                 <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-gray-100 sm:mt-4 sm:text-base [text-shadow:0_1px_6px_rgba(0,0,0,0.95),0_2px_16px_rgba(0,0,0,0.8)]">
-                  {country === 'US' || country === 'GB' ? 'Enter your idea or lyrics and turn them into a complete song. Sign up and try your first creation free.' : 'Digite sua ideia ou letra e transforme em uma música completa. Cadastre-se e experimente sua primeira criação grátis.'}
+                  {country === 'US' || country === 'GB' ? 'Write an idea or lyrics, choose a style and turn it into a complete song. Your first creation is free.' : 'Escreva uma ideia ou uma letra, escolha o estilo e transforme tudo em uma música completa. Sua primeira criação é grátis.'}
                 </p>
                 <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-7 sm:flex-row sm:flex-wrap">
                   <Link
@@ -341,8 +317,8 @@ export default async function Home() {
       <section className="border-y border-purple-900/60 bg-gradient-to-r from-purple-950/50 via-black to-primary-950/40">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-5 text-center sm:flex-row sm:px-6 sm:py-6 sm:text-left lg:px-8">
           <div>
-            <p className="text-base font-bold text-white sm:text-lg">{country === 'US' || country === 'GB' ? 'Your next song can start here.' : 'Sua próxima música pode começar aqui.'}</p>
-            <p className="mt-1 text-sm text-gray-300">{country === 'US' || country === 'GB' ? 'Create your first song free, then explore what the community is making.' : 'Crie sua primeira música grátis e depois explore o que a comunidade está criando.'}</p>
+            <p className="text-base font-bold text-white sm:text-lg">{country === 'US' || country === 'GB' ? 'Create your next song with AI.' : 'Crie sua próxima música com inteligência artificial.'}</p>
+            <p className="mt-1 text-sm text-gray-300">{country === 'US' || country === 'GB' ? 'Start with an idea, a lyric or just a feeling. Your first creation is free.' : 'Comece com uma ideia, uma letra ou apenas um sentimento. Sua primeira criação é grátis.'}</p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Link href="/studio-ia" className="inline-flex min-h-[42px] items-center justify-center rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-purple-500">
