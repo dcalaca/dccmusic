@@ -201,16 +201,17 @@ export default function Header() {
     window.dispatchEvent(new Event('authChange'))
   }
 
-  const composerDisplayName = composer?.name || composer?.email || copy.composer
-  const composerBalanceLabel = composerStudioBalance === null ? null : `${composerStudioBalance} créditos`
-  const composerIsPremium = Boolean(composer?.isPremium)
-  const isLocal = mounted && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   const copy = uiLanguage === 'en'
     ? { composer: 'Composer', studioBalance: 'Studio IA balance', myStudio: 'My AI Studio', compositions: 'Compositions', addSong: 'Add song', mySongs: 'My songs', myVideos: 'My videos', premiumCompositions: 'Premium compositions', viewPlans: 'View composer plans', account: 'Account and statement', logout: 'Log out' }
     : uiLanguage === 'es'
       ? { composer: 'Compositor', studioBalance: 'Saldo Studio IA', myStudio: 'Mi Studio IA', compositions: 'Composiciones', addSong: 'Registrar canción', mySongs: 'Mis canciones', myVideos: 'Mis vídeos', premiumCompositions: 'Composiciones Premium', viewPlans: 'Ver aviso y planes de compositor', account: 'Cuenta y extracto', logout: 'Salir' }
       : { composer: 'Compositor', studioBalance: 'Saldo Studio IA', myStudio: 'Meu Studio IA', compositions: 'Composições', addSong: 'Cadastrar música', mySongs: 'Minhas músicas', myVideos: 'Meus vídeos', premiumCompositions: 'Composições Premium', viewPlans: 'Ver aviso e planos de compositor', account: 'Conta e extrato', logout: 'Sair' }
   const showBlog = !mounted || uiLanguage === 'pt'
+
+  const composerDisplayName = composer?.name || composer?.email || copy.composer
+  const composerBalanceLabel = composerStudioBalance === null ? null : `${composerStudioBalance} créditos`
+  const composerIsPremium = Boolean(composer?.isPremium)
+  const isLocal = mounted && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   const blogHomeHref = !mounted
     ? '/blog'
     : surface === 'blog'
