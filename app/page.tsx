@@ -255,7 +255,7 @@ async function HomeDynamicContent({ country }: { country: DccCountry }) {
       {topGenres.length > 0 && (
         <section className="bg-black py-9 sm:py-10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 className="mb-5 text-center text-2xl font-bold sm:text-3xl"><span className="gradient-text">Top Gêneros</span></h2>
+            <h2 className="mb-5 text-center text-2xl font-bold sm:text-3xl"><span className="gradient-text">{country === 'US' || country === 'GB' ? 'Top Genres' : 'Top Gêneros'}</span></h2>
             <div className="grid items-stretch grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
               {topGenres.map((genre) => <GenreCard key={genre.id} genre={genre} count={genre.count} videosCount={genre.videosCount} musicsCount={genre.musicsCount} />)}
             </div>
@@ -267,8 +267,8 @@ async function HomeDynamicContent({ country }: { country: DccCountry }) {
         <section className="bg-gray-950 py-9 sm:py-10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">Vídeos em Destaque</span></h2>
-              <Link href="/videos" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>Ver todos</span><FiArrowRight className="h-5 w-5" /></Link>
+              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{country === 'US' || country === 'GB' ? 'Featured Videos' : 'Vídeos em Destaque'}</span></h2>
+              <Link href="/videos" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{country === 'US' || country === 'GB' ? 'See all' : 'Ver todos'}</span><FiArrowRight className="h-5 w-5" /></Link>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {featuredVideos.map((video) => <VideoCard key={video.id} video={video} />)}
@@ -281,8 +281,8 @@ async function HomeDynamicContent({ country }: { country: DccCountry }) {
         <section className="bg-black py-9 sm:py-10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">Músicas em Destaque</span></h2>
-              <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>Ver todas</span><FiArrowRight className="h-5 w-5" /></Link>
+              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{country === 'US' || country === 'GB' ? 'Featured Songs' : 'Músicas em Destaque'}</span></h2>
+              <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{country === 'US' || country === 'GB' ? 'See all' : 'Ver todas'}</span><FiArrowRight className="h-5 w-5" /></Link>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {featuredMusics.map((music) => <MusicCard key={music.id} music={music} />)}
@@ -307,8 +307,8 @@ async function HomeDynamicContent({ country }: { country: DccCountry }) {
       <section className="border-t border-purple-900 bg-black">
         <div className="container mx-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div className="flex items-center gap-2.5 text-left sm:gap-3"><span className="text-xl leading-none sm:text-2xl" aria-hidden>🎤</span><div><p className="text-sm font-bold leading-tight text-white sm:text-base">É compositor? Publique suas músicas</p><p className="mt-0.5 text-xs text-gray-400">Receba avaliações e alcance novos ouvintes</p></div></div>
-            <ComposerSignupCta guestLabel="Cadastrar grátis" className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-white px-5 py-2 text-sm font-bold text-violet-950 transition hover:bg-gray-100 sm:w-auto" />
+            <div className="flex items-center gap-2.5 text-left sm:gap-3"><span className="text-xl leading-none sm:text-2xl" aria-hidden>🎤</span><div><p className="text-sm font-bold leading-tight text-white sm:text-base">{country === 'US' || country === 'GB' ? 'Are you a songwriter? Publish your songs' : 'É compositor? Publique suas músicas'}</p><p className="mt-0.5 text-xs text-gray-400">{country === 'US' || country === 'GB' ? 'Get feedback and reach new listeners' : 'Receba avaliações e alcance novos ouvintes'}</p></div></div>
+            <ComposerSignupCta guestLabel={country === 'US' || country === 'GB' ? 'Sign up free' : 'Cadastrar grátis'} className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-white px-5 py-2 text-sm font-bold text-violet-950 transition hover:bg-gray-100 sm:w-auto" />
           </div>
         </div>
       </section>
@@ -321,7 +321,7 @@ export default async function Home() {
   const country = normalizeCountry(cookies().get(COUNTRY_COOKIE)?.value || requestHeaders.get('x-dcc-country') || requestHeaders.get('x-vercel-ip-country') || requestHeaders.get('cf-ipcountry'))
   return (
     <div className="min-h-screen">
-      <section className="relative flex flex-col bg-black" aria-label="Destaque principal">
+      <section className="relative flex flex-col bg-black" aria-label={country === 'US' || country === 'GB' ? 'Main highlight' : 'Destaque principal'}>
         {/* Hero: foto em tela cheia + copy centralizada por cima (sem colunas) */}
         <div className="relative min-h-[min(68vh,680px)] w-full bg-black">
           <HeroImageCarousel
@@ -333,37 +333,37 @@ export default async function Home() {
             <div className="flex flex-1 flex-col items-center justify-center px-4 pt-7 pb-12 sm:px-6 sm:pt-9 sm:pb-14">
               <div className="w-full max-w-2xl text-center">
                 <h1 className="text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl md:text-4xl [text-shadow:0_2px_8px_rgba(0,0,0,0.95),0_4px_24px_rgba(0,0,0,0.85)]">
-                  <span className="text-white">Crie sua música com </span>
+                  <span className="text-white">{country === 'US' || country === 'GB' ? 'Create your song with ' : 'Crie sua música com '}</span>
                   <span className="font-bold text-fuchsia-400 sm:text-fuchsia-300 [text-shadow:0_1px_0_rgba(0,0,0,0.9),0_2px_12px_rgba(0,0,0,0.85)]">
-                    inteligência artificial
+                    {country === 'US' || country === 'GB' ? 'artificial intelligence' : 'inteligência artificial'}
                   </span>
                 </h1>
                 <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-gray-100 sm:mt-4 sm:text-base [text-shadow:0_1px_6px_rgba(0,0,0,0.95),0_2px_16px_rgba(0,0,0,0.8)]">
-                  Digite sua ideia ou letra e transforme em uma música completa. Cadastre-se e experimente sua primeira criação grátis.
+                  {country === 'US' || country === 'GB' ? 'Enter your idea or lyrics and turn them into a complete song. Sign up and try your first creation free.' : 'Digite sua ideia ou letra e transforme em uma música completa. Cadastre-se e experimente sua primeira criação grátis.'}
                 </p>
                 <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-7 sm:flex-row sm:flex-wrap">
                   <Link
                     href="/studio-ia"
-                    className="group inline-flex w-full max-w-xs items-center justify-center rounded-lg bg-purple-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-500 sm:w-auto"
+                    className="group inline-flex min-h-[46px] w-full max-w-xs items-center justify-center rounded-lg bg-purple-600 px-7 py-3 text-base font-semibold text-white transition hover:bg-purple-500 sm:w-auto"
                   >
                     <FiZap className="mr-2 h-5 w-5 shrink-0" />
-                    Criar música com IA
+                    {country === 'US' || country === 'GB' ? 'Create song with AI' : 'Criar música com IA'}
                     <FiArrowRight className="ml-2 h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                   <Link
                     href="/videos"
-                    className="group inline-flex w-full max-w-xs items-center justify-center rounded-lg bg-primary-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-500 sm:w-auto neon-glow"
+                    className="group inline-flex min-h-[46px] w-full max-w-xs items-center justify-center rounded-lg bg-primary-600 px-7 py-3 text-base font-semibold text-white transition hover:bg-primary-500 sm:w-auto neon-glow"
                   >
                     <FiPlayCircle className="mr-2 h-5 w-5 shrink-0" />
-                    Ver Vídeos
+                    {country === 'US' || country === 'GB' ? 'Watch videos' : 'Ver Vídeos'}
                     <FiArrowRight className="ml-2 h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                   <Link
                     href="/musicas"
-                    className="group inline-flex w-full max-w-xs items-center justify-center rounded-lg border-2 border-white bg-black px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-950 sm:w-auto"
+                    className="group inline-flex min-h-[46px] w-full max-w-xs items-center justify-center rounded-lg border-2 border-white bg-black px-7 py-3 text-base font-semibold text-white transition hover:bg-gray-950 sm:w-auto"
                   >
                     <FiMusic className="mr-2 h-5 w-5 shrink-0" />
-                    Ouvir Músicas
+                    {country === 'US' || country === 'GB' ? 'Listen to songs' : 'Ouvir Músicas'}
                     <FiArrowRight className="ml-2 h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 </div>
