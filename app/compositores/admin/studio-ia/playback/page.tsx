@@ -11,7 +11,7 @@ const PLAYBACK_CREDITS = 10
 function PlaybackCreator() {
   const router = useRouter()
   const { country } = useLocalization()
-  const isUnitedStates = String(country) === 'US'
+  const isUnitedStates = String(country) === 'US' || String(country) === 'GB'
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId') || ''
   const versionId = searchParams.get('versionId') || ''
