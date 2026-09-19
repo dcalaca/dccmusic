@@ -5,6 +5,8 @@ import ViewToggle from '@/components/ViewToggle'
 import { Suspense } from 'react'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
+import Link from 'next/link'
+import { FiPlayCircle } from 'react-icons/fi'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -178,13 +180,19 @@ export default async function MusicasPage({ searchParams = {} }: MusicasPageProp
   return (
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-            <span className="gradient-text">Músicas</span>
-          </h1>
-          <p className="text-gray-400">
-            Explore minha coleção completa de músicas
-          </p>
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-4xl sm:text-5xl font-bold mb-4">
+              <span className="gradient-text">Explorar músicas</span>
+            </h1>
+            <p className="text-gray-400">
+              Descubra músicas criadas pela comunidade DCC Music.
+            </p>
+          </div>
+          <Link href="/videos" className="inline-flex min-h-[42px] items-center justify-center gap-2 self-start rounded-lg border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-200 transition hover:border-purple-400 hover:text-white sm:self-auto">
+            <FiPlayCircle className="h-4 w-4" />
+            Ver vídeos em destaque
+          </Link>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
