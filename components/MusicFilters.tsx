@@ -79,9 +79,34 @@ export default function MusicFilters({ genres, currentParams }: MusicFiltersProp
       return
     }
 
+    // Mudanças de paginação/visualização também alteram searchParams.
+    // Se os filtros da URL já correspondem ao estado atual, não navegue:
+    // assim "pagina=2", "pagina=3", etc. não são apagadas por este efeito.
+    const urlGenres = searchParams.getAll('genero')
+    const normalizedUrlGenres = [...urlGenres].sort()
+    const normalizedSelectedGenres = [...selectedGenres].sort()
+    const genresMatch =
+      normalizedUrlGenres.length === normalizedSelectedGenres.length &&
+      normalizedUrlGenres.every((genre, index) => genre === normalizedSelectedGenres[index])
+
+    const urlPlataforma = searchParams.get('plataforma') || ''
+    const urlOrdem = searchParams.get('ordem') || 'mais-vistos'
+    const urlBusca = (searchParams.get('busca') || '').trim()
+    const currentBusca = (buscaDebounced || '').trim()
+
+    const filtersAlreadyMatchUrl =
+      genresMatch &&
+      urlPlataforma === plataforma &&
+      urlOrdem === ordem &&
+      urlBusca === currentBusca
+
+    if (filtersAlreadyMatchUrl) {
+      return
+    }
+
     const params = new URLSearchParams()
     
-    // Ao mudar filtros, a paginação deve voltar para a primeira página.
+    // Ao mudar filtros de verdade, a paginação deve voltar para a primeira página.
     // Preservar apenas a visualização (lista/grade).
     const visualizacao = searchParams.get('visualizacao')
     if (visualizacao) {
@@ -98,8 +123,8 @@ export default function MusicFilters({ genres, currentParams }: MusicFiltersProp
     if (ordem && ordem !== 'mais-vistos') {
       params.set('ordem', ordem)
     }
-    if (buscaDebounced && buscaDebounced.trim() !== '') {
-      params.set('busca', buscaDebounced.trim())
+    if (currentBusca !== '') {
+      params.set('busca', currentBusca)
     }
 
     router.push(`/musicas?${params.toString()}`, { scroll: false })
