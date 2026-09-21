@@ -54,8 +54,18 @@ function LoginForm() {
       const data = await response.json()
 
       if (!response.ok) {
+        if (data.code === 'EMAIL_NOT_FOUND') {
+          setError('E-mail não cadastrado. Vamos te levar para criar sua conta.')
+          window.setTimeout(() => {
+            router.push(`/compositores/cadastro?email=${encodeURIComponent(formData.email.trim())}`)
+          }, 1600)
+          return
+        }
         if (data.code === 'EMAIL_NOT_VERIFIED') {
           setUnverifiedEmail(data.email || formData.email)
+        }
+        if (data.code === 'INVALID_PASSWORD') {
+          throw new Error('Senha incorreta. Tente novamente.')
         }
         throw new Error(data.error || 'Erro ao fazer login')
       }

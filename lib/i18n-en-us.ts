@@ -19,6 +19,8 @@ const exact: Record<string, string> = {
   'Esqueci minha senha': 'Forgot my password',
   'Não tem uma conta?': "Don't have an account?",
   'Entrando...': 'Logging in...',
+  'Senha incorreta. Tente novamente.': 'Incorrect password. Please try again.',
+  'E-mail não cadastrado. Vamos te levar para criar sua conta.': 'Email address not registered. We’ll take you to sign up.',
   'Minha conta': 'My account',
   'Meu perfil': 'My profile',
   'Meus dados': 'My details',

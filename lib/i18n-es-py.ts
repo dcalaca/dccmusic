@@ -20,6 +20,8 @@ const exact: Record<string, string> = {
   "Esqueci minha senha": "Olvidé mi contraseña",
   "Não tem uma conta?": "¿No tienes una cuenta?",
   "Entrando...": "Ingresando...",
+  "Senha incorreta. Tente novamente.": "Contraseña incorrecta. Inténtalo de nuevo.",
+  "E-mail não cadastrado. Vamos te levar para criar sua conta.": "El correo electrónico no está registrado. Te llevaremos a crear tu cuenta.",
   "Criar conta": "Crear cuenta",
   "Minha conta": "Mi cuenta",
   "Meu perfil": "Mi perfil",

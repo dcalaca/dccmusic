@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { FiArrowRight, FiEye, FiEyeOff, FiLock, FiMail, FiUser } from 'react-icons/fi'
@@ -23,6 +23,11 @@ export default function ComposerSignupPage() {
   const [errorField, setErrorField] = useState<'email' | ''>('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  useEffect(() => {
+    const email = new URLSearchParams(window.location.search).get('email')?.trim()
+    if (email) setFormData((current) => ({ ...current, email }))
+  }, [])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()

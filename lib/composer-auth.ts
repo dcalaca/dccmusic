@@ -424,7 +424,9 @@ export async function loginComposer(email: string, password: string) {
 
     if (!data) {
       console.log('[COMPOSER-AUTH] Compositor não encontrado:', normalizedEmail)
-      throw new Error('Email ou senha incorretos')
+      const error: any = new Error('E-mail não cadastrado. Vamos te levar para criar sua conta.')
+      error.code = 'EMAIL_NOT_FOUND'
+      throw error
     }
 
     if (!data.password_hash) {
@@ -437,7 +439,9 @@ export async function loginComposer(email: string, password: string) {
 
     if (!isValid) {
       console.log('[COMPOSER-AUTH] Senha incorreta para:', normalizedEmail)
-      throw new Error('Email ou senha incorretos')
+      const error: any = new Error('Senha incorreta. Tente novamente.')
+      error.code = 'INVALID_PASSWORD'
+      throw error
     }
 
     if (data.email_verified === false) {

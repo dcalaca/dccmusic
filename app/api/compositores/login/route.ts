@@ -50,6 +50,8 @@ export async function POST(request: Request) {
   } catch (error: any) {
     const expectedAuthFailure =
       error?.code === 'EMAIL_NOT_VERIFIED' ||
+      error?.code === 'EMAIL_NOT_FOUND' ||
+      error?.code === 'INVALID_PASSWORD' ||
       /email ou senha incorretos/i.test(String(error?.message || ''))
 
     const logPayload = {

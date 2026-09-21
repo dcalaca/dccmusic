@@ -9,6 +9,8 @@ const exact: Record<string, string> = {
   'Esqueci minha senha': 'Esqueci-me da palavra-passe',
   'Não tem uma conta?': 'Ainda não tem uma conta?',
   'Entrando...': 'A entrar...',
+  'Senha incorreta. Tente novamente.': 'Palavra-passe incorreta. Tente novamente.',
+  'E-mail não cadastrado. Vamos te levar para criar sua conta.': 'O e-mail não está registado. Vamos encaminhá-lo para criar a sua conta.',
   'Login': 'Iniciar sessão',
   'Fazer login': 'Iniciar sessão',
   'Entrar': 'Iniciar sessão',
