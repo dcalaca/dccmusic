@@ -71,7 +71,7 @@ export default async function VideosPage({ searchParams = {} }: VideosPageProps)
     ? { title: 'Videos', subtitle: 'Explore music videos', loading: 'Loading filters...', empty: 'No videos found.', foundOne: 'video found', foundMany: 'videos found', previous: 'Previous', page: 'Page', next: 'Next' }
     : isSpanish
       ? { title: 'Vídeos', subtitle: 'Explora vídeos musicales', loading: 'Cargando filtros...', empty: 'No se encontraron vídeos.', foundOne: 'vídeo encontrado', foundMany: 'vídeos encontrados', previous: 'Anterior', page: 'Página', next: 'Siguiente' }
-      : { title: 'Vídeos', subtitle: 'Explore vídeos musicais', loading: '{copy.loading}', empty: '{copy.empty}', foundOne: 'vídeo encontrado', foundMany: 'vídeos encontrados', previous: 'Anterior', page: 'Página', next: 'Próxima' }
+      : { title: 'Vídeos', subtitle: 'Explore vídeos musicais', loading: 'Carregando filtros...', empty: 'Nenhum vídeo encontrado.', foundOne: 'vídeo encontrado', foundMany: 'vídeos encontrados', previous: 'Anterior', page: 'Página', next: 'Próxima' }
 
   // Buscar TODOS os vídeos sem filtros no banco
   const allVideos = await db.getVideos({ ordem: 'recentes' })

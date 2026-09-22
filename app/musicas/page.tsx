@@ -85,7 +85,7 @@ export default async function MusicasPage({ searchParams = {} }: MusicasPageProp
     ? { title: 'Explore songs', subtitle: 'Discover songs created by the DCC Music community.', videos: 'Featured music videos' }
     : isSpanish
       ? { title: 'Explorar canciones', subtitle: 'Descubre canciones creadas por la comunidad DCC Music.', videos: 'Vídeos musicales destacados' }
-      : { title: 'Explorar músicas', subtitle: '{copy.subtitle}', videos: 'Vídeos musicais em destaque' }
+      : { title: 'Explorar músicas', subtitle: 'Descubra músicas criadas pela comunidade DCC Music.', videos: 'Vídeos musicais em destaque' }
 
   // Buscar TODAS as músicas sem filtros no banco, incluindo músicas publicadas do Studio IA
   const [catalogMusics, studioMusics] = await Promise.all([
