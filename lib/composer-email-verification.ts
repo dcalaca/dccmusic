@@ -5,19 +5,14 @@ import { sendAdminNewComposerEmail, sendComposerWelcomeEmail, sendDccEmail } fro
 import { dccEmailButton, escapeEmailHtml } from './dcc-email-template'
 import { recordConfirmedPartnerSignup } from './partners'
 import { sendTikTokCompleteRegistrationEvent } from './tiktok-events'
+import { getComposerEmailLanguage, type ComposerEmailLanguage } from './composer-email-language'
 
 const TOKEN_BYTES = 32
 const TOKEN_EXPIRES_MINUTES = 60 * 24
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 
-export type ComposerEmailLanguage = 'pt' | 'en' | 'es'
-
-export function getComposerEmailLanguage(country?: string | null): ComposerEmailLanguage {
-  const normalizedCountry = String(country || '').trim().toUpperCase()
-  if (normalizedCountry === 'US' || normalizedCountry === 'GB') return 'en'
-  if (['PY', 'CO', 'MX', 'ES'].includes(normalizedCountry)) return 'es'
-  return 'pt'
-}
+export { getComposerEmailLanguage } from './composer-email-language'
+export type { ComposerEmailLanguage } from './composer-email-language'
 
 const EMAIL_COPY = {
   pt: {
@@ -218,7 +213,7 @@ export async function verifyComposerEmailToken(token: string) {
 
   const { data: composer } = await supabaseAdmin
     .from('dccmusic_composers')
-    .select('id, name, slug, email, is_premium, subscription_expires_at')
+    .select('id, name, slug, email, country, is_premium, subscription_expires_at')
     .eq('id', verification.composer_id)
     .maybeSingle()
 
@@ -228,6 +223,7 @@ export async function verifyComposerEmailToken(token: string) {
         composerId: composer.id,
         name: composer.name || 'Compositor',
         email: composer.email,
+        country: composer.country,
       })
     } catch (welcomeEmailError) {
       console.error('[EMAIL VERIFY] Erro ao enviar boas-vindas:', welcomeEmailError)

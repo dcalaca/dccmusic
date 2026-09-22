@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { supabaseAdmin } from './supabase'
 import { sendDccEmail } from './dcc-emails'
 import { dccEmailButton } from './dcc-email-template'
+import { getComposerEmailLanguage, type ComposerEmailLanguage } from './composer-email-language'
 
 const TOKEN_BYTES = 32
 const TOKEN_EXPIRES_MINUTES = 60
@@ -24,18 +25,23 @@ function escapeHtml(value: string) {
     .replace(/'/g, '&#039;')
 }
 
-function passwordResetEmailHtml(input: { name: string; resetUrl: string }) {
+function passwordResetEmailHtml(input: { name: string; resetUrl: string; language: ComposerEmailLanguage }) {
   const safeName = escapeHtml(input.name || 'compositor')
+  const copy = input.language === 'en'
+    ? { greeting: 'Hi', body: 'We received a request to create a new password for your DCC Music songwriter account.', button: 'Create new password', fallback: 'If the button does not work, copy and paste this link into your browser:', expiry: 'This link expires in 1 hour. If you did not request a password change, please ignore this email.' }
+    : input.language === 'es'
+      ? { greeting: 'Hola', body: 'Recibimos una solicitud para crear una nueva contraseña para tu cuenta de compositor de DCC Music.', button: 'Crear nueva contraseña', fallback: 'Si el botón no funciona, copia y pega este enlace en tu navegador:', expiry: 'Este enlace vence en 1 hora. Si no solicitaste el cambio de contraseña, ignora este correo.' }
+      : { greeting: 'Olá', body: 'Recebemos uma solicitação para criar uma nova senha para sua conta de compositor na DCC Music.', button: 'Criar nova senha', fallback: 'Se o botão não funcionar, copie e cole este link no navegador:', expiry: 'Este link expira em 1 hora. Se você não pediu a troca de senha, ignore este e-mail.' }
 
   return `
-    <p>Olá, ${safeName}.</p>
-    <p>Recebemos uma solicitação para criar uma nova senha para sua conta de compositor na DCC Music.</p>
-    ${dccEmailButton('Criar nova senha', input.resetUrl)}
+    <p>${copy.greeting}, ${safeName}.</p>
+    <p>${copy.body}</p>
+    ${dccEmailButton(copy.button, input.resetUrl)}
     <p style="font-size:13px;line-height:1.5;color:#777080;">
-      Se o botão não funcionar, copie e cole este link no navegador:<br>
+      ${copy.fallback}<br>
       <span style="word-break:break-all;">${escapeHtml(input.resetUrl)}</span>
     </p>
-    <p style="font-size:12px;color:#777080;margin-top:24px;">Este link expira em 1 hora. Se você não pediu a troca de senha, ignore este e-mail.</p>
+    <p style="font-size:12px;color:#777080;margin-top:24px;">${copy.expiry}</p>
   `
 }
 
@@ -76,7 +82,7 @@ export async function sendComposerPasswordResetEmail(email: string) {
 
   const { data: composer, error } = await supabaseAdmin
     .from('dccmusic_composers')
-    .select('id, name, email')
+    .select('id, name, email, country')
     .eq('email', normalizedEmail)
     .maybeSingle()
 
@@ -88,16 +94,23 @@ export async function sendComposerPasswordResetEmail(email: string) {
     email: normalizedEmail,
   })
 
+  const language = getComposerEmailLanguage(composer.country)
+  const copy = language === 'en'
+    ? { subject: 'Create a new password at DCC Music', title: 'Reset your password', preview: 'Create a new password to access your DCC Music songwriter account.' }
+    : language === 'es'
+      ? { subject: 'Crea una nueva contraseña en DCC Music', title: 'Restablece tu contraseña', preview: 'Crea una nueva contraseña para acceder a tu cuenta de compositor de DCC Music.' }
+      : { subject: 'Crie uma nova senha na DCC Music', title: 'Redefinir sua senha', preview: 'Crie uma nova senha para acessar sua conta de compositor na DCC Music.' }
+
   return sendDccEmail({
     to: normalizedEmail,
-    subject: 'Crie uma nova senha na DCC Music',
-    title: 'Redefinir sua senha',
-    preview: 'Crie uma nova senha para acessar sua conta de compositor na DCC Music.',
+    subject: copy.subject,
+    title: copy.title,
+    preview: copy.preview,
     category: 'composer_password_reset',
     provider: 'resend',
     eventKey: `composer-password-reset/${composer.id}/${Date.now()}`,
     metadata: { composerId: composer.id },
-    contentHtml: passwordResetEmailHtml({ name: composer.name, resetUrl: reset.resetUrl }),
+    contentHtml: passwordResetEmailHtml({ name: composer.name, resetUrl: reset.resetUrl, language }),
   })
 }
 

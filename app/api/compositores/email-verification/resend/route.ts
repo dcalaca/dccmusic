@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getComposerEmailLanguage, sendComposerVerificationEmail } from '@/lib/composer-email-verification'
-import { getDetectedCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     const { data: composer, error } = await supabaseAdmin
       .from('dccmusic_composers')
-      .select('id, name, email, email_verified')
+    .select('id, name, email, country, email_verified')
       .eq('email', email)
       .maybeSingle()
 
@@ -34,12 +33,16 @@ export async function POST(request: NextRequest) {
       composerId: composer.id,
       email: composer.email,
       name: composer.name,
-      language: getComposerEmailLanguage(getDetectedCountry(request.headers)),
+      language: getComposerEmailLanguage(composer.country),
     })
 
     return NextResponse.json({
       success: true,
-      message: 'Enviamos um novo link de confirmação para seu e-mail.',
+      message: getComposerEmailLanguage(composer.country) === 'en'
+        ? 'We sent a new confirmation link to your email.'
+        : getComposerEmailLanguage(composer.country) === 'es'
+          ? 'Enviamos un nuevo enlace de confirmación a tu correo.'
+          : 'Enviamos um novo link de confirmação para seu e-mail.',
     })
   } catch (error: any) {
     console.error('[EMAIL VERIFY] Erro ao reenviar:', error)

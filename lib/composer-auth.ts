@@ -1,6 +1,7 @@
 import { supabaseAdmin } from './supabase'
 import bcrypt from 'bcryptjs'
 import * as db from './db'
+import { getComposerEmailLanguage } from './composer-email-language'
 import { 
   formatDisplayName,
   normalizeName, 
@@ -445,11 +446,18 @@ export async function loginComposer(email: string, password: string) {
     }
 
     if (data.email_verified === false) {
-      const error: any = new Error('Confirme seu e-mail antes de entrar. Enviamos um link de confirmação para seu endereço.')
+      const language = getComposerEmailLanguage(data.country)
+      const message = language === 'en'
+        ? 'Please confirm your email before logging in. We sent a confirmation link to your email address.'
+        : language === 'es'
+          ? 'Confirma tu correo antes de iniciar sesión. Enviamos un enlace de confirmación a tu correo.'
+          : 'Confirme seu e-mail antes de entrar. Enviamos um link de confirmação para seu endereço.'
+      const error: any = new Error(message)
       error.code = 'EMAIL_NOT_VERIFIED'
       error.composerId = data.id
       error.email = data.email
       error.name = data.name
+      error.language = language
       throw error
     }
 

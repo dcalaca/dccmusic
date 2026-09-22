@@ -19,6 +19,7 @@ function LoginForm() {
   const [success, setSuccess] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [unverifiedEmail, setUnverifiedEmail] = useState('')
+  const [verificationLanguage, setVerificationLanguage] = useState<'pt' | 'en' | 'es'>('pt')
   const [resendingVerification, setResendingVerification] = useState(false)
   const isPostSignup = searchParams.get('cadastro') === 'sucesso'
   const signupEmail = searchParams.get('email') || ''
@@ -63,6 +64,7 @@ function LoginForm() {
         }
         if (data.code === 'EMAIL_NOT_VERIFIED') {
           setUnverifiedEmail(data.email || formData.email)
+          setVerificationLanguage(data.language === 'en' || data.language === 'es' ? data.language : 'pt')
         }
         if (data.code === 'INVALID_PASSWORD') {
           throw new Error('Senha incorreta. Tente novamente.')
@@ -193,7 +195,9 @@ function LoginForm() {
                       disabled={resendingVerification}
                       className="mt-3 inline-flex rounded-lg bg-red-700 px-4 py-2 text-xs font-bold text-white hover:bg-red-600 disabled:opacity-60"
                     >
-                      {resendingVerification ? 'Reenviando...' : 'Reenviar link de confirmação'}
+                      {resendingVerification
+                        ? (verificationLanguage === 'en' ? 'Resending...' : verificationLanguage === 'es' ? 'Reenviando...' : 'Reenviando...')
+                        : (verificationLanguage === 'en' ? 'Resend confirmation link' : verificationLanguage === 'es' ? 'Reenviar enlace de confirmación' : 'Reenviar link de confirmação')}
                     </button>
                   )}
                 </div>

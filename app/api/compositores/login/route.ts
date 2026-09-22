@@ -71,6 +71,7 @@ export async function POST(request: Request) {
         error: error.message || 'Erro ao fazer login',
         code: error.code || null,
         email: error.email || null,
+        language: error.language || null,
       },
       { status: 401 }
     )

@@ -2,6 +2,8 @@ import { notifyMusicReady } from './notifications'
 import { supabaseAdmin } from './supabase'
 import { buildDccEmailHtml, dccEmailButton } from './dcc-email-template'
 import { getAppBooleanSetting } from './app-settings'
+import { getComposerEmailLanguage, type ComposerEmailLanguage } from './composer-email-language'
+import { getComposerEmailCopy } from './composer-email-copy'
 
 type EmailResult = {
   sent: boolean
@@ -13,7 +15,20 @@ type ComposerEmailInput = {
   composerId: string
   name: string
   email: string
+  country?: string | null
   [key: string]: any
+}
+
+async function getEmailLanguage(input: ComposerEmailInput): Promise<ComposerEmailLanguage> {
+  if (input.country) return getComposerEmailLanguage(input.country)
+
+  const { data } = await supabaseAdmin
+    .from('dccmusic_composers')
+    .select('country')
+    .eq('id', input.composerId)
+    .maybeSingle()
+
+  return getComposerEmailLanguage(data?.country)
 }
 
 type DccEmailInput = {
@@ -250,7 +265,7 @@ export async function sendDccEmail(input: DccEmailInput): Promise<EmailResult> {
 export async function getComposerEmailIdentity(composerId: string) {
   const { data, error } = await supabaseAdmin
     .from('dccmusic_composers')
-    .select('id, name, email, slug')
+    .select('id, name, email, slug, country')
     .eq('id', composerId)
     .maybeSingle()
 
@@ -262,21 +277,23 @@ export async function getComposerEmailIdentity(composerId: string) {
     name: data.name || 'Compositor',
     email: data.email,
     slug: data.slug || null,
+    country: data.country || null,
   }
 }
 
 export async function sendComposerWelcomeEmail(input: ComposerEmailInput) {
+  const copy = getComposerEmailCopy(await getEmailLanguage(input))
   return sendDccEmail({
     to: input.email,
-    subject: 'Bem-vindo à DCC Music',
-    title: `Bem-vindo, ${input.name}`,
+    subject: copy.welcomeSubject,
+    title: `${copy.welcomeTitle}, ${input.name}`,
     category: 'composer_welcome',
     eventKey: `composer-welcome/${input.composerId}`,
     metadata: { composerId: input.composerId },
     contentHtml: `
-      <p>Olá, ${escapeHtml(input.name)}.</p>
-      <p>Seu e-mail foi confirmado e sua conta de compositor está pronta.</p>
-      ${button('Acessar meu painel', `${getSiteUrl()}/compositores/login`)}
+      <p>${copy.greeting}, ${escapeHtml(input.name)}.</p>
+      <p>${copy.welcomeBody}</p>
+      ${button(copy.dashboard, `${getSiteUrl()}/compositores/login`)}
     `,
   })
 }
@@ -378,19 +395,20 @@ export async function sendManualStudioCreditEmail(input: ComposerEmailInput & {
   reason: string
   message?: string
 }) {
+  const copy = getComposerEmailCopy(await getEmailLanguage(input))
   return sendDccEmail({
     to: input.email,
-    subject: 'Créditos adicionados ao seu Studio IA',
-    title: 'Créditos liberados no Studio IA',
+    subject: copy.creditsSubject,
+    title: copy.creditsTitle,
     category: 'manual_studio_credit',
     eventKey: `manual-credit/${input.composerId}/${Date.now()}`,
     metadata: { composerId: input.composerId, credits: input.credits },
     contentHtml: `
-      <p>Olá, ${escapeHtml(input.name)}.</p>
-      <p>Foram adicionados <strong>${input.credits} créditos</strong> (${input.musicQuantity} música(s)) ao seu Studio IA.</p>
-      <p><strong>Motivo:</strong> ${escapeHtml(input.reason)}</p>
+      <p>${copy.greeting}, ${escapeHtml(input.name)}.</p>
+      <p>${copy.creditsAdded} <strong>${input.credits} ${copy.credits}</strong> (${input.musicQuantity} ${copy.creditsMusics}) ${copy.creditsDestination}</p>
+      <p><strong>${copy.reason}:</strong> ${escapeHtml(input.reason)}</p>
       ${input.message ? `<p>${nl2br(input.message)}</p>` : ''}
-      ${button('Acessar Studio IA', `${getSiteUrl()}/compositores/admin/studio-ia`)}
+      ${button(copy.studio, `${getSiteUrl()}/compositores/admin/studio-ia`)}
     `,
   })
 }
@@ -400,17 +418,18 @@ export async function sendLowStudioCreditsEmail(input: ComposerEmailInput & {
   remainingMusics: number
   monthKey?: string
 }) {
+  const copy = getComposerEmailCopy(await getEmailLanguage(input))
   return sendDccEmail({
     to: input.email,
-    subject: 'Seu saldo do Studio IA está baixo',
-    title: 'Saldo baixo no Studio IA',
+    subject: copy.lowCreditsSubject,
+    title: copy.lowCreditsTitle,
     category: 'low_studio_credits',
     eventKey: `low-credits/${input.composerId}/${input.monthKey || 'current'}`,
     metadata: { composerId: input.composerId, remainingCredits: input.remainingCredits },
     contentHtml: `
-      <p>Olá, ${escapeHtml(input.name)}.</p>
-      <p>Seu saldo atual é de <strong>${input.remainingCredits} créditos</strong>, cerca de ${input.remainingMusics} música(s).</p>
-      ${button('Ver recargas', `${getSiteUrl()}/compositores/admin/studio-ia/recarga`)}
+      <p>${copy.greeting}, ${escapeHtml(input.name)}.</p>
+      <p>${copy.lowCreditsBody} <strong>${input.remainingCredits} ${copy.credits}</strong>, ${copy.about} ${input.remainingMusics} ${copy.creditsMusics}.</p>
+      ${button(copy.topups, `${getSiteUrl()}/compositores/admin/studio-ia/recarga`)}
     `,
   })
 }
@@ -430,6 +449,7 @@ export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
   projectSlug?: string | null
   audioUrl?: string | null
 }) {
+  const copy = getComposerEmailCopy(await getEmailLanguage(input))
   // O callback do fornecedor pode chegar alguns segundos antes de o MP3 ficar
   // realmente disponível. Não avisamos o cliente enquanto as duas versões não
   // estiverem guardadas e reproduzíveis no nosso armazenamento.
@@ -466,8 +486,8 @@ export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
 
   return sendDccEmail({
     to: input.email,
-    subject: `Sua música "${input.projectTitle}" ficou pronta`,
-    title: 'Sua música ficou pronta',
+    subject: copy.readySubject.replace('%s', input.projectTitle),
+    title: copy.readyTitle,
     category: 'studio_music_ready',
     eventKey: getStudioMusicReadyEventKey(input),
     metadata: {
@@ -476,10 +496,10 @@ export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
       generationId: input.generationId || null,
     },
     contentHtml: `
-      <p>Olá, ${escapeHtml(input.name)}.</p>
-      <p>A música <strong>${escapeHtml(input.projectTitle)}</strong> já está disponível no seu Studio IA.</p>
-      ${input.projectId ? `<p style="margin-top:-8px;font-size:12px;line-height:1.5;color:#8b8794;word-break:break-all;">Código do projeto: <strong style="color:#6b6675;">${escapeHtml(input.projectId)}</strong></p>` : ''}
-      ${button('Abrir Studio IA', `${getSiteUrl()}/compositores/admin/studio-ia/projetos${input.projectId ? `/${input.projectId}` : ''}`)}
+      <p>${copy.greeting}, ${escapeHtml(input.name)}.</p>
+      <p>${copy.readyBody} <strong>${escapeHtml(input.projectTitle)}</strong> ${copy.readyAvailable}</p>
+      ${input.projectId ? `<p style="margin-top:-8px;font-size:12px;line-height:1.5;color:#8b8794;word-break:break-all;">${copy.projectCode}: <strong style="color:#6b6675;">${escapeHtml(input.projectId)}</strong></p>` : ''}
+      ${button(copy.openStudio, `${getSiteUrl()}/compositores/admin/studio-ia/projetos${input.projectId ? `/${input.projectId}` : ''}`)}
     `,
   })
 }
@@ -491,17 +511,18 @@ export async function sendStudioMusicCommentEmail(input: ComposerEmailInput & {
   comment: string
   commentId: string
 }) {
+  const copy = getComposerEmailCopy(await getEmailLanguage(input))
   return sendDccEmail({
     to: input.email,
-    subject: 'Novo comentário em sua música',
-    title: 'Novo comentário recebido',
+    subject: copy.commentSubject,
+    title: copy.commentTitle,
     category: 'studio_music_comment',
     eventKey: `studio-comment/${input.commentId}`,
     metadata: { composerId: input.composerId, commentId: input.commentId },
     contentHtml: `
-      <p>${escapeHtml(input.commenterName)} comentou em <strong>${escapeHtml(input.projectTitle)}</strong>:</p>
+      <p>${escapeHtml(input.commenterName)} ${copy.commentedOn} <strong>${escapeHtml(input.projectTitle)}</strong>:</p>
       <p style="background:#F8F4FC;border-left:3px solid #A53CF4;border-radius:0 10px 10px 0;padding:12px;color:#5E5868;">${nl2br(input.comment)}</p>
-      ${button('Ver música', `${getSiteUrl()}/studio/${input.projectSlug}`)}
+      ${button(copy.viewSong, `${getSiteUrl()}/studio/${input.projectSlug}`)}
     `,
   })
 }
@@ -513,18 +534,19 @@ export async function sendPaymentConfirmationEmail(input: ComposerEmailInput & {
   amount: number
   paidAt?: Date
 }) {
+  const copy = getComposerEmailCopy(await getEmailLanguage(input))
   return sendDccEmail({
     to: input.email,
-    subject: 'Pagamento confirmado na DCC Music',
-    title: 'Pagamento confirmado',
+    subject: copy.paymentSubject,
+    title: copy.paymentTitle,
     category: 'payment_confirmation',
     eventKey: `payment/${input.paymentId}`,
     metadata: { composerId: input.composerId, paymentId: String(input.paymentId), productType: input.productType },
     contentHtml: `
-      <p>Olá, ${escapeHtml(input.name)}.</p>
-      <p>Confirmamos o pagamento de <strong>${escapeHtml(input.description)}</strong>.</p>
-      <p><strong>Valor:</strong> ${formatMoney(input.amount)}</p>
-      <p><strong>ID do pagamento:</strong> ${escapeHtml(input.paymentId)}</p>
+      <p>${copy.greeting}, ${escapeHtml(input.name)}.</p>
+      <p>${copy.paymentBody} <strong>${escapeHtml(input.description)}</strong>.</p>
+      <p><strong>${copy.value}:</strong> ${formatMoney(input.amount)}</p>
+      <p><strong>${copy.paymentId}:</strong> ${escapeHtml(input.paymentId)}</p>
     `,
   })
 }
@@ -591,17 +613,18 @@ export async function sendSubscriptionExpirationReminderEmail(input: ComposerEma
   expiresAt?: string | Date | null
   daysRemaining?: number
 }) {
+  const copy = getComposerEmailCopy(await getEmailLanguage(input))
   return sendDccEmail({
     to: input.email,
-    subject: 'Seu plano DCC Music está perto do vencimento',
-    title: 'Seu plano está perto do vencimento',
+    subject: copy.subscriptionSubject,
+    title: copy.subscriptionTitle,
     category: 'subscription_expiration_reminder',
     eventKey: `subscription-reminder/${input.composerId}/${input.daysRemaining ?? 'x'}`,
     metadata: { composerId: input.composerId, daysRemaining: input.daysRemaining },
     contentHtml: `
-      <p>Olá, ${escapeHtml(input.name)}.</p>
-      <p>Seu plano ${escapeHtml(input.planName || '')} vence em ${input.daysRemaining ?? '?'} dia(s).</p>
-      ${button('Ver planos', `${getSiteUrl()}/compositores/planos`)}
+      <p>${copy.greeting}, ${escapeHtml(input.name)}.</p>
+      <p>${copy.subscriptionBody} ${escapeHtml(input.planName || '')} ${copy.expires} ${input.daysRemaining ?? '?'} ${copy.days}.</p>
+      ${button(copy.plans, `${getSiteUrl()}/compositores/planos`)}
     `,
   })
 }
@@ -686,16 +709,17 @@ export async function sendPartnerWelcomeEmail(input: {
 }
 
 export async function sendComposerAccountDeletedEmail(input: ComposerEmailInput) {
+  const copy = getComposerEmailCopy(await getEmailLanguage(input))
   return sendDccEmail({
     to: input.email,
-    subject: 'Sua conta foi excluída da DCC Music',
-    title: 'Conta excluída conforme solicitado',
+    subject: copy.deletedSubject,
+    title: copy.deletedTitle,
     category: 'composer_account_deleted',
     eventKey: `account-deleted/${input.composerId}`,
     metadata: { composerId: input.composerId },
     contentHtml: `
-      <p>Olá, ${escapeHtml(input.name)}.</p>
-      <p>Confirmamos que sua conta de compositor foi excluída da DCC Music.</p>
+      <p>${copy.greeting}, ${escapeHtml(input.name)}.</p>
+      <p>${copy.deletedBody}</p>
     `,
   })
 }
