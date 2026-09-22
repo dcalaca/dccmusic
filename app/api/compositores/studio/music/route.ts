@@ -642,6 +642,10 @@ async function notifyAfterMusicGeneration(input: {
 }
 
 export async function POST(request: NextRequest) {
+  let claimedProjectId: string | null = null
+  let previousProjectStatus: string | null = null
+  let providerRequestAccepted = false
+
   try {
     const composer = getComposerFromRequest(request)
     if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
@@ -964,9 +968,54 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    previousProjectStatus = project.status || 'draft'
+    const claimTimestamp = new Date().toISOString()
+    const { data: claimedProject, error: claimError } = await supabaseAdmin
+      .from('studio_projects')
+      .update({ status: 'generating', updated_at: claimTimestamp })
+      .eq('id', project.id)
+      .eq('composer_id', composer.composerId)
+      .neq('status', 'generating')
+      .select('id')
+      .maybeSingle()
+
+    if (claimError) throw claimError
+    if (!claimedProject) {
+      const { data: activeGeneration } = await supabaseAdmin
+        .from('studio_generations')
+        .select('id, provider_task_id, status, created_at')
+        .eq('project_id', project.id)
+        .eq('composer_id', composer.composerId)
+        .in('status', ['processing', 'pending'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      return NextResponse.json(
+        {
+          error: 'Já existe uma geração desta música em andamento. Aguarde ela terminar antes de criar outra versão.',
+          generationId: activeGeneration?.id || null,
+          taskId: activeGeneration?.provider_task_id || null,
+          duplicatePrevented: true,
+        },
+        { status: 409 }
+      )
+    }
+
+    claimedProjectId = project.id
+
     await trySuno()
 
     if (!providerResult) {
+      if (claimedProjectId) {
+        await supabaseAdmin
+          .from('studio_projects')
+          .update({ status: previousProjectStatus || 'draft', updated_at: new Date().toISOString() })
+          .eq('id', claimedProjectId)
+          .eq('status', 'generating')
+        claimedProjectId = null
+      }
+
       await sendAdminStudioAlertEmail({
         notificationKey: 'admin_email.studio_generation_failure',
         title: 'Falha ao iniciar música no Studio IA',
@@ -993,6 +1042,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    providerRequestAccepted = true
     const { provider, taskId, payload, result } = providerResult
     const providerAttemptLog = {
       finalProvider: provider,
@@ -1096,6 +1146,15 @@ export async function POST(request: NextRequest) {
         : 'Geração iniciada. A música pode levar alguns minutos para finalizar.',
     })
   } catch (error: any) {
+    if (claimedProjectId && !providerRequestAccepted) {
+      await supabaseAdmin
+        .from('studio_projects')
+        .update({ status: previousProjectStatus || 'draft', updated_at: new Date().toISOString() })
+        .eq('id', claimedProjectId)
+        .eq('status', 'generating')
+        .catch(() => null)
+    }
+
     console.error('[Studio IA] Erro criar música:', error)
     return NextResponse.json({ error: MUSIC_CREATION_UNAVAILABLE_MESSAGE }, { status: 500 })
   }
