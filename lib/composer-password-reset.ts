@@ -94,7 +94,7 @@ export async function sendComposerPasswordResetEmail(email: string) {
     title: 'Redefinir sua senha',
     preview: 'Crie uma nova senha para acessar sua conta de compositor na DCC Music.',
     category: 'composer_password_reset',
-    provider: 'brevo',
+    provider: 'resend',
     eventKey: `composer-password-reset/${composer.id}/${Date.now()}`,
     metadata: { composerId: composer.id },
     contentHtml: passwordResetEmailHtml({ name: composer.name, resetUrl: reset.resetUrl }),

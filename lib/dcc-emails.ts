@@ -21,7 +21,7 @@ type DccEmailInput = {
   title: string
   preview?: string
   category: string
-  provider?: 'brevo'
+  provider?: 'resend'
   eventKey?: string
   contentHtml: string
   metadata?: Record<string, any>
@@ -51,7 +51,7 @@ function parseEmailHeader(value?: string | null) {
 }
 
 function getEmailProvider() {
-  return 'brevo'
+  return 'resend'
 }
 
 function isBrevoEmailProvider() {
@@ -170,25 +170,23 @@ async function completeEmailEvent(input: DccEmailInput, result: EmailResult) {
   }
 }
 
-async function sendBrevoEmail(input: DccEmailInput): Promise<EmailResult> {
-  const apiKey = normalizeEmailHeader(process.env.BREVO_API_KEY)
+async function sendResendEmail(input: DccEmailInput): Promise<EmailResult> {
+  const apiKey = normalizeEmailHeader(process.env.RESEND_API_KEY)
   const sender = parseEmailHeader(
+    process.env.RESEND_FROM_EMAIL ||
     process.env.BREVO_FROM_EMAIL ||
     process.env.SMTP_FROM_EMAIL
   )
   const replyTo = parseEmailHeader(
+    process.env.RESEND_REPLY_TO_EMAIL ||
     process.env.BREVO_REPLY_TO_EMAIL ||
     process.env.SMTP_REPLY_TO_EMAIL
   )
   const adminEmail = parseEmailHeader(process.env.ADMIN_EMAIL || process.env.DCC_ADMIN_EMAIL)
-  const allowAdminBcc = process.env.ALLOW_BREVO_ADMIN_BCC === 'true'
+  const allowAdminBcc = process.env.ALLOW_RESEND_ADMIN_BCC === 'true'
 
   if (!apiKey || !sender?.email) {
-    return { sent: false, reason: 'brevo_not_configured' }
-  }
-
-  if (input.category === 'admin_email_campaign' && process.env.ALLOW_BACKUP_MARKETING_EMAILS !== 'true') {
-    return { sent: false, reason: 'marketing_disabled_on_backup_provider' }
+    return { sent: false, reason: 'resend_not_configured' }
   }
 
   const claimed = await claimEmailEvent(input)
@@ -196,45 +194,36 @@ async function sendBrevoEmail(input: DccEmailInput): Promise<EmailResult> {
     return { sent: false, reason: 'already_sent' }
   }
 
-  const isMarketingEmail = input.category === 'admin_email_campaign'
-  const brevoCustomHeaders = isMarketingEmail
-    ? undefined
-    : {
-        'X-Mailin-Track': 'false',
-        'X-Mailin-Track-Clicks': 'false',
-        'X-Mailin-Track-Opens': 'false',
-      }
-
   let sentSuccessfully = false
   try {
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         accept: 'application/json',
-        'api-key': apiKey,
+        authorization: `Bearer ${apiKey}`,
         'content-type': 'application/json',
+        ...(input.eventKey ? { 'Idempotency-Key': input.eventKey } : {}),
       },
       body: JSON.stringify({
-        sender,
-        to: [{ email: input.to }],
-        replyTo: replyTo || undefined,
-        bcc: allowAdminBcc && input.bccAdmin && adminEmail?.email ? [adminEmail] : undefined,
+        from: sender.name ? `${sender.name} <${sender.email}>` : sender.email,
+        to: [input.to],
+        reply_to: replyTo?.email || undefined,
+        bcc: allowAdminBcc && input.bccAdmin && adminEmail?.email ? [adminEmail.email] : undefined,
         subject: input.subject,
-        htmlContent: emailLayout(input),
-        tags: [input.category].filter(Boolean),
-        headers: brevoCustomHeaders,
+        html: emailLayout(input),
+        tags: input.category ? [{ name: 'category', value: input.category }] : undefined,
       }),
     })
 
     const payload = await response.json().catch(() => ({}))
 
     if (!response.ok) {
-      console.error('[DCC EMAIL] Erro Brevo:', payload)
-      throw new Error(payload?.message || 'Erro ao enviar e-mail pelo Brevo')
+      console.error('[DCC EMAIL] Erro Resend:', payload)
+      throw new Error(payload?.message || 'Erro ao enviar e-mail pelo Resend')
     }
 
     sentSuccessfully = true
-    const result = { sent: true, id: payload?.messageId || null }
+    const result = { sent: true, id: payload?.id || null }
     await completeEmailEvent(input, result)
     return result
   } catch (error) {
@@ -246,7 +235,7 @@ async function sendBrevoEmail(input: DccEmailInput): Promise<EmailResult> {
 }
 
 export async function sendDccEmail(input: DccEmailInput): Promise<EmailResult> {
-  return sendBrevoEmail(input)
+  return sendResendEmail(input)
 }
 
 export async function getComposerEmailIdentity(composerId: string) {
