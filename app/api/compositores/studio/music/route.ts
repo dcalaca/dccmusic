@@ -1147,12 +1147,15 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     if (claimedProjectId && !providerRequestAccepted) {
-      await supabaseAdmin
-        .from('studio_projects')
-        .update({ status: previousProjectStatus || 'draft', updated_at: new Date().toISOString() })
-        .eq('id', claimedProjectId)
-        .eq('status', 'generating')
-        .catch(() => null)
+      try {
+        await supabaseAdmin
+          .from('studio_projects')
+          .update({ status: previousProjectStatus || 'draft', updated_at: new Date().toISOString() })
+          .eq('id', claimedProjectId)
+          .eq('status', 'generating')
+      } catch {
+        // A falha original é mais importante; o callback/timeout ainda consegue reconciliar o projeto.
+      }
     }
 
     console.error('[Studio IA] Erro criar música:', error)
