@@ -104,6 +104,7 @@ export async function maybeSendSunoLowCreditAlert(balance: SunoCreditBalance) {
   }
 
   const result = await sendAdminStudioAlertEmail({
+    notificationKey: 'admin_email.suno_low_credit',
     title: 'Alerta: saldo Suno abaixo do limite',
     message: `O saldo atual da Suno está em ${availableCredits.toLocaleString('pt-BR')} créditos, abaixo do limite configurado de ${threshold.toLocaleString('pt-BR')} créditos.`,
     eventKey,

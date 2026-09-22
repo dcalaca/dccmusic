@@ -318,6 +318,7 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('[Studio IA] Callback Suno erro:', error)
     await sendAdminStudioAlertEmail({
+      notificationKey: 'admin_email.studio_callback_failure',
       title: 'Falha no callback do Studio IA',
       message: error.message || 'Erro ao processar callback de geração musical.',
       eventKey: `studio-callback-error/${Date.now()}`,

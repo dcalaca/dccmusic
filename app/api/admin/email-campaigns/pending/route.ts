@@ -11,6 +11,7 @@ export const dynamic = 'force-dynamic'
 const TARGET_PREFIX = 'pending-email|'
 const BATCH_SIZE = 40
 const RETRYABLE_MARKETING_REASON = 'marketing_disabled_on_backup_provider'
+const DELIVERY_CLAIM_TAG = '__reserved__'
 
 type Recipient = {
   id: string
@@ -201,18 +202,15 @@ async function getHandledEmails(campaignId: string) {
     .from('admin_email_campaign_deliveries')
     .select('recipient_email, status')
     .eq('campaign_id', campaignId)
-    .in('status', ['sent', 'skipped'])
+    .in('status', ['sent', 'skipped', 'failed'])
 
   if (error) throw error
   return new Set((data || []).map((row: any) => normalizeMarketingEmail(row.recipient_email)).filter(Boolean))
 }
 
-async function recordDelivery(input: {
+async function claimDelivery(input: {
   campaignId: string
   recipient: Recipient
-  status: 'sent' | 'failed' | 'skipped'
-  providerMessageId?: string | null
-  errorMessage?: string | null
 }) {
   const payload = {
     campaign_id: input.campaignId,
@@ -220,15 +218,41 @@ async function recordDelivery(input: {
     recipient_id: input.recipient.id,
     recipient_email: input.recipient.email,
     recipient_name: input.recipient.name,
-    status: input.status,
-    provider_message_id: input.providerMessageId || null,
-    error_message: input.errorMessage || null,
-    sent_at: input.status === 'sent' ? new Date().toISOString() : null,
+    status: 'skipped',
+    provider_message_id: null,
+    error_message: DELIVERY_CLAIM_TAG,
+    sent_at: null,
   }
 
+  const { data, error } = await supabaseAdmin
+    .from('admin_email_campaign_deliveries')
+    .insert(payload)
+    .select('id')
+    .maybeSingle()
+
+  if (error) {
+    if (error.code === '23505' || String(error.message || '').toLowerCase().includes('duplicate')) return null
+    throw error
+  }
+
+  return data?.id || null
+}
+
+async function finalizeClaimedDelivery(id: string, input: {
+  status: 'sent' | 'failed'
+  providerMessageId?: string | null
+  errorMessage?: string | null
+}) {
   const { error } = await supabaseAdmin
     .from('admin_email_campaign_deliveries')
-    .upsert(payload, { onConflict: 'campaign_id,recipient_email' })
+    .update({
+      status: input.status,
+      provider_message_id: input.providerMessageId || null,
+      error_message: input.errorMessage || null,
+      sent_at: input.status === 'sent' ? new Date().toISOString() : null,
+    })
+    .eq('id', id)
+    .eq('error_message', DELIVERY_CLAIM_TAG)
 
   if (error) throw error
 }
@@ -268,6 +292,9 @@ async function sendBatch(campaignId: string, requireSendingStatus: boolean) {
   let failed = 0
 
   for (const recipient of pending) {
+    const deliveryId = await claimDelivery({ campaignId, recipient })
+    if (!deliveryId) continue
+
     try {
       const trackedCtaUrl = (campaign as any).cta_label && (campaign as any).cta_url
         ? await createCampaignButtonUrl({
@@ -318,14 +345,14 @@ async function sendBatch(campaignId: string, requireSendingStatus: boolean) {
 
       if (result.sent) {
         sent += 1
-        await recordDelivery({ campaignId, recipient, status: 'sent', providerMessageId: result.id || null })
+        await finalizeClaimedDelivery(deliveryId, { status: 'sent', providerMessageId: result.id || null })
       } else {
         failed += 1
-        await recordDelivery({ campaignId, recipient, status: 'failed', errorMessage: result.reason || 'Envio ignorado' })
+        await finalizeClaimedDelivery(deliveryId, { status: 'failed', errorMessage: result.reason || 'Envio ignorado' })
       }
     } catch (sendError: any) {
       failed += 1
-      await recordDelivery({ campaignId, recipient, status: 'failed', errorMessage: sendError?.message || 'Erro ao enviar' })
+      await finalizeClaimedDelivery(deliveryId, { status: 'failed', errorMessage: sendError?.message || 'Erro ao enviar' })
     }
   }
 

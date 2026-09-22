@@ -1,6 +1,7 @@
 import { notifyMusicReady } from './notifications'
 import { supabaseAdmin } from './supabase'
 import { buildDccEmailHtml, dccEmailButton } from './dcc-email-template'
+import { getAppBooleanSetting } from './app-settings'
 
 type EmailResult = {
   sent: boolean
@@ -56,6 +57,14 @@ function getEmailProvider() {
 
 function isBrevoEmailProvider() {
   return getEmailProvider() === 'brevo'
+}
+
+async function isAdminEmailEnabled(settingKey: string) {
+  try {
+    return await getAppBooleanSetting(settingKey, true)
+  } catch {
+    return true
+  }
 }
 
 function escapeHtml(value: any) {
@@ -273,12 +282,7 @@ export async function sendComposerWelcomeEmail(input: ComposerEmailInput) {
 }
 
 export async function sendAdminNewComposerEmail(input: ComposerEmailInput) {
-  if (
-    isBrevoEmailProvider() &&
-    process.env.ENABLE_BREVO_ADMIN_NEW_COMPOSER_EMAILS !== 'true'
-  ) {
-    return { sent: false, reason: 'admin_new_composer_disabled_on_brevo' }
-  }
+  if (!await isAdminEmailEnabled('admin_email.new_composer')) return { sent: false, reason: 'admin_notification_disabled' }
 
   const adminEmail = normalizeEmailHeader(process.env.ADMIN_EMAIL || process.env.DCC_ADMIN_EMAIL)
   if (!adminEmail) return { sent: false, reason: 'admin_email_missing' }
@@ -533,12 +537,7 @@ export async function sendAdminPaymentNotificationEmail(input: {
   description: string
   amount: number
 }) {
-  if (
-    isBrevoEmailProvider() &&
-    process.env.ENABLE_BREVO_ADMIN_PAYMENT_EMAILS !== 'true'
-  ) {
-    return { sent: false, reason: 'admin_payment_disabled_on_brevo' }
-  }
+  if (!await isAdminEmailEnabled('admin_email.payment_confirmed')) return { sent: false, reason: 'admin_notification_disabled' }
 
   const adminEmail = normalizeEmailHeader(process.env.ADMIN_EMAIL || process.env.DCC_ADMIN_EMAIL)
   if (!adminEmail) return { sent: false, reason: 'admin_email_missing' }
@@ -562,10 +561,14 @@ export async function sendAdminPaymentNotificationEmail(input: {
 export async function sendAdminStudioAlertEmail(input: {
   title: string
   message: string
+  notificationKey?: string
   eventKey?: string
   metadata?: Record<string, any>
   detailsHtml?: string
 }) {
+  if (!await isAdminEmailEnabled(input.notificationKey || 'admin_email.studio_generation_failure')) {
+    return { sent: false, reason: 'admin_notification_disabled' }
+  }
   const adminEmail = normalizeEmailHeader(process.env.ADMIN_EMAIL || process.env.DCC_ADMIN_EMAIL)
   if (!adminEmail) return { sent: false, reason: 'admin_email_missing' }
 
@@ -640,7 +643,7 @@ export async function sendPartnerWelcomeEmail(input: {
       partnerCode: input.partnerCode,
       partnerLink: input.partnerLink,
     },
-    bccAdmin: true,
+    bccAdmin: await isAdminEmailEnabled('admin_email.partner_welcome_copy'),
     contentHtml: `
       <p>Olá, ${escapeHtml(input.displayName)}.</p>
       <p>Sua conta de parceiro da DCC Music foi criada. A partir de agora, você pode acessar seu painel para acompanhar cliques, cadastros e compras.</p>

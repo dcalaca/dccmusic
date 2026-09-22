@@ -13,7 +13,18 @@ export type AppSettingDefinition = {
   max?: number
 }
 
-export const APP_SETTING_DEFINITIONS: AppSettingDefinition[] = []
+export const APP_SETTING_DEFINITIONS: AppSettingDefinition[] = [
+  { key: 'admin_email.new_composer', label: 'Novo compositor', description: 'Receber um aviso quando um compositor confirmar o e-mail e entrar na DCC Music.', group: 'Notificações por e-mail do administrador', type: 'boolean', defaultValue: 'true' },
+  { key: 'admin_email.payment_confirmed', label: 'Pagamento confirmado', description: 'Receber um aviso para cada pagamento aprovado. Desative se preferir acompanhar apenas Mercado Pago e Stripe.', group: 'Notificações por e-mail do administrador', type: 'boolean', defaultValue: 'true' },
+  { key: 'admin_email.payment_failure', label: 'Falha de pagamento', description: 'Receber alertas quando uma falha técnica puder impedir pagamento ou liberação de créditos.', group: 'Notificações por e-mail do administrador', type: 'boolean', defaultValue: 'true' },
+  { key: 'admin_email.studio_generation_failure', label: 'Falha ao gerar música', description: 'Receber alertas quando os fornecedores recusarem ou não iniciarem uma geração do Studio IA.', group: 'Notificações por e-mail do administrador', type: 'boolean', defaultValue: 'true' },
+  { key: 'admin_email.studio_callback_failure', label: 'Falha no retorno da geração', description: 'Receber alertas de erro no callback que conclui músicas do Studio IA.', group: 'Notificações por e-mail do administrador', type: 'boolean', defaultValue: 'true' },
+  { key: 'admin_email.studio_high_usage', label: 'Uso alto do Studio IA', description: 'Receber avisos quando um compositor atingir marcos de uso mensal do Studio IA.', group: 'Notificações por e-mail do administrador', type: 'boolean', defaultValue: 'true' },
+  { key: 'admin_email.suno_low_credit', label: 'Saldo baixo da Suno', description: 'Receber alerta diário quando os créditos da Suno ficarem abaixo do limite configurado.', group: 'Notificações por e-mail do administrador', type: 'boolean', defaultValue: 'true' },
+  { key: 'admin_email.openai_budget', label: 'Orçamento de IA criativa', description: 'Receber alerta quando o gasto mensal da OpenAI atingir o percentual configurado.', group: 'Notificações por e-mail do administrador', type: 'boolean', defaultValue: 'true' },
+  { key: 'admin_email.meta_ads_low_balance', label: 'Saldo baixo de Meta Ads', description: 'Receber alerta diário quando uma conta de anúncios ficar abaixo do saldo mínimo.', group: 'Notificações por e-mail do administrador', type: 'boolean', defaultValue: 'true' },
+  { key: 'admin_email.partner_welcome_copy', label: 'Cópia de boas-vindas de parceiro', description: 'Receber uma cópia quando o sistema enviar o e-mail de acesso a um parceiro.', group: 'Notificações por e-mail do administrador', type: 'boolean', defaultValue: 'true' },
+]
 
 const definitionByKey = new Map(APP_SETTING_DEFINITIONS.map((item) => [item.key, item]))
 
@@ -79,6 +90,15 @@ export async function getAppNumberSetting(key: string, fallback: number): Promis
   if (typeof definition?.min === 'number') value = Math.max(definition.min, value)
   if (typeof definition?.max === 'number') value = Math.min(definition.max, value)
   return value
+}
+
+export async function getAppBooleanSetting(key: string, fallback: boolean): Promise<boolean> {
+  const dbValue = await getAppSettingValue(key)
+  const definition = getAppSettingDefinition(key)
+  const raw = String(dbValue ?? definition?.defaultValue ?? fallback).trim().toLowerCase()
+  if (['true', '1'].includes(raw)) return true
+  if (['false', '0'].includes(raw)) return false
+  return fallback
 }
 
 export function validateAppSettingValue(key: string, rawValue: unknown) {

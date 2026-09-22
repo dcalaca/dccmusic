@@ -144,6 +144,7 @@ export async function reportPaymentFailure(input: PaymentFailureAlertInput) {
 
   try {
     const result = await sendAdminStudioAlertEmail({
+      notificationKey: 'admin_email.payment_failure',
       title: `🚨 Alerta DCC Music — falha no ${providerLabels[input.provider]}`,
       message: `Uma falha técnica pode impedir a conclusão de um pagamento ou a liberação de créditos.\n\nErro: ${message}`,
       eventKey,

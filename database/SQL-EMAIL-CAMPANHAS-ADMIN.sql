@@ -58,6 +58,12 @@ create table if not exists public.admin_email_opt_outs (
 create unique index if not exists idx_admin_email_campaign_deliveries_unique
   on public.admin_email_campaign_deliveries(campaign_id, lower(recipient_email));
 
+-- Camada adicional de proteção: uma mesma campanha só pode reservar uma entrega
+-- para cada usuário, mesmo com duas execuções concorrentes.
+create unique index if not exists idx_admin_email_campaign_deliveries_campaign_recipient
+  on public.admin_email_campaign_deliveries(campaign_id, recipient_type, recipient_id)
+  where recipient_id is not null;
+
 create index if not exists idx_admin_email_opt_outs_email
   on public.admin_email_opt_outs(lower(email));
 

@@ -161,24 +161,41 @@ export default function AdminSettingsPanel() {
                   </div>
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                    <label className="flex-1">
-                      <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
-                        Valor
-                      </span>
-                      <input
-                        type={setting.type === 'number' ? 'number' : 'text'}
-                        min={setting.min ?? undefined}
-                        max={setting.max ?? undefined}
-                        value={drafts[setting.key] ?? ''}
-                        onChange={(event) =>
-                          setDrafts((current) => ({
-                            ...current,
-                            [setting.key]: event.target.value,
-                          }))
-                        }
-                        className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500"
-                      />
-                    </label>
+                    {setting.type === 'boolean' ? (
+                      <label className="flex flex-1 items-center gap-3 rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-sm text-white">
+                        <input
+                          type="checkbox"
+                          checked={(drafts[setting.key] ?? setting.value) === 'true'}
+                          onChange={(event) =>
+                            setDrafts((current) => ({
+                              ...current,
+                              [setting.key]: event.target.checked ? 'true' : 'false',
+                            }))
+                          }
+                          className="h-4 w-4 accent-primary-600"
+                        />
+                        {(drafts[setting.key] ?? setting.value) === 'true' ? 'Receber este e-mail' : 'Não receber este e-mail'}
+                      </label>
+                    ) : (
+                      <label className="flex-1">
+                        <span className="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Valor
+                        </span>
+                        <input
+                          type={setting.type === 'number' ? 'number' : 'text'}
+                          min={setting.min ?? undefined}
+                          max={setting.max ?? undefined}
+                          value={drafts[setting.key] ?? ''}
+                          onChange={(event) =>
+                            setDrafts((current) => ({
+                              ...current,
+                              [setting.key]: event.target.value,
+                            }))
+                          }
+                          className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500"
+                        />
+                      </label>
+                    )}
 
                     <button
                       type="button"
