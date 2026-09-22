@@ -33,11 +33,14 @@ export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
   const [formattedDate, setFormattedDate] = useState<string>('')
   const [formattedViews, setFormattedViews] = useState<string>('')
   const [mounted, setMounted] = useState(false)
+  const [uiLanguage, setUiLanguage] = useState<'pt' | 'en' | 'es'>('pt')
   const viewCount = music.viewCount ?? 0
   
   useEffect(() => {
     // Marcar como montado apenas no cliente para evitar hydration mismatch
     setMounted(true)
+    const lang = document.documentElement.lang || ''
+    setUiLanguage(lang.startsWith('en') ? 'en' : lang.startsWith('es') ? 'es' : 'pt')
   }, [])
 
   useEffect(() => {
@@ -124,7 +127,7 @@ export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
               <div className="flex items-center gap-1 text-xs text-gray-400 shrink-0">
                 <FiEye className="w-3.5 h-3.5" />
                 <span>
-                  {mounted ? formattedViews : formatIntegerPtBR(viewCount)} visualizações
+                  {mounted ? formattedViews : formatIntegerPtBR(viewCount)} {uiLanguage === 'en' ? 'views' : uiLanguage === 'es' ? 'vistas' : 'visualizações'}
                 </span>
               </div>
             )}
@@ -174,7 +177,7 @@ export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
                 {viewCount > 0 && (
                   <span className="inline-flex items-center gap-1">
                     <FiEye className="w-3.5 h-3.5" />
-                    {mounted ? formattedViews : formatIntegerPtBR(viewCount)} visualizações
+                    {mounted ? formattedViews : formatIntegerPtBR(viewCount)} {uiLanguage === 'en' ? 'views' : uiLanguage === 'es' ? 'vistas' : 'visualizações'}
                   </span>
                 )}
               </div>
@@ -212,7 +215,7 @@ export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
               {viewCount > 0 && (
                 <span className="inline-flex items-center gap-1">
                   <FiEye className="w-3.5 h-3.5" />
-                  {mounted ? formattedViews : formatIntegerPtBR(viewCount)} visualizações
+                  {mounted ? formattedViews : formatIntegerPtBR(viewCount)} {uiLanguage === 'en' ? 'views' : uiLanguage === 'es' ? 'vistas' : 'visualizações'}
                 </span>
               )}
             </div>

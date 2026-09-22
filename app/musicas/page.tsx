@@ -196,9 +196,7 @@ export default async function MusicasPage({ searchParams = {} }: MusicasPageProp
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">
               <span className="gradient-text">{copy.title}</span>
             </h1>
-            <p className="text-gray-400">
-              Descubra músicas criadas pela comunidade DCC Music.
-            </p>
+            <p className="text-gray-400">{copy.subtitle}</p>
           </div>
           <Link href="/videos" className="inline-flex min-h-[42px] items-center justify-center gap-2 self-start rounded-lg border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-200 transition hover:border-purple-400 hover:text-white sm:self-auto">
             <FiPlayCircle className="h-4 w-4" />
@@ -209,7 +207,7 @@ export default async function MusicasPage({ searchParams = {} }: MusicasPageProp
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar de Filtros */}
           <aside className="lg:w-64 flex-shrink-0">
-            <Suspense fallback={<div className="text-gray-400">Carregando filtros...</div>}>
+            <Suspense fallback={<div className="text-gray-400">{isEnglish ? 'Loading filters...' : isSpanish ? 'Cargando filtros...' : 'Carregando filtros...'}</div>}>
               <MusicFilters genres={genres} currentParams={searchParams} />
             </Suspense>
           </aside>
@@ -218,19 +216,19 @@ export default async function MusicasPage({ searchParams = {} }: MusicasPageProp
           <main className="flex-1">
             {paginatedMusics.length === 0 ? (
               <div className="text-center py-16">
-                <p className="text-gray-400 text-lg">Nenhuma música encontrada.</p>
+                <p className="text-gray-400 text-lg">{isEnglish ? 'No songs found.' : isSpanish ? 'No se encontraron canciones.' : 'Nenhuma música encontrada.'}</p>
               </div>
             ) : (
               <>
                 <div className="flex items-center justify-between mb-4">
                   <div className="text-sm text-gray-400">
-                    {total} música{total !== 1 ? 's' : ''} encontrada{total !== 1 ? 's' : ''}
+                    {isEnglish ? `${total} ${total === 1 ? 'song found' : 'songs found'}` : isSpanish ? `${total} ${total === 1 ? 'canción encontrada' : 'canciones encontradas'}` : `${total} música${total !== 1 ? 's' : ''} encontrada${total !== 1 ? 's' : ''}`}
                   </div>
                   <Suspense fallback={<div className="w-32 h-10 bg-gray-800 rounded-lg animate-pulse"></div>}>
                     <ViewToggle defaultView={visualizacao} />
                   </Suspense>
                 </div>
-                <Suspense fallback={<div className="text-gray-400">Carregando músicas...</div>}>
+                <Suspense fallback={<div className="text-gray-400">{isEnglish ? 'Loading songs...' : isSpanish ? 'Cargando canciones...' : 'Carregando músicas...'}</div>}>
                   <MusicList musics={paginatedMusics} view={visualizacao} />
                 </Suspense>
 

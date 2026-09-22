@@ -26,10 +26,13 @@ export default function VideoCard({ video }: VideoCardProps) {
   const [formattedDate, setFormattedDate] = useState<string>('')
   const [formattedViews, setFormattedViews] = useState<string>('')
   const [mounted, setMounted] = useState(false)
+  const [uiLanguage, setUiLanguage] = useState<'pt' | 'en' | 'es'>('pt')
   
   useEffect(() => {
     // Marcar como montado apenas no cliente para evitar hydration mismatch
     setMounted(true)
+    const lang = document.documentElement.lang || ''
+    setUiLanguage(lang.startsWith('en') ? 'en' : lang.startsWith('es') ? 'es' : 'pt')
   }, [])
 
   useEffect(() => {
@@ -81,7 +84,7 @@ export default function VideoCard({ video }: VideoCardProps) {
             <span>{mounted ? formattedDate : formatDateShort(video.publishedAt)}</span>
             {video.viewCount > 0 && (
               <span>
-                {mounted ? formattedViews : formatIntegerPtBR(video.viewCount)} visualizações
+                {mounted ? formattedViews : formatIntegerPtBR(video.viewCount)} {uiLanguage === 'en' ? 'views' : uiLanguage === 'es' ? 'vistas' : 'visualizações'}
               </span>
             )}
           </div>

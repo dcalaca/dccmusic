@@ -506,6 +506,8 @@ const exact: Record<string, string> = {
   'Fale com o suporte. Se a dúvida for sobre uma música do Studio IA, envie também o código do projeto para facilitar o atendimento.': 'Contact support. For an AI Studio song, include the project code so we can help faster.',
 
   // Song Chords page
+  'Custa 10 créditos do saldo DCC.': 'Costs 10 DCC credits.',
+  'Opção #2': 'Option #2',
   'Para músicas do Studio IA, a DCC organiza a letra e os acordes em uma cifra limpa, pronta para tocar e imprimir.': 'For AI Studio songs, DCC organizes the lyrics and chords into a clean chord sheet ready to play and print.',
   'Seu saldo': 'Your balance',
   'Saldo insuficiente para gerar a cifra.': 'You do not have enough credits to generate song chords.',

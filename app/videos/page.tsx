@@ -215,7 +215,7 @@ export default async function VideosPage({ searchParams = {} }: VideosPageProps)
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar de Filtros */}
           <aside className="lg:w-64 flex-shrink-0">
-            <Suspense fallback={<div className="text-gray-400">Carregando filtros...</div>}>
+            <Suspense fallback={<div className="text-gray-400">{copy.loading}</div>}>
               <VideoFilters genres={genres} anos={anos} currentParams={searchParams} />
             </Suspense>
           </aside>
@@ -224,7 +224,7 @@ export default async function VideosPage({ searchParams = {} }: VideosPageProps)
           <main className="flex-1">
             {paginatedVideos.length === 0 ? (
               <div className="text-center py-16">
-                <p className="text-gray-400 text-lg">Nenhum vídeo encontrado.</p>
+                <p className="text-gray-400 text-lg">{copy.empty}</p>
               </div>
             ) : (
               <>
