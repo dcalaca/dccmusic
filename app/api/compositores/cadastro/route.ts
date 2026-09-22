@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as composerAuth from '@/lib/composer-auth'
 import { ComposerSignupError } from '@/lib/composer-auth'
-import { sendComposerVerificationEmail } from '@/lib/composer-email-verification'
+import { getComposerEmailLanguage, sendComposerVerificationEmail } from '@/lib/composer-email-verification'
 import { hasComposerAccountDeletionBlock } from '@/lib/dcc-emails'
 import { validateSignupEmail } from '@/lib/email-validation'
 import { PARTNER_SESSION_COOKIE, applyComposerPartnerAttribution } from '@/lib/partners'
@@ -92,6 +92,7 @@ export async function POST(request: NextRequest) {
         composerId: result.composer.id,
         email: normalizedEmail,
         name: result.composer.name,
+        language: getComposerEmailLanguage(country),
       })
     } catch (emailError) {
       console.error('[CADASTRO] Erro ao enviar confirmação de e-mail:', emailError)

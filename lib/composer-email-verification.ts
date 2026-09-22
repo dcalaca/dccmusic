@@ -10,6 +10,69 @@ const TOKEN_BYTES = 32
 const TOKEN_EXPIRES_MINUTES = 60 * 24
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 
+export type ComposerEmailLanguage = 'pt' | 'en' | 'es'
+
+export function getComposerEmailLanguage(country?: string | null): ComposerEmailLanguage {
+  const normalizedCountry = String(country || '').trim().toUpperCase()
+  if (normalizedCountry === 'US' || normalizedCountry === 'GB') return 'en'
+  if (['PY', 'CO', 'MX', 'ES'].includes(normalizedCountry)) return 'es'
+  return 'pt'
+}
+
+const EMAIL_COPY = {
+  pt: {
+    greeting: 'Olá',
+    verificationSubject: 'Confirme seu e-mail na DCC Music',
+    verificationTitle: 'Confirme seu e-mail',
+    verificationPreview: 'Confirme seu e-mail para ativar sua conta de compositor na DCC Music.',
+    verificationBody: 'Clique no botão abaixo para confirmar seu e-mail e ativar sua conta de compositor na DCC Music.',
+    verificationButton: 'Confirmar meu e-mail',
+    reminderSubject: 'Ative sua conta e use sua música grátis',
+    reminderTitle: 'Ative sua conta na DCC Music',
+    reminderPreview: 'Ative sua conta para acessar o painel e usar sua música grátis no DCC Studio IA.',
+    reminderBody: 'Você ainda não ativou sua conta de compositor na DCC Music.',
+    reminderBenefit: 'Ative sua conta para acessar o painel e usar sua música grátis no DCC Studio IA.',
+    reminderButton: 'Ativar minha conta',
+    fallback: 'Se o botão não funcionar, copie e cole este link no navegador:',
+    expiry: 'Este link expira em 24 horas.',
+    ignore: 'Se você não criou essa conta, ignore este e-mail.',
+  },
+  en: {
+    greeting: 'Hi',
+    verificationSubject: 'Confirm your email at DCC Music',
+    verificationTitle: 'Confirm your email',
+    verificationPreview: 'Confirm your email to activate your songwriter account at DCC Music.',
+    verificationBody: 'Click the button below to confirm your email and activate your DCC Music songwriter account.',
+    verificationButton: 'Confirm my email',
+    reminderSubject: 'Activate your account and use your free song',
+    reminderTitle: 'Activate your DCC Music account',
+    reminderPreview: 'Activate your account to access your dashboard and use your free song in DCC AI Studio.',
+    reminderBody: 'You have not activated your DCC Music songwriter account yet.',
+    reminderBenefit: 'Activate your account to access your dashboard and use your free song in DCC AI Studio.',
+    reminderButton: 'Activate my account',
+    fallback: 'If the button does not work, copy and paste this link into your browser:',
+    expiry: 'This link expires in 24 hours.',
+    ignore: 'If you did not create this account, please ignore this email.',
+  },
+  es: {
+    greeting: 'Hola',
+    verificationSubject: 'Confirma tu correo electrónico en DCC Music',
+    verificationTitle: 'Confirma tu correo electrónico',
+    verificationPreview: 'Confirma tu correo para activar tu cuenta de compositor en DCC Music.',
+    verificationBody: 'Haz clic en el botón para confirmar tu correo y activar tu cuenta de compositor en DCC Music.',
+    verificationButton: 'Confirmar mi correo',
+    reminderSubject: 'Activa tu cuenta y usa tu canción gratis',
+    reminderTitle: 'Activa tu cuenta de DCC Music',
+    reminderPreview: 'Activa tu cuenta para acceder a tu panel y usar tu canción gratis en DCC AI Studio.',
+    reminderBody: 'Aún no has activado tu cuenta de compositor en DCC Music.',
+    reminderBenefit: 'Activa tu cuenta para acceder a tu panel y usar tu canción gratis en DCC AI Studio.',
+    reminderButton: 'Activar mi cuenta',
+    fallback: 'Si el botón no funciona, copia y pega este enlace en tu navegador:',
+    expiry: 'Este enlace vence en 24 horas.',
+    ignore: 'Si no creaste esta cuenta, ignora este correo.',
+  },
+} as const
+
 function getSiteUrl() {
   return (process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000').replace(/\/$/, '')
 }
@@ -18,30 +81,32 @@ function hashToken(token: string) {
   return crypto.createHash('sha256').update(token).digest('hex')
 }
 
-function verificationEmailHtml(input: { name: string; verificationUrl: string }) {
+function verificationEmailHtml(input: { name: string; verificationUrl: string; language: ComposerEmailLanguage }) {
+  const copy = EMAIL_COPY[input.language]
   return `
-    <p>Olá, ${escapeEmailHtml(input.name)}.</p>
-    <p>Clique no botão abaixo para confirmar seu e-mail e ativar sua conta de compositor na DCC Music.</p>
-    ${dccEmailButton('Confirmar meu e-mail', input.verificationUrl)}
+    <p>${copy.greeting}, ${escapeEmailHtml(input.name)}.</p>
+    <p>${copy.verificationBody}</p>
+    ${dccEmailButton(copy.verificationButton, input.verificationUrl)}
     <p style="font-size:13px;line-height:1.5;color:#777080;">
-      Se o botão não funcionar, copie e cole este link no navegador:<br>
+      ${copy.fallback}<br>
       <span style="word-break:break-all;">${escapeEmailHtml(input.verificationUrl)}</span>
     </p>
-    <p style="font-size:12px;color:#777080;margin-top:24px;">Este link expira em 24 horas. Se você não criou essa conta, ignore este e-mail.</p>
+    <p style="font-size:12px;color:#777080;margin-top:24px;">${copy.expiry} ${copy.ignore}</p>
   `
 }
 
-function activationReminderEmailHtml(input: { name: string; verificationUrl: string }) {
+function activationReminderEmailHtml(input: { name: string; verificationUrl: string; language: ComposerEmailLanguage }) {
+  const copy = EMAIL_COPY[input.language]
   return `
-    <p>Olá, ${escapeEmailHtml(input.name)}.</p>
-    <p>Você ainda não ativou sua conta de compositor na DCC Music.</p>
-    <p>Ative sua conta para acessar o painel e usar sua música grátis no DCC Studio IA.</p>
-    ${dccEmailButton('Ativar minha conta', input.verificationUrl)}
+    <p>${copy.greeting}, ${escapeEmailHtml(input.name)}.</p>
+    <p>${copy.reminderBody}</p>
+    <p>${copy.reminderBenefit}</p>
+    ${dccEmailButton(copy.reminderButton, input.verificationUrl)}
     <p style="font-size:13px;line-height:1.5;color:#777080;">
-      Se o botão não funcionar, copie e cole este link no navegador:<br>
+      ${copy.fallback}<br>
       <span style="word-break:break-all;">${escapeEmailHtml(input.verificationUrl)}</span>
     </p>
-    <p style="font-size:12px;color:#777080;margin-top:24px;">Este link expira em 24 horas.</p>
+    <p style="font-size:12px;color:#777080;margin-top:24px;">${copy.expiry}</p>
   `
 }
 
@@ -49,6 +114,7 @@ export async function createComposerEmailVerification(input: {
   composerId: string
   email: string
   name: string
+  language?: ComposerEmailLanguage
 }) {
   const token = crypto.randomBytes(TOKEN_BYTES).toString('hex')
   const tokenHash = hashToken(token)
@@ -67,7 +133,7 @@ export async function createComposerEmailVerification(input: {
 
   return {
     token,
-    verificationUrl: `${getSiteUrl()}/compositores/verificar-email?token=${token}`,
+    verificationUrl: `${getSiteUrl()}/compositores/verificar-email?token=${token}&lang=${input.language || 'pt'}`,
   }
 }
 
@@ -75,19 +141,22 @@ export async function sendComposerVerificationEmail(input: {
   composerId: string
   email: string
   name: string
+  language?: ComposerEmailLanguage
 }) {
   const verification = await createComposerEmailVerification(input)
+  const language = input.language || 'pt'
+  const copy = EMAIL_COPY[language]
 
   return sendDccEmail({
     to: input.email,
-    subject: 'Confirme seu e-mail na DCC Music',
-    title: 'Confirme seu e-mail',
-    preview: 'Confirme seu e-mail para ativar sua conta de compositor na DCC Music.',
+    subject: copy.verificationSubject,
+    title: copy.verificationTitle,
+    preview: copy.verificationPreview,
     category: 'composer_email_verification',
     provider: 'brevo',
     eventKey: `composer-email-verification/${input.composerId}/${Date.now()}`,
     metadata: { composerId: input.composerId },
-    contentHtml: verificationEmailHtml({ name: input.name, verificationUrl: verification.verificationUrl }),
+    contentHtml: verificationEmailHtml({ name: input.name, verificationUrl: verification.verificationUrl, language }),
   })
 }
 
@@ -95,19 +164,22 @@ export async function sendComposerActivationReminderEmail(input: {
   composerId: string
   email: string
   name: string
+  language?: ComposerEmailLanguage
 }) {
   const verification = await createComposerEmailVerification(input)
+  const language = input.language || 'pt'
+  const copy = EMAIL_COPY[language]
 
   return sendDccEmail({
     to: input.email,
-    subject: 'Ative sua conta e use sua música grátis',
-    title: 'Ative sua conta na DCC Music',
-    preview: 'Ative sua conta para acessar o painel e usar sua música grátis no DCC Studio IA.',
+    subject: copy.reminderSubject,
+    title: copy.reminderTitle,
+    preview: copy.reminderPreview,
     category: 'composer_activation_reminder',
     provider: 'brevo',
     eventKey: `composer-activation-reminder/${input.composerId}/${Date.now()}`,
     metadata: { composerId: input.composerId },
-    contentHtml: activationReminderEmailHtml({ name: input.name, verificationUrl: verification.verificationUrl }),
+    contentHtml: activationReminderEmailHtml({ name: input.name, verificationUrl: verification.verificationUrl, language }),
   })
 }
 

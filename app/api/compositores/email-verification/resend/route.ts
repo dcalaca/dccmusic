@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { sendComposerVerificationEmail } from '@/lib/composer-email-verification'
+import { getComposerEmailLanguage, sendComposerVerificationEmail } from '@/lib/composer-email-verification'
+import { getDetectedCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const email = String(body.email || '').toLowerCase().trim()
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
       composerId: composer.id,
       email: composer.email,
       name: composer.name,
+      language: getComposerEmailLanguage(getDetectedCountry(request.headers)),
     })
 
     return NextResponse.json({

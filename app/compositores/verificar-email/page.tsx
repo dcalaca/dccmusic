@@ -6,7 +6,8 @@ export const revalidate = 0
 export default async function VerifyComposerEmailPage({
   searchParams,
 }: {
-  searchParams: { token?: string }
+  searchParams: { token?: string; lang?: string }
 }) {
-  return <VerifyComposerEmailClient token={searchParams.token || ''} />
+  const language = searchParams.lang === 'en' || searchParams.lang === 'es' ? searchParams.lang : 'pt'
+  return <VerifyComposerEmailClient token={searchParams.token || ''} language={language} />
 }

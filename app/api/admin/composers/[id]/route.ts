@@ -7,12 +7,12 @@ import { registerComposerAccountDeletionBlock, sendAdminComposerMessageEmail, se
 import { addStudioCreditTransaction, STUDIO_MUSIC_CREDITS } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
-import { sendComposerActivationReminderEmail } from '@/lib/composer-email-verification'
+import { getComposerEmailLanguage, sendComposerActivationReminderEmail } from '@/lib/composer-email-verification'
 
 async function getComposerIdentityForAdmin(composerId: string) {
   const { data, error } = await supabaseAdmin
     .from('dccmusic_composers')
-    .select('id, name, email, email_verified')
+    .select('id, name, email, email_verified, country')
     .eq('id', composerId)
     .maybeSingle()
 
@@ -24,6 +24,7 @@ async function getComposerIdentityForAdmin(composerId: string) {
     name: formatDisplayName(data.name || 'Compositor'),
     email: data.email as string | null,
     emailVerified: Boolean(data.email_verified),
+    country: data.country as string | null,
   }
 }
 
@@ -169,6 +170,7 @@ export async function PATCH(
         composerId: composer.id,
         email: composer.email,
         name: composer.name,
+        language: getComposerEmailLanguage(composer.country),
       })
 
       return NextResponse.json({
