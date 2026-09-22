@@ -14,6 +14,7 @@ const filters = [
 
 const TRANSCRIPTIONS_FILTER = 'cifras'
 const ORIGINALS_FILTER = 'originais'
+const PLAYBACKS_FILTER = 'playbacks'
 
 const inspirationVariationOptions = [
   { id: 'similar', label: 'Manter parecido' },
@@ -54,6 +55,7 @@ function StudioProjectsContent() {
   const choosingPlayback = searchParams.get('acao') === 'playback'
   const [projects, setProjects] = useState<any[]>([])
   const [transcriptions, setTranscriptions] = useState<any[]>([])
+  const [playbackAssets, setPlaybackAssets] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState('')
   const [deletingDrafts, setDeletingDrafts] = useState(false)
@@ -76,6 +78,7 @@ function StudioProjectsContent() {
     localStorage.removeItem('composer_token')
     setProjects([])
     setTranscriptions([])
+    setPlaybackAssets([])
     setSessionExpired(true)
     setError('Sua sessão expirou ou você foi desconectado. Entre novamente para ver seus projetos.')
   }
@@ -112,7 +115,29 @@ function StudioProjectsContent() {
       return
     }
 
+    if (currentFilter === PLAYBACKS_FILTER) {
+      fetch('/api/compositores/studio/playbacks', {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      })
+        .then(async (response) => {
+          const data = await response.json()
+          if (response.status === 401) {
+            showSessionExpired()
+            return
+          }
+          if (!response.ok) throw new Error(data.error || 'Erro ao carregar playbacks')
+          setProjects([])
+          setTranscriptions([])
+          setPlaybackAssets(data.assets || [])
+        })
+        .catch((err) => setError(err.message || 'Erro ao carregar playbacks'))
+        .finally(() => setLoading(false))
+      return
+    }
+
     setTranscriptions([])
+    setPlaybackAssets([])
     fetch(`/api/compositores/studio/projects?filter=${currentFilter}`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
@@ -700,6 +725,13 @@ function StudioProjectsContent() {
                   <FiMusic />
                   Músicas originais
                 </Link>
+                <Link
+                  href={`/compositores/admin/studio-ia/projetos?filter=${PLAYBACKS_FILTER}`}
+                  className="mt-3 flex items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 hover:bg-gray-900"
+                >
+                  <FiHeadphones />
+                  Playbacks e vozes
+                </Link>
               </div>
               <Link
                 href="/compositores/admin/minhas-vozes"
@@ -721,6 +753,13 @@ function StudioProjectsContent() {
               >
                 <FiMusic />
                 Músicas originais
+              </Link>
+              <Link
+                href={`/compositores/admin/studio-ia/projetos?filter=${PLAYBACKS_FILTER}`}
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 lg:hidden"
+              >
+                <FiHeadphones />
+                Playbacks e vozes
               </Link>
             </aside>
 
@@ -762,7 +801,7 @@ function StudioProjectsContent() {
 
               {loading ? (
                 <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">
-                  {currentFilter === TRANSCRIPTIONS_FILTER ? 'Carregando cifras...' : currentFilter === ORIGINALS_FILTER ? 'Carregando músicas originais...' : 'Carregando projetos...'}
+                  {currentFilter === TRANSCRIPTIONS_FILTER ? 'Carregando cifras...' : currentFilter === ORIGINALS_FILTER ? 'Carregando músicas originais...' : currentFilter === PLAYBACKS_FILTER ? 'Carregando playbacks...' : 'Carregando projetos...'}
                 </div>
               ) : currentFilter === TRANSCRIPTIONS_FILTER ? (
                 transcriptions.length === 0 ? (
@@ -829,6 +868,37 @@ function StudioProjectsContent() {
                         >
                           <FiZap /> Usar para melhorar novamente
                         </Link>
+                      </article>
+                    ))}
+                  </div>
+                )
+              ) : currentFilter === PLAYBACKS_FILTER ? (
+                playbackAssets.length === 0 ? (
+                  <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center">
+                    <FiHeadphones className="mx-auto mb-4 h-9 w-9 text-cyan-300" />
+                    <p className="font-bold text-gray-200">Nenhum playback salvo ainda.</p>
+                    <p className="mt-2 text-sm text-gray-400">Quando você retirar a voz de uma versão, o instrumental e a voz isolada ficarão guardados aqui.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {playbackAssets.map((asset) => (
+                      <article key={asset.id} className="rounded-3xl border border-gray-800 bg-gray-950/70 p-4 sm:p-5">
+                        <div className="mb-4">
+                          <h3 className="truncate text-lg font-black text-white">{asset.projectTitle}</h3>
+                          <p className="mt-1 text-xs text-gray-500">{asset.versionName || 'Versão da música'} · Separado em {formatDate(asset.createdAt)}</p>
+                        </div>
+                        <div className="grid gap-4 lg:grid-cols-2">
+                          <div className="rounded-2xl border border-cyan-900/50 bg-black/30 p-4">
+                            <p className="mb-3 flex items-center gap-2 font-black text-cyan-200"><FiHeadphones /> Playback / instrumental</p>
+                            {asset.playbackUrl ? <audio controls src={asset.playbackUrl} className="w-full" /> : <p className="text-sm text-gray-500">Arquivo indisponível.</p>}
+                            {asset.playbackUrl && <a href={asset.playbackUrl} download className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-700 px-4 py-3 text-sm font-bold text-white hover:bg-cyan-600"><FiDownload /> Baixar playback</a>}
+                          </div>
+                          <div className="rounded-2xl border border-purple-900/50 bg-black/30 p-4">
+                            <p className="mb-3 flex items-center gap-2 font-black text-purple-200"><FiMic /> Voz isolada</p>
+                            {asset.vocalUrl ? <audio controls src={asset.vocalUrl} className="w-full" /> : <p className="text-sm text-gray-500">Arquivo indisponível.</p>}
+                            {asset.vocalUrl && <a href={asset.vocalUrl} download className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-700 px-4 py-3 text-sm font-bold text-white hover:bg-purple-600"><FiDownload /> Baixar voz</a>}
+                          </div>
+                        </div>
                       </article>
                     ))}
                   </div>
