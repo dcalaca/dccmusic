@@ -400,6 +400,7 @@ export default function StudioProjectDetailPage() {
   const [lyric, setLyric] = useState('')
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState('')
+  const musicGenerationLockRef = useRef(false)
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [generationMessageIndex, setGenerationMessageIndex] = useState(0)
   const [generationElapsedSeconds, setGenerationElapsedSeconds] = useState(0)
@@ -809,31 +810,33 @@ export default function StudioProjectDetailPage() {
   }
 
   const createMusic = async () => {
-    const token = localStorage.getItem('composer_token')
-    if (!token) {
-      router.push('/compositores/login')
-      return
-    }
-
-    const latestStudioStatus = await refreshStudioStatus(token)
-    if (!latestStudioStatus?.canCreateMusic) {
-      const upgradeMessage = 'Você já usou sua música grátis ou está sem saldo. Assine um plano DCC Studio IA ou faça uma recarga avulsa para criar novas músicas.'
-      setError('')
-      setUpgradeModalMessage(upgradeMessage)
-      return
-    }
-
-    if (selectedVoiceId && invalidVoiceIds.includes(selectedVoiceId)) {
-      setError(STUDIO_VOICE_INVALID_MESSAGE)
-      return
-    }
-
+    if (musicGenerationLockRef.current) return
+    musicGenerationLockRef.current = true
     setProcessing('Criando música...')
+
     try {
+      const token = localStorage.getItem('composer_token')
+      if (!token) {
+        router.push('/compositores/login')
+        return
+      }
+
+      const latestStudioStatus = await refreshStudioStatus(token)
+      if (!latestStudioStatus?.canCreateMusic) {
+        const upgradeMessage = 'Você já usou sua música grátis ou está sem saldo. Assine um plano DCC Studio IA ou faça uma recarga avulsa para criar novas músicas.'
+        setError('')
+        setUpgradeModalMessage(upgradeMessage)
+        return
+      }
+
+      if (selectedVoiceId && invalidVoiceIds.includes(selectedVoiceId)) {
+        setError(STUDIO_VOICE_INVALID_MESSAGE)
+        return
+      }
+
       setError('')
       setMessage('')
       await saveLyric()
-      setProcessing('Criando música...')
       const response = await fetch('/api/compositores/studio/music', {
         method: 'POST',
         headers: {
@@ -883,6 +886,7 @@ export default function StudioProjectDetailPage() {
         setUpgradeModalMessage(errorMessage)
       }
     } finally {
+      musicGenerationLockRef.current = false
       setProcessing('')
     }
   }
