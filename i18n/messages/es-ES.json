@@ -1,0 +1,18 @@
+{
+  "common": {
+    "actions": {
+      "continue": "Continuar",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "close": "Cerrar",
+      "back": "Volver",
+      "tryAgain": "Intentarlo de nuevo"
+    },
+    "status": {
+      "loading": "Cargando...",
+      "processing": "Procesando...",
+      "success": "Completado",
+      "error": "Se ha producido un error"
+    }
+  }
+}
