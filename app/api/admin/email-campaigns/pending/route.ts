@@ -72,7 +72,7 @@ function parseSender(value: string | undefined | null) {
   return { email: raw }
 }
 
-async function sendPendingCampaignViaBrevo(input: {
+async function sendPendingCampaignViaResend(input: {
   to: string
   name: string
   subject: string
@@ -82,12 +82,12 @@ async function sendPendingCampaignViaBrevo(input: {
   ctaUrl?: string | null
   unsubscribeUrl?: string | null
 }) {
-  const apiKey = String(process.env.BREVO_API_KEY || '').trim()
-  const sender = parseSender(process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL)
-  const replyTo = parseSender(process.env.BREVO_REPLY_TO_EMAIL || process.env.SMTP_REPLY_TO_EMAIL)
+  const apiKey = String(process.env.RESEND_API_KEY || '').trim()
+  const sender = parseSender(process.env.RESEND_FROM_EMAIL || process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL)
+  const replyTo = parseSender(process.env.RESEND_REPLY_TO_EMAIL || process.env.BREVO_REPLY_TO_EMAIL || process.env.SMTP_REPLY_TO_EMAIL)
 
   if (!apiKey || !sender?.email) {
-    throw new Error('Brevo não configurado para campanhas')
+    throw new Error('Resend não configurado para campanhas')
   }
 
   const bodyStartsWithGreeting = /^\s*ol[áa][,!\s]/i.test(input.body)
@@ -111,26 +111,29 @@ async function sendPendingCampaignViaBrevo(input: {
     `,
   })
 
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+  const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       accept: 'application/json',
-      'api-key': apiKey,
+      authorization: `Bearer ${apiKey}`,
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      sender,
-      to: [{ email: input.to }],
-      replyTo: replyTo || undefined,
+      from: sender.name ? `${sender.name} <${sender.email}>` : sender.email,
+      to: [input.to],
+      reply_to: replyTo?.email || undefined,
       subject: input.subject,
-      htmlContent,
-      tags: ['admin_email_campaign', 'pending_email'],
+      html: htmlContent,
+      tags: [
+        { name: 'category', value: 'admin_email_campaign' },
+        { name: 'audience', value: 'pending_email' },
+      ],
     }),
   })
 
   const payload = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(payload?.message || 'Erro ao enviar e-mail pelo Brevo')
-  return { sent: true, id: payload?.messageId || null }
+  if (!response.ok) throw new Error(payload?.message || 'Erro ao enviar e-mail pelo Resend')
+  return { sent: true, id: payload?.id || null }
 }
 
 async function getTargetRecipients(from: string, to: string) {
@@ -301,7 +304,7 @@ async function sendBatch(campaignId: string, requireSendingStatus: boolean) {
       })
 
       if (!result.sent && result.reason === RETRYABLE_MARKETING_REASON) {
-        result = await sendPendingCampaignViaBrevo({
+        result = await sendPendingCampaignViaResend({
           to: recipient.email,
           name: recipient.name,
           subject: (campaign as any).subject,

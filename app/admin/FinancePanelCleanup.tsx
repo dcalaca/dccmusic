@@ -344,19 +344,19 @@ export default function FinancePanelCleanup() {
       for (const node of nodes) {
         const text = node.textContent?.replace(/\s+/g, ' ').trim()
 
-        if (text === 'E-mails e Brevo') {
+        if (text === 'E-mails e Resend') {
           const card = findFinanceCard(node, 'section')
           if (card) {
             card.style.setProperty('display', 'none', 'important')
-            card.setAttribute('data-dcc-hidden', 'emails-brevo')
+            card.setAttribute('data-dcc-hidden', 'emails-resend')
           }
         }
 
-        if (text === 'Brevo (e-mails)' || text === 'Cursor (programação)') {
+        if (text === 'Resend (e-mails)' || text === 'Cursor (programação)') {
           const card = findFinanceCard(node, 'item')
           if (card) {
             card.style.setProperty('display', 'none', 'important')
-            card.setAttribute('data-dcc-hidden', text === 'Brevo (e-mails)' ? 'brevo-cost' : 'cursor-cost')
+            card.setAttribute('data-dcc-hidden', text === 'Resend (e-mails)' ? 'resend-cost' : 'cursor-cost')
           }
         }
       }

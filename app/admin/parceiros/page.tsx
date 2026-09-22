@@ -93,7 +93,7 @@ export default function AdminPartnersPage() {
       if (!response.ok) throw new Error(data.error || 'Erro ao criar parceiro')
       setSuccess(data.welcomeEmailSent
         ? 'Parceiro criado e e-mail de boas-vindas enviado.'
-        : 'Parceiro criado. O e-mail não foi enviado automaticamente; confira a configuração do Brevo.')
+        : 'Parceiro criado. O e-mail não foi enviado automaticamente; confira a configuração do Resend.')
       setForm({
         email: '',
         displayName: '',
@@ -465,4 +465,3 @@ export default function AdminPartnersPage() {
     </div>
   )
 }
-

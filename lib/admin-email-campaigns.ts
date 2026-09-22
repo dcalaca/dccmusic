@@ -74,7 +74,7 @@ function parseSender(value?: string | null) {
   return { email: raw }
 }
 
-async function sendCampaignViaBrevo(input: {
+async function sendCampaignViaResend(input: {
   to: string
   name: string
   subject: string
@@ -84,11 +84,11 @@ async function sendCampaignViaBrevo(input: {
   ctaUrl?: string | null
   unsubscribeUrl?: string | null
 }) {
-  const apiKey = String(process.env.BREVO_API_KEY || '').trim()
-  const sender = parseSender(process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL)
-  const replyTo = parseSender(process.env.BREVO_REPLY_TO_EMAIL || process.env.SMTP_REPLY_TO_EMAIL)
+  const apiKey = String(process.env.RESEND_API_KEY || '').trim()
+  const sender = parseSender(process.env.RESEND_FROM_EMAIL || process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL)
+  const replyTo = parseSender(process.env.RESEND_REPLY_TO_EMAIL || process.env.BREVO_REPLY_TO_EMAIL || process.env.SMTP_REPLY_TO_EMAIL)
 
-  if (!apiKey || !sender?.email) throw new Error('Brevo não configurado para campanhas')
+  if (!apiKey || !sender?.email) throw new Error('Resend não configurado para campanhas')
 
   const bodyStartsWithGreeting = /^\s*ol[áa][,!\s]/i.test(input.body)
   const greeting = bodyStartsWithGreeting ? '' : `<p>Olá, ${escapeHtml(input.name || 'Compositor')}.</p>`
@@ -111,26 +111,26 @@ async function sendCampaignViaBrevo(input: {
     `,
   })
 
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+  const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       accept: 'application/json',
-      'api-key': apiKey,
+      authorization: `Bearer ${apiKey}`,
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      sender,
-      to: [{ email: input.to }],
-      replyTo: replyTo || undefined,
+      from: sender.name ? `${sender.name} <${sender.email}>` : sender.email,
+      to: [input.to],
+      reply_to: replyTo?.email || undefined,
       subject: input.subject,
-      htmlContent,
-      tags: ['admin_email_campaign'],
+      html: htmlContent,
+      tags: [{ name: 'category', value: 'admin_email_campaign' }],
     }),
   })
 
   const payload = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(payload?.message || 'Erro ao enviar e-mail pelo Brevo')
-  return { sent: true, id: payload?.messageId || null }
+  if (!response.ok) throw new Error(payload?.message || 'Erro ao enviar e-mail pelo Resend')
+  return { sent: true, id: payload?.id || null }
 }
 
 export function calculateNextRunAt(recurringDay?: number | null, fromDate = new Date()) {
@@ -370,7 +370,7 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
           })
         : null
 
-      const result = await sendCampaignViaBrevo({
+      const result = await sendCampaignViaResend({
         to: row.recipient_email,
         name: row.recipient_name || (row.recipient_type === 'composer' ? 'Compositor' : 'Usuário'),
         subject: campaign.subject,

@@ -54,7 +54,7 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     if (!emailResult.sent) {
       return NextResponse.json(
-        { error: 'E-mail não enviado. Confira a configuração do Brevo.' },
+        { error: 'E-mail não enviado. Confira a configuração do Resend.' },
         { status: 500 }
       )
     }
