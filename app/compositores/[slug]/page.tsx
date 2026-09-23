@@ -6,6 +6,9 @@ import ComposerFiltersWrapper from '@/components/ComposerFiltersWrapper'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getComposerAvatarApiPath, PROFILE_PHOTO_MISSING } from '@/lib/composer-profile-photo'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
+import { headers } from 'next/headers'
+import { createDccI18n } from '@/i18n/i18next'
+import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -22,14 +25,17 @@ interface ComposerPageProps {
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const composer = await db.getComposerBySlug(params.slug)
+  const country = normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))
+  const i18n = await createDccI18n(getLocaleForCountry(country))
+  const t = i18n.t.bind(i18n)
 
   if (!composer) {
     return {
-      title: 'Compositor não encontrado',
+      title: t('composerProfile.metadata.notFound'),
     }
   }
 
-  const description = `Explore todas as músicas e vídeos do compositor ${composer.name} no DCC Music`
+  const description = t('composerProfile.metadata.description', { name: composer.name })
 
   return {
     title: composer.name,
@@ -58,6 +64,10 @@ export default async function ComposerDetailPage({ params, searchParams = {} }: 
   if (!composer) {
     notFound()
   }
+
+  const country = normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))
+  const i18n = await createDccI18n(getLocaleForCountry(country))
+  const t = i18n.t.bind(i18n)
 
   console.log('[COMPOSER-PAGE] Compositor encontrado:', {
     id: composer.id,
@@ -169,7 +179,7 @@ export default async function ComposerDetailPage({ params, searchParams = {} }: 
             <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center">
               <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-primary-600 to-purple-600 text-3xl font-black text-white shadow-xl shadow-purple-950/30">
                 {profilePhotoUrl ? (
-                  <img src={profilePhotoUrl} alt={`Foto de ${composer.name}`} className="h-full w-full object-cover" />
+                  <img src={profilePhotoUrl} alt={t('composerProfile.photoAlt', { name: composer.name })} className="h-full w-full object-cover" />
                 ) : (
                   composer.name.slice(0, 1).toUpperCase()
                 )}
@@ -183,7 +193,7 @@ export default async function ComposerDetailPage({ params, searchParams = {} }: 
                     {hasGoldBadge && (
                       <span className="px-4 py-2 rounded-full bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-500 text-black text-sm font-bold shadow-lg shadow-yellow-500/50 flex items-center gap-1">
                         <span>⭐</span>
-                        <span>Artista Ouro</span>
+                        <span>{t('composerProfile.goldArtist')}</span>
                       </span>
                     )}
                     {composer.isPremium && (
@@ -196,11 +206,11 @@ export default async function ComposerDetailPage({ params, searchParams = {} }: 
               </div>
             </div>
             <p className={`text-gray-400 ${hasPremiumLayout ? 'text-xl' : 'text-lg'}`}>
-              Compositor • {totalItems} {totalItems === 1 ? 'obra' : 'obras'} no DCC Music
+              {t('composerProfile.summary', { count: totalItems })}
             </p>
             <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-400">
-              <span>{videos.length} {videos.length === 1 ? 'vídeo' : 'vídeos'}</span>
-              <span>{musics.length + studioProjects.length} {musics.length + studioProjects.length === 1 ? 'música' : 'músicas'}</span>
+              <span>{t('composerProfile.videoCount', { count: videos.length })}</span>
+              <span>{t('composerProfile.musicCount', { count: musics.length + studioProjects.length })}</span>
             </div>
             {hasPremiumLayout && (
               <div className="mt-6">
@@ -209,14 +219,14 @@ export default async function ComposerDetailPage({ params, searchParams = {} }: 
                     href="#musicas-section"
                     className="inline-block px-8 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 shadow-lg shadow-primary-500/50"
                   >
-                    🎵 Ouça Agora
+                    🎵 {t('composerProfile.listenNow')}
                   </a>
                 ) : videos.length > 0 ? (
                   <a
                     href="#videos-section"
                     className="inline-block px-8 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 shadow-lg shadow-primary-500/50"
                   >
-                    ▶️ Assista Agora
+                    ▶️ {t('composerProfile.watchNow')}
                   </a>
                 ) : null}
               </div>
@@ -230,7 +240,7 @@ export default async function ComposerDetailPage({ params, searchParams = {} }: 
           {videos.length > 0 && (
             <div id="videos-section" className="mb-12 scroll-mt-20">
               <h2 className="text-2xl font-bold mb-6">
-                <span className="gradient-text">Vídeos</span>
+                <span className="gradient-text">{t('composerProfile.videos')}</span>
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {videos.map((video) => (
@@ -244,7 +254,7 @@ export default async function ComposerDetailPage({ params, searchParams = {} }: 
           {musics.length > 0 && (
             <div id="musicas-section" className="mb-12 scroll-mt-20">
               <h2 className="text-2xl font-bold mb-6">
-                <span className="gradient-text">Músicas</span>
+                <span className="gradient-text">{t('composerProfile.musics')}</span>
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {musics.map((music) => (
@@ -257,7 +267,7 @@ export default async function ComposerDetailPage({ params, searchParams = {} }: 
           {studioProjects.length > 0 && (
             <div className="mb-12 scroll-mt-20">
               <h2 className="text-2xl font-bold mb-6">
-                <span className="gradient-text">Criadas no DCC Studio IA</span>
+                <span className="gradient-text">{t('composerProfile.createdInStudio')}</span>
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {studioProjects.map((project: any) => (
@@ -280,10 +290,10 @@ export default async function ComposerDetailPage({ params, searchParams = {} }: 
                     </div>
                     <div className="p-3">
                       <span className="mb-2 inline-flex rounded-full bg-primary-900/60 px-2 py-1 text-[10px] text-primary-200">
-                        Criado com DCC Studio IA
+                        {t('composerProfile.createdWithStudio')}
                       </span>
                       <h3 className="font-bold group-hover:text-primary-300">{project.title}</h3>
-                      <p className="text-sm text-gray-400">{project.style || 'Livre'} · {project.mood || 'Sem clima'}</p>
+                      <p className="text-sm text-gray-400">{project.style || t('composerProfile.freeStyle')} · {project.mood || t('composerProfile.noMood')}</p>
                     </div>
                   </a>
                 ))}
@@ -295,7 +305,7 @@ export default async function ComposerDetailPage({ params, searchParams = {} }: 
           {totalItems === 0 && (
             <div className="text-center py-16">
               <p className="text-gray-400 text-lg">
-                Nenhuma obra encontrada para este compositor.
+                {t('composerProfile.noWorks')}
               </p>
             </div>
           )}

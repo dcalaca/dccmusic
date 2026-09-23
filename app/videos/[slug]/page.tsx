@@ -1,9 +1,8 @@
 import * as db from '@/lib/db'
 import { notFound } from 'next/navigation'
 import VideoCard from '@/components/VideoCard'
-import { FiExternalLink } from 'react-icons/fi'
-import { createDccI18n } from '@/i18n/i18next'
-import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
+import { FiExternalLink, FiCopy, FiCheck } from 'react-icons/fi'
+import { formatDate } from '@/lib/utils'
 import VideoEmbed from '@/components/VideoEmbed'
 import CopyButton from '@/components/CopyButton'
 import RatingAndComments from '@/components/RatingAndComments'
@@ -21,17 +20,14 @@ async function fetchVideoOnly(slug: string) {
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const video = await fetchVideoOnly(params.slug)
-  const country = normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))
-  const i18n = await createDccI18n(getLocaleForCountry(country))
-  const t = i18n.t.bind(i18n)
 
   if (!video) {
     return {
-      title: t('videoDetail.metadata.notFound'),
+      title: 'Vídeo não encontrado',
     }
   }
 
-  const description = video.description || t('videoDetail.metadata.description', { title: video.title })
+  const description = video.description || `Assista ao vídeo ${video.title} no DCC Music`
 
   return {
     title: video.title,
@@ -49,7 +45,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
-function buildVideoJsonLd(video: NonNullable<Awaited<ReturnType<typeof fetchVideoOnly>>>, fallbackDescription: string) {
+function buildVideoJsonLd(video: NonNullable<Awaited<ReturnType<typeof fetchVideoOnly>>>) {
   const pageUrl = `https://www.dccmusic.online/videos/${video.slug}`
   const thumbnail = video.thumbnailUrl
     || (video.youtubeId ? `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg` : undefined)
@@ -58,7 +54,7 @@ function buildVideoJsonLd(video: NonNullable<Awaited<ReturnType<typeof fetchVide
     '@context': 'https://schema.org',
     '@type': 'VideoObject',
     name: video.title,
-    description: video.description || fallbackDescription,
+    description: video.description || `Assista ao vídeo ${video.title} no DCC Music`,
     uploadDate: new Date(video.publishedAt || video.createdAt || Date.now()).toISOString(),
     url: pageUrl,
   }
@@ -84,12 +80,9 @@ export default async function VideoDetailPage({ params }: { params: { slug: stri
     notFound()
   }
 
-  const h = headers()
-  const country = normalizeCountry(h.get('x-dcc-country') || h.get('x-vercel-ip-country') || h.get('cf-ipcountry'))
-  const locale = getLocaleForCountry(country)
-
   // Uma única contagem por carregamento da página (log + view_count)
   try {
+    const h = headers()
     const forwarded = h.get('x-forwarded-for')
     const ip = forwarded?.split(',')[0]?.trim() || h.get('x-real-ip') || null
     await db.recordVideoView(video.id, {
@@ -127,31 +120,24 @@ export default async function VideoDetailPage({ params }: { params: { slug: stri
   const videoUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/videos/${displayVideo.slug}`
 
   return (
-    <VideoDetailContent video={displayVideo} relatedVideos={relatedVideos} videoUrl={videoUrl} locale={locale} />
+    <VideoDetailContent video={displayVideo} relatedVideos={relatedVideos} videoUrl={videoUrl} />
   )
 }
 
-async function VideoDetailContent({ 
+function VideoDetailContent({ 
   video, 
   relatedVideos, 
-  videoUrl,
-  locale,
+  videoUrl 
 }: { 
   video: NonNullable<Awaited<ReturnType<typeof fetchVideoOnly>>>
   relatedVideos: any[]
   videoUrl: string
-  locale: string
 }) {
-  const i18n = await createDccI18n(locale)
-  const t = i18n.t.bind(i18n)
-  const publishedDate = new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(video.publishedAt))
-  const formattedViews = new Intl.NumberFormat(locale).format(video.viewCount || 0)
-
   return (
     <div className="min-h-screen py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildVideoJsonLd(video, t('videoDetail.metadata.description', { title: video.title }))) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildVideoJsonLd(video)) }}
       />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
@@ -174,11 +160,11 @@ async function VideoDetailContent({
                   <p className="text-gray-300 mb-4 whitespace-pre-line">{video.description}</p>
                 )}
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-                  <span>{t('videoDetail.publishedAt', { date: publishedDate })}</span>
+                  <span>Publicado em {formatDate(video.publishedAt)}</span>
                   {video.viewCount > 0 && (
-                    <span>{t('videoDetail.views', { count: formattedViews })}</span>
+                    <span>{video.viewCount.toLocaleString('pt-BR')} visualizações</span>
                   )}
-                  {video.duration && <span>{t('videoDetail.duration', { duration: video.duration })}</span>}
+                  {video.duration && <span>Duração: {video.duration}</span>}
                 </div>
                 {video.tags && (
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -194,7 +180,7 @@ async function VideoDetailContent({
                 )}
                 {video.composers && video.composers.length > 0 && (
                   <div className="mt-4">
-                    <h3 className="text-sm font-semibold text-gray-400 mb-2">{t('videoDetail.songwriters')}</h3>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Compositores</h3>
                     <div className="flex flex-wrap gap-2">
                       {video.composers.map((composer) => (
                         <a
@@ -213,8 +199,8 @@ async function VideoDetailContent({
 
             <div className="lg:col-span-1">
               <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800 space-y-4">
-                <h3 className="font-semibold text-lg mb-4">{t('videoDetail.share')}</h3>
-                <CopyButton text={videoUrl} label={t('videoDetail.copyLink')} />
+                <h3 className="font-semibold text-lg mb-4">Compartilhar</h3>
+                <CopyButton text={videoUrl} label="Copiar link" />
                 <a
                   href={video.youtubeUrl}
                   target="_blank"
@@ -222,7 +208,7 @@ async function VideoDetailContent({
                   className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
                 >
                   <FiExternalLink className="w-4 h-4" />
-                  <span>{t('videoDetail.openYoutube')}</span>
+                  <span>Abrir no YouTube</span>
                 </a>
               </div>
             </div>
@@ -237,7 +223,7 @@ async function VideoDetailContent({
           {relatedVideos.length > 0 && (
             <div>
               <h2 className="text-2xl font-bold mb-6">
-                <span className="gradient-text">{t('videoDetail.similarVideos')}</span>
+                <span className="gradient-text">Vídeos Semelhantes</span>
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {relatedVideos.map((relatedVideo) => (

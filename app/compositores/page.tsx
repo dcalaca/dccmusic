@@ -4,12 +4,18 @@ import { unstable_noStore as noStore } from 'next/cache'
 import { FaCrown } from 'react-icons/fa'
 import { FiMusic, FiSearch, FiStar, FiUsers } from 'react-icons/fi'
 import ComposersDirectory from './ComposersDirectory'
+import { headers } from 'next/headers'
+import { createDccI18n } from '@/i18n/i18next'
+import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export default async function CompositorsPage() {
   noStore()
+  const country = normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))
+  const i18n = await createDccI18n(getLocaleForCountry(country))
+  const t = i18n.t.bind(i18n)
 
   const premiumComposers = await db.getPremiumComposers()
   const composerIds = premiumComposers.map((composer) => composer.id)
@@ -67,14 +73,14 @@ export default async function CompositorsPage() {
             <div className="relative grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
               <div>
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-300/25 bg-purple-500/15 px-3.5 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-purple-100">
-                  <FiStar className="h-3.5 w-3.5" /> Compositores Premium
+                  <FiStar className="h-3.5 w-3.5" /> {t('composerDirectory.badge')}
                 </div>
                 <h1 className="max-w-3xl text-3xl font-black leading-tight text-white sm:text-4xl lg:text-[2.6rem]">
-                  Encontre compositores e conheça suas{' '}
-                  <span className="text-purple-400">músicas publicadas</span>
+                  {t('composerDirectory.titlePrefix')}{' '}
+                  <span className="text-purple-400">{t('composerDirectory.titleHighlight')}</span>
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
-                  Veja quem já publica no DCC Music, escute as obras e descubra novos nomes para acompanhar.
+                  {t('composerDirectory.subtitle')}
                 </p>
               </div>
 
@@ -82,19 +88,19 @@ export default async function CompositorsPage() {
                 <div className="rounded-2xl border border-white/10 bg-black/35 px-2 py-4 backdrop-blur-sm sm:px-3">
                   <FiUsers className="mx-auto mb-2 h-5 w-5 text-purple-300" />
                   <p className="text-2xl font-black text-white">{composers.length}</p>
-                  <p className="mt-1 text-[11px] font-semibold text-gray-400">compositores</p>
+                  <p className="mt-1 text-[11px] font-semibold text-gray-400">{t('composerDirectory.songwriters')}</p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/35 px-2 py-4 backdrop-blur-sm sm:px-3">
                   <FiMusic className="mx-auto mb-2 h-5 w-5 text-purple-300" />
                   <p className="text-2xl font-black text-white">{totalPublishedMusics}</p>
                   <p className="mt-1 text-[11px] font-semibold leading-tight text-gray-400">
-                    músicas publicadas
+                    {t('composerDirectory.publishedSongs')}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-amber-400/45 bg-gradient-to-b from-amber-950/35 to-black/40 px-2 py-4 shadow-[0_0_24px_rgba(251,191,36,0.12)] backdrop-blur-sm sm:px-3">
                   <FaCrown className="mx-auto mb-2 h-5 w-5 text-amber-300" />
                   <p className="text-xl font-black text-amber-100 sm:text-2xl">Premium</p>
-                  <p className="mt-1 text-[11px] font-semibold text-amber-100/70">seleção especial</p>
+                  <p className="mt-1 text-[11px] font-semibold text-amber-100/70">{t('composerDirectory.specialSelection')}</p>
                 </div>
               </div>
             </div>
@@ -105,9 +111,9 @@ export default async function CompositorsPage() {
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl border border-white/10 bg-white/[0.04] text-purple-200">
                 <FiSearch className="h-8 w-8" />
               </div>
-              <h2 className="text-xl font-black text-white">Nenhum compositor premium encontrado</h2>
+              <h2 className="text-xl font-black text-white">{t('composerDirectory.emptyTitle')}</h2>
               <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-gray-400">
-                Assim que novos compositores premium publicarem suas obras, eles aparecerão aqui.
+                {t('composerDirectory.emptyDescription')}
               </p>
             </div>
           ) : (

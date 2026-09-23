@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { FiHeart, FiSend, FiTrash2 } from 'react-icons/fi'
-import { useTranslation } from 'react-i18next'
+import { formatDate } from '@/lib/utils'
 
 interface Comment {
   id: string
@@ -52,7 +52,6 @@ export default function CommentsSection({
   currentUserId,
   onLoginRequired,
 }: CommentsSectionProps) {
-  const { t, i18n } = useTranslation()
   const [comments, setComments] = useState<Comment[]>([])
   const [viewerUserId, setViewerUserId] = useState<string | undefined>(currentUserId)
   const [loading, setLoading] = useState(true)
@@ -104,7 +103,7 @@ export default function CommentsSection({
     }
 
     if (!newComment.trim() || newComment.trim().length < 3) {
-      alert(t('comments.errors.commentMin'))
+      alert('Comentário deve ter pelo menos 3 caracteres')
       return
     }
 
@@ -126,14 +125,14 @@ export default function CommentsSection({
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(i18n.language.startsWith('pt') && error.error ? error.error : t('comments.errors.comment'))
+        throw new Error(error.error || 'Erro ao comentar')
       }
 
       setNewComment('')
       await loadComments()
     } catch (error: any) {
       console.error('Erro ao comentar:', error)
-      alert(i18n.language.startsWith('pt') ? (error.message || t('comments.errors.comment')) : t('comments.errors.comment'))
+      alert(error.message || 'Erro ao comentar')
     } finally {
       setSubmitting(false)
     }
@@ -149,7 +148,7 @@ export default function CommentsSection({
     }
 
     if (!replyText.trim() || replyText.trim().length < 3) {
-      alert(t('comments.errors.replyMin'))
+      alert('Resposta deve ter pelo menos 3 caracteres')
       return
     }
 
@@ -172,7 +171,7 @@ export default function CommentsSection({
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(i18n.language.startsWith('pt') && error.error ? error.error : t('comments.errors.reply'))
+        throw new Error(error.error || 'Erro ao responder')
       }
 
       setReplyText('')
@@ -180,7 +179,7 @@ export default function CommentsSection({
       await loadComments()
     } catch (error: any) {
       console.error('Erro ao responder:', error)
-      alert(i18n.language.startsWith('pt') ? (error.message || t('comments.errors.reply')) : t('comments.errors.reply'))
+      alert(error.message || 'Erro ao responder')
     } finally {
       setSubmitting(false)
     }
@@ -218,7 +217,7 @@ export default function CommentsSection({
       })
 
       if (!response.ok) {
-        throw new Error(t('comments.errors.like'))
+        throw new Error('Erro ao curtir')
       }
 
       const data = await response.json()
@@ -238,7 +237,7 @@ export default function CommentsSection({
   }
 
   const handleDelete = async (commentId: string) => {
-    if (!confirm(t('comments.deleteConfirm'))) {
+    if (!confirm('Deseja realmente deletar este comentário?')) {
       return
     }
 
@@ -252,7 +251,7 @@ export default function CommentsSection({
       })
 
       if (!response.ok) {
-        throw new Error(t('comments.errors.delete'))
+        throw new Error('Erro ao deletar comentário')
       }
 
       setComments((current) =>
@@ -264,7 +263,7 @@ export default function CommentsSection({
       }
     } catch (error: any) {
       console.error('Erro ao deletar comentário:', error)
-      alert(t('comments.errors.delete'))
+      alert('Erro ao deletar comentário')
     }
   }
 
@@ -287,14 +286,14 @@ export default function CommentsSection({
             <CommentAvatar name={comment.userFirstName || comment.userName} photoUrl={comment.avatarUrl} />
             <div className="min-w-0 flex-1">
               <div className="truncate font-medium text-white">{comment.userFirstName}</div>
-              <div className="text-xs text-gray-500">{new Intl.DateTimeFormat(i18n.language, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(comment.createdAt))}</div>
+              <div className="text-xs text-gray-500">{formatDate(comment.createdAt)}</div>
             </div>
           </div>
           {myId === comment.userId && (
             <button
               onClick={() => handleDelete(comment.id)}
               className="flex-shrink-0 p-1 text-gray-400 transition-colors hover:text-red-400"
-              title={t('comments.delete')}
+              title="Deletar comentário"
             >
               <FiTrash2 className="h-4 w-4" />
             </button>
@@ -311,7 +310,7 @@ export default function CommentsSection({
             }`}
           >
             <FiHeart className={`h-4 w-4 ${comment.likedByMe ? 'fill-current' : ''}`} />
-            <span>{comment.likesCount > 0 ? comment.likesCount : t('comments.like')}</span>
+            <span>{comment.likesCount > 0 ? comment.likesCount : 'Curtir'}</span>
           </button>
           <button
             type="button"
@@ -325,7 +324,7 @@ export default function CommentsSection({
             }}
             className="text-gray-400 transition-colors hover:text-white"
           >
-            {t('comments.reply')}
+            Responder
           </button>
         </div>
 
@@ -334,7 +333,7 @@ export default function CommentsSection({
             <input
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
-              placeholder={t('comments.replyPlaceholder', { name: comment.userFirstName })}
+              placeholder={`Responder ${comment.userFirstName}...`}
               maxLength={500}
               className="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none"
               autoFocus
@@ -345,7 +344,7 @@ export default function CommentsSection({
                 disabled={submitting || replyText.trim().length < 3}
                 className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {t('comments.send')}
+                Enviar
               </button>
               <button
                 type="button"
@@ -355,7 +354,7 @@ export default function CommentsSection({
                 }}
                 className="rounded-lg px-3 py-2 text-sm text-gray-400 hover:text-white"
               >
-                {t('comments.cancel')}
+                Cancelar
               </button>
             </div>
           </form>
@@ -367,7 +366,7 @@ export default function CommentsSection({
   return (
     <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
       <h2 className="mb-6 text-2xl font-bold">
-        <span className="gradient-text">{t('comments.title')}</span>
+        <span className="gradient-text">Comentários</span>
         {comments.length > 0 && (
           <span className="ml-2 text-lg font-normal text-gray-400">({comments.length})</span>
         )}
@@ -379,7 +378,7 @@ export default function CommentsSection({
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
-              placeholder={t('comments.placeholder')}
+              placeholder="Escreva seu comentário..."
               rows={3}
               className="flex-1 resize-none rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white placeholder-gray-500 focus:border-primary-500 focus:outline-none"
               maxLength={500}
@@ -390,36 +389,36 @@ export default function CommentsSection({
               className="flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-6 py-2 font-medium text-white transition-colors hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting && !replyingTo ? (
-                t('comments.sending')
+                'Enviando...'
               ) : (
                 <>
                   <FiSend className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('comments.send')}</span>
+                  <span className="hidden sm:inline">Enviar</span>
                 </>
               )}
             </button>
           </div>
-          <div className="mt-1 text-right text-xs text-gray-500">{t('comments.characters', { count: newComment.length })}</div>
+          <div className="mt-1 text-right text-xs text-gray-500">{newComment.length}/500 caracteres</div>
         </form>
       ) : (
         <div className="mb-6 rounded-lg border border-gray-700 bg-gray-800/50 p-4 text-center">
           <p className="mb-3 text-gray-400">
-            {t('comments.loginHint')}
+            Entre na sua conta para comentar, curtir e responder. Com a mesma conta você também cria músicas.
           </p>
           <button
             onClick={onLoginRequired}
             className="rounded-lg bg-primary-600 px-4 py-2 text-white transition-colors hover:bg-primary-700"
           >
-            {t('comments.loginOrCreate')}
+            Entrar ou criar conta
           </button>
         </div>
       )}
 
       {loading ? (
-        <div className="py-8 text-center text-gray-400">{t('comments.loading')}</div>
+        <div className="py-8 text-center text-gray-400">Carregando comentários...</div>
       ) : comments.length === 0 ? (
         <div className="py-8 text-center text-gray-400">
-          {t('comments.empty')}
+          Nenhum comentário ainda. Seja o primeiro a comentar!
         </div>
       ) : (
         <div className="space-y-4">

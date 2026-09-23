@@ -3,12 +3,14 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiFilter, FiX, FiSearch, FiSliders } from 'react-icons/fi'
+import { useTranslation } from 'react-i18next'
 
 interface ComposerFiltersProps {
   genres: Array<{ id: string; name: string; slug: string }>
 }
 
 export default function ComposerFilters({ genres }: ComposerFiltersProps) {
+  const { t: tr } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
@@ -96,7 +98,7 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
           className="flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 hover:border-primary-500 transition-colors w-full"
         >
           <FiSliders className="text-primary-400" />
-          <span className="text-sm">Filtros</span>
+          <span className="text-sm">{tr('composerFilters.filters')}</span>
           {hasActiveFilters && (
             <span className="ml-auto px-2 py-0.5 bg-primary-600 rounded-full text-xs">
               {[tipo !== 'todos' ? 1 : 0, selectedGenres.length, ordem !== 'mais-vistos' ? 1 : 0, busca.trim() ? 1 : 0].reduce((a, b) => a + b, 0)}
@@ -114,7 +116,7 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
               <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar obras..."
+                placeholder={tr('composerFilters.searchPlaceholder')}
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
@@ -125,7 +127,7 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Tipo */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Tipo</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">{tr('composerFilters.type')}</label>
               <div className="flex gap-2">
                 {(['todos', 'videos', 'musicas'] as const).map((t) => (
                   <button
@@ -137,7 +139,7 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
                         : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                     }`}
                   >
-                    {t === 'todos' ? 'Todos' : t === 'videos' ? 'Vídeos' : 'Músicas'}
+                    {t === 'todos' ? tr('composerFilters.all') : t === 'videos' ? tr('composerFilters.videos') : tr('composerFilters.musics')}
                   </button>
                 ))}
               </div>
@@ -145,7 +147,7 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
 
             {/* Gêneros */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Gênero</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">{tr('composerFilters.genre')}</label>
               <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
                 {genres.map((genre) => (
                   <button
@@ -165,14 +167,14 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
 
             {/* Ordenação */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">Ordenar por</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">{tr('composerFilters.sort')}</label>
               <select
                 value={ordem}
                 onChange={(e) => setOrdem(e.target.value as 'mais-vistos' | 'recentes' | 'az')}
                 className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-primary-500"
               >
-                <option value="mais-vistos">Mais vistos</option>
-                <option value="recentes">Mais Recentes</option>
+                <option value="mais-vistos">{tr('composerFilters.mostViewed')}</option>
+                <option value="recentes">{tr('composerFilters.recent')}</option>
                 <option value="az">A-Z</option>
               </select>
             </div>
@@ -185,7 +187,7 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
                 className="flex items-center gap-2 px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
               >
                 <FiX />
-                Limpar filtros
+                {tr('composerFilters.clearFilters')}
               </button>
             </div>
           )}
@@ -199,7 +201,7 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
           <div className="absolute right-0 top-0 bottom-0 w-full max-w-sm bg-gray-900 border-l border-gray-800 overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold">Filtros</h2>
+                <h2 className="text-xl font-bold">{tr('composerFilters.filters')}</h2>
                 <button
                   onClick={() => setIsMobileOpen(false)}
                   className="p-2 hover:bg-gray-800 rounded-lg"
@@ -210,12 +212,12 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
 
               {/* Busca */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Buscar</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{tr('composerFilters.search')}</label>
                 <div className="relative">
                   <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Buscar obras..."
+                    placeholder={tr('composerFilters.searchPlaceholder')}
                     value={busca}
                     onChange={(e) => setBusca(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
@@ -225,7 +227,7 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
 
               {/* Tipo */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Tipo</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{tr('composerFilters.type')}</label>
                 <div className="flex flex-col gap-2">
                   {(['todos', 'videos', 'musicas'] as const).map((t) => (
                     <button
@@ -237,7 +239,7 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
                           : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
                       }`}
                     >
-                      {t === 'todos' ? 'Todos' : t === 'videos' ? 'Vídeos' : 'Músicas'}
+                      {t === 'todos' ? tr('composerFilters.all') : t === 'videos' ? tr('composerFilters.videos') : tr('composerFilters.musics')}
                     </button>
                   ))}
                 </div>
@@ -245,7 +247,7 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
 
               {/* Gêneros */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Gênero</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{tr('composerFilters.genre')}</label>
                 <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
                   {genres.map((genre) => (
                     <button
@@ -265,14 +267,14 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
 
               {/* Ordenação */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-300 mb-2">Ordenar por</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">{tr('composerFilters.sort')}</label>
                 <select
                   value={ordem}
                   onChange={(e) => setOrdem(e.target.value as 'mais-vistos' | 'recentes' | 'az')}
                   className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-primary-500"
                 >
-                  <option value="mais-vistos">Mais vistos</option>
-                  <option value="recentes">Mais Recentes</option>
+                  <option value="mais-vistos">{tr('composerFilters.mostViewed')}</option>
+                  <option value="recentes">{tr('composerFilters.recent')}</option>
                   <option value="az">A-Z</option>
                 </select>
               </div>
@@ -284,14 +286,14 @@ export default function ComposerFilters({ genres }: ComposerFiltersProps) {
                     onClick={clearFilters}
                     className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white hover:bg-gray-700 transition-colors"
                   >
-                    Limpar
+                    {tr('composerFilters.clear')}
                   </button>
                 )}
                 <button
                   onClick={() => setIsMobileOpen(false)}
                   className="flex-1 px-4 py-2 bg-primary-600 rounded-lg text-white hover:bg-primary-700 transition-colors"
                 >
-                  Aplicar
+                  {tr('composerFilters.apply')}
                 </button>
               </div>
             </div>

@@ -10,6 +10,7 @@ import {
   FiSearch,
   FiStar,
 } from 'react-icons/fi'
+import { useTranslation } from 'react-i18next'
 
 export type DirectoryComposer = {
   id: string
@@ -22,11 +23,6 @@ export type DirectoryComposer = {
 type SortOption = 'most' | 'least' | 'az'
 
 const PAGE_SIZE = 12
-
-function formatMusicCount(count?: number) {
-  const total = Number(count) || 0
-  return total === 1 ? '1 música publicada' : `${total} músicas publicadas`
-}
 
 function getInitials(name: string) {
   const parts = String(name || '')
@@ -48,6 +44,7 @@ function ComposerAvatar({
   photoUrl?: string | null
   priority?: boolean
 }) {
+  const { t } = useTranslation()
   const [failed, setFailed] = useState(false)
   const initials = getInitials(name)
   const showPhoto = Boolean(photoUrl) && !failed
@@ -58,7 +55,7 @@ function ComposerAvatar({
       {showPhoto ? (
         <img
           src={photoUrl!}
-          alt={`Foto de ${name}`}
+          alt={t('composerDirectory.photoAlt', { name })}
           width={56}
           height={56}
           loading={priority ? 'eager' : 'lazy'}
@@ -73,6 +70,7 @@ function ComposerAvatar({
 }
 
 export default function ComposersDirectory({ composers }: { composers: DirectoryComposer[] }) {
+  const { t, i18n } = useTranslation()
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState<SortOption>('most')
   const [page, setPage] = useState(1)
@@ -82,11 +80,11 @@ export default function ComposersDirectory({ composers }: { composers: Directory
       .sort((a, b) => {
         const countDiff = (Number(b.publishedMusicCount) || 0) - (Number(a.publishedMusicCount) || 0)
         if (countDiff !== 0) return countDiff
-        return a.name.localeCompare(b.name, 'pt-BR')
+        return a.name.localeCompare(b.name, i18n.language)
       })
       .slice(0, 3)
       .map((composer) => composer.id)
-  }, [composers])
+  }, [composers, i18n.language])
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase()
@@ -96,38 +94,38 @@ export default function ComposersDirectory({ composers }: { composers: Directory
     })
 
     list = [...list].sort((a, b) => {
-      if (sort === 'az') return a.name.localeCompare(b.name, 'pt-BR')
+      if (sort === 'az') return a.name.localeCompare(b.name, i18n.language)
       const aCount = Number(a.publishedMusicCount) || 0
       const bCount = Number(b.publishedMusicCount) || 0
       if (sort === 'least') {
         if (aCount !== bCount) return aCount - bCount
-        return a.name.localeCompare(b.name, 'pt-BR')
+        return a.name.localeCompare(b.name, i18n.language)
       }
       if (aCount !== bCount) return bCount - aCount
-      return a.name.localeCompare(b.name, 'pt-BR')
+      return a.name.localeCompare(b.name, i18n.language)
     })
 
     return list
-  }, [composers, query, sort])
+  }, [composers, query, sort, i18n.language])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const currentPage = Math.min(page, totalPages)
   const pageItems = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   const sortLabel =
-    sort === 'az' ? 'A–Z' : sort === 'least' ? 'Menos músicas' : 'Mais músicas'
+    sort === 'az' ? 'A–Z' : sort === 'least' ? t('composerDirectory.sort.least') : t('composerDirectory.sort.most')
 
   return (
     <section className="rounded-[1.75rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:p-5">
       <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h2 className="text-xl font-black text-white sm:text-2xl">Todos os compositores</h2>
+          <h2 className="text-xl font-black text-white sm:text-2xl">{t('composerDirectory.allTitle')}</h2>
           <p className="mt-1 text-sm text-gray-400">
             {sort === 'az'
-              ? 'Ordenados por nome.'
+              ? t('composerDirectory.order.az')
               : sort === 'least'
-                ? 'Ordenados por menor quantidade de músicas publicadas.'
-                : 'Ordenados por quantidade de músicas publicadas.'}
+                ? t('composerDirectory.order.least')
+                : t('composerDirectory.order.most')}
           </p>
         </div>
 
@@ -141,7 +139,7 @@ export default function ComposersDirectory({ composers }: { composers: Directory
                 setQuery(event.target.value)
                 setPage(1)
               }}
-              placeholder="Buscar compositor..."
+              placeholder={t('composerDirectory.searchPlaceholder')}
               className="w-full rounded-xl border border-white/10 bg-black/40 py-2.5 pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-gray-500 focus:border-purple-400/50"
             />
           </label>
@@ -154,11 +152,11 @@ export default function ComposersDirectory({ composers }: { composers: Directory
                 setSort(event.target.value as SortOption)
                 setPage(1)
               }}
-              aria-label={`Ordenar: ${sortLabel}`}
+              aria-label={t('composerDirectory.sortAria', { label: sortLabel })}
               className="w-full appearance-none rounded-xl border border-white/10 bg-black/40 py-2.5 pl-10 pr-8 text-sm font-semibold text-white outline-none transition focus:border-purple-400/50"
             >
-              <option value="most">Mais músicas</option>
-              <option value="least">Menos músicas</option>
+              <option value="most">{t('composerDirectory.sort.most')}</option>
+              <option value="least">{t('composerDirectory.sort.least')}</option>
               <option value="az">A–Z</option>
             </select>
           </label>
@@ -167,7 +165,7 @@ export default function ComposersDirectory({ composers }: { composers: Directory
 
       {pageItems.length === 0 ? (
         <div className="rounded-2xl border border-white/10 bg-black/30 px-4 py-10 text-center">
-          <p className="text-sm font-semibold text-gray-300">Nenhum compositor encontrado para essa busca.</p>
+          <p className="text-sm font-semibold text-gray-300">{t('composerDirectory.noResults')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -207,12 +205,12 @@ export default function ComposersDirectory({ composers }: { composers: Directory
 
                     {isTop ? (
                       <span className="mt-1 inline-flex rounded-full border border-purple-400/30 bg-purple-500/15 px-2 py-0.5 text-[10px] font-black text-purple-100">
-                        Destaque #{rankIndex + 1}
+                        {t('composerDirectory.featuredRank', { rank: rankIndex + 1 })}
                       </span>
                     ) : null}
 
                     <p className="mt-2 text-xs font-semibold text-gray-400">
-                      {formatMusicCount(composer.publishedMusicCount)}
+                      {t('composerDirectory.musicCount', { count: Number(composer.publishedMusicCount) || 0 })}
                     </p>
                   </div>
                 </div>
@@ -222,7 +220,7 @@ export default function ComposersDirectory({ composers }: { composers: Directory
                     Premium
                   </span>
                   <span className="text-[11px] font-bold text-gray-400 transition group-hover:text-purple-200">
-                    Ver página →
+                    {t('composerDirectory.viewPage')} →
                   </span>
                 </div>
               </Link>
@@ -238,7 +236,7 @@ export default function ComposersDirectory({ composers }: { composers: Directory
             onClick={() => setPage((current) => Math.max(1, current - 1))}
             disabled={currentPage <= 1}
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/40 text-gray-300 transition hover:border-purple-400/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Página anterior"
+            aria-label={t('composerDirectory.previousPage')}
           >
             <FiChevronLeft className="h-4 w-4" />
           </button>
@@ -263,7 +261,7 @@ export default function ComposersDirectory({ composers }: { composers: Directory
             onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
             disabled={currentPage >= totalPages}
             className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-black/40 text-gray-300 transition hover:border-purple-400/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label="Próxima página"
+            aria-label={t('composerDirectory.nextPage')}
           >
             <FiChevronRight className="h-4 w-4" />
           </button>

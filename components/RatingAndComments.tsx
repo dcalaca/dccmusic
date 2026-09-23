@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import RatingStars from './RatingStars'
 import CommentsSection from './CommentsSection'
 import Toast from './Toast'
-import { useTranslation } from 'react-i18next'
 
 interface RatingAndCommentsProps {
   contentType: 'music' | 'video' | 'studio_music'
@@ -15,7 +14,6 @@ export default function RatingAndComments({
   contentType,
   contentId,
 }: RatingAndCommentsProps) {
-  const { t, i18n } = useTranslation()
   const [ratingStats, setRatingStats] = useState({
     averageRating: 0,
     totalRatings: 0,
@@ -131,7 +129,7 @@ export default function RatingAndComments({
     // Verificar se já tem avaliação e está clicando na mesma estrela
     if (ratingStats.userRating && ratingStats.userRating === rating) {
       setToast({
-        message: t(`ratings.alreadyRated.${contentType}`),
+        message: `Você já classificou essa ${contentType === 'music' ? 'música' : 'vídeo'}`,
         type: 'info',
       })
       return
@@ -140,7 +138,7 @@ export default function RatingAndComments({
     try {
       const token = getInteractionAuthToken()
       if (!token) {
-        throw new Error(t('ratings.errors.notAuthenticated'))
+        throw new Error('Não autenticado')
       }
 
       const response = await fetch('/api/ratings', {
@@ -158,7 +156,7 @@ export default function RatingAndComments({
 
       if (!response.ok) {
         const error = await response.json()
-        throw new Error(i18n.language.startsWith('pt') && error.error ? error.error : t('ratings.errors.rate'))
+        throw new Error(error.error || 'Erro ao avaliar')
       }
 
       const data = await response.json()
@@ -167,14 +165,14 @@ export default function RatingAndComments({
       // Mostrar mensagem de sucesso se atualizou a avaliação
       if (ratingStats.userRating) {
         setToast({
-          message: t('ratings.updated'),
+          message: 'Avaliação atualizada com sucesso!',
           type: 'success',
         })
       }
     } catch (error: any) {
       console.error('Erro ao avaliar:', error)
       setToast({
-        message: i18n.language.startsWith('pt') ? (error.message || t('ratings.errors.rate')) : t('ratings.errors.rate'),
+        message: error.message || 'Erro ao avaliar',
         type: 'error',
       })
       throw error
@@ -195,15 +193,15 @@ export default function RatingAndComments({
       <div className="space-y-8">
         <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 sm:p-6">
           <h2 className="text-2xl font-bold mb-4">
-            <span className="gradient-text">{t('ratings.title')}</span>
+            <span className="gradient-text">Avaliação</span>
           </h2>
-          <div className="text-gray-400">{t('ratings.loading')}</div>
+          <div className="text-gray-400">Carregando...</div>
         </div>
         <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 sm:p-6">
           <h2 className="text-2xl font-bold mb-4">
-            <span className="gradient-text">{t('comments.title')}</span>
+            <span className="gradient-text">Comentários</span>
           </h2>
-          <div className="text-gray-400">{t('ratings.loading')}</div>
+          <div className="text-gray-400">Carregando...</div>
         </div>
       </div>
     )
@@ -222,10 +220,10 @@ export default function RatingAndComments({
         {/* Seção de Avaliação */}
         <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-4 sm:p-6">
           <h2 className="text-2xl font-bold mb-4">
-            <span className="gradient-text">{t('ratings.title')}</span>
+            <span className="gradient-text">Avaliação</span>
           </h2>
           {loading ? (
-            <div className="text-gray-400">{t('ratings.loading')}</div>
+            <div className="text-gray-400">Carregando...</div>
           ) : (
             <RatingStars
               averageRating={ratingStats.averageRating}

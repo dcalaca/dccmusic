@@ -1543,5 +1543,75 @@
       "like": "Error al dar me gusta",
       "delete": "Error al eliminar el comentario"
     }
+  },
+  "composerDirectory": {
+    "badge": "Compositores Premium",
+    "titlePrefix": "Encuentra compositores y descubre sus",
+    "titleHighlight": "canciones publicadas",
+    "subtitle": "Conoce quién ya publica en DCC Music, escucha sus obras y descubre nuevos nombres para seguir.",
+    "songwriters": "compositores",
+    "publishedSongs": "canciones publicadas",
+    "specialSelection": "selección especial",
+    "emptyTitle": "No se encontraron compositores premium",
+    "emptyDescription": "Cuando nuevos compositores premium publiquen sus obras, aparecerán aquí.",
+    "photoAlt": "Foto de {{name}}",
+    "allTitle": "Todos los compositores",
+    "order": {
+      "az": "Ordenados por nombre.",
+      "least": "Ordenados por menor cantidad de canciones publicadas.",
+      "most": "Ordenados por cantidad de canciones publicadas."
+    },
+    "searchPlaceholder": "Buscar compositor...",
+    "sortAria": "Ordenar: {{label}}",
+    "sort": {
+      "most": "Más canciones",
+      "least": "Menos canciones"
+    },
+    "noResults": "No se encontraron compositores para esta búsqueda.",
+    "featuredRank": "Destacado #{{rank}}",
+    "musicCount_one": "{{count}} canción publicada",
+    "musicCount_other": "{{count}} canciones publicadas",
+    "viewPage": "Ver página",
+    "previousPage": "Página anterior",
+    "nextPage": "Página siguiente"
+  },
+  "composerProfile": {
+    "metadata": {
+      "notFound": "Compositor no encontrado",
+      "description": "Explora todas las canciones y vídeos del compositor {{name}} en DCC Music"
+    },
+    "photoAlt": "Foto de {{name}}",
+    "goldArtist": "Artista Oro",
+    "summary_one": "Compositor • {{count}} obra en DCC Music",
+    "summary_other": "Compositor • {{count}} obras en DCC Music",
+    "videoCount_one": "{{count}} vídeo",
+    "videoCount_other": "{{count}} vídeos",
+    "musicCount_one": "{{count}} canción",
+    "musicCount_other": "{{count}} canciones",
+    "listenNow": "Escuchar ahora",
+    "watchNow": "Ver ahora",
+    "videos": "Vídeos",
+    "musics": "Canciones",
+    "createdInStudio": "Creadas en DCC Studio IA",
+    "createdWithStudio": "Creado con DCC Studio IA",
+    "freeStyle": "Libre",
+    "noMood": "Sin clima",
+    "noWorks": "No se encontraron obras para este compositor."
+  },
+  "composerFilters": {
+    "filters": "Filtros",
+    "searchPlaceholder": "Buscar obras...",
+    "type": "Tipo",
+    "all": "Todos",
+    "videos": "Vídeos",
+    "musics": "Canciones",
+    "genre": "Género",
+    "sort": "Ordenar por",
+    "mostViewed": "Más vistos",
+    "recent": "Más recientes",
+    "clearFilters": "Limpiar filtros",
+    "search": "Buscar",
+    "clear": "Limpiar",
+    "apply": "Aplicar"
   }
 }

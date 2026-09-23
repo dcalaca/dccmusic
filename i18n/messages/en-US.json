@@ -1543,5 +1543,75 @@
       "like": "Could not like comment",
       "delete": "Could not delete comment"
     }
+  },
+  "composerDirectory": {
+    "badge": "Premium Songwriters",
+    "titlePrefix": "Find songwriters and discover their",
+    "titleHighlight": "published songs",
+    "subtitle": "See who's publishing on DCC Music, listen to their work, and discover new names to follow.",
+    "songwriters": "songwriters",
+    "publishedSongs": "published songs",
+    "specialSelection": "special selection",
+    "emptyTitle": "No premium songwriters found",
+    "emptyDescription": "As soon as new premium songwriters publish their work, they will appear here.",
+    "photoAlt": "Photo of {{name}}",
+    "allTitle": "All songwriters",
+    "order": {
+      "az": "Sorted by name.",
+      "least": "Sorted by fewest published songs.",
+      "most": "Sorted by most published songs."
+    },
+    "searchPlaceholder": "Search songwriter...",
+    "sortAria": "Sort: {{label}}",
+    "sort": {
+      "most": "Most songs",
+      "least": "Fewest songs"
+    },
+    "noResults": "No songwriters found for this search.",
+    "featuredRank": "Featured #{{rank}}",
+    "musicCount_one": "{{count}} published song",
+    "musicCount_other": "{{count}} published songs",
+    "viewPage": "View page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
+  },
+  "composerProfile": {
+    "metadata": {
+      "notFound": "Songwriter not found",
+      "description": "Explore all songs and videos by songwriter {{name}} on DCC Music"
+    },
+    "photoAlt": "Photo of {{name}}",
+    "goldArtist": "Gold Artist",
+    "summary_one": "Songwriter • {{count}} work on DCC Music",
+    "summary_other": "Songwriter • {{count}} works on DCC Music",
+    "videoCount_one": "{{count}} video",
+    "videoCount_other": "{{count}} videos",
+    "musicCount_one": "{{count}} song",
+    "musicCount_other": "{{count}} songs",
+    "listenNow": "Listen now",
+    "watchNow": "Watch now",
+    "videos": "Videos",
+    "musics": "Songs",
+    "createdInStudio": "Created in DCC AI Studio",
+    "createdWithStudio": "Created with DCC AI Studio",
+    "freeStyle": "Open style",
+    "noMood": "No mood",
+    "noWorks": "No work found for this songwriter."
+  },
+  "composerFilters": {
+    "filters": "Filters",
+    "searchPlaceholder": "Search works...",
+    "type": "Type",
+    "all": "All",
+    "videos": "Videos",
+    "musics": "Songs",
+    "genre": "Genre",
+    "sort": "Sort by",
+    "mostViewed": "Most viewed",
+    "recent": "Newest",
+    "clearFilters": "Clear filters",
+    "search": "Search",
+    "clear": "Clear",
+    "apply": "Apply"
   }
 }
