@@ -1436,5 +1436,112 @@
   "composerCta": {
     "addMusic": "Add song",
     "viewPremiumPlans": "View Premium Songwriter plans"
+  },
+  "publicVideos": {
+    "metadata": {
+      "title": "Videos | DCC Music",
+      "description": "Explore DCC Music's complete collection of music videos. Watch clips, performances, and the latest releases.",
+      "shortDescription": "Explore DCC Music's complete collection of music videos",
+      "keywords": {
+        "musicVideos": "music videos",
+        "clips": "music clips",
+        "dccVideos": "DCC Music videos",
+        "music": "music",
+        "youtubeMusic": "YouTube music",
+        "releases": "music releases",
+        "videoMusic": "music video"
+      }
+    },
+    "title": "Videos",
+    "subtitle": "Explore music videos",
+    "loadingFilters": "Loading filters...",
+    "empty": "No videos found.",
+    "count_one": "{{count}} video found",
+    "count_other": "{{count}} videos found",
+    "pagination": {
+      "previous": "Previous",
+      "pageOf": "Page {{page}} of {{total}}",
+      "next": "Next"
+    }
+  },
+  "videoDetail": {
+    "metadata": {
+      "notFound": "Video not found",
+      "description": "Watch {{title}} on DCC Music"
+    },
+    "publishedAt": "Published on {{date}}",
+    "views": "Views: {{count}}",
+    "duration": "Duration: {{duration}}",
+    "songwriters": "Songwriters",
+    "share": "Share",
+    "copyLink": "Copy link",
+    "openYoutube": "Open on YouTube",
+    "similarVideos": "Similar videos"
+  },
+  "videoFilters": {
+    "search": "Search",
+    "placeholder": "Title, tags...",
+    "genres": "Genres",
+    "none": "None",
+    "year": "Year",
+    "allYears": "All years",
+    "sort": "Sort by",
+    "mostViewed": "Most viewed",
+    "recent": "Newest",
+    "old": "Oldest",
+    "az": "A-Z",
+    "close": "Close",
+    "clear": "Clear",
+    "filters": "Filters"
+  },
+  "ratings": {
+    "title": "Rating",
+    "loading": "Loading...",
+    "alreadyRated": {
+      "music": "You already rated this song",
+      "video": "You already rated this video",
+      "studio_music": "You already rated this song"
+    },
+    "updated": "Rating updated successfully!",
+    "errors": {
+      "notAuthenticated": "Not authenticated",
+      "rate": "Could not submit rating"
+    },
+    "stars": {
+      "rateTitle_one": "Rate with {{count}} star",
+      "rateTitle_other": "Rate with {{count}} stars",
+      "loginToRate": "Sign in to rate",
+      "yourRating": "Your rating:",
+      "stars_one": "{{count}} star",
+      "stars_other": "{{count}} stars",
+      "clickToRate": "Click the stars to rate",
+      "ratings_one": "{{count}} rating",
+      "ratings_other": "{{count}} ratings"
+    }
+  },
+  "comments": {
+    "title": "Comments",
+    "like": "Like",
+    "reply": "Reply",
+    "replyPlaceholder": "Reply to {{name}}...",
+    "send": "Send",
+    "cancel": "Cancel",
+    "placeholder": "Write your comment...",
+    "sending": "Sending...",
+    "characters": "{{count}}/500 characters",
+    "loginHint": "Sign in to comment, like, and reply. You can also create music with the same account.",
+    "loginOrCreate": "Sign in or create account",
+    "loading": "Loading comments...",
+    "empty": "No comments yet. Be the first to comment!",
+    "delete": "Delete comment",
+    "deleteConfirm": "Are you sure you want to delete this comment?",
+    "errors": {
+      "commentMin": "Comment must be at least 3 characters",
+      "comment": "Could not post comment",
+      "replyMin": "Reply must be at least 3 characters",
+      "reply": "Could not post reply",
+      "like": "Could not like comment",
+      "delete": "Could not delete comment"
+    }
   }
 }

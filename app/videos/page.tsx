@@ -4,40 +4,44 @@ import VideoFilters from '@/components/VideoFilters'
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
-import { normalizeCountry } from '@/lib/localization'
+import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
+import { createDccI18n } from '@/i18n/i18next'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 3600 // Revalidar a cada hora
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = 'https://www.dccmusic.online'
+  const country = normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))
+  const i18n = await createDccI18n(getLocaleForCountry(country))
+  const t = i18n.t.bind(i18n)
   
   return {
-    title: 'Vídeos | DCC Music',
-    description: 'Explore a coleção completa de vídeos musicais do DCC Music. Assista aos clipes, performances e lançamentos mais recentes.',
+    title: t('publicVideos.metadata.title'),
+    description: t('publicVideos.metadata.description'),
     keywords: [
-      'vídeos musicais',
-      'clipes musicais',
-      'DCC Music vídeos',
-      'música brasileira',
-      'YouTube música',
-      'lançamentos musicais',
-      'vídeos de música',
+      t('publicVideos.metadata.keywords.musicVideos'),
+      t('publicVideos.metadata.keywords.clips'),
+      t('publicVideos.metadata.keywords.dccVideos'),
+      t('publicVideos.metadata.keywords.music'),
+      t('publicVideos.metadata.keywords.youtubeMusic'),
+      t('publicVideos.metadata.keywords.releases'),
+      t('publicVideos.metadata.keywords.videoMusic'),
     ],
     alternates: {
       canonical: `${baseUrl}/videos`,
     },
     openGraph: {
-      title: 'Vídeos | DCC Music',
-      description: 'Explore a coleção completa de vídeos musicais do DCC Music',
+      title: t('publicVideos.metadata.title'),
+      description: t('publicVideos.metadata.shortDescription'),
       url: `${baseUrl}/videos`,
       type: 'website',
       siteName: 'DCC Music',
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'Vídeos | DCC Music',
-      description: 'Explore a coleção completa de vídeos musicais do DCC Music',
+      title: t('publicVideos.metadata.title'),
+      description: t('publicVideos.metadata.shortDescription'),
     },
     robots: {
       index: true,
@@ -65,13 +69,8 @@ interface VideosPageProps {
 
 export default async function VideosPage({ searchParams = {} }: VideosPageProps) {
   const country = normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))
-  const isEnglish = country === 'US' || country === 'GB'
-  const isSpanish = country === 'PY' || country === 'CO' || country === 'MX' || country === 'ES'
-  const copy = isEnglish
-    ? { title: 'Videos', subtitle: 'Explore music videos', loading: 'Loading filters...', empty: 'No videos found.', foundOne: 'video found', foundMany: 'videos found', previous: 'Previous', page: 'Page', next: 'Next' }
-    : isSpanish
-      ? { title: 'Vídeos', subtitle: 'Explora vídeos musicales', loading: 'Cargando filtros...', empty: 'No se encontraron vídeos.', foundOne: 'vídeo encontrado', foundMany: 'vídeos encontrados', previous: 'Anterior', page: 'Página', next: 'Siguiente' }
-      : { title: 'Vídeos', subtitle: 'Explore vídeos musicais', loading: 'Carregando filtros...', empty: 'Nenhum vídeo encontrado.', foundOne: 'vídeo encontrado', foundMany: 'vídeos encontrados', previous: 'Anterior', page: 'Página', next: 'Próxima' }
+  const i18n = await createDccI18n(getLocaleForCountry(country))
+  const t = i18n.t.bind(i18n)
 
   // Buscar TODOS os vídeos sem filtros no banco
   const allVideos = await db.getVideos({ ordem: 'recentes' })
@@ -176,8 +175,8 @@ export default async function VideosPage({ searchParams = {} }: VideosPageProps)
   const collectionSchema = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: 'Vídeos | DCC Music',
-    description: 'Explore a coleção completa de vídeos musicais do DCC Music',
+    name: t('publicVideos.metadata.title'),
+    description: t('publicVideos.metadata.shortDescription'),
     url: 'https://www.dccmusic.online/videos',
     mainEntity: {
       '@type': 'ItemList',
@@ -205,17 +204,17 @@ export default async function VideosPage({ searchParams = {} }: VideosPageProps)
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-8">
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-              <span className="gradient-text">{copy.title}</span>
+              <span className="gradient-text">{t('publicVideos.title')}</span>
             </h1>
             <p className="text-gray-400">
-              {copy.subtitle}
+              {t('publicVideos.subtitle')}
             </p>
           </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar de Filtros */}
           <aside className="lg:w-64 flex-shrink-0">
-            <Suspense fallback={<div className="text-gray-400">{copy.loading}</div>}>
+            <Suspense fallback={<div className="text-gray-400">{t('publicVideos.loadingFilters')}</div>}>
               <VideoFilters genres={genres} anos={anos} currentParams={searchParams} />
             </Suspense>
           </aside>
@@ -224,12 +223,12 @@ export default async function VideosPage({ searchParams = {} }: VideosPageProps)
           <main className="flex-1">
             {paginatedVideos.length === 0 ? (
               <div className="text-center py-16">
-                <p className="text-gray-400 text-lg">{copy.empty}</p>
+                <p className="text-gray-400 text-lg">{t('publicVideos.empty')}</p>
               </div>
             ) : (
               <>
                 <div className="mb-4 text-sm text-gray-400">
-                  {total} {total === 1 ? copy.foundOne : copy.foundMany}
+                  {t('publicVideos.count', { count: total })}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {paginatedVideos.map((video) => (
@@ -245,18 +244,18 @@ export default async function VideosPage({ searchParams = {} }: VideosPageProps)
                         href={buildPaginationUrl(pagina - 1)}
                         className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
                       >
-                        {copy.previous}
+                        {t('publicVideos.pagination.previous')}
                       </a>
                     )}
                     <span className="px-4 py-2 text-gray-400">
-                      {copy.page} {pagina} de {totalPages}
+                      {t('publicVideos.pagination.pageOf', { page: pagina, total: totalPages })}
                     </span>
                     {pagina < totalPages && (
                       <a
                         href={buildPaginationUrl(pagina + 1)}
                         className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
                       >
-                        {copy.next}
+                        {t('publicVideos.pagination.next')}
                       </a>
                     )}
                   </div>

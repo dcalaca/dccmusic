@@ -1436,5 +1436,112 @@
   "composerCta": {
     "addMusic": "Registrar canción",
     "viewPremiumPlans": "Ver planes de Compositor Premium"
+  },
+  "publicVideos": {
+    "metadata": {
+      "title": "Vídeos | DCC Music",
+      "description": "Explora la colección completa de vídeos musicales de DCC Music. Mira clips, actuaciones y los lanzamientos más recientes.",
+      "shortDescription": "Explora la colección completa de vídeos musicales de DCC Music",
+      "keywords": {
+        "musicVideos": "vídeos musicales",
+        "clips": "clips musicales",
+        "dccVideos": "vídeos DCC Music",
+        "music": "música",
+        "youtubeMusic": "música en YouTube",
+        "releases": "lanzamientos musicales",
+        "videoMusic": "vídeos de música"
+      }
+    },
+    "title": "Vídeos",
+    "subtitle": "Explora vídeos musicales",
+    "loadingFilters": "Cargando filtros...",
+    "empty": "No se encontraron vídeos.",
+    "count_one": "{{count}} vídeo encontrado",
+    "count_other": "{{count}} vídeos encontrados",
+    "pagination": {
+      "previous": "Anterior",
+      "pageOf": "Página {{page}} de {{total}}",
+      "next": "Siguiente"
+    }
+  },
+  "videoDetail": {
+    "metadata": {
+      "notFound": "Vídeo no encontrado",
+      "description": "Mira el vídeo {{title}} en DCC Music"
+    },
+    "publishedAt": "Publicado el {{date}}",
+    "views": "Visualizaciones: {{count}}",
+    "duration": "Duración: {{duration}}",
+    "songwriters": "Compositores",
+    "share": "Compartir",
+    "copyLink": "Copiar enlace",
+    "openYoutube": "Abrir en YouTube",
+    "similarVideos": "Vídeos similares"
+  },
+  "videoFilters": {
+    "search": "Buscar",
+    "placeholder": "Título, etiquetas...",
+    "genres": "Géneros",
+    "none": "Ninguno",
+    "year": "Año",
+    "allYears": "Todos los años",
+    "sort": "Ordenar por",
+    "mostViewed": "Más vistos",
+    "recent": "Más recientes",
+    "old": "Más antiguos",
+    "az": "A-Z",
+    "close": "Cerrar",
+    "clear": "Limpiar",
+    "filters": "Filtros"
+  },
+  "ratings": {
+    "title": "Valoración",
+    "loading": "Cargando...",
+    "alreadyRated": {
+      "music": "Ya calificaste esta canción",
+      "video": "Ya calificaste este vídeo",
+      "studio_music": "Ya calificaste esta canción"
+    },
+    "updated": "¡Valoración actualizada correctamente!",
+    "errors": {
+      "notAuthenticated": "No autenticado",
+      "rate": "Error al valorar"
+    },
+    "stars": {
+      "rateTitle_one": "Valorar con {{count}} estrella",
+      "rateTitle_other": "Valorar con {{count}} estrellas",
+      "loginToRate": "Inicia sesión para valorar",
+      "yourRating": "Tu valoración:",
+      "stars_one": "{{count}} estrella",
+      "stars_other": "{{count}} estrellas",
+      "clickToRate": "Haz clic en las estrellas para valorar",
+      "ratings_one": "{{count}} valoración",
+      "ratings_other": "{{count}} valoraciones"
+    }
+  },
+  "comments": {
+    "title": "Comentarios",
+    "like": "Me gusta",
+    "reply": "Responder",
+    "replyPlaceholder": "Responder a {{name}}...",
+    "send": "Enviar",
+    "cancel": "Cancelar",
+    "placeholder": "Escribe tu comentario...",
+    "sending": "Enviando...",
+    "characters": "{{count}}/500 caracteres",
+    "loginHint": "Inicia sesión para comentar, dar me gusta y responder. Con la misma cuenta también puedes crear música.",
+    "loginOrCreate": "Iniciar sesión o crear cuenta",
+    "loading": "Cargando comentarios...",
+    "empty": "Todavía no hay comentarios. ¡Sé el primero en comentar!",
+    "delete": "Eliminar comentario",
+    "deleteConfirm": "¿Seguro que quieres eliminar este comentario?",
+    "errors": {
+      "commentMin": "El comentario debe tener al menos 3 caracteres",
+      "comment": "Error al comentar",
+      "replyMin": "La respuesta debe tener al menos 3 caracteres",
+      "reply": "Error al responder",
+      "like": "Error al dar me gusta",
+      "delete": "Error al eliminar el comentario"
+    }
   }
 }
