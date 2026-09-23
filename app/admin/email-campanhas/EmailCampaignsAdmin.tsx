@@ -27,6 +27,8 @@ type Campaign = {
   clicks?: { total: number; human: number; bot: number; unknown: number }
 }
 
+type LanguageCounts = { pt: number; es: number; en: number }
+
 type Idea = {
   label: string
   name: string
@@ -136,6 +138,11 @@ export default function EmailCampaignsAdmin() {
   const initialPendingRange = useMemo(defaultPendingRange, [])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [audienceCounts, setAudienceCounts] = useState({ all: 0, composers: 0, site_users: 0 })
+  const [audienceLanguageCounts, setAudienceLanguageCounts] = useState<Record<'all' | 'composers' | 'site_users', LanguageCounts>>({
+    all: { pt: 0, es: 0, en: 0 },
+    composers: { pt: 0, es: 0, en: 0 },
+    site_users: { pt: 0, es: 0, en: 0 },
+  })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [processingId, setProcessingId] = useState('')
@@ -153,11 +160,13 @@ export default function EmailCampaignsAdmin() {
   const [targetFrom, setTargetFrom] = useState(initialPendingRange.from)
   const [targetTo, setTargetTo] = useState(initialPendingRange.to)
   const [targetCount, setTargetCount] = useState<number | null>(null)
+  const [targetLanguageCounts, setTargetLanguageCounts] = useState<LanguageCounts>({ pt: 0, es: 0, en: 0 })
   const [targetCountLoading, setTargetCountLoading] = useState(false)
   const [createScheduled, setCreateScheduled] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(localDateTimeValue(new Date(Date.now() + 60 * 60 * 1000)))
 
   const selectedAudienceCount = targetMode === 'pending_email' ? (targetCount ?? 0) : (audienceCounts[audience] || 0)
+  const selectedLanguageCounts = targetMode === 'pending_email' ? targetLanguageCounts : audienceLanguageCounts[audience]
   const previewLines = useMemo(() => body.split('\n').filter(Boolean).slice(0, 4), [body])
 
   const loadCampaigns = async (silent = false) => {
@@ -168,6 +177,11 @@ export default function EmailCampaignsAdmin() {
       if (!response.ok) throw new Error(data.error || 'Erro ao carregar campanhas')
       setCampaigns(data.campaigns || [])
       setAudienceCounts(data.audienceCounts || { all: 0, composers: 0, site_users: 0 })
+      setAudienceLanguageCounts(data.audienceLanguageCounts || {
+        all: { pt: 0, es: 0, en: 0 },
+        composers: { pt: 0, es: 0, en: 0 },
+        site_users: { pt: 0, es: 0, en: 0 },
+      })
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar campanhas')
     } finally {
@@ -180,6 +194,7 @@ export default function EmailCampaignsAdmin() {
   useEffect(() => {
     if (targetMode !== 'pending_email' || !targetFrom || !targetTo) {
       setTargetCount(null)
+      setTargetLanguageCounts({ pt: 0, es: 0, en: 0 })
       return
     }
     const controller = new AbortController()
@@ -196,8 +211,12 @@ export default function EmailCampaignsAdmin() {
         const data = await response.json()
         if (!response.ok) throw new Error(data.error || 'Erro ao calcular destinatários')
         setTargetCount(Number(data.count) || 0)
+        setTargetLanguageCounts(data.languages || { pt: 0, es: 0, en: 0 })
       } catch (err: any) {
-        if (err?.name !== 'AbortError') setTargetCount(null)
+        if (err?.name !== 'AbortError') {
+          setTargetCount(null)
+          setTargetLanguageCounts({ pt: 0, es: 0, en: 0 })
+        }
       } finally {
         setTargetCountLoading(false)
       }
@@ -442,6 +461,12 @@ export default function EmailCampaignsAdmin() {
                 </select>
               </label>
               <p className="mt-2 text-xs text-gray-500">Estimativa atual: {selectedAudienceCount} destinatário(s). A lista será congelada no primeiro envio.</p>
+              <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                <div className="rounded-lg border border-gray-800 bg-black/50 px-3 py-2"><strong className="block text-white">{selectedLanguageCounts.pt}</strong><span className="text-gray-400">Português</span></div>
+                <div className="rounded-lg border border-gray-800 bg-black/50 px-3 py-2"><strong className="block text-white">{selectedLanguageCounts.es}</strong><span className="text-gray-400">Español</span></div>
+                <div className="rounded-lg border border-gray-800 bg-black/50 px-3 py-2"><strong className="block text-white">{selectedLanguageCounts.en}</strong><span className="text-gray-400">English</span></div>
+              </div>
+              <p className="mt-2 text-xs text-emerald-300">Espanhol e inglês são traduzidos automaticamente uma única vez antes do primeiro envio. Cada destinatário recebe a versão definida pelo país do cadastro.</p>
             </div>
 
             <div className="rounded-2xl border border-gray-800 bg-black/40 p-4">
@@ -535,7 +560,7 @@ export default function EmailCampaignsAdmin() {
 
       <div className="rounded-2xl border border-blue-800/50 bg-blue-950/20 p-5 text-sm leading-relaxed text-blue-100">
         <p className="font-bold">Segurança do CRM</p>
-        <p className="mt-2">A lista é congelada antes do primeiro envio. Cada destinatário tem uma entrega única no banco, a reserva é atômica antes de chamar o Resend e cada envio usa uma chave de idempotência. O botão inicia lotes sequenciais automaticamente até concluir; se a tela for fechada no meio, o cron retoma campanhas paradas sem reenviar quem já foi processado.</p>
+        <p className="mt-2">A lista é congelada antes do primeiro envio. Cada destinatário tem uma entrega única no banco, a reserva é atômica antes de chamar o Resend e cada envio usa uma chave de idempotência. O idioma também é congelado por destinatário: Brasil/Portugal recebem português, países hispânicos recebem espanhol e países de língua inglesa recebem inglês. O botão inicia lotes sequenciais automaticamente até concluir; se a tela for fechada no meio, o cron retoma campanhas paradas sem reenviar quem já foi processado.</p>
       </div>
     </section>
   )

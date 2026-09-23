@@ -23,6 +23,7 @@ create table if not exists public.admin_email_campaigns (
   next_run_at timestamptz,
   sent_count integer not null default 0,
   failed_count integer not null default 0,
+  translations jsonb not null default '{}'::jsonb,
   created_by text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -35,6 +36,8 @@ create table if not exists public.admin_email_campaign_deliveries (
   recipient_id uuid,
   recipient_email text not null,
   recipient_name text,
+  recipient_country text,
+  recipient_language text,
   status text not null default 'pending'
     check (status in ('pending', 'sent', 'failed', 'skipped')),
   provider_message_id text,
@@ -77,6 +80,9 @@ create index if not exists idx_admin_email_campaign_deliveries_campaign
 create index if not exists idx_admin_email_campaign_deliveries_reserved
   on public.admin_email_campaign_deliveries(campaign_id, claimed_at)
   where status = 'skipped' and error_message = '__reserved__';
+
+create index if not exists idx_admin_email_campaign_deliveries_language
+  on public.admin_email_campaign_deliveries(campaign_id, recipient_language);
 
 alter table public.admin_email_campaigns enable row level security;
 alter table public.admin_email_campaign_deliveries enable row level security;

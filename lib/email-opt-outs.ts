@@ -96,12 +96,26 @@ export function getEmailOptOutUrl(input: {
 
 export async function getOptedOutEmailSet() {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('admin_email_opt_outs')
-      .select('email')
+    const emails = new Set<string>()
+    const pageSize = 1000
 
-    if (error) throw error
-    return new Set((data || []).map((row: any) => normalizeMarketingEmail(row.email)).filter(Boolean))
+    for (let from = 0; ; from += pageSize) {
+      const { data, error } = await supabaseAdmin
+        .from('admin_email_opt_outs')
+        .select('email')
+        .order('id', { ascending: true })
+        .range(from, from + pageSize - 1)
+
+      if (error) throw error
+      const page = data || []
+      for (const row of page) {
+        const email = normalizeMarketingEmail((row as any).email)
+        if (email) emails.add(email)
+      }
+      if (page.length < pageSize) break
+    }
+
+    return emails
   } catch (error) {
     if (isMissingOptOutTableError(error)) return new Set<string>()
     throw error

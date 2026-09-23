@@ -4,12 +4,14 @@ import { supabaseAdmin } from '@/lib/supabase'
 import {
   CAMPAIGN_BATCH_SIZE,
   calculateNextRunAt,
+  countRecipientLanguages,
   getCampaignRecipients,
   getPendingEmailRecipients,
   sendEmailCampaign,
 } from '@/lib/admin-email-campaigns'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 120
 
 const SETUP_ERROR_HINTS = ['admin_email_campaigns', 'admin_email_campaign_deliveries', 'schema cache', 'does not exist']
 
@@ -133,7 +135,7 @@ export async function GET(request: NextRequest) {
         if (!from || !to) return NextResponse.json({ count: 0 })
         if (new Date(from) > new Date(to)) return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
         const recipients = await getPendingEmailRecipients(from, to)
-        return NextResponse.json({ count: recipients.length })
+        return NextResponse.json({ count: recipients.length, languages: countRecipientLanguages(recipients) })
       }
     }
 
@@ -182,6 +184,11 @@ export async function GET(request: NextRequest) {
         composers: composerRecipients.length,
         site_users: siteUserRecipients.length,
       },
+      audienceLanguageCounts: {
+        all: countRecipientLanguages(allRecipients),
+        composers: countRecipientLanguages(composerRecipients),
+        site_users: countRecipientLanguages(siteUserRecipients),
+      },
       setupRequired: false,
     })
   } catch (error: any) {
@@ -189,6 +196,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         campaigns: [],
         audienceCounts: { all: 0, composers: 0, site_users: 0 },
+        audienceLanguageCounts: {
+          all: { pt: 0, es: 0, en: 0 },
+          composers: { pt: 0, es: 0, en: 0 },
+          site_users: { pt: 0, es: 0, en: 0 },
+        },
         setupRequired: true,
       })
     }

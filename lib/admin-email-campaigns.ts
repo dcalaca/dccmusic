@@ -25,13 +25,21 @@ export type EmailCampaign = {
   target_to?: string | null
   target_count?: number
   frozen_at?: string | null
+  translations?: {
+    es?: { subject?: string; preview?: string | null; body?: string; ctaLabel?: string | null }
+    en?: { subject?: string; preview?: string | null; body?: string; ctaLabel?: string | null }
+  } | null
 }
+
+export type MarketingLanguage = 'pt' | 'es' | 'en'
 
 type Recipient = {
   type: 'composer' | 'site_user'
   id: string
   name: string
   email: string
+  country: string | null
+  language: MarketingLanguage
 }
 
 type DeliveryRow = {
@@ -41,12 +49,46 @@ type DeliveryRow = {
   recipient_email: string
   recipient_name: string | null
   status: 'pending' | 'sent' | 'failed' | 'skipped'
+  recipient_country?: string | null
+  recipient_language?: MarketingLanguage | null
   claimed_at?: string | null
 }
 
 export const CAMPAIGN_BATCH_SIZE = 40
 export const CAMPAIGN_MAX_BATCHES_PER_CRON = 1
 const DELIVERY_CLAIM_TAG = '__reserved__'
+const SUPABASE_PAGE_SIZE = 1000
+
+async function fetchAllRows<T>(
+  fetchPage: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>
+) {
+  const rows: T[] = []
+  for (let from = 0; ; from += SUPABASE_PAGE_SIZE) {
+    const to = from + SUPABASE_PAGE_SIZE - 1
+    const { data, error } = await fetchPage(from, to)
+    if (error) throw error
+    const page = data || []
+    rows.push(...page)
+    if (page.length < SUPABASE_PAGE_SIZE) break
+  }
+  return rows
+}
+
+export function marketingLanguageForCountry(country?: string | null): MarketingLanguage {
+  const code = String(country || '').trim().toUpperCase()
+  if (['ES', 'MX', 'CO', 'PY', 'CL', 'AR', 'UY', 'PE', 'EC', 'VE', 'BO'].includes(code)) return 'es'
+  if (['US', 'GB', 'UK', 'IE', 'CA', 'AU', 'NZ'].includes(code)) return 'en'
+  return 'pt'
+}
+
+export function countRecipientLanguages(recipients: Array<{ language?: MarketingLanguage | null }>) {
+  const counts = { pt: 0, es: 0, en: 0 }
+  for (const recipient of recipients) {
+    const language = recipient.language === 'es' || recipient.language === 'en' ? recipient.language : 'pt'
+    counts[language] += 1
+  }
+  return counts
+}
 
 function normalizeEmail(value: unknown) {
   return normalizeMarketingEmail(value)
@@ -78,6 +120,7 @@ function parseSender(value?: string | null) {
 async function sendCampaignViaResend(input: {
   to: string
   name: string
+  language: MarketingLanguage
   subject: string
   preview?: string | null
   body: string
@@ -97,13 +140,39 @@ async function sendCampaignViaResend(input: {
 
   if (!apiKey || !sender?.email) throw new Error('Resend não configurado para campanhas')
 
-  const bodyStartsWithGreeting = /^\s*ol[áa][,!\s]/i.test(input.body)
-  const greeting = bodyStartsWithGreeting ? '' : `<p>Olá, ${escapeHtml(input.name || 'Compositor')}.</p>`
+  const localized = input.language === 'es'
+    ? {
+        greeting: 'Hola',
+        defaultName: 'Compositor',
+        unsubscribe: 'No quiero recibir más estos correos',
+        footer: 'Recibiste este correo porque tienes una cuenta en DCC Music.',
+        greetingPattern: /^\s*hola[,!\s]/i,
+      }
+    : input.language === 'en'
+      ? {
+          greeting: 'Hello',
+          defaultName: 'Creator',
+          unsubscribe: 'I no longer want to receive these emails',
+          footer: 'You received this email because you have an account with DCC Music.',
+          greetingPattern: /^\s*(hello|hi)[,!\s]/i,
+        }
+      : {
+          greeting: 'Olá',
+          defaultName: 'Compositor',
+          unsubscribe: 'Não quero mais receber estes e-mails',
+          footer: 'Você recebeu este e-mail porque tem cadastro na DCC Music.',
+          greetingPattern: /^\s*ol[áa][,!\s]/i,
+        }
+
+  const bodyStartsWithGreeting = localized.greetingPattern.test(input.body)
+  const greeting = bodyStartsWithGreeting
+    ? ''
+    : `<p>${localized.greeting}, ${escapeHtml(input.name || localized.defaultName)}.</p>`
   const cta = input.ctaLabel && input.ctaUrl
     ? dccEmailButton(input.ctaLabel, input.ctaUrl)
     : ''
   const unsubscribe = input.unsubscribeUrl
-    ? `<br><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#7C16F8;text-decoration:underline;">Não quero mais receber estes e-mails</a>`
+    ? `<br><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#7C16F8;text-decoration:underline;">${localized.unsubscribe}</a>`
     : ''
 
   const htmlContent = buildDccEmailHtml({
@@ -114,7 +183,7 @@ async function sendCampaignViaResend(input: {
       ${greeting}
       <p>${nl2br(input.body)}</p>
       ${cta}
-      <p style="margin-top:24px;font-size:12px;color:#777080;">Você recebeu este e-mail porque tem cadastro na DCC Music.${unsubscribe}</p>
+      <p style="margin-top:24px;font-size:12px;color:#777080;">${localized.footer}${unsubscribe}</p>
     `,
   })
 
@@ -155,42 +224,73 @@ export function calculateNextRunAt(recurringDay?: number | null, fromDate = new 
 
 export async function getCampaignRecipients(audience: EmailCampaign['audience']) {
   const recipients = new Map<string, Recipient>()
+  const composerCountries = new Map<string, string | null>()
 
   if (audience === 'all' || audience === 'composers') {
-    const { data, error } = await supabaseAdmin
-      .from('dccmusic_composers')
-      .select('id, name, email')
-      .not('email', 'is', null)
-    if (error) throw error
+    const data = await fetchAllRows<any>((from, to) =>
+      supabaseAdmin
+        .from('dccmusic_composers')
+        .select('id, name, email, country')
+        .not('email', 'is', null)
+        .order('id', { ascending: true })
+        .range(from, to)
+    )
 
-    for (const composer of data || []) {
-      const email = normalizeEmail((composer as any).email)
-      if (!email || recipients.has(email)) continue
+    for (const composer of data) {
+      const email = normalizeEmail(composer.email)
+      if (!email) continue
+      const country = String(composer.country || '').trim().toUpperCase() || null
+      composerCountries.set(email, country)
+      if (recipients.has(email)) continue
       recipients.set(email, {
         type: 'composer',
-        id: String((composer as any).id),
-        name: String((composer as any).name || 'Compositor'),
+        id: String(composer.id),
+        name: String(composer.name || 'Compositor'),
         email,
+        country,
+        language: marketingLanguageForCountry(country),
       })
     }
   }
 
   if (audience === 'all' || audience === 'site_users') {
-    const { data, error } = await supabaseAdmin
-      .from('dccmusic_site_users')
-      .select('id, name, first_name, email, is_active')
-      .not('email', 'is', null)
-    if (error) throw error
+    const data = await fetchAllRows<any>((from, to) =>
+      supabaseAdmin
+        .from('dccmusic_site_users')
+        .select('id, name, first_name, email, is_active')
+        .not('email', 'is', null)
+        .order('id', { ascending: true })
+        .range(from, to)
+    )
 
-    for (const user of data || []) {
-      if ((user as any).is_active === false) continue
-      const email = normalizeEmail((user as any).email)
+    if (audience === 'site_users' && composerCountries.size === 0) {
+      const composerData = await fetchAllRows<any>((from, to) =>
+        supabaseAdmin
+          .from('dccmusic_composers')
+          .select('email, country')
+          .not('email', 'is', null)
+          .order('id', { ascending: true })
+          .range(from, to)
+      )
+      for (const composer of composerData) {
+        const email = normalizeEmail(composer.email)
+        if (!email) continue
+        composerCountries.set(email, String(composer.country || '').trim().toUpperCase() || null)
+      }
+    }
+
+    for (const user of data) {
+      if (user.is_active === false) continue
+      const email = normalizeEmail(user.email)
       if (!email || recipients.has(email)) continue
+      const country = composerCountries.get(email) || null
       recipients.set(email, {
         type: 'site_user',
-        id: String((user as any).id),
-        name: String((user as any).first_name || (user as any).name || 'Usuário'),
+        id: String(user.id),
+        name: String(user.first_name || user.name || 'Usuário'),
         email,
+        country,
+        language: marketingLanguageForCountry(country),
       })
     }
   }
@@ -200,29 +300,35 @@ export async function getCampaignRecipients(audience: EmailCampaign['audience'])
 }
 
 export async function getPendingEmailRecipients(from: string, to: string) {
-  const { data, error } = await supabaseAdmin
-    .from('dccmusic_composers')
-    .select('id, name, email, email_verified, created_at')
-    .not('email', 'is', null)
-    .eq('email_verified', false)
-    .gte('created_at', from)
-    .lte('created_at', to)
-    .order('created_at', { ascending: false })
-  if (error) throw error
+  const data = await fetchAllRows<any>((pageFrom, pageTo) =>
+    supabaseAdmin
+      .from('dccmusic_composers')
+      .select('id, name, email, email_verified, created_at, country')
+      .not('email', 'is', null)
+      .eq('email_verified', false)
+      .gte('created_at', from)
+      .lte('created_at', to)
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(pageFrom, pageTo)
+  )
 
   const optedOut = await getOptedOutEmailSet()
   const seen = new Set<string>()
   const recipients: Recipient[] = []
 
-  for (const row of data || []) {
-    const email = normalizeEmail((row as any).email)
+  for (const row of data) {
+    const email = normalizeEmail(row.email)
     if (!email || seen.has(email) || optedOut.has(email)) continue
     seen.add(email)
+    const country = String(row.country || '').trim().toUpperCase() || null
     recipients.push({
       type: 'composer',
-      id: String((row as any).id),
-      name: String((row as any).name || 'Compositor'),
+      id: String(row.id),
+      name: String(row.name || 'Compositor'),
       email,
+      country,
+      language: marketingLanguageForCountry(country),
     })
   }
 
@@ -235,6 +341,137 @@ export async function getRecipientsForCampaign(campaign: EmailCampaign) {
     return getPendingEmailRecipients(campaign.target_from, campaign.target_to)
   }
   return getCampaignRecipients(campaign.audience)
+}
+
+type CampaignTranslationContent = {
+  subject: string
+  preview: string | null
+  body: string
+  ctaLabel: string | null
+}
+
+function getCampaignContent(campaign: EmailCampaign, language: MarketingLanguage): CampaignTranslationContent {
+  if (language === 'pt') {
+    return {
+      subject: campaign.subject,
+      preview: campaign.preview || null,
+      body: campaign.body,
+      ctaLabel: campaign.cta_label || null,
+    }
+  }
+
+  const translated = campaign.translations?.[language]
+  if (!translated?.subject || !translated?.body) {
+    throw new Error(`Tradução ${language === 'es' ? 'em espanhol' : 'em inglês'} indisponível para esta campanha.`)
+  }
+
+  return {
+    subject: String(translated.subject),
+    preview: translated.preview ? String(translated.preview) : null,
+    body: String(translated.body),
+    ctaLabel: translated.ctaLabel ? String(translated.ctaLabel) : null,
+  }
+}
+
+async function translateCampaignContent(campaign: EmailCampaign) {
+  const apiKey = String(process.env.OPENAI_API_KEY || '').trim()
+  if (!apiKey) throw new Error('Tradução automática de campanhas não está configurada no servidor.')
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: process.env.OPENAI_TEXT_MODEL || 'gpt-4o-mini',
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: [
+            'Translate a customer-facing DCC Music marketing email from Brazilian Portuguese.',
+            'Return ONLY valid JSON with keys "es" and "en".',
+            'Each key must contain subject, preview, body and ctaLabel.',
+            'Use natural neutral Spanish for es and natural English for en.',
+            'Preserve DCC Music, coupon codes, product names, numbers, line breaks and meaning.',
+            'Do not add claims, discounts, promises, emojis or information not present in the source.',
+          ].join(' '),
+        },
+        {
+          role: 'user',
+          content: JSON.stringify({
+            subject: campaign.subject,
+            preview: campaign.preview || '',
+            body: campaign.body,
+            ctaLabel: campaign.cta_label || '',
+          }),
+        },
+      ],
+    }),
+  })
+
+  const payload = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new Error(payload?.error?.message || 'Não foi possível traduzir a campanha agora.')
+  }
+
+  let parsed: any = null
+  try {
+    parsed = JSON.parse(String(payload?.choices?.[0]?.message?.content || ''))
+  } catch {}
+
+  const normalize = (value: any) => ({
+    subject: String(value?.subject || '').trim(),
+    preview: String(value?.preview || '').trim() || null,
+    body: String(value?.body || '').trim(),
+    ctaLabel: String(value?.ctaLabel || '').trim() || null,
+  })
+
+  const es = normalize(parsed?.es)
+  const en = normalize(parsed?.en)
+  if (!es.subject || !es.body || !en.subject || !en.body) {
+    throw new Error('A tradução automática retornou conteúdo incompleto. Nenhum e-mail foi enviado.')
+  }
+
+  return { es, en }
+}
+
+async function ensureCampaignTranslations(campaign: EmailCampaign, campaignId: string) {
+  const [{ count: esCount, error: esError }, { count: enCount, error: enError }] = await Promise.all([
+    supabaseAdmin
+      .from('admin_email_campaign_deliveries')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .eq('recipient_language', 'es'),
+    supabaseAdmin
+      .from('admin_email_campaign_deliveries')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', campaignId)
+      .eq('recipient_language', 'en'),
+  ])
+
+  if (esError) throw esError
+  if (enError) throw enError
+
+  const needsEs = Number(esCount || 0) > 0
+  const needsEn = Number(enCount || 0) > 0
+  const hasEs = Boolean(campaign.translations?.es?.subject && campaign.translations?.es?.body)
+  const hasEn = Boolean(campaign.translations?.en?.subject && campaign.translations?.en?.body)
+
+  if ((!needsEs || hasEs) && (!needsEn || hasEn)) return campaign
+
+  const translations = await translateCampaignContent(campaign)
+  const { data, error } = await supabaseAdmin
+    .from('admin_email_campaigns')
+    .update({ translations, updated_at: new Date().toISOString() })
+    .eq('id', campaignId)
+    .select('*')
+    .single()
+
+  if (error) throw error
+  return data as EmailCampaign
 }
 
 async function getCampaign(campaignId: string) {
@@ -269,6 +506,8 @@ async function freezeCampaignAudience(campaign: EmailCampaign) {
       recipient_id: recipient.id,
       recipient_email: recipient.email,
       recipient_name: recipient.name,
+      recipient_country: recipient.country,
+      recipient_language: recipient.language,
       status: 'pending',
       provider_message_id: null,
       error_message: null,
@@ -366,7 +605,7 @@ async function recoverStaleClaims(campaignId: string) {
 
 export async function sendEmailCampaign(campaignId: string, options?: { limit?: number }) {
   const limit = Math.min(Math.max(Number(options?.limit || CAMPAIGN_BATCH_SIZE), 1), CAMPAIGN_BATCH_SIZE)
-  const campaign = await getCampaign(campaignId)
+  let campaign = await getCampaign(campaignId)
 
   if (!['draft', 'scheduled', 'sending', 'paused'].includes(campaign.status)) {
     throw new Error('Esta campanha já foi concluída')
@@ -381,11 +620,12 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
     return { campaignId, totalRecipients: 0, attempted: 0, sent: 0, failed: 0, remaining: 0, errors: [] as string[] }
   }
 
+  campaign = await ensureCampaignTranslations(campaign, campaignId)
   await recoverStaleClaims(campaignId)
 
   const { data: pendingRows, error: pendingError } = await supabaseAdmin
     .from('admin_email_campaign_deliveries')
-    .select('id, recipient_type, recipient_id, recipient_email, recipient_name, status')
+    .select('id, recipient_type, recipient_id, recipient_email, recipient_name, recipient_country, recipient_language, status')
     .eq('campaign_id', campaignId)
     .eq('status', 'pending')
     .order('created_at', { ascending: true })
@@ -401,7 +641,11 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
     if (!claimed) continue
 
     try {
-      const trackedCtaUrl = campaign.cta_label && campaign.cta_url && row.recipient_id
+      const language: MarketingLanguage = row.recipient_language === 'es' || row.recipient_language === 'en'
+        ? row.recipient_language
+        : 'pt'
+      const content = getCampaignContent(campaign, language)
+      const trackedCtaUrl = content.ctaLabel && campaign.cta_url && row.recipient_id
         ? await createCampaignButtonUrl({
             campaignId,
             campaignName: campaign.name,
@@ -409,7 +653,7 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
             recipientId: row.recipient_id,
             recipientEmail: row.recipient_email,
             recipientName: row.recipient_name || undefined,
-            ctaLabel: campaign.cta_label,
+            ctaLabel: content.ctaLabel,
             ctaUrl: campaign.cta_url,
           })
         : null
@@ -417,10 +661,11 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
       const result = await sendCampaignViaResend({
         to: row.recipient_email,
         name: row.recipient_name || (row.recipient_type === 'composer' ? 'Compositor' : 'Usuário'),
-        subject: campaign.subject,
-        preview: campaign.preview,
-        body: campaign.body,
-        ctaLabel: campaign.cta_label,
+        language,
+        subject: content.subject,
+        preview: content.preview,
+        body: content.body,
+        ctaLabel: content.ctaLabel,
         ctaUrl: trackedCtaUrl || campaign.cta_url,
         unsubscribeUrl: getEmailOptOutUrl({
           email: row.recipient_email,
