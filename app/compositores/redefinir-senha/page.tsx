@@ -140,6 +140,8 @@ function ResetPasswordForm() {
 }
 
 export default function ResetComposerPasswordPage() {
+  const { t } = useTranslation()
+
   return (
     <Suspense fallback={
       <div className="min-h-screen py-8 flex items-center justify-center">
