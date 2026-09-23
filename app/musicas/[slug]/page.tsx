@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import MusicCard from '@/components/MusicCard'
 import { FiExternalLink } from 'react-icons/fi'
-import { formatDate } from '@/lib/utils'
+import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
+import { createDccI18n } from '@/i18n/i18next'
 import CopyButton from '@/components/CopyButton'
 import SpotifyEmbed from '@/components/SpotifyEmbed'
 import RatingAndComments from '@/components/RatingAndComments'
@@ -23,16 +24,17 @@ async function getMusic(slug: string) {
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const music = await getMusic(params.slug)
+  const t = (await createDccI18n(getLocaleForCountry(normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))))).t
 
   if (!music) {
     return {
-      title: 'Música não encontrada',
+      title: t('musicDetail.notFound.title'),
     }
   }
 
   const description = music.description
-    ? `Letra e onde ouvir "${music.title}" no DCC Music. ${music.description}`.slice(0, 300)
-    : `Ouça a música ${music.title} no DCC Music`
+    ? `${t('musicDetail.metadata.lyricsAndListen', { title: music.title })} ${music.description}`.slice(0, 300)
+    : t('musicDetail.metadata.listen', { title: music.title })
 
   return {
     title: music.title,
@@ -106,30 +108,37 @@ export default async function MusicDetailPage({ params }: { params: { slug: stri
 
   const relatedMusics = displayMusic.genre ? await db.getRelatedMusics(displayMusic.genre, displayMusic.id) : []
   const musicUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/musicas/${displayMusic.slug}`
+  const locale = getLocaleForCountry(normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry')))
+  const i18n = await createDccI18n(locale)
+  const t = i18n.t.bind(i18n)
 
   return (
-    <MusicDetailContent music={displayMusic} relatedMusics={relatedMusics} musicUrl={musicUrl} />
+    <MusicDetailContent music={displayMusic} relatedMusics={relatedMusics} musicUrl={musicUrl} locale={locale} t={t} />
   )
 }
 
 function getMusicPlatformLabel(url?: string | null) {
-  if (!url) return 'plataforma'
+  if (!url) return ''
 
   if (/soundcloud\.com/i.test(url)) return 'SoundCloud'
   if (/music\.apple\.com/i.test(url)) return 'Apple Music'
   if (/spotify\.com/i.test(url)) return 'Spotify'
 
-  return 'plataforma'
+  return ''
 }
 
 function MusicDetailContent({ 
   music, 
   relatedMusics, 
-  musicUrl 
+  musicUrl,
+  locale,
+  t,
 }: { 
   music: NonNullable<Awaited<ReturnType<typeof getMusic>>>
   relatedMusics: any[]
   musicUrl: string
+  locale: string
+  t: (key: string, options?: any) => string
 }) {
   const musicPlatformLabel = getMusicPlatformLabel(music.spotifyUrl)
   const hasAudioPublished = db.hasPlayableMusicSource(music)
@@ -148,7 +157,7 @@ function MusicDetailContent({
               <SpotifyEmbed embedCode={music.spotifyEmbed} />
             ) : music.spotifyUrl ? (
               <div className="bg-gray-900/50 p-8 rounded-lg border border-gray-800 text-center">
-                <p className="text-gray-400 mb-4">Player não disponível</p>
+                <p className="text-gray-400 mb-4">{t('musicDetail.playerUnavailable')}</p>
                 <a
                   href={music.spotifyUrl}
                   target="_blank"
@@ -156,14 +165,14 @@ function MusicDetailContent({
                   className="inline-flex items-center space-x-2 px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
                 >
                   <FiExternalLink className="w-5 h-5" />
-                  <span>Abrir no {musicPlatformLabel}</span>
+                  <span>{musicPlatformLabel ? t('musicDetail.openOn', { platform: musicPlatformLabel }) : t('musicDetail.openPlatform')}</span>
                 </a>
               </div>
             ) : (
               <div className="rounded-lg border border-yellow-800/40 bg-yellow-950/20 p-6 text-center">
-                <p className="font-semibold text-yellow-200">Áudio ainda não publicado</p>
+                <p className="font-semibold text-yellow-200">{t('musicDetail.audioUnpublished')}</p>
                 <p className="mt-2 text-sm text-yellow-100/80">
-                  Esta página tem a letra cadastrada, mas ainda não tem um player de música disponível.
+                  {t('musicDetail.lyricsWithoutPlayer')}
                 </p>
               </div>
             )}
@@ -178,9 +187,9 @@ function MusicDetailContent({
             )}
             <h1 className="text-3xl sm:text-4xl font-bold mb-4">{music.title}</h1>
             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400 mb-6">
-              <span>Publicado em {formatDate(music.publishedAt)}</span>
+              <span>{t('musicDetail.publishedOn', { date: new Intl.DateTimeFormat(locale, { dateStyle: 'short' }).format(new Date(music.publishedAt)) })}</span>
               {music.viewCount > 0 && (
-                <span>{music.viewCount.toLocaleString('pt-BR')} visualizações</span>
+                <span>{t('musicDetail.views', { count: music.viewCount, formattedCount: music.viewCount.toLocaleString(locale) })}</span>
               )}
             </div>
             {music.tags && (
@@ -197,7 +206,7 @@ function MusicDetailContent({
             )}
             {music.composers && music.composers.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-sm font-semibold text-gray-400 mb-2">Compositores</h3>
+                <h3 className="text-sm font-semibold text-gray-400 mb-2">{t('musicDetail.composers')}</h3>
                 <div className="flex flex-wrap gap-2">
                   {music.composers.map((composer) => (
                     <a
@@ -212,7 +221,7 @@ function MusicDetailContent({
               </div>
             )}
             <div className="flex flex-wrap gap-2 mb-8">
-              <CopyButton text={musicUrl} label="Copiar link" />
+              <CopyButton text={musicUrl} label={t('musicDetail.copyLink')} copiedLabel={t('musicDetail.copied')} />
               {music.spotifyUrl && (
                 <a
                   href={music.spotifyUrl}
@@ -221,7 +230,7 @@ function MusicDetailContent({
                   className="flex items-center space-x-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
                 >
                   <FiExternalLink className="w-4 h-4" />
-                  <span>Abrir no {musicPlatformLabel}</span>
+                  <span>{musicPlatformLabel ? t('musicDetail.openOn', { platform: musicPlatformLabel }) : t('musicDetail.openPlatform')}</span>
                 </a>
               )}
             </div>
@@ -231,7 +240,7 @@ function MusicDetailContent({
           {music.description && (
             <div className="mb-12">
               <h2 className="text-2xl font-bold mb-4">
-                <span className="gradient-text">Letra</span>
+                <span className="gradient-text">{t('musicDetail.lyrics')}</span>
               </h2>
               <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-6">
                 <p className="text-gray-300 whitespace-pre-line leading-relaxed">{music.description}</p>
@@ -250,7 +259,7 @@ function MusicDetailContent({
           {relatedMusics.length > 0 && (
             <div>
               <h2 className="text-2xl font-bold mb-6">
-                <span className="gradient-text">Músicas Semelhantes</span>
+                <span className="gradient-text">{t('musicDetail.similar')}</span>
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {relatedMusics.map((relatedMusic) => (

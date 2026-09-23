@@ -1613,5 +1613,29 @@
     "search": "Buscar",
     "clear": "Limpar",
     "apply": "Aplicar"
+  },
+  "musicDetail": {
+    "notFound": {
+      "title": "Música não encontrada",
+      "description": "Esta música pode ter sido removida, ainda não ter áudio publicado ou a ligação pode estar incorreta.",
+      "browse": "Ver músicas publicadas",
+      "home": "Voltar ao início"
+    },
+    "metadata": {
+      "lyricsAndListen": "Letra e onde ouvir \"{{title}}\" no DCC Music.",
+      "listen": "Ouça a música {{title}} no DCC Music"
+    },
+    "playerUnavailable": "Leitor indisponível",
+    "audioUnpublished": "Áudio ainda não publicado",
+    "lyricsWithoutPlayer": "Esta página tem a letra registada, mas ainda não tem um leitor de música disponível.",
+    "composers": "Compositores",
+    "copyLink": "Copiar ligação",
+    "lyrics": "Letra",
+    "similar": "Músicas semelhantes",
+    "openOn": "Abrir no {{platform}}",
+    "publishedOn": "Publicado em {{date}}",
+    "views": "{{formattedCount}} visualizações",
+    "copied": "Copiado!",
+    "openPlatform": "Abrir na plataforma"
   }
 }

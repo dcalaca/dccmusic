@@ -7,6 +7,7 @@ import { FiCopy, FiCheck } from 'react-icons/fi'
 interface CopyButtonProps {
   text: string
   label?: string
+  copiedLabel?: string
 }
 
 export default function CopyButton({ text, label }: CopyButtonProps) {

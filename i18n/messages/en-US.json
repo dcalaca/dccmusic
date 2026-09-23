@@ -1613,5 +1613,29 @@
     "search": "Search",
     "clear": "Clear",
     "apply": "Apply"
+  },
+  "musicDetail": {
+    "notFound": {
+      "title": "Song not found",
+      "description": "This song may have been removed, its audio may not be published yet, or the link may be incorrect.",
+      "browse": "Browse published songs",
+      "home": "Back to Home"
+    },
+    "metadata": {
+      "lyricsAndListen": "Lyrics and where to listen to \"{{title}}\" on DCC Music.",
+      "listen": "Listen to {{title}} on DCC Music"
+    },
+    "playerUnavailable": "Player unavailable",
+    "audioUnpublished": "Audio not published yet",
+    "lyricsWithoutPlayer": "This page has lyrics, but no music player is available yet.",
+    "composers": "Songwriters",
+    "copyLink": "Copy link",
+    "lyrics": "Lyrics",
+    "similar": "Similar songs",
+    "openOn": "Open on {{platform}}",
+    "publishedOn": "Published on {{date}}",
+    "views": "{{formattedCount}} views",
+    "copied": "Copied!",
+    "openPlatform": "Open on music platform"
   }
 }
