@@ -2197,5 +2197,23 @@
         ]
       }
     }
+  },
+  "featuredStatus": {
+    "back": "Volver al área del compositor",
+    "music": "canción",
+    "video": "vídeo",
+    "success": {
+      "title": "¡Pago aprobado!",
+      "description": "Tu contenido destacado está activo y permanecerá visible durante 10 días.",
+      "view": "Ver {{type}}"
+    },
+    "pending": {
+      "title": "Pago pendiente",
+      "description": "Tu pago se está procesando. Recibirás una notificación cuando se apruebe."
+    },
+    "failure": {
+      "title": "Pago rechazado",
+      "description": "El pago no fue aprobado. Inténtalo de nuevo o contacta con soporte."
+    }
   }
 }

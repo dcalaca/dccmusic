@@ -3,9 +3,11 @@
 import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { FiXCircle, FiArrowRight } from 'react-icons/fi'
 
 function FeaturedFailureContent() {
+  const { t } = useTranslation()
   const searchParams = useSearchParams()
   const contentType = searchParams.get('contentType')
   const contentId = searchParams.get('contentId')
@@ -16,17 +18,17 @@ function FeaturedFailureContent() {
         <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8 text-center">
           <FiXCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-4">
-            <span className="gradient-text">Pagamento Rejeitado</span>
+            <span className="gradient-text">{t('featuredStatus.failure.title')}</span>
           </h1>
           <p className="text-gray-300 mb-6">
-            O pagamento não foi aprovado. Tente novamente ou entre em contato com o suporte.
+            {t('featuredStatus.failure.description')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/compositores/admin"
               className="px-6 py-3 bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors flex items-center justify-center gap-2"
             >
-              Voltar para Área do Compositor
+              {t('featuredStatus.back')}
               <FiArrowRight className="w-4 h-4" />
             </Link>
           </div>

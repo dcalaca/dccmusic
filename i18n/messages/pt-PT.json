@@ -2197,5 +2197,23 @@
         ]
       }
     }
+  },
+  "featuredStatus": {
+    "back": "Voltar à Área do Compositor",
+    "music": "Música",
+    "video": "Vídeo",
+    "success": {
+      "title": "Pagamento aprovado!",
+      "description": "O destaque foi ativado com sucesso e ficará em evidência durante 10 dias.",
+      "view": "Ver {{type}}"
+    },
+    "pending": {
+      "title": "Pagamento pendente",
+      "description": "O seu pagamento está a ser processado. Receberá uma notificação quando for aprovado."
+    },
+    "failure": {
+      "title": "Pagamento recusado",
+      "description": "O pagamento não foi aprovado. Tente novamente ou contacte o apoio."
+    }
   }
 }

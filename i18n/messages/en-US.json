@@ -2197,5 +2197,23 @@
         ]
       }
     }
+  },
+  "featuredStatus": {
+    "back": "Back to songwriter area",
+    "music": "song",
+    "video": "video",
+    "success": {
+      "title": "Payment approved!",
+      "description": "Your featured placement is active and will stay highlighted for 10 days.",
+      "view": "View {{type}}"
+    },
+    "pending": {
+      "title": "Payment pending",
+      "description": "Your payment is being processed. You will be notified when it is approved."
+    },
+    "failure": {
+      "title": "Payment declined",
+      "description": "Your payment was not approved. Please try again or contact support."
+    }
   }
 }
