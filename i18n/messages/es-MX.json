@@ -728,7 +728,9 @@
           "chooseAudio": "Elige el audio de la canción que quieres mejorar.",
           "translationRequired": "Para adaptar a otro idioma, pega la letra ya traducida o adaptada en el campo Letra de la canción.",
           "maxDuration": "Este audio supera 4 minutos y 30 segundos. Envía una versión más corta.",
-          "improve": "Error al mejorar la canción."
+          "improve": "Error al mejorar la canción.",
+          "prepareUpload": "No se pudo preparar el envío del audio.",
+          "upload": "No se pudo subir el audio. Inténtalo de nuevo."
         },
         "messages": {
           "transcribing": "Enviando audio y entendiendo la letra...",
@@ -772,7 +774,77 @@
         "transcribing": "Entendiendo letra...",
         "transcribe": "Entender letra (1 crédito)",
         "adapt": "Adaptar mi canción",
-        "improve": "Mejorar mi canción"
+        "improve": "Mejorar mi canción",
+        "back": "Volver",
+        "savedOriginal": "Usando la canción original guardada: {{title}}. No necesitas subir el archivo de nuevo.",
+        "avoidInstruments": "Instrumentos que quieres evitar (opcional)",
+        "avoidInstrumentsPlaceholder": "Ej.: guitarra pesada",
+        "mainVoice": "Voz principal",
+        "languageAdaptationHelp": "Adaptar a otro idioma: pega abajo la letra ya traducida o adaptada al idioma deseado. La IA intentará conservar la melodía, el ritmo, el tempo, la estructura y los instrumentos de la canción original. Puede ser necesario hacer pequeños ajustes para encajar la letra en la melodía.",
+        "translatedLyricsPlaceholder": "Pega aquí la letra ya traducida o adaptada al nuevo idioma.",
+        "lyricsPlaceholder": "Opcional: pega la letra o deja este campo vacío para que la IA transcriba el audio al mejorar. También puedes pulsar “Entender letra del audio”.",
+        "improvementOptions": {
+          "similar": {
+            "label": "Mantenerla lo más parecida posible",
+            "description": "Intenta conservar la letra, melodía, ritmo y esencia."
+          },
+          "professional": {
+            "label": "Hacerla más profesional",
+            "description": "Mejora la producción, mezcla, voz e instrumentos."
+          },
+          "vocal": {
+            "label": "Destacar la voz",
+            "description": "Busca una voz más clara y presente."
+          },
+          "instruments": {
+            "label": "Mejorar los instrumentos",
+            "description": "Da más cuerpo al arreglo y la producción."
+          },
+          "language_adaptation": {
+            "label": "Adaptar a otro idioma",
+            "description": "Conserva la melodía, el ritmo y la esencia con la nueva letra que proporciones."
+          }
+        },
+        "voiceOptions": {
+          "same": {
+            "label": "Mantener voz original",
+            "description": "Intenta conservar el perfil vocal del audio enviado."
+          },
+          "male": {
+            "label": "Voz masculina",
+            "description": "Solicita una nueva interpretación con voz principal masculina."
+          },
+          "female": {
+            "label": "Voz femenina",
+            "description": "Solicita una nueva interpretación con voz principal femenina."
+          }
+        },
+        "voiceStyleOptions": {
+          "natural": "Natural",
+          "soft": "Suave",
+          "powerful": "Potente",
+          "deep": "Grave",
+          "bright": "Aguda"
+        },
+        "genreLabels": {
+          "sertanejo": "Sertanejo",
+          "traditionalSertanejo": "Sertanejo tradicional",
+          "modaDeViola": "Moda de viola",
+          "pagode": "Pagode",
+          "samba": "Samba",
+          "waltz": "Vals",
+          "arrocha": "Arrocha",
+          "gospel": "Gospel",
+          "reggae": "Reggae",
+          "pop": "Pop",
+          "rock": "Rock",
+          "funk": "Funk",
+          "trap": "Trap",
+          "forro": "Forró",
+          "guarania": "Guarania paraguaya",
+          "free": "Libre",
+          "other": "Otro / escribir mi estilo"
+        }
       },
       "cover": {
         "errors": {

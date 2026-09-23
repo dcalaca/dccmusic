@@ -728,7 +728,9 @@
           "chooseAudio": "Escolha o áudio da música que deseja melhorar.",
           "translationRequired": "Para adaptar para outro idioma, cole a letra já traduzida ou adaptada no campo “Letra da música”.",
           "maxDuration": "Esse áudio passou de 4 minutos e 30 segundos. Envie uma versão mais curta para a IA trabalhar melhor.",
-          "improve": "Erro ao melhorar música."
+          "improve": "Erro ao melhorar música.",
+          "prepareUpload": "Não foi possível preparar o envio do áudio.",
+          "upload": "Falha ao enviar o áudio. Tente novamente."
         },
         "messages": {
           "transcribing": "Enviando áudio e entendendo a letra...",
@@ -772,7 +774,77 @@
         "transcribing": "Entendendo letra...",
         "transcribe": "Entender letra (1 crédito)",
         "adapt": "Adaptar minha música",
-        "improve": "Melhorar minha música"
+        "improve": "Melhorar minha música",
+        "back": "Voltar",
+        "savedOriginal": "A usar a música original guardada: {{title}}. Não precisa de enviar o ficheiro novamente.",
+        "avoidInstruments": "Instrumentos para evitar (opcional)",
+        "avoidInstrumentsPlaceholder": "Ex.: guitarra pesada",
+        "mainVoice": "Voz principal",
+        "languageAdaptationHelp": "Adaptar para outro idioma: cole abaixo a letra já traduzida ou adaptada para o idioma desejado. A IA tentará preservar melodia, ritmo, andamento, estrutura e instrumental da música original. Pequenos ajustes podem ser necessários para a letra caber na melodia.",
+        "translatedLyricsPlaceholder": "Cole aqui a letra já traduzida ou adaptada para o novo idioma.",
+        "lyricsPlaceholder": "Opcional: cole a letra ou deixe em branco para a IA transcrever o áudio ao melhorar. Também pode clicar em “Transcrever letra do áudio”.",
+        "improvementOptions": {
+          "similar": {
+            "label": "Manter o mais parecido possível",
+            "description": "Tenta preservar letra, melodia, ritmo e essência."
+          },
+          "professional": {
+            "label": "Deixar mais profissional",
+            "description": "Melhora produção, mixagem, voz e instrumentos."
+          },
+          "vocal": {
+            "label": "Destacar a voz",
+            "description": "Busca uma voz mais clara e presente."
+          },
+          "instruments": {
+            "label": "Melhorar instrumentos",
+            "description": "Dá mais corpo ao arranjo e à produção."
+          },
+          "language_adaptation": {
+            "label": "Adaptar para outro idioma",
+            "description": "Mantém melodia, ritmo e essência e usa a nova letra informada."
+          }
+        },
+        "voiceOptions": {
+          "same": {
+            "label": "Manter voz original",
+            "description": "Tenta preservar o perfil vocal do áudio enviado."
+          },
+          "male": {
+            "label": "Voz masculina",
+            "description": "Pede uma nova interpretação com voz principal masculina."
+          },
+          "female": {
+            "label": "Voz feminina",
+            "description": "Pede uma nova interpretação com voz principal feminina."
+          }
+        },
+        "voiceStyleOptions": {
+          "natural": "Natural",
+          "soft": "Suave",
+          "powerful": "Potente",
+          "deep": "Grave",
+          "bright": "Aguda"
+        },
+        "genreLabels": {
+          "sertanejo": "Sertanejo",
+          "traditionalSertanejo": "Sertanejo raiz",
+          "modaDeViola": "Moda de viola",
+          "pagode": "Pagode",
+          "samba": "Samba",
+          "waltz": "Valsa",
+          "arrocha": "Arrocha",
+          "gospel": "Gospel",
+          "reggae": "Reggae",
+          "pop": "Pop",
+          "rock": "Rock",
+          "funk": "Funk",
+          "trap": "Trap",
+          "forro": "Forró",
+          "guarania": "Guarania paraguaia",
+          "free": "Livre",
+          "other": "Outro / escrever meu estilo"
+        }
       },
       "cover": {
         "errors": {

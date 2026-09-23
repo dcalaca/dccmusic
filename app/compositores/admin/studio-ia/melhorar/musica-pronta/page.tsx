@@ -7,27 +7,9 @@ import { useLocalization } from '@/components/LocalizationProvider'
 import { useTranslation } from 'react-i18next'
 import { FiArrowLeft, FiEdit3, FiGlobe, FiLoader, FiMusic, FiUploadCloud, FiZap } from 'react-icons/fi'
 
-const improvementOptions = [
-  { id: 'similar', label: 'Manter o mais parecido possível', description: 'Tenta preservar letra, melodia, ritmo e essência.' },
-  { id: 'professional', label: 'Deixar mais profissional', description: 'Melhora produção, mixagem, voz e instrumentos.' },
-  { id: 'vocal', label: 'Destacar a voz', description: 'Busca uma voz mais clara e presente.' },
-  { id: 'instruments', label: 'Melhorar instrumentos', description: 'Dá mais corpo ao arranjo e à produção.' },
-  { id: 'language_adaptation', label: 'Adaptar para outro idioma', description: 'Mantém melodia, ritmo e essência e usa a nova letra informada.' },
-]
-
-const voiceOptions = [
-  { id: 'same', label: 'Manter voz original', description: 'Tenta preservar o perfil vocal do áudio enviado.' },
-  { id: 'male', label: 'Voz masculina', description: 'Pede uma nova interpretação com voz principal masculina.' },
-  { id: 'female', label: 'Voz feminina', description: 'Pede uma nova interpretação com voz principal feminina.' },
-]
-
-const voiceStyleOptions = [
-  { id: 'natural', label: 'Natural' },
-  { id: 'soft', label: 'Suave' },
-  { id: 'powerful', label: 'Potente' },
-  { id: 'deep', label: 'Grave' },
-  { id: 'bright', label: 'Aguda' },
-]
+const improvementOptions = ['similar', 'professional', 'vocal', 'instruments', 'language_adaptation'] as const
+const voiceOptions = ['same', 'male', 'female'] as const
+const voiceStyleOptions = ['natural', 'soft', 'powerful', 'deep', 'bright'] as const
 
 const moodOptions = ['Romântica', 'Sofrência', 'Chiclete', 'Engraçada', 'Reflexiva', 'Balada', 'Triste', 'Motivacional']
 const voiceToneOptions = ['Deixar a IA escolher', 'Voz grave', 'Voz média', 'Voz aguda', 'Voz rouca', 'Voz suave', 'Voz forte']
@@ -43,6 +25,32 @@ const songLanguageOptions = [
   'Español (México)',
   'Español (España)',
 ]
+
+const optionLabelKeys: Record<string, string> = {
+  'Romântica': 'romantic', 'Sofrência': 'heartbreak', 'Chiclete': 'catchy',
+  'Engraçada': 'funny', 'Reflexiva': 'reflective', 'Balada': 'ballad',
+  'Triste': 'sad', 'Motivacional': 'motivational',
+  'Deixar a IA escolher': 'aiChoose', 'Voz grave': 'lowVoice',
+  'Voz média': 'midVoice', 'Voz aguda': 'highVoice',
+  'Voz rouca': 'raspyVoice', 'Voz suave': 'softVoice', 'Voz forte': 'powerfulVoice',
+  'Padrão': 'standard', 'A/B/Refrão/C/Refrão': 'structureABC',
+  'A/Refrão/A/Refrão': 'structureABA',
+  'curta': 'short', 'média': 'medium', 'longa': 'long',
+}
+const songLanguageKeys: Record<string, string> = {
+  'English (United States)': 'enUS', 'English (United Kingdom)': 'enGB',
+  'Português (Brasil)': 'ptBR', 'Português (Portugal)': 'ptPT',
+  'Español (Paraguay)': 'esPY', 'Español (Colombia)': 'esCO',
+  'Español (México)': 'esMX', 'Español (España)': 'esES',
+}
+const genreLabelKeys: Record<string, string> = {
+  'Sertanejo': 'sertanejo', 'Sertanejo raiz': 'traditionalSertanejo',
+  'Moda de viola': 'modaDeViola', 'Pagode': 'pagode', 'Samba': 'samba',
+  'Valsa': 'waltz', 'Arrocha': 'arrocha', 'Gospel': 'gospel',
+  'Reggae': 'reggae', 'Pop': 'pop', 'Rock': 'rock', 'Funk': 'funk',
+  'Trap': 'trap', 'Forró': 'forro', 'Guarania paraguaia': 'guarania',
+  'Livre': 'free', 'Outro / escrever meu estilo': 'other',
+}
 
 const MAX_AUDIO_DURATION_SECONDS = 270
 
@@ -75,7 +83,7 @@ function getAudioDurationSeconds(file: File) {
   })
 }
 
-async function uploadAudioDirectToStorage(token: string, file: File, kind: 'enhance-source' | 'transcribe') {
+async function uploadAudioDirectToStorage(token: string, file: File, kind: 'enhance-source' | 'transcribe', errors: { prepare: string; upload: string }) {
   const prepareResponse = await fetch('/api/compositores/studio/input-upload-url', {
     method: 'POST',
     headers: {
@@ -91,7 +99,7 @@ async function uploadAudioDirectToStorage(token: string, file: File, kind: 'enha
   })
   const prepareData = await readApiResponse(prepareResponse)
   if (!prepareResponse.ok) {
-    throw new Error(prepareData.error || 'Não foi possível preparar o envio do áudio.')
+    throw new Error(errors.prepare)
   }
 
   const upload = prepareData.upload
@@ -103,7 +111,7 @@ async function uploadAudioDirectToStorage(token: string, file: File, kind: 'enha
     body: file,
   })
   if (!putResponse.ok) {
-    throw new Error('Falha ao enviar o áudio. Tente novamente.')
+    throw new Error(errors.upload)
   }
 
   return {
@@ -116,6 +124,9 @@ async function uploadAudioDirectToStorage(token: string, file: File, kind: 'enha
 
 export default function ImproveReadyMusicPage() {
   const { t } = useTranslation()
+  const choiceLabel = (value: string) => t(`studio.create.optionLabels.${optionLabelKeys[value]}`)
+  const languageLabel = (value: string) => t(`studio.create.languageLabels.${songLanguageKeys[value]}`)
+  const genreLabel = (value: string) => t(`studio.tools.ready.genreLabels.${genreLabelKeys[value]}`)
   const router = useRouter()
   const searchParams = useSearchParams()
   const { country } = useLocalization()
@@ -193,7 +204,7 @@ export default function ImproveReadyMusicPage() {
     setError('')
     setMessage(t('studio.tools.ready.messages.transcribing'))
     try {
-      const uploaded = audioFile ? await uploadAudioDirectToStorage(token, audioFile, 'transcribe') : savedOriginal
+      const uploaded = audioFile ? await uploadAudioDirectToStorage(token, audioFile, 'transcribe', { prepare: t('studio.tools.ready.errors.prepareUpload'), upload: t('studio.tools.ready.errors.upload') }) : savedOriginal
       const response = await fetch('/api/compositores/studio/transcribe', {
         method: 'POST',
         headers: {
@@ -208,8 +219,7 @@ export default function ImproveReadyMusicPage() {
       window.dispatchEvent(new Event('studioBalanceChange'))
       const charged = Number(data.creditsCharged) || 1
       setMessage(
-        data.message ||
-          t('studio.tools.ready.messages.transcribed', { count: charged })
+        t('studio.tools.ready.messages.transcribed', { count: charged })
       )
     } catch (err: any) {
       setError(err.message || t('studio.tools.ready.errors.transcribe'))
@@ -248,7 +258,7 @@ export default function ImproveReadyMusicPage() {
       ? t('studio.tools.ready.messages.sending')
       : t('studio.tools.ready.messages.starting'))
     try {
-      const uploaded = audioFile ? await uploadAudioDirectToStorage(token, audioFile, 'enhance-source') : savedOriginal
+      const uploaded = audioFile ? await uploadAudioDirectToStorage(token, audioFile, 'enhance-source', { prepare: t('studio.tools.ready.errors.prepareUpload'), upload: t('studio.tools.ready.errors.upload') }) : savedOriginal
       const response = await fetch('/api/compositores/studio/enhance', {
         method: 'POST',
         headers: {
@@ -298,7 +308,7 @@ export default function ImproveReadyMusicPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-4xl">
           <Link href="/compositores/admin/studio-ia/melhorar" className="mb-6 inline-flex items-center gap-2 text-primary-400 hover:text-primary-300">
-            <FiArrowLeft /> Voltar
+            <FiArrowLeft /> {t('studio.tools.ready.back')}
           </Link>
 
           <section className="mb-6 rounded-3xl border border-purple-700/60 bg-gradient-to-br from-black via-gray-950 to-purple-950/60 p-5 sm:p-8">
@@ -333,7 +343,7 @@ export default function ImproveReadyMusicPage() {
                 <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.ready.genre')}</span>
                 <select value={selectedGenre} onChange={(event) => setSelectedGenre(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
                   <option value="">{t('studio.tools.ready.keepGenre')}</option>
-                  {genreOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                  {genreOptions.map((option) => <option key={option} value={option}>{genreLabel(option)}</option>)}
                 </select>
                 <span className="mt-2 block text-xs text-gray-500">{t('studio.tools.ready.genreHint')}</span>
                 {selectedGenre === 'Outro / escrever meu estilo' && (
@@ -343,7 +353,7 @@ export default function ImproveReadyMusicPage() {
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.ready.language')}</span>
                 <select value={songLanguage} onChange={(event) => setSongLanguage(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
-                  {songLanguageOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                  {songLanguageOptions.map((option) => <option key={option} value={option}>{languageLabel(option)}</option>)}
                 </select>
                 <span className="mt-2 block text-xs text-gray-500">{t('studio.tools.ready.languageHint')}</span>
               </label>
@@ -353,7 +363,7 @@ export default function ImproveReadyMusicPage() {
               <span className="mb-2 flex items-center gap-2 text-sm font-bold text-purple-100"><FiUploadCloud /> {t('studio.tools.ready.audio')}</span>
               {savedOriginal && (
                 <div className="mb-3 rounded-xl border border-emerald-700/60 bg-emerald-950/30 p-3 text-sm text-emerald-100">
-                  Usando a música original salva: <strong>{savedOriginal.title}</strong>. Você não precisa enviar o arquivo novamente.
+                  {t('studio.tools.ready.savedOriginal', { title: savedOriginal.title })}
                   {savedOriginal.audioUrl && <audio controls src={savedOriginal.audioUrl} className="mt-2 w-full" />}
                 </div>
               )}
@@ -379,19 +389,19 @@ export default function ImproveReadyMusicPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 {improvementOptions.map((option) => (
                   <button
-                    key={option.id}
+                    key={option}
                     type="button"
                     onClick={() => {
-                      setSelectedImprovement(option.id)
+                      setSelectedImprovement(option)
                       setError('')
                     }}
-                    className={`rounded-2xl border p-4 text-left transition ${selectedImprovement === option.id ? 'border-primary-400 bg-primary-950/40 text-white' : 'border-gray-800 bg-black/30 text-gray-300 hover:border-purple-500'}`}
+                    className={`rounded-2xl border p-4 text-left transition ${selectedImprovement === option ? 'border-primary-400 bg-primary-950/40 text-white' : 'border-gray-800 bg-black/30 text-gray-300 hover:border-purple-500'}`}
                   >
                     <span className="flex items-center gap-2 font-black">
-                      {option.id === 'language_adaptation' && <FiGlobe className="text-primary-300" />}
-                      {option.label}
+                      {option === 'language_adaptation' && <FiGlobe className="text-primary-300" />}
+                      {t(`studio.tools.ready.improvementOptions.${option}.label`)}
                     </span>
-                    <span className="mt-1 block text-xs text-gray-400">{option.description}</span>
+                    <span className="mt-1 block text-xs text-gray-400">{t(`studio.tools.ready.improvementOptions.${option}.description`)}</span>
                   </button>
                 ))}
               </div>
@@ -420,25 +430,25 @@ export default function ImproveReadyMusicPage() {
                 <label>
                   <span className="mb-1.5 block text-xs font-bold text-gray-300">{t('studio.tools.ready.mood')}</span>
                   <select value={mood} onChange={(event) => setMood(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
-                    {moodOptions.map((option) => <option key={option}>{option}</option>)}
+                    {moodOptions.map((option) => <option key={option} value={option}>{choiceLabel(option)}</option>)}
                   </select>
                 </label>
                 <label>
                   <span className="mb-1.5 block text-xs font-bold text-gray-300">{t('studio.tools.ready.voiceTone')}</span>
                   <select value={voiceTone} onChange={(event) => setVoiceTone(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
-                    {voiceToneOptions.map((option) => <option key={option}>{option}</option>)}
+                    {voiceToneOptions.map((option) => <option key={option} value={option}>{choiceLabel(option)}</option>)}
                   </select>
                 </label>
                 <label>
                   <span className="mb-1.5 block text-xs font-bold text-gray-300">{t('studio.tools.ready.structure')}</span>
                   <select value={structure} onChange={(event) => setStructure(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
-                    {structureOptions.map((option) => <option key={option}>{option}</option>)}
+                    {structureOptions.map((option) => <option key={option} value={option}>{choiceLabel(option)}</option>)}
                   </select>
                 </label>
                 <label>
                   <span className="mb-1.5 block text-xs font-bold text-gray-300">{t('studio.tools.ready.lyricLength')}</span>
                   <select value={lineCount} onChange={(event) => setLineCount(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
-                    <option value="curta">Curta</option><option value="média">Média</option><option value="longa">Longa</option>
+                    {['curta', 'média', 'longa'].map((option) => <option key={option} value={option}>{choiceLabel(option)}</option>)}
                   </select>
                 </label>
               </div>
@@ -448,25 +458,25 @@ export default function ImproveReadyMusicPage() {
                   <input value={wantInstruments} onChange={(event) => setWantInstruments(event.target.value)} placeholder={t('studio.tools.ready.instrumentsPlaceholder')} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
                 </label>
                 <label>
-                  <span className="mb-1.5 block text-xs font-bold text-gray-300">Instrumentos para evitar <span className="font-normal text-gray-500">(opcional)</span></span>
-                  <input value={avoidInstruments} onChange={(event) => setAvoidInstruments(event.target.value)} placeholder="Ex.: guitarra pesada" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                  <span className="mb-1.5 block text-xs font-bold text-gray-300">{t('studio.tools.ready.avoidInstruments')}</span>
+                  <input value={avoidInstruments} onChange={(event) => setAvoidInstruments(event.target.value)} placeholder={t('studio.tools.ready.avoidInstrumentsPlaceholder')} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
                 </label>
               </div>
             </div>
 
             <div className="mt-5 rounded-2xl border border-gray-800 bg-black/20 p-4">
-              <p className="mb-1 text-sm font-bold text-gray-200">Voz principal</p>
+              <p className="mb-1 text-sm font-bold text-gray-200">{t('studio.tools.ready.mainVoice')}</p>
               <p className="mb-3 text-xs text-gray-400">{t('studio.tools.ready.voiceChoiceHint')}</p>
               <div className="grid gap-3 sm:grid-cols-3">
                 {voiceOptions.map((option) => (
                   <button
-                    key={option.id}
+                    key={option}
                     type="button"
-                    onClick={() => setSelectedVoice(option.id)}
-                    className={`rounded-2xl border p-3 text-left transition ${selectedVoice === option.id ? 'border-primary-400 bg-primary-950/40 text-white' : 'border-gray-800 bg-black/30 text-gray-300 hover:border-purple-500'}`}
+                    onClick={() => setSelectedVoice(option)}
+                    className={`rounded-2xl border p-3 text-left transition ${selectedVoice === option ? 'border-primary-400 bg-primary-950/40 text-white' : 'border-gray-800 bg-black/30 text-gray-300 hover:border-purple-500'}`}
                   >
-                    <span className="block font-black">{option.label}</span>
-                    <span className="mt-1 block text-xs text-gray-400">{option.description}</span>
+                    <span className="block font-black">{t(`studio.tools.ready.voiceOptions.${option}.label`)}</span>
+                    <span className="mt-1 block text-xs text-gray-400">{t(`studio.tools.ready.voiceOptions.${option}.description`)}</span>
                   </button>
                 ))}
               </div>
@@ -475,12 +485,12 @@ export default function ImproveReadyMusicPage() {
               <div className="flex flex-wrap gap-2">
                 {voiceStyleOptions.map((option) => (
                   <button
-                    key={option.id}
+                    key={option}
                     type="button"
-                    onClick={() => setSelectedVoiceStyle(option.id)}
-                    className={`rounded-xl border px-4 py-2 text-sm font-bold transition ${selectedVoiceStyle === option.id ? 'border-primary-400 bg-primary-950/40 text-white' : 'border-gray-800 bg-black/30 text-gray-300 hover:border-purple-500'}`}
+                    onClick={() => setSelectedVoiceStyle(option)}
+                    className={`rounded-xl border px-4 py-2 text-sm font-bold transition ${selectedVoiceStyle === option ? 'border-primary-400 bg-primary-950/40 text-white' : 'border-gray-800 bg-black/30 text-gray-300 hover:border-purple-500'}`}
                   >
-                    {option.label}
+                    {t(`studio.tools.ready.voiceStyleOptions.${option}`)}
                   </button>
                 ))}
               </div>
@@ -509,7 +519,7 @@ export default function ImproveReadyMusicPage() {
 
               {isLanguageAdaptation && (
                 <div className="mb-3 rounded-2xl border border-sky-700/50 bg-sky-950/25 p-3 text-sm leading-relaxed text-sky-100">
-                  <strong>Adaptar para outro idioma:</strong> cole abaixo a letra já traduzida ou adaptada para o idioma desejado. A IA tentará preservar melodia, ritmo, andamento, estrutura e instrumental da música original. Pequenos ajustes de encaixe podem acontecer para a letra caber naturalmente na melodia.
+                  {t('studio.tools.ready.languageAdaptationHelp')}
                 </div>
               )}
 
@@ -520,8 +530,8 @@ export default function ImproveReadyMusicPage() {
                 rows={8}
                 required={isLanguageAdaptation}
                 placeholder={isLanguageAdaptation
-                  ? 'Cole aqui a letra já traduzida ou adaptada para o novo idioma.'
-                  : 'Opcional: cole a letra, ou deixe em branco que a IA transcreve do áudio ao melhorar. Também pode clicar em “Entender letra do áudio”.'}
+                  ? t('studio.tools.ready.translatedLyricsPlaceholder')
+                  : t('studio.tools.ready.lyricsPlaceholder')}
                 className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500"
               />
             </div>

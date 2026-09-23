@@ -728,7 +728,9 @@
           "chooseAudio": "Choose the song audio you want to improve.",
           "translationRequired": "To adapt to another language, paste the translated or adapted lyrics into the Song lyrics field.",
           "maxDuration": "This audio is longer than 4 minutes 30 seconds. Upload a shorter version.",
-          "improve": "Could not improve the song."
+          "improve": "Could not improve the song.",
+          "prepareUpload": "Could not prepare the audio upload.",
+          "upload": "Could not upload the audio. Please try again."
         },
         "messages": {
           "transcribing": "Uploading audio and transcribing lyrics...",
@@ -772,7 +774,77 @@
         "transcribing": "Transcribing lyrics...",
         "transcribe": "Transcribe lyrics (1 credit)",
         "adapt": "Adapt my song",
-        "improve": "Improve my song"
+        "improve": "Improve my song",
+        "back": "Back",
+        "savedOriginal": "Using the saved original song: {{title}}. You do not need to upload the file again.",
+        "avoidInstruments": "Instruments to avoid (optional)",
+        "avoidInstrumentsPlaceholder": "Example: heavy guitar",
+        "mainVoice": "Lead voice",
+        "languageAdaptationHelp": "Adapt to another language: paste the lyrics you have already translated or adapted into the desired language below. AI will try to preserve the original melody, rhythm, tempo, structure, and instruments. Small adjustments may be needed to fit the lyrics to the melody.",
+        "translatedLyricsPlaceholder": "Paste the lyrics already translated or adapted into the new language.",
+        "lyricsPlaceholder": "Optional: paste the lyrics or leave this blank for AI to transcribe the audio when improving. You can also click “Transcribe lyrics from audio”.",
+        "improvementOptions": {
+          "similar": {
+            "label": "Keep as close to the original as possible",
+            "description": "Tries to preserve the lyrics, melody, rhythm, and feel."
+          },
+          "professional": {
+            "label": "Make it more professional",
+            "description": "Improves production, mixing, vocals, and instruments."
+          },
+          "vocal": {
+            "label": "Bring the vocals forward",
+            "description": "Aims for a clearer, more prominent lead vocal."
+          },
+          "instruments": {
+            "label": "Improve the instruments",
+            "description": "Adds depth to the arrangement and production."
+          },
+          "language_adaptation": {
+            "label": "Adapt to another language",
+            "description": "Keeps the melody, rhythm, and feel while using the new lyrics you provide."
+          }
+        },
+        "voiceOptions": {
+          "same": {
+            "label": "Keep original voice",
+            "description": "Tries to preserve the vocal character of the uploaded audio."
+          },
+          "male": {
+            "label": "Male voice",
+            "description": "Requests a new performance with a male lead vocal."
+          },
+          "female": {
+            "label": "Female voice",
+            "description": "Requests a new performance with a female lead vocal."
+          }
+        },
+        "voiceStyleOptions": {
+          "natural": "Natural",
+          "soft": "Soft",
+          "powerful": "Powerful",
+          "deep": "Deep",
+          "bright": "Bright"
+        },
+        "genreLabels": {
+          "sertanejo": "Sertanejo",
+          "traditionalSertanejo": "Traditional sertanejo",
+          "modaDeViola": "Moda de viola",
+          "pagode": "Pagode",
+          "samba": "Samba",
+          "waltz": "Waltz",
+          "arrocha": "Arrocha",
+          "gospel": "Gospel",
+          "reggae": "Reggae",
+          "pop": "Pop",
+          "rock": "Rock",
+          "funk": "Funk",
+          "trap": "Trap",
+          "forro": "Forró",
+          "guarania": "Paraguayan guarania",
+          "free": "Free style",
+          "other": "Other / enter my style"
+        }
       },
       "cover": {
         "errors": {
