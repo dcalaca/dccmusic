@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { useSearchParams } from 'next/navigation'
 import { FiCheckCircle, FiArrowRight, FiLoader } from 'react-icons/fi'
 import { trackGoogleAdsPurchaseConversion } from '@/components/GoogleAdsEvents'
@@ -9,9 +10,10 @@ import { identifyTikTokCurrentComposer, trackTikTokEvent } from '@/components/Ti
 import { blogAttributionEventPayload } from '@/lib/blog/attribution'
 
 function StudioTopupSuccessContent() {
+  const { t } = useTranslation()
   const searchParams = useSearchParams()
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'paid' | 'pending' | 'error'>('syncing')
-  const [message, setMessage] = useState('Conferindo confirmação do Mercado Pago...')
+  const [message, setMessage] = useState(t('payment.topup.success.checking'))
 
   const trackStudioTopupPurchase = async (data: any) => {
     if (typeof window === 'undefined') return
@@ -102,7 +104,7 @@ function StudioTopupSuccessContent() {
 
       if (!token || !topupId) {
         setSyncStatus('pending')
-        setMessage('Assim que o Mercado Pago confirmar o pagamento, os créditos aparecem no seu saldo do Studio IA.')
+        setMessage(t('payment.topup.success.awaitingConfirmation'))
         return
       }
 
@@ -116,25 +118,25 @@ function StudioTopupSuccessContent() {
           body: JSON.stringify({ topupId, paymentId }),
         })
         const data = await response.json()
-        if (!response.ok) throw new Error(data.error || 'Erro ao confirmar recarga')
+        if (!response.ok) throw new Error(t('payment.topup.errors.confirm'))
 
         if (data.status === 'paid') {
           setSyncStatus('paid')
-          setMessage('Pagamento confirmado. Seus créditos já foram liberados no Studio IA.')
+          setMessage(t('payment.topup.success.paid'))
           trackStudioTopupPurchase(data)
           return
         }
 
         setSyncStatus('pending')
-        setMessage('Pagamento recebido. A recarga será liberada automaticamente assim que a confirmação final chegar.')
+        setMessage(t('payment.topup.success.received'))
       } catch (error: any) {
         setSyncStatus('error')
-        setMessage(error.message || 'Não foi possível confirmar automaticamente agora. A confirmação por webhook ainda pode liberar seus créditos.')
+        setMessage(error.message || t('payment.topup.success.webhookFallback'))
       }
     }
 
     syncTopup()
-  }, [searchParams])
+  }, [searchParams, t])
 
   return (
     <div className="min-h-screen py-8 flex items-center justify-center">
@@ -145,7 +147,7 @@ function StudioTopupSuccessContent() {
           ) : (
             <FiCheckCircle className="mx-auto mb-4 h-16 w-16 text-green-300" />
           )}
-          <h1 className="mb-3 text-3xl font-black">Recarga aprovada</h1>
+          <h1 className="mb-3 text-3xl font-black">{t('payment.topup.success.title')}</h1>
           <p className="mb-6 text-gray-300">
             {message}
           </p>
@@ -153,7 +155,7 @@ function StudioTopupSuccessContent() {
             href="/compositores/admin/studio-ia"
             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold"
           >
-            Voltar ao Studio IA <FiArrowRight />
+            {t('payment.topup.backToStudio')} <FiArrowRight />
           </Link>
         </div>
       </div>
