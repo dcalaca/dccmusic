@@ -1889,5 +1889,78 @@
     "metaDescription": "Esclareça dúvidas sobre Studio IA, Cifra da Música, créditos, projetos e apoio ao compositor.",
     "metaOgTitle": "Perguntas frequentes | DCC Music",
     "metaOgDescription": "Respostas sobre compositores, Studio IA, Cifra da Música, créditos, projetos e apoio."
+  },
+  "digitalDistribution": {
+    "metaTitle": "Spotify e Plataformas | DCC Music + SomVibe",
+    "metaDescription": "Leve a sua música para o Spotify, Apple Music, Deezer e mais com a SomVibe, parceira da DCC Music.",
+    "partner": "Parceira DCC Music",
+    "heroTitle": "Imagine a sua música no Spotify!",
+    "heroLead": "Leve a sua música para o Spotify, Apple Music, Deezer e muito mais.",
+    "heroText": "A DCC Music é parceira da SomVibe para ajudar artistas independentes a lançar no Spotify, Apple Music, TikTok, YouTube e muito mais, com distribuição ilimitada e ferramentas úteis.",
+    "distribute": "Distribuir com a SomVibe",
+    "viewPlans": "Ver planos",
+    "morePlatforms": "+40 outras",
+    "whyTitle": "Por que escolher a SomVibe?",
+    "whyText": "Pensada para artistas independentes que querem chegar a mais fãs e aumentar as receitas com reproduções.",
+    "offerTitle": "O que encontra",
+    "offerText": "Além da distribuição, tem ferramentas para lançar músicas e acompanhar os resultados.",
+    "plansTitle": "Planos SomVibe",
+    "plansText": "Distribua artistas e músicas sem limites. Os preços são definidos pela SomVibe e podem mudar no site oficial. Valores em reais brasileiros (BRL).",
+    "planLabel": "Plano {{name}}",
+    "perMonth": "/mês",
+    "bestValue": "Melhor custo",
+    "subscribe": "Assinar agora",
+    "finalTitle": "Pronto para colocar a sua música nas plataformas?",
+    "finalText": "Registe-se na SomVibe através da ligação da DCC Music. O registo e o pagamento são feitos no site oficial da SomVibe; somos parceiros para facilitar a sua distribuição digital.",
+    "start": "Começar na SomVibe",
+    "redirect": "Ao clicar, será encaminhado para o site da SomVibe. Contacto: suporte@somvibe.com",
+    "annual": "Anual",
+    "semiannual": "Semestral",
+    "quarterly": "Trimestral",
+    "benefits": [
+      {
+        "title": "Distribuição ilimitada",
+        "text": "Envie músicas sem taxa abusiva e alcance as principais lojas digitais."
+      },
+      {
+        "title": "Mais de 45 plataformas",
+        "text": "Spotify, Apple Music, TikTok, YouTube e muitas outras DSPs."
+      },
+      {
+        "title": "Dashboard claro",
+        "text": "Acompanhe o desempenho das faixas e tome melhores decisões."
+      },
+      {
+        "title": "Apoio personalizado",
+        "text": "Uma equipa disponível para esclarecer dúvidas em todas as etapas."
+      }
+    ],
+    "services": [
+      {
+        "title": "Distribuição digital",
+        "text": "Lance suas músicas de forma simples, prática e sem burocracia."
+      },
+      {
+        "title": "Marketing",
+        "text": "Pré-save, smartlink e ferramentas para impulsionar lançamentos."
+      },
+      {
+        "title": "Apoio",
+        "text": "Ajuda rápida e personalizada para artistas independentes."
+      },
+      {
+        "title": "Treinamentos",
+        "text": "Estratégias práticas para streams, TikTok, Spotify e novos fãs."
+      }
+    ],
+    "planFeatures": [
+      "Artistas e músicas ilimitados",
+      "Receba 80% da receita",
+      "Pré-saves e smartlinks",
+      "Analytics avançados",
+      "Entrega para 45+ plataformas",
+      "Códigos UPC e ISRC gratuitos",
+      "Apoio personalizado"
+    ]
   }
 }

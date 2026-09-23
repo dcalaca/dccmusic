@@ -1889,5 +1889,78 @@
     "metaDescription": "Answers about DCC Music, AI Studio, Song Chords, credits, projects, and songwriter support.",
     "metaOgTitle": "Frequently Asked Questions | DCC Music",
     "metaOgDescription": "Learn about AI Studio, Song Chords, credits, music projects, and support."
+  },
+  "digitalDistribution": {
+    "metaTitle": "Spotify and Streaming Platforms | DCC Music + SomVibe",
+    "metaDescription": "Release your music on Spotify, Apple Music, Deezer and more with SomVibe, a DCC Music partner.",
+    "partner": "DCC Music partner",
+    "heroTitle": "Imagine your song on Spotify!",
+    "heroLead": "Bring your music to Spotify, Apple Music, Deezer and more.",
+    "heroText": "DCC Music partners with SomVibe to help independent artists release music on Spotify, Apple Music, TikTok, YouTube and more, with unlimited distribution and practical tools.",
+    "distribute": "Distribute with SomVibe",
+    "viewPlans": "View plans",
+    "morePlatforms": "+40 more",
+    "whyTitle": "Why choose SomVibe?",
+    "whyText": "Built for independent artists who want to reach more fans and earn more from streams.",
+    "offerTitle": "What you get",
+    "offerText": "Along with distribution, you get tools to launch music and track its performance.",
+    "plansTitle": "SomVibe plans",
+    "plansText": "Distribute unlimited artists and songs. SomVibe sets these prices and may change them on its official website. Prices are in Brazilian reais (BRL).",
+    "planLabel": "{{name}} plan",
+    "perMonth": "/month",
+    "bestValue": "Best value",
+    "subscribe": "Subscribe now",
+    "finalTitle": "Ready to put your music on streaming platforms?",
+    "finalText": "Sign up with SomVibe using the DCC Music link. Registration and payment take place on SomVibe’s official website; we partner with them to help you distribute your music.",
+    "start": "Get started with SomVibe",
+    "redirect": "Clicking takes you to the SomVibe website. Their contact: suporte@somvibe.com",
+    "annual": "Annual",
+    "semiannual": "Six-month",
+    "quarterly": "Three-month",
+    "benefits": [
+      {
+        "title": "Unlimited distribution",
+        "text": "Release songs without excessive fees and reach major digital stores."
+      },
+      {
+        "title": "Over 45 platforms",
+        "text": "Spotify, Apple Music, TikTok, YouTube and many other streaming services."
+      },
+      {
+        "title": "Clear dashboard",
+        "text": "Track how your releases perform and make better decisions."
+      },
+      {
+        "title": "Human support",
+        "text": "Get help from a real team throughout your journey."
+      }
+    ],
+    "services": [
+      {
+        "title": "Digital distribution",
+        "text": "Release your songs easily and without red tape."
+      },
+      {
+        "title": "Marketing",
+        "text": "Pre-saves, smart links and tools to promote releases."
+      },
+      {
+        "title": "Support",
+        "text": "Quick help from real people for independent artists."
+      },
+      {
+        "title": "Training",
+        "text": "Practical strategies for streams, TikTok, Spotify and new fans."
+      }
+    ],
+    "planFeatures": [
+      "Unlimited artists and songs",
+      "Keep 80% of revenue",
+      "Pre-saves and smart links",
+      "Advanced analytics",
+      "Delivery to 45+ platforms",
+      "Free UPC and ISRC codes",
+      "Human support"
+    ]
   }
 }
