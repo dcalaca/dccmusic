@@ -62,7 +62,7 @@ function PlaybackCreator() {
         setLoading(false)
       }
     })()
-  }, [isUnitedStates, projectId, router, versionId])
+  }, [projectId, router, t, versionId])
 
   const version = useMemo(
     () => (project?.versions || []).find((item: any) => item.id === versionId) || null,
@@ -139,7 +139,7 @@ function PlaybackCreator() {
       setResult(data)
       window.dispatchEvent(new Event('studioBalanceChange'))
     } catch (createError: any) {
-      setError(createError?.message || (isUnitedStates ? 'Could not create the instrumental.' : 'Não foi possível criar o playback.'))
+      setError(createError?.message || t('studio.tools.playback.errors.create'))
       window.dispatchEvent(new Event('studioBalanceChange'))
     } finally {
       setProcessing(false)
@@ -150,14 +150,14 @@ function PlaybackCreator() {
     <main className="min-h-screen bg-gradient-to-b from-black via-gray-950 to-cyan-950/20 px-4 py-8 text-white sm:px-6">
       <div className="mx-auto max-w-3xl">
         <Link href={projectId ? `/compositores/admin/studio-ia/projetos/${projectId}` : '/studio-ia'} className="mb-5 inline-flex items-center gap-2 text-sm font-bold text-cyan-200 hover:text-white">
-          <FiArrowLeft /> {projectId ? (isUnitedStates ? 'Back to project' : 'Voltar ao projeto') : (isUnitedStates ? 'Back to AI Studio' : 'Voltar ao Studio IA')}
+          <FiArrowLeft /> {projectId ? t('studio.tools.playback.backProject') : t('studio.tools.playback.backStudio')}
         </Link>
 
         <section className="overflow-hidden rounded-3xl border border-cyan-400/25 bg-gray-950/90 shadow-2xl shadow-cyan-950/30">
           <div className="border-b border-white/10 bg-gradient-to-r from-cyan-950/70 via-primary-950/60 to-purple-950/60 p-6 sm:p-8">
             <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-400/15 text-cyan-200"><FiHeadphones className="h-7 w-7" /></div>
-            <h1 className="text-3xl font-black sm:text-4xl">{isUnitedStates ? 'Create Instrumental' : 'Criar Playback'}</h1>
-            <p className="mt-2 text-sm text-gray-300">{isUnitedStates ? 'Remove the lead vocal and receive the instrumental and isolated vocal tracks to listen to or download anytime.' : 'Retire a voz principal e receba o instrumental e a voz isolada para ouvir e baixar quando quiser.'}</p>
+            <h1 className="text-3xl font-black sm:text-4xl">{t('studio.tools.playback.title')}</h1>
+            <p className="mt-2 text-sm text-gray-300">{t('studio.tools.playback.subtitle')}</p>
           </div>
 
           <div className="space-y-5 p-5 sm:p-8">
@@ -166,7 +166,7 @@ function PlaybackCreator() {
             ) : project && version ? (
               <>
                 <div className="rounded-2xl border border-white/10 bg-black/40 p-5">
-                  <p className="text-xs font-black uppercase tracking-wider text-cyan-300">{isUnitedStates ? 'Selected version' : 'Versão escolhida'}</p>
+                  <p className="text-xs font-black uppercase tracking-wider text-cyan-300">{t('studio.tools.playback.selectedVersion')}</p>
                   <h2 className="mt-1 text-xl font-black">{project.title || t('studio.tools.playback.mySong')}</h2>
                   <p className="mt-1 text-sm text-gray-400">{t('studio.tools.playback.version')} {versionNumber}{version.versionName ? ` · ${version.versionName}` : ''}</p>
                   {(version.audioUrl || version.streamAudioUrl) && <audio className="mt-4 w-full" controls src={version.audioUrl || version.streamAudioUrl} />}
@@ -230,13 +230,13 @@ function PlaybackCreator() {
                 )}
 
                 <div className="rounded-2xl border border-amber-400/30 bg-amber-950/20 p-5">
-                  <p className="font-black text-amber-100">{isUnitedStates ? 'Cost' : 'Custo'}: {PLAYBACK_CREDITS} {isUnitedStates ? 'credits' : 'créditos'}</p>
+                  <p className="font-black text-amber-100">{t('studio.tools.playback.cost')}: {PLAYBACK_CREDITS} {t('studio.tools.playback.credits')}</p>
                   <p className="mt-1 text-sm leading-relaxed text-amber-100/75">{t('studio.tools.playback.refundHint')}</p>
                 </div>
 
                 {!result && (
                   <button type="button" onClick={createPlayback} disabled={processing || uploading || !uploadedAudio} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-600 via-primary-600 to-purple-600 px-6 py-4 text-lg font-black shadow-xl transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50">
-                    {processing ? <><FiLoader className="animate-spin" /> {isUnitedStates ? 'Removing vocals...' : 'Retirando a voz...'}</> : <><FiHeadphones /> {isUnitedStates ? 'Create instrumental for 10 credits' : 'Criar playback por 10 créditos'}</>}
+                    {processing ? <><FiLoader className="animate-spin" /> {t('studio.tools.playback.processing')}</> : <><FiHeadphones /> {t('studio.tools.playback.createForCredits', { count: PLAYBACK_CREDITS })}</>}
                   </button>
                 )}
               </>

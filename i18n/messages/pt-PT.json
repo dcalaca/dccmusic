@@ -576,7 +576,12 @@
         "vocal": "Voz isolada",
         "downloadVocal": "Baixar voz",
         "noVocal": "O provedor concluiu o playback, mas não disponibilizou a voz separada.",
-        "another": "Criar uma nova separação"
+        "another": "Criar uma nova separação",
+        "backProject": "Voltar ao projeto",
+        "backStudio": "Voltar ao Studio IA",
+        "title": "Criar Playback",
+        "subtitle": "Retire a voz principal e receba o instrumental e a voz isolada para ouvir e descarregar quando quiser.",
+        "selectedVersion": "Versão escolhida"
       },
       "coupon": {
         "errors": {

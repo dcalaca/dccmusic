@@ -576,7 +576,12 @@
         "vocal": "Isolated vocal",
         "downloadVocal": "Download vocal",
         "noVocal": "The provider completed the instrumental but did not return a separate vocal track.",
-        "another": "Create another separation"
+        "another": "Create another separation",
+        "backProject": "Back to project",
+        "backStudio": "Back to AI Studio",
+        "title": "Create Instrumental",
+        "subtitle": "Remove the lead vocal and receive the instrumental and isolated vocal tracks to listen to or download anytime.",
+        "selectedVersion": "Selected version"
       },
       "coupon": {
         "errors": {

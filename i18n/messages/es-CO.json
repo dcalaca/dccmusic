@@ -576,7 +576,12 @@
         "vocal": "Voz aislada",
         "downloadVocal": "Descargar voz",
         "noVocal": "El proveedor completó el instrumental, pero no devolvió una pista vocal separada.",
-        "another": "Crear otra separación"
+        "another": "Crear otra separación",
+        "backProject": "Volver al proyecto",
+        "backStudio": "Volver a Studio IA",
+        "title": "Crear instrumental",
+        "subtitle": "Quita la voz principal y recibe el instrumental y la voz aislada para escuchar o descargar cuando quieras.",
+        "selectedVersion": "Versión seleccionada"
       },
       "coupon": {
         "errors": {
