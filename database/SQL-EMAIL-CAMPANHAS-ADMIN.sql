@@ -1,4 +1,5 @@
 -- Campanhas de e-mail do Admin DCC Music
+-- Envio multilíngue e fila protegida contra duplicidade.
 -- Execute este arquivo no Supabase SQL Editor antes de usar /admin/email-campanhas.
 
 create extension if not exists pgcrypto;
