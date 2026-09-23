@@ -2,53 +2,13 @@
 
 import { useState } from 'react'
 import { FiHelpCircle, FiChevronDown, FiCopy, FiCheck } from 'react-icons/fi'
-import { useLocalization } from '@/components/LocalizationProvider'
-import { faqsEsPy } from '@/lib/faq-es-py'
-import { faqsEnUs } from '@/lib/faq-en-us'
-import { faqsPtBr } from '@/lib/faq-pt-br'
-import { faqsPtPt } from '@/lib/faq-pt-pt'
+import { useTranslation } from 'react-i18next'
+
+type FaqCategory = { category: string; questions: { question: string; answer: string }[] }
 
 export default function FAQPage() {
-  const { country } = useLocalization()
-  const isPortugal = country === 'PT'
-  const isSpanish = country === 'PY' || country === 'CO'
-  const isUS = String(country) === 'US'
-  const localizedFaqs = isUS ? faqsEnUs : isPortugal ? faqsPtPt : isSpanish ? faqsEsPy : faqsPtBr
-
-  const title = isUS
-    ? 'Frequently Asked Questions'
-    : isPortugal
-    ? 'Perguntas frequentes'
-    : isSpanish
-      ? 'Preguntas frecuentes'
-      : 'Perguntas Frequentes'
-
-  const subtitle = isUS
-    ? 'Find answers about DCC Music, AI Studio, Song Chords, credits, projects, and support.'
-    : isPortugal
-    ? 'Esclareça as suas dúvidas sobre o DCC Music, Studio IA, Cifras, créditos, projetos e apoio.'
-    : isSpanish
-      ? 'Resuelve tus dudas sobre DCC Music, Studio IA, Cifras, créditos, proyectos y soporte.'
-      : 'Tire dúvidas sobre DCC Music, Studio IA, Cifra da Música, créditos, projetos e suporte.'
-
-  const supportTitle = isUS
-    ? "Didn't find what you were looking for?"
-    : isPortugal
-    ? 'Não encontrou o que procurava?'
-    : isSpanish
-      ? '¿No encontraste lo que buscabas?'
-      : 'Não encontrou o que procurava?'
-
-  const supportText = isUS
-    ? 'Contact support and include the email address connected to your account. For AI Studio or Song Chords questions, also include the project code.'
-    : isPortugal
-    ? 'Contacte o apoio e indique o e-mail associado à sua conta. Se a questão for sobre o Studio IA ou Cifras, envie também o código do projeto.'
-    : isSpanish
-      ? 'Comunícate con soporte e informa el correo de tu cuenta. Si la consulta es sobre Studio IA o Cifras, envía también el código del proyecto.'
-      : 'Fale com o suporte e informe seu email de cadastro. Se for sobre uma música do Studio IA ou Cifra da Música, envie também o código do projeto.'
-
-  const showEmailLabel = isUS ? 'View email' : isPortugal ? 'Ver e-mail' : isSpanish ? 'Ver correo' : 'Ver Email'
-  const copyEmailLabel = isUS ? 'Copy email' : isPortugal ? 'Copiar e-mail' : isSpanish ? 'Copiar correo' : 'Copiar email'
+  const { t } = useTranslation()
+  const localizedFaqs = t('faqPage.sections', { returnObjects: true }) as unknown as FaqCategory[]
 
   const faqSchema = {
     '@context': 'https://schema.org',
@@ -89,9 +49,9 @@ export default function FAQPage() {
               <FiHelpCircle className="h-8 w-8 text-white" />
             </div>
             <h1 className="mb-4 text-4xl font-bold md:text-5xl">
-              <span className="gradient-text">{title}</span>
+              <span className="gradient-text">{t('faqPage.title')}</span>
             </h1>
-            <p className="mx-auto max-w-2xl text-lg text-gray-400">{subtitle}</p>
+            <p className="mx-auto max-w-2xl text-lg text-gray-400">{t('faqPage.subtitle')}</p>
           </div>
 
           <div className="mx-auto max-w-4xl space-y-8">
@@ -119,15 +79,15 @@ export default function FAQPage() {
           </div>
 
           <div className="mx-auto mt-12 max-w-4xl rounded-lg border border-primary-500/30 bg-gradient-to-r from-primary-600/20 to-purple-600/20 p-8 text-center">
-            <h2 className="mb-4 text-2xl font-bold">{supportTitle}</h2>
-            <p className="mb-6 text-gray-300">{supportText}</p>
+            <h2 className="mb-4 text-2xl font-bold">{t('faqPage.supportTitle')}</h2>
+            <p className="mb-6 text-gray-300">{t('faqPage.supportText')}</p>
             {!showEmail ? (
               <button
                 type="button"
                 onClick={() => setShowEmail(true)}
                 className="inline-flex items-center rounded-lg bg-gradient-to-r from-primary-600 to-purple-600 px-6 py-3 font-medium transition-all hover:from-primary-700 hover:to-purple-700"
               >
-                {showEmailLabel}
+                {t('faqPage.showEmail')}
               </button>
             ) : (
               <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -136,7 +96,7 @@ export default function FAQPage() {
                   type="button"
                   onClick={handleCopyEmail}
                   className="inline-flex items-center justify-center rounded-lg bg-gray-800 px-4 py-2 transition-colors hover:bg-gray-700"
-                  title={copyEmailLabel}
+                  title={t('faqPage.copyEmail')} aria-label={t('faqPage.copyEmail')}
                 >
                   {copied ? <FiCheck className="h-5 w-5 text-green-400" /> : <FiCopy className="h-5 w-5 text-gray-400" />}
                 </button>
