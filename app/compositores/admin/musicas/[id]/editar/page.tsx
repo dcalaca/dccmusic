@@ -3,10 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
+import { localizeComposerMusicError } from '@/lib/localize-composer-music-error'
 import { FiArrowLeft } from 'react-icons/fi'
 
 export default function EditComposerMusicPage({ params }: { params: { id: string } }) {
   const router = useRouter()
+  const { t } = useTranslation()
   const [composer, setComposer] = useState<any>(null)
   const [music, setMusic] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -91,20 +94,20 @@ export default function EditComposerMusicPage({ params }: { params: { id: string
               className="inline-flex items-center space-x-2 text-primary-400 hover:text-primary-300 mb-6"
             >
               <FiArrowLeft className="w-4 h-4" />
-              <span>Voltar</span>
+              <span>{t('composerSongs.back')}</span>
             </Link>
             <div className="bg-red-900/50 border border-red-800 rounded-lg p-8 text-center">
               <h2 className="text-2xl font-bold mb-4 text-red-300">
-                Música não encontrada
+                {t('composerSongs.notFound')}
               </h2>
               <p className="text-gray-400 mb-6">
-                A música que você está tentando editar não foi encontrada ou você não tem permissão para editá-la.
+                {t('composerSongs.editUnavailable')}
               </p>
               <Link
                 href="/compositores/admin/musicas"
                 className="inline-block px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors font-medium"
               >
-                Voltar para Minhas Músicas
+                {t('composerSongs.backToSongs')}
               </Link>
             </div>
           </div>
@@ -122,14 +125,14 @@ export default function EditComposerMusicPage({ params }: { params: { id: string
             className="inline-flex items-center space-x-2 text-primary-400 hover:text-primary-300 mb-6"
           >
             <FiArrowLeft className="w-4 h-4" />
-            <span>Voltar</span>
+            <span>{t('composerSongs.back')}</span>
           </Link>
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2">
-              <span className="gradient-text">Editar Música</span>
+              <span className="gradient-text">{t('composerSongs.editSong')}</span>
             </h1>
             <p className="text-gray-400">
-              Edite as informações da música
+              {t('composerSongs.editDescription')}
             </p>
           </div>
           <ComposerMusicForm 
@@ -154,6 +157,7 @@ function ComposerMusicForm({
   composerName: string 
 }) {
   const router = useRouter()
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     title: music.title || '',
     slug: music.slug || '',
@@ -301,12 +305,12 @@ function ComposerMusicForm({
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao atualizar música')
+        throw new Error(localizeComposerMusicError(data.error, t, 'updateError'))
       }
 
       router.push('/compositores/admin/musicas')
     } catch (err: any) {
-      setError(err.message || 'Erro ao atualizar música')
+      setError(err.message || t('composerSongs.updateError'))
     } finally {
       setLoading(false)
     }
@@ -321,7 +325,7 @@ function ComposerMusicForm({
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-2">Título *</label>
+        <label className="block text-sm font-medium mb-2">{t('composerSongs.title')}</label>
         <input
           type="text"
           value={formData.title}
@@ -332,24 +336,24 @@ function ComposerMusicForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Slug</label>
+        <label className="block text-sm font-medium mb-2">{t('composerSongs.slug')}</label>
         <input
           type="text"
           value={formData.slug}
           onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-          placeholder="Será gerado automaticamente se vazio"
+          placeholder={t('composerSongs.slugPlaceholder')}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Gênero</label>
+        <label className="block text-sm font-medium mb-2">{t('composerSongs.genre')}</label>
         <select
           value={formData.genre}
           onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         >
-          <option value="">Selecione um gênero</option>
+          <option value="">{t('composerSongs.selectGenre')}</option>
           {genres.map((genre) => (
             <option key={genre} value={genre}>
               {genre}
@@ -359,32 +363,32 @@ function ComposerMusicForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">URL da música</label>
+        <label className="block text-sm font-medium mb-2">{t('composerSongs.musicUrl')}</label>
         <input
           type="url"
           value={formData.spotifyUrl}
           onChange={(e) => setFormData({ ...formData, spotifyUrl: e.target.value })}
-          placeholder="Spotify, SoundCloud ou Apple Music"
+          placeholder={t('composerSongs.editMusicUrlPlaceholder')}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Código de embed ou link do player</label>
+        <label className="block text-sm font-medium mb-2">{t('composerSongs.editEmbedCode')}</label>
         <textarea
           value={formData.spotifyEmbed}
           onChange={(e) => setFormData({ ...formData, spotifyEmbed: e.target.value })}
-          placeholder="Cole o iframe do Spotify, SoundCloud ou Apple Music. Para SoundCloud, pode colar o link da faixa."
+          placeholder={t('composerSongs.editEmbedPlaceholder')}
           rows={4}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         />
         <p className="mt-1 text-xs text-gray-400">
-          Dica para SoundCloud: prefira iframe com width="100%" e height="300". Esse tamanho costuma encaixar melhor no site.
+          {t('composerSongs.editEmbedHint')}
         </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">URL do Apple Music</label>
+        <label className="block text-sm font-medium mb-2">{t('composerSongs.appleMusicUrl')}</label>
         <input
           type="url"
           value={formData.appleMusicUrl}
@@ -395,29 +399,29 @@ function ComposerMusicForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Embed do Apple Music</label>
+        <label className="block text-sm font-medium mb-2">{t('composerSongs.appleMusicEmbed')}</label>
         <textarea
           value={formData.appleMusicEmbed}
           onChange={(e) => setFormData({ ...formData, appleMusicEmbed: e.target.value })}
-          placeholder="Cole o código iframe do Apple Music"
+          placeholder={t('composerSongs.appleMusicPlaceholder')}
           rows={4}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Tags (separadas por vírgula)</label>
+        <label className="block text-sm font-medium mb-2">{t('composerSongs.tags')}</label>
         <input
           type="text"
           value={formData.tags}
           onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-          placeholder="tag1, tag2, tag3"
+          placeholder={t('composerSongs.tagsPlaceholder')}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Descrição / Letra</label>
+        <label className="block text-sm font-medium mb-2">{t('composerSongs.description')}</label>
         <textarea
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -427,7 +431,7 @@ function ComposerMusicForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Data de Publicação</label>
+        <label className="block text-sm font-medium mb-2">{t('composerSongs.publishedAt')}</label>
         <input
           type="date"
           value={formData.publishedAt}
@@ -438,7 +442,7 @@ function ComposerMusicForm({
 
       {/* Seleção de Compositores */}
       <div>
-        <label className="block text-sm font-medium mb-2">Compositores *</label>
+        <label className="block text-sm font-medium mb-2">{t('composerSongs.composers')}</label>
         
         {selectedComposers.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-3">
@@ -475,7 +479,7 @@ function ComposerMusicForm({
             onBlur={() => {
               setTimeout(() => setShowComposerList(false), 200)
             }}
-            placeholder="Buscar compositor ou criar novo..."
+            placeholder={t('composerSongs.searchComposer')}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
           />
           
@@ -505,7 +509,7 @@ function ComposerMusicForm({
                 onClick={handleCreateNewComposer}
                 className="w-full text-left px-4 py-2 hover:bg-gray-800 transition-colors text-sm text-primary-400"
               >
-                + Criar novo: "{searchQuery.trim()}"
+                {t('composerSongs.createComposer', { name: searchQuery.trim() })}
               </button>
             </div>
           )}
@@ -518,13 +522,13 @@ function ComposerMusicForm({
           disabled={loading}
           className="flex-1 px-4 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium disabled:opacity-50"
         >
-          {loading ? 'Salvando...' : 'Salvar Alterações'}
+          {loading ? t('composerSongs.saving') : t('composerSongs.saveChanges')}
         </button>
         <Link
           href="/compositores/admin/musicas"
           className="px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
         >
-          Cancelar
+          {t('composerSongs.cancel')}
         </Link>
       </div>
     </form>

@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { FiArrowLeft, FiLoader } from 'react-icons/fi'
 
 export default function EditMusicBySlugPage({ params }: { params: { slug: string } }) {
   const router = useRouter()
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -24,16 +26,16 @@ export default function EditMusicBySlugPage({ params }: { params: { slug: string
             // Redirecionar para a página de edição com o ID
             router.push(`/compositores/admin/musicas/${music.id}/editar`)
           } else {
-            setError('Música não encontrada')
+            setError(t('composerSongs.notFound'))
             setLoading(false)
           }
         } else {
-          setError('Erro ao buscar música')
+          setError(t('composerSongs.searchError'))
           setLoading(false)
         }
       } catch (err) {
         console.error('Erro ao carregar música:', err)
-        setError('Erro ao carregar música')
+        setError(t('composerSongs.loadError'))
         setLoading(false)
       }
     }
@@ -46,7 +48,7 @@ export default function EditMusicBySlugPage({ params }: { params: { slug: string
       <div className="min-h-screen py-8 flex items-center justify-center">
         <div className="text-center">
           <FiLoader className="w-12 h-12 animate-spin text-primary-400 mx-auto mb-4" />
-          <p className="text-gray-400">Carregando...</p>
+          <p className="text-gray-400">{t('composerSongs.loading')}</p>
         </div>
       </div>
     )
@@ -62,18 +64,18 @@ export default function EditMusicBySlugPage({ params }: { params: { slug: string
               className="inline-flex items-center space-x-2 text-primary-400 hover:text-primary-300 mb-6"
             >
               <FiArrowLeft className="w-4 h-4" />
-              <span>Voltar</span>
+              <span>{t('composerSongs.back')}</span>
             </Link>
             <div className="bg-red-900/50 border border-red-800 rounded-lg p-8 text-center">
               <h2 className="text-2xl font-bold mb-4 text-red-300">
-                Erro
+                {t('composerSongs.error')}
               </h2>
               <p className="text-gray-400 mb-6">{error}</p>
               <Link
                 href="/compositores/admin/musicas"
                 className="inline-block px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors font-medium"
               >
-                Voltar para Minhas Músicas
+                {t('composerSongs.backToSongs')}
               </Link>
             </div>
           </div>
