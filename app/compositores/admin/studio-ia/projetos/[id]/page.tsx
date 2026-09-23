@@ -1461,7 +1461,7 @@ export default function StudioProjectDetailPage() {
           )}
 
           {showPublishPlanModal && (
-            <PublishPlanModal onClose={() => setShowPublishPlanModal(false)} />
+            <PublishPlanModal message={message} onClose={() => setShowPublishPlanModal(false)} />
           )}
 
           {videoCreditConfirmation && (
@@ -2701,7 +2701,7 @@ function UpgradeModal({ message, onClose }: { message: string; onClose: () => vo
   )
 }
 
-function PublishPlanModal({ onClose }: { onClose: () => void }) {
+function PublishPlanModal({ message, onClose }: { message: string; onClose: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
