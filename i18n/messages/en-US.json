@@ -8,7 +8,8 @@
       "back": "Back",
       "tryAgain": "Try again",
       "copy": "Copy",
-      "copied": "Copied!"
+      "copied": "Copied!",
+      "delete": "Delete"
     },
     "status": {
       "loading": "Loading...",
@@ -87,6 +88,100 @@
         "finalizingAudio": "Finishing the audio so you can listen. This page refreshes automatically.",
         "createPlayback": "Create playback from this version",
         "createInspired": "Create a new version using this as inspiration"
+      },
+      "generation": {
+        "messages": {
+          "1": "We're creating your song...",
+          "2": "Turning the lyrics into melody...",
+          "3": "The production is taking shape...",
+          "4": "Adjusting vocals, mood, and instrumentation...",
+          "5": "It's coming together beautifully...",
+          "6": "Finishing the song details...",
+          "7": "Almost ready, preparing the result..."
+        },
+        "background": "We received your request. We'll email you as soon as the song is ready. You can also wait here.",
+        "communicationError": "There was a communication failure while generating your song. No credits were deducted. Please generate the song again.",
+        "unavailable": "Your lyrics were saved, but we couldn't start creating the song right now. Try again later.",
+        "voiceInvalid": "Your custom voice is not available for this generation. Recreate the voice before trying again.",
+        "creating": "Creating song...",
+        "noCredits": "You've already used your free song or have no credits left. Subscribe to DCC AI Studio or buy a top-up to create more songs.",
+        "createError": "Could not create the song.",
+        "retryNeedsCredits": "You need 10 credits (or your free song) to generate another version with the same audio.",
+        "saveLyricsFirst": "Save the lyrics in the project before generating another version.",
+        "retryingOriginal": "Generating another version with the original audio...",
+        "retryError": "Could not generate another version.",
+        "reuseNoCredits": "You've already used your free song or have no credits left. Subscribe to DCC AI Studio or buy a top-up to reuse lyrics and create new versions.",
+        "noLyricsToReuse": "There are no lyrics to reuse.",
+        "creatingNewProject": "Creating new project...",
+        "newProjectError": "Could not create the new project.",
+        "reuseError": "Could not reuse the lyrics.",
+        "statusError": "We couldn't check the song generation right now.",
+        "syncingAudio": "The song has been created. We're syncing the audio to DCC Music and you can keep using this page.",
+        "readyUpdated": "Your song is ready. This page was updated automatically."
+      },
+      "publish": {
+        "planRequired": "Top-ups and credits are for creating songs. To publish on DCC Music, you need an active plan (AI Studio or Premium Songwriter).",
+        "publishing": "Publishing on DCC Music...",
+        "error": "Could not publish.",
+        "published": "Song published on DCC Music.",
+        "unpublishConfirm": "Unpublish this song? The public page will go offline, but the project, lyrics, cover, and audio will remain saved.",
+        "unpublishing": "Unpublishing song...",
+        "unpublishError": "Could not unpublish.",
+        "unpublished": "Song unpublished. It is no longer public, but remains saved in your project."
+      },
+      "cover": {
+        "proOnly": "Professional covers are available from Studio Pro.",
+        "generating": "Generating professional cover...",
+        "error": "Could not improve the cover.",
+        "created": "Professional cover created."
+      },
+      "lyrics": {
+        "title": "Song lyrics",
+        "description": "You can correct any word before creating or publishing.",
+        "save": "Save lyrics"
+      },
+      "actions": {
+        "title": "What do you want to do now?",
+        "description": "Choose an action below. You can save the lyrics before creating or publishing.",
+        "createNow": "Create song now",
+        "originalAudioSaved": "Original audio saved",
+        "retryOriginalDescription": "You can generate another version using the same audio uploaded for improvement, without uploading it again. It costs 10 credits (or your free song).",
+        "retryOriginal": "Try another version with the same audio (10 credits)"
+      },
+      "voice": {
+        "useSaved": "Use my saved voice",
+        "none": "Do not use a saved voice",
+        "hint": "Choose an option above. If you choose a voice, it will be used to create the song.",
+        "selected": "Selected voice: saved voice",
+        "selectedHint": "This voice was selected in the previous step and will be used when creating the song.",
+        "unavailable": "unavailable, recreate the voice"
+      },
+      "chords": {
+        "badge": "Chords",
+        "title": "Learn to play your song",
+        "description": "Generate chords for your song so you can study and play it.",
+        "chords": "Chords",
+        "key": "Key",
+        "price": "Price",
+        "credits": "10 credits",
+        "generate": "Generate chords"
+      },
+      "video": {
+        "createTitle": "Create lyric video",
+        "description": "Creates a simple video with the cover, song title, and lyrics synced to the audio. Each version can have 1 video. New requests cost 5 credits.",
+        "whichVersion": "Which version do you want in the video?",
+        "chooseHint": "Listen and choose. The button generates only the selected version, and the same version cannot be generated twice.",
+        "generating": "Generating video...",
+        "alreadyRequested": "Video already requested",
+        "generatingNew": "Generating new video...",
+        "regenerate": "Generate again with the song title",
+        "courtesy": "Courtesy: generates a new video with the song title. The old video remains available.",
+        "yourVideos": "Your lyric videos",
+        "requestedAt": "Requested on {{date}}",
+        "download": "Download your video",
+        "browserUnsupported": "Your browser cannot play this video.",
+        "previewHint": "Preview for review. Use play and the sound icon in the player controls.",
+        "detail": "Detail: {{detail}}"
       }
     },
     "entry": {
@@ -217,6 +312,127 @@
           "title": "Create song",
           "subtitle": "AI composes for you"
         }
+      }
+    },
+    "projects": {
+      "back": "Back",
+      "voices": "Voices",
+      "createSong": "Create song",
+      "title": "My Projects",
+      "subtitle": "Organize your songs by drafts, published, and favorites.",
+      "originalBadgeHint": "Green star: project created from an original song uploaded for improvement.",
+      "playback": {
+        "title": "Choose a song to create a playback",
+        "description": "Open a project, listen to the versions, and click “Create playback from this version”. It costs 10 credits.",
+        "emptyHint": "When you remove the vocal from a version, the instrumental and isolated vocal will be saved here."
+      },
+      "filters": {
+        "all": "All",
+        "drafts": "Drafts",
+        "published": "Published",
+        "favorites": "Favorites",
+        "transcriptions": "Chords",
+        "originals": "Original songs",
+        "playbacks": "Playbacks",
+        "playbacksAndVoices": "Playbacks and vocals"
+      },
+      "errors": {
+        "sessionExpired": "Your session expired or you were signed out. Sign in again to view your projects.",
+        "loadTranscriptions": "Could not load chords.",
+        "loadPlaybacks": "Could not load playbacks.",
+        "loadProjects": "Could not load projects.",
+        "discardDraft": "Could not discard the draft.",
+        "discardNamedDraft": "Could not discard “{{title}}”.",
+        "discardDrafts": "Could not discard drafts.",
+        "recipientEmail": "Enter the email of the songwriter who will receive the project.",
+        "transfer": "Could not transfer the project.",
+        "deleteProject": "Could not delete the project.",
+        "inspiration": "Could not use this as inspiration.",
+        "download": "Could not download the file."
+      },
+      "confirm": {
+        "discardDraft": "Discard the draft “{{title}}”? This cannot be undone.",
+        "discardAllDrafts": "Discard {{count}} draft(s)? This cannot be undone."
+      },
+      "messages": {
+        "draftDiscarded": "Draft discarded.",
+        "draftsDiscarded": "Drafts discarded.",
+        "transferred": "Project transferred to {{email}}.",
+        "projectDeleted": "Project deleted successfully."
+      },
+      "transfer": {
+        "title": "Transfer project",
+        "sendTitle": "Send “{{title}}”",
+        "description": "The songwriter will receive the project, lyrics, versions, cover, videos, and generated chords. Credits and billing history are not transferred.",
+        "emailLabel": "Recipient songwriter email",
+        "confirm": "Confirm transfer",
+        "action": "Transfer"
+      },
+      "delete": {
+        "title": "Delete",
+        "question": "Delete this project?",
+        "aboutToDelete": "You're about to delete “{{title}}” and all songs and versions in this project.",
+        "permanent": "This action is permanent and cannot be undone.",
+        "deleting": "Deleting...",
+        "confirm": "Yes, delete project"
+      },
+      "inspiration": {
+        "badge": "Use as inspiration",
+        "title": "Choose the version to use as inspiration",
+        "chooseVersion": "Which version do you want to use?",
+        "description": "Listen to the songs in “{{title}}” and choose the version to use as the base.",
+        "how": "How do you want the new version?",
+        "similar": "Keep it similar",
+        "faster": "A little faster",
+        "energetic": "More energetic",
+        "slowerRomantic": "Slower / more romantic"
+      },
+      "session": {
+        "title": "Session ended",
+        "description": "Your session expired. Sign in again to continue.",
+        "loginAgain": "Sign in again"
+      },
+      "myVoices": "My voices",
+      "myVoicesHint": "Listen to and manage the voices you registered.",
+      "view": {
+        "small": "Small cards",
+        "large": "Large cards"
+      },
+      "discardDrafts": "Discard drafts",
+      "loading": {
+        "transcriptions": "Loading chords...",
+        "originals": "Loading original songs...",
+        "playbacks": "Loading playbacks...",
+        "projects": "Loading projects..."
+      },
+      "emptyStates": {
+        "transcriptions": "No saved chords yet.",
+        "originals": "No saved original songs yet.",
+        "playbacks": "No saved playbacks yet."
+      },
+      "empty": "No projects in this category.",
+      "createFirst": "Create my first song",
+      "openProject": "Open project",
+      "useAsInspiration": "Use as inspiration",
+      "actions": {
+        "createTranscription": "Create chords",
+        "downloadPdf": "Download chords PDF",
+        "improveAgain": "Use to improve again",
+        "downloadPlayback": "Download playback",
+        "downloadVoice": "Download vocal",
+        "songOptions": "Song options"
+      },
+      "labels": {
+        "transcription": "Song Chords",
+        "saved": "saved",
+        "sentToImprove": "Sent for improvement on {{date}}",
+        "originalUnavailable": "Original audio unavailable.",
+        "songVersion": "Song version",
+        "separatedOn": "Separated on {{date}}",
+        "playbackInstrumental": "Playback / instrumental",
+        "isolatedVoice": "Isolated vocal",
+        "fileUnavailable": "File unavailable.",
+        "createdFromOriginal": "Created from an uploaded original song"
       }
     }
   },

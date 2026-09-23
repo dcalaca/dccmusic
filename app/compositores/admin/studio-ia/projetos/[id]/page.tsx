@@ -17,26 +17,9 @@ const refineActions = [
   ['commercial', 'deixar mais comercial'],
 ]
 
-const musicGenerationMessages = [
-  'Estamos criando sua música...',
-  'Transformando a letra em melodia...',
-  'A produção está ganhando forma...',
-  'Ajustando voz, clima e instrumental...',
-  'Está ficando maravilhoso...',
-  'Finalizando os detalhes da música...',
-  'Quase pronto, preparando o resultado...',
-]
-
 const MUSIC_GENERATION_TIMEOUT_SECONDS = 10 * 60
 const MUSIC_GENERATION_BACKGROUND_SECONDS = 20
-const MUSIC_GENERATION_BACKGROUND_MESSAGE = 'Recebemos sua solicitação. Assim que a música estiver pronta, te mandamos um e-mail. Você também pode aguardar por aqui mesmo. Sinto que está vindo um sucesso!'
-const MUSIC_GENERATION_COMMUNICATION_ERROR =
-  'Houve uma falha na comunicação para geração da sua música. Fica tranquilo: não foi descontado do seu saldo. Favor gerar a música novamente.'
-const MUSIC_CREATION_UNAVAILABLE_MESSAGE = 'Sua letra foi salva, mas não conseguimos iniciar a criação da música agora. Tente novamente mais tarde.'
-const STUDIO_VOICE_INVALID_MESSAGE = 'Sua voz personalizada não está disponível para esta geração. É necessário recriar a voz antes de tentar novamente.'
 const STUDIO_MUSIC_CREDITS = 10
-const PUBLISH_PLAN_REQUIRED_MESSAGE =
-  'A recarga e os créditos servem para criar músicas. Para publicar no DCC Music, é necessário ter um plano ativo (Studio IA ou Compositor Premium).'
 
 const inspirationVariationOptions = [
   { id: 'similar', labelKey: 'studio.project.inspiration.variations.similar' },
@@ -254,7 +237,8 @@ function LearnYourMusicAd({
   studioVersionId?: string
   studioProjectId?: string
 }) {
-  const items = ['Cifra', 'Tom', 'BPM']
+  const { t } = useTranslation()
+  const items = [t('studio.project.chords.chords'), t('studio.project.chords.key'), 'BPM']
   const transcriptionParams = new URLSearchParams()
   if (studioVersionId) transcriptionParams.set('studioVersionId', studioVersionId)
   if (studioProjectId) transcriptionParams.set('studioProjectId', studioProjectId)
@@ -265,11 +249,11 @@ function LearnYourMusicAd({
   return (
     <div className="mt-4 overflow-hidden rounded-2xl border border-amber-400/40 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.22),transparent_38%),linear-gradient(135deg,rgba(76,29,149,0.45),rgba(15,23,42,0.95),rgba(0,0,0,0.95))] p-4 shadow-xl shadow-amber-950/20">
       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-300/50 bg-amber-400/15 px-3 py-1 text-xs font-black uppercase tracking-wide text-amber-100">
-        <FiMusic /> Cifra
+        <FiMusic /> {t('studio.project.chords.badge')}
       </div>
-      <h2 className="text-xl font-black text-white">Aprenda a tocar sua música</h2>
+      <h2 className="text-xl font-black text-white">{t('studio.project.chords.title')}</h2>
       <p className="mt-2 text-sm leading-relaxed text-gray-300">
-        Gere a cifra da sua música para estudar e tocar.
+        {t('studio.project.chords.description')}
       </p>
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         {items.map((item) => (
@@ -281,14 +265,14 @@ function LearnYourMusicAd({
       </div>
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Preço</p>
-          <p className="text-2xl font-black text-amber-200">10 créditos</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-gray-400">{t('studio.project.chords.price')}</p>
+          <p className="text-2xl font-black text-amber-200">{t('studio.project.chords.credits')}</p>
         </div>
         <Link
           href={transcriptionHref}
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 px-4 py-3 text-sm font-black text-black hover:from-amber-300 hover:to-yellow-400"
         >
-          <FiFileText /> Gerar cifra
+          <FiFileText /> {t('studio.project.chords.generate')}
         </Link>
       </div>
     </div>
@@ -400,6 +384,12 @@ export default function StudioProjectDetailPage() {
   const params = useParams()
   const { t, i18n } = useTranslation()
   const projectId = String(params.id)
+  const musicGenerationMessages = [1,2,3,4,5,6,7].map((index) => t(`studio.project.generation.messages.${index}`))
+  const musicGenerationBackgroundMessage = t('studio.project.generation.background')
+  const musicGenerationCommunicationError = t('studio.project.generation.communicationError')
+  const musicCreationUnavailableMessage = t('studio.project.generation.unavailable')
+  const studioVoiceInvalidMessage = t('studio.project.generation.voiceInvalid')
+  const publishPlanRequiredMessage = t('studio.project.publish.planRequired')
   const [project, setProject] = useState<any>(null)
   const [lyric, setLyric] = useState('')
   const [loading, setLoading] = useState(true)
@@ -468,7 +458,7 @@ export default function StudioProjectDetailPage() {
   }, [generationId])
 
   useEffect(() => {
-    if (message !== MUSIC_GENERATION_BACKGROUND_MESSAGE || lastFocusedMessageRef.current === message) return
+    if (message !== musicGenerationBackgroundMessage || lastFocusedMessageRef.current === message) return
 
     lastFocusedMessageRef.current = message
     window.setTimeout(() => {
@@ -576,14 +566,14 @@ export default function StudioProjectDetailPage() {
       setMessage('')
       void (async () => {
         await checkGeneration(timedOutGenerationId)
-        setError((current) => current || MUSIC_GENERATION_COMMUNICATION_ERROR)
+        setError((current) => current || musicGenerationCommunicationError)
       })()
       return
     }
 
     if (generationElapsedSeconds >= MUSIC_GENERATION_BACKGROUND_SECONDS) {
       setGenerationBackgroundMode(true)
-      setMessage(MUSIC_GENERATION_BACKGROUND_MESSAGE)
+      setMessage(musicGenerationBackgroundMessage)
     }
   }, [generationId, generationElapsedSeconds])
 
@@ -635,7 +625,7 @@ export default function StudioProjectDetailPage() {
           if (!options?.skipGenerationCheck) {
             await checkGeneration(data.activeGeneration.id)
           } else {
-            setError(MUSIC_GENERATION_COMMUNICATION_ERROR)
+            setError(musicGenerationCommunicationError)
           }
         } else {
           // Mantém a tela de produção mesmo se o projeto já tiver versões antigas.
@@ -643,8 +633,8 @@ export default function StudioProjectDetailPage() {
           setGenerationElapsedSeconds(elapsedSeconds)
           setGenerationBackgroundMode(elapsedSeconds >= MUSIC_GENERATION_BACKGROUND_SECONDS)
           if (elapsedSeconds >= MUSIC_GENERATION_BACKGROUND_SECONDS) {
-            setMessage(MUSIC_GENERATION_BACKGROUND_MESSAGE)
-          } else if (message === MUSIC_GENERATION_BACKGROUND_MESSAGE) {
+            setMessage(musicGenerationBackgroundMessage)
+          } else if (message === musicGenerationBackgroundMessage) {
             setMessage('')
           }
           if (!options?.skipGenerationCheck) {
@@ -656,8 +646,8 @@ export default function StudioProjectDetailPage() {
         setGenerationBackgroundMode(false)
         setPreviewAudioUrl('')
         if (options?.notifyReady) {
-          setMessage('Sua música ficou pronta. Atualizamos esta página automaticamente.')
-        } else if (message === MUSIC_GENERATION_BACKGROUND_MESSAGE) {
+          setMessage(t('studio.project.generation.readyUpdated'))
+        } else if (message === musicGenerationBackgroundMessage) {
           setMessage('')
         }
       }
@@ -816,7 +806,7 @@ export default function StudioProjectDetailPage() {
   const createMusic = async () => {
     if (musicGenerationLockRef.current) return
     musicGenerationLockRef.current = true
-    setProcessing('Criando música...')
+    setProcessing(t('studio.project.generation.creating'))
 
     try {
       const token = localStorage.getItem('composer_token')
@@ -827,14 +817,14 @@ export default function StudioProjectDetailPage() {
 
       const latestStudioStatus = await refreshStudioStatus(token)
       if (!latestStudioStatus?.canCreateMusic) {
-        const upgradeMessage = 'Você já usou sua música grátis ou está sem saldo. Assine um plano DCC Studio IA ou faça uma recarga avulsa para criar novas músicas.'
+        const upgradeMessage = t('studio.project.generation.noCredits')
         setError('')
         setUpgradeModalMessage(upgradeMessage)
         return
       }
 
       if (selectedVoiceId && invalidVoiceIds.includes(selectedVoiceId)) {
-        setError(STUDIO_VOICE_INVALID_MESSAGE)
+        setError(studioVoiceInvalidMessage)
         return
       }
 
@@ -855,7 +845,7 @@ export default function StudioProjectDetailPage() {
         }),
       })
       const data = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(data.error || 'Erro ao criar música')
+      if (!response.ok) throw new Error(t('studio.project.generation.createError'))
       if (typeof data.lyric === 'string' && data.lyric.trim()) {
         setLyric(data.lyric)
       }
@@ -874,16 +864,16 @@ export default function StudioProjectDetailPage() {
       })
       if (recoveredProject?.activeGeneration?.id) {
         setError('')
-        setMessage(MUSIC_GENERATION_BACKGROUND_MESSAGE)
+        setMessage(musicGenerationBackgroundMessage)
         return
       }
 
-      const rawErrorMessage = err.message || 'Erro ao criar música'
-      if (rawErrorMessage === STUDIO_VOICE_INVALID_MESSAGE && selectedVoiceId) {
+      const rawErrorMessage = err.message || t('studio.project.generation.createError')
+      if (rawErrorMessage === studioVoiceInvalidMessage && selectedVoiceId) {
         setInvalidVoiceIds((current) => current.includes(selectedVoiceId) ? current : [...current, selectedVoiceId])
       }
       const errorMessage = rawErrorMessage.toLowerCase().includes('fetch failed')
-        ? MUSIC_CREATION_UNAVAILABLE_MESSAGE
+        ? musicCreationUnavailableMessage
         : rawErrorMessage
       setError(errorMessage)
       if (errorMessage.toLowerCase().includes('música grátis') || errorMessage.toLowerCase().includes('assine um plano')) {
@@ -904,24 +894,24 @@ export default function StudioProjectDetailPage() {
 
     const latestStudioStatus = await refreshStudioStatus(token)
     if (!latestStudioStatus?.canCreateMusic) {
-      const upgradeMessage = 'Você precisa de 10 créditos (ou sua música grátis) para gerar outra versão com o mesmo áudio.'
+      const upgradeMessage = t('studio.project.generation.retryNeedsCredits')
       setError('')
       setUpgradeModalMessage(upgradeMessage)
       return
     }
 
     if (!lyric.trim()) {
-      setError('Salve a letra no projeto antes de gerar outra versão.')
+      setError(t('studio.project.generation.saveLyricsFirst'))
       return
     }
 
-    setProcessing('Gerando outra versão com o áudio original...')
+    setProcessing(t('studio.project.generation.retryingOriginal'))
     setError('')
     setMessage('')
 
     try {
       await saveLyric()
-      setProcessing('Gerando outra versão com o áudio original...')
+      setProcessing(t('studio.project.generation.retryingOriginal'))
       const response = await fetch(`/api/compositores/studio/projects/${projectId}/enhance`, {
         method: 'POST',
         headers: {
@@ -934,7 +924,7 @@ export default function StudioProjectDetailPage() {
         }),
       })
       const data = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(data.error || 'Erro ao gerar outra versão')
+      if (!response.ok) throw new Error(t('studio.project.generation.retryError'))
 
       window.dispatchEvent(new Event('studioBalanceChange'))
       await refreshStudioStatus(token)
@@ -951,11 +941,11 @@ export default function StudioProjectDetailPage() {
       })
       if (recoveredProject?.activeGeneration?.id) {
         setError('')
-        setMessage(MUSIC_GENERATION_BACKGROUND_MESSAGE)
+        setMessage(musicGenerationBackgroundMessage)
         return
       }
 
-      const errorMessage = err.message || 'Erro ao gerar outra versão'
+      const errorMessage = err.message || t('studio.project.generation.retryError')
       setError(errorMessage)
       if (errorMessage.toLowerCase().includes('música grátis') || errorMessage.toLowerCase().includes('créditos')) {
         setUpgradeModalMessage(errorMessage)
@@ -975,18 +965,18 @@ export default function StudioProjectDetailPage() {
 
     const latestStudioStatus = await refreshStudioStatus(token)
     if (!latestStudioStatus?.canCreateMusic) {
-      const upgradeMessage = 'Você já usou sua música grátis ou está sem saldo. Assine um plano DCC Studio IA ou faça uma recarga avulsa para reaproveitar letras e criar novas versões.'
+      const upgradeMessage = t('studio.project.generation.reuseNoCredits')
       setError('')
       setUpgradeModalMessage(upgradeMessage)
       return
     }
 
     if (!lyric.trim()) {
-      setError('Não há letra para reaproveitar.')
+      setError(t('studio.project.generation.noLyricsToReuse'))
       return
     }
 
-    setProcessing('Criando novo projeto...')
+    setProcessing(t('studio.project.generation.creatingNewProject'))
     setError('')
     setMessage('')
 
@@ -1004,11 +994,11 @@ export default function StudioProjectDetailPage() {
         }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao criar novo projeto')
+      if (!response.ok) throw new Error(t('studio.project.generation.newProjectError'))
 
       router.push(`/compositores/admin/studio-ia/projetos/${data.project.id}`)
     } catch (err: any) {
-      setError(err.message || 'Erro ao reaproveitar letra')
+      setError(err.message || t('studio.project.generation.reuseError'))
       setProcessing('')
     }
   }
@@ -1059,7 +1049,7 @@ export default function StudioProjectDetailPage() {
     if (!response.ok) {
       setGenerationId(null)
       setPreviewAudioUrl('')
-      setError(data.error || 'Não consegui consultar a geração da música agora.')
+      setError(data.error || t('studio.project.generation.statusError'))
       return
     }
 
@@ -1068,7 +1058,7 @@ export default function StudioProjectDetailPage() {
       setPreviewAudioUrl('')
       setGenerationBackgroundMode(false)
       setMessage('')
-      setError(data.generation?.error_message || MUSIC_GENERATION_COMMUNICATION_ERROR)
+      setError(data.generation?.error_message || musicGenerationCommunicationError)
       await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
       return
     }
@@ -1079,7 +1069,7 @@ export default function StudioProjectDetailPage() {
 
     if (data.awaitingAudioSync) {
       setGenerationBackgroundMode(true)
-      setMessage('A música já foi criada. Estamos sincronizando o áudio no DCC Music e você pode continuar usando a página.')
+      setMessage(t('studio.project.generation.syncingAudio'))
     }
 
     if (data.cover?.imageUrl) {
@@ -1101,7 +1091,7 @@ export default function StudioProjectDetailPage() {
   const closeGenerationModal = async () => {
     const currentGenerationId = generationId
     setGenerationBackgroundMode(true)
-    setMessage(MUSIC_GENERATION_BACKGROUND_MESSAGE)
+    setMessage(musicGenerationBackgroundMessage)
 
     if (currentGenerationId) {
       await checkGeneration(currentGenerationId)
@@ -1115,11 +1105,11 @@ export default function StudioProjectDetailPage() {
     setMessage('')
 
     if ((studioStatus?.stats?.premiumCoverLimit || 0) <= 0) {
-      setError('A capa profissional está disponível a partir do Studio Pro.')
+      setError(t('studio.project.cover.proOnly'))
       return
     }
 
-    setProcessing('Gerando capa profissional...')
+    setProcessing(t('studio.project.cover.generating'))
     try {
       const response = await fetch('/api/compositores/studio/covers/premium', {
         method: 'POST',
@@ -1130,7 +1120,7 @@ export default function StudioProjectDetailPage() {
         body: JSON.stringify({ projectId }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao melhorar capa')
+      if (!response.ok) throw new Error(t('studio.project.cover.error'))
       setProject((currentProject: any) => ({
         ...currentProject,
         cover: data.cover,
@@ -1149,9 +1139,9 @@ export default function StudioProjectDetailPage() {
           premiumCoverGenerations: (currentStatus.stats?.premiumCoverGenerations || 0) + 1,
         },
       }) : currentStatus)
-      setMessage('Capa profissional criada.')
+      setMessage(t('studio.project.cover.created'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao melhorar capa')
+      setError(err.message || t('studio.project.cover.error'))
     } finally {
       setProcessing('')
     }
@@ -1173,7 +1163,7 @@ export default function StudioProjectDetailPage() {
       return
     }
 
-    setProcessing('Publicando no DCC Music...')
+    setProcessing(t('studio.project.publish.publishing'))
     try {
       const response = await fetch('/api/compositores/studio/publish', {
         method: 'POST',
@@ -1189,12 +1179,12 @@ export default function StudioProjectDetailPage() {
           setShowPublishPlanModal(true)
           return
         }
-        throw new Error(data.error || 'Erro ao publicar')
+        throw new Error(t('studio.project.publish.error'))
       }
       setProject((currentProject: any) => ({ ...currentProject, status: 'published', publicSlug: data.publicSlug }))
-      setMessage('Música publicada no DCC Music.')
+      setMessage(t('studio.project.publish.published'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao publicar')
+      setError(err.message || t('studio.project.publish.error'))
     } finally {
       setProcessing('')
     }
@@ -1205,11 +1195,11 @@ export default function StudioProjectDetailPage() {
     setError('')
     setMessage('')
 
-    if (!window.confirm('Quer mesmo despublicar esta música? A página pública sairá do ar, mas o projeto, a letra, a capa e o áudio continuarão salvos.')) {
+    if (!window.confirm(t('studio.project.publish.unpublishConfirm'))) {
       return
     }
 
-    setProcessing('Despublicando música...')
+    setProcessing(t('studio.project.publish.unpublishing'))
     try {
       const response = await fetch('/api/compositores/studio/unpublish', {
         method: 'POST',
@@ -1220,15 +1210,15 @@ export default function StudioProjectDetailPage() {
         body: JSON.stringify({ projectId }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao despublicar')
+      if (!response.ok) throw new Error(t('studio.project.publish.unpublishError'))
       setProject((currentProject: any) => ({
         ...currentProject,
         status: 'ready',
         publicSlug: null,
       }))
-      setMessage('Música despublicada. Ela saiu da página pública, mas continua salva no seu projeto.')
+      setMessage(t('studio.project.publish.unpublished'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao despublicar')
+      setError(err.message || t('studio.project.publish.unpublishError'))
     } finally {
       setProcessing('')
     }
@@ -1436,7 +1426,7 @@ export default function StudioProjectDetailPage() {
     : ''
   const hasProjectReadyAudio = Boolean(audioUrl || projectVersions.some((version: any) => version.audioUrl || version.streamAudioUrl))
   const isMusicRequestPending = Boolean(generationId && generationBackgroundMode)
-  const visibleMessage = message === MUSIC_GENERATION_BACKGROUND_MESSAGE && !isMusicRequestPending
+  const visibleMessage = message === musicGenerationBackgroundMessage && !isMusicRequestPending
     ? ''
     : message
   const currentStudioVersionId =
@@ -1638,7 +1628,7 @@ export default function StudioProjectDetailPage() {
             <PendingMusicRequestSummary
               project={project}
               projectId={projectId}
-              message={message || MUSIC_GENERATION_BACKGROUND_MESSAGE}
+              message={message || musicGenerationBackgroundMessage}
               elapsedTime={formatGenerationTime(generationElapsedSeconds)}
               voicePreferences={voicePreferences}
               onRefresh={async () => {
@@ -1938,12 +1928,12 @@ export default function StudioProjectDetailPage() {
                   <section className="mt-5 rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:rounded-[1.75rem] sm:p-5">
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h2 className="text-xl font-black text-white sm:text-2xl">Letra da música</h2>
-                        <p className="mt-1 text-xs text-gray-400">Você pode corrigir qualquer palavra antes de criar ou publicar.</p>
+                        <h2 className="text-xl font-black text-white sm:text-2xl">{t('studio.project.lyrics.title')}</h2>
+                        <p className="mt-1 text-xs text-gray-400">{t('studio.project.lyrics.description')}</p>
                       </div>
                       <div className="flex flex-wrap gap-2 sm:justify-end">
                         <button onClick={saveLyric} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-bold text-gray-100 hover:bg-white/[0.09] sm:w-auto">
-                          <FiSave /> Salvar letra
+                          <FiSave /> {t('studio.project.lyrics.save')}
                         </button>
                       </div>
                     </div>
@@ -1960,15 +1950,15 @@ export default function StudioProjectDetailPage() {
                       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-fuchsia-400/50 bg-fuchsia-500/20 px-3 py-1 text-xs font-bold text-fuchsia-100">
                         <FiVideo /> Vídeo com letra
                       </div>
-                      <h2 className="text-lg font-black text-white">Criar vídeo com letra</h2>
+                      <h2 className="text-lg font-black text-white">{t('studio.project.video.createTitle')}</h2>
                       <p className="mt-2 text-sm leading-relaxed text-gray-300">
-                        Gera um vídeo simples com capa, nome da música e letra acompanhando o áudio. Cada versão pode ter 1 vídeo. Para projetos novos, custa 5 créditos.
+                        {t('studio.project.video.description')}
                       </p>
                       {videoReadyVersions.length > 1 && (
                         <div className="mt-4">
-                          <p className="text-sm font-bold text-white">Qual versão você quer no vídeo?</p>
+                          <p className="text-sm font-bold text-white">{t('studio.project.video.whichVersion')}</p>
                           <p className="mt-1 text-xs text-gray-400">
-                            Ouça e escolha. O botão gera só a versão marcada, e não dá para gerar de novo a mesma versão.
+                            {t('studio.project.video.chooseHint')}
                           </p>
                           <div className="mt-3 flex flex-wrap gap-2">
                             {[...videoReadyVersions]
@@ -1988,7 +1978,7 @@ export default function StudioProjectDetailPage() {
                                   }`}
                                 >
                                   {t('studio.project.versions.versionNumber', { number: versionNumber })}
-                                  {version.isCurrent ? ' · atual' : ''}
+                                  {version.isCurrent ? ` · ${t('studio.project.versions.current')}` : ''}
                                 </button>
                               )
                             })}
@@ -1997,7 +1987,7 @@ export default function StudioProjectDetailPage() {
                             <div className="mt-3">
                               <StudioAudioPlayer
                                 src={selectedVideoAudioUrl}
-                                label={selectedVideoVersionNumber ? `Versão ${selectedVideoVersionNumber}` : 'Versão escolhida'}
+                                label={selectedVideoVersionNumber ? t('studio.project.versions.versionNumber', { number: selectedVideoVersionNumber }) : t('studio.project.versions.chosen')}
                               />
                             </div>
                           )}
@@ -2012,11 +2002,11 @@ export default function StudioProjectDetailPage() {
                         >
                           {videoCheckoutLoading ? (
                             <>
-                              <FiLoader className="animate-spin" /> Gerando vídeo...
+                              <FiLoader className="animate-spin" /> {t('studio.project.video.generating')}
                             </>
                           ) : selectedVideoIsActive || hasActiveVideoRequest ? (
                             <>
-                              <FiClock /> Vídeo já solicitado
+                              <FiClock /> {t('studio.project.video.alreadyRequested')}
                             </>
                           ) : (
                             <>
@@ -2034,18 +2024,18 @@ export default function StudioProjectDetailPage() {
                         >
                           {videoCheckoutLoading ? (
                             <>
-                              <FiLoader className="animate-spin" /> Gerando vídeo novo...
+                              <FiLoader className="animate-spin" /> {t('studio.project.video.generatingNew')}
                             </>
                           ) : (
                             <>
-                              <FiVideo /> Gerar de novo com o nome da música
+                              <FiVideo /> {t('studio.project.video.regenerate')}
                             </>
                           )}
                         </button>
                       )}
                       {selectedVideoIsReady && canRegenerateSelectedVideo && (
                         <p className="mt-2 text-center text-xs text-purple-100/80">
-                          Cortesia: gera um vídeo novo já com o nome da música. O vídeo antigo continua disponível.
+                          {t('studio.project.video.courtesy')}
                         </p>
                       )}
                       {hasActiveVideoRequest && !selectedVideoIsReady && (
@@ -2060,7 +2050,7 @@ export default function StudioProjectDetailPage() {
 
                   {allVideoRequests.length > 0 && (
                     <div className="mt-4 space-y-4">
-                      <h2 className="text-lg font-black text-white">Seus vídeos com letra</h2>
+                      <h2 className="text-lg font-black text-white">{t('studio.project.video.yourVideos')}</h2>
                       {allVideoRequests.map((video: any) => {
                         const versionNumber = getStudioVersionNumber(projectVersions, video.versionId)
                         const versionLabel = video.versionName
@@ -2077,7 +2067,7 @@ export default function StudioProjectDetailPage() {
                                 </div>
                                 <p className="text-sm text-purple-100/90">{status.description}</p>
                                 <p className="mt-2 text-xs text-purple-200/70">
-                                  Solicitado em {new Date(video.createdAt || video.completedAt).toLocaleString('pt-BR')}
+                                  {t('studio.project.video.requestedAt', { date: new Date(video.createdAt || video.completedAt).toLocaleString(i18n.language) })}
                                 </p>
                               </div>
                               <div className="flex flex-wrap gap-2">
@@ -2091,7 +2081,7 @@ export default function StudioProjectDetailPage() {
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1 rounded-full bg-gray-800 px-3 py-1 text-xs font-bold text-fuchsia-100 hover:bg-gray-700"
                                   >
-                                    <FiDownload /> Baixe seu vídeo
+                                    <FiDownload /> {t('studio.project.video.download')}
                                   </a>
                                 )}
                               </div>
@@ -2106,17 +2096,17 @@ export default function StudioProjectDetailPage() {
                                     src={videoUrl}
                                     className="h-[280px] w-full object-contain"
                                   >
-                                    Seu navegador não reproduz este vídeo.
+                                    {t('studio.project.video.browserUnsupported')}
                                   </video>
                                 </div>
                                 <p className="mt-2 text-xs text-purple-200/70">
-                                  Preview para revisão. Use o play e o ícone de som na barra do player.
+                                  {t('studio.project.video.previewHint')}
                                 </p>
                               </div>
                             ) : (
                               video.errorMessage && (
                                 <p className="text-xs text-red-200">
-                                  Detalhe: {video.errorMessage}
+                                  {t('studio.project.video.detail', { detail: video.errorMessage })}
                                 </p>
                               )
                             )}
@@ -2134,15 +2124,15 @@ export default function StudioProjectDetailPage() {
 
                   <div className="mt-5 grid gap-3 rounded-3xl border border-purple-300/15 bg-gradient-to-br from-purple-950/30 via-gray-950 to-black p-3">
                     <div>
-                      <p className="text-sm font-black text-white">O que você quer fazer agora?</p>
+                      <p className="text-sm font-black text-white">{t('studio.project.actions.title')}</p>
                       <p className="mt-1 text-xs leading-relaxed text-gray-400">
-                        Escolha uma ação abaixo. Você pode salvar a letra antes de criar ou publicar.
+                        {t('studio.project.actions.description')}
                       </p>
                     </div>
                     {!audioUrl && voices.length > 0 && (
                       <div className="rounded-2xl border border-purple-300/15 bg-black/25 p-3">
                         <label className="flex items-center gap-2 text-sm font-bold text-purple-100" htmlFor="project-voice-profile">
-                          <FiMic /> Usar minha voz cadastrada
+                          <FiMic /> {t('studio.project.voice.useSaved')}
                         </label>
                         <div id="project-voice-profile" className="mt-3 grid gap-2">
                           <button
@@ -2150,7 +2140,7 @@ export default function StudioProjectDetailPage() {
                             onClick={() => handleVoiceSelection('')}
                             className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm transition ${!selectedVoiceId ? 'border-primary-400 bg-primary-950/50 text-white' : 'border-purple-800/70 bg-gray-950 text-purple-100 hover:border-purple-500'}`}
                           >
-                            Não usar voz cadastrada
+                            {t('studio.project.voice.none')}
                           </button>
                           {voices.map((voice) => (
                             <button
@@ -2160,35 +2150,35 @@ export default function StudioProjectDetailPage() {
                               disabled={invalidVoiceIds.includes(voice.id)}
                               className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm transition ${invalidVoiceIds.includes(voice.id) ? 'cursor-not-allowed border-red-800/70 bg-red-950/30 text-red-200' : selectedVoiceId === voice.id ? 'border-primary-400 bg-primary-950/50 text-white' : 'border-purple-800/70 bg-gray-950 text-purple-100 hover:border-purple-500'}`}
                             >
-                              {voice.displayName}{invalidVoiceIds.includes(voice.id) ? ' — indisponível, recrie a voz' : ''}
+                              {voice.displayName}{invalidVoiceIds.includes(voice.id) ? ` — ${t('studio.project.voice.unavailable')}` : ''}
                             </button>
                           ))}
                         </div>
                         <p className="mt-2 text-xs text-purple-100/80">
-                          Toque em uma opção acima. Se escolher uma voz, ela será usada na criação da música.
+                          {t('studio.project.voice.hint')}
                         </p>
                       </div>
                     )}
                     {!audioUrl && selectedVoiceId && voices.length === 0 && (
                       <div className="rounded-2xl border border-purple-800/60 bg-purple-950/20 p-4">
                         <p className="flex items-center gap-2 text-sm font-bold text-purple-100">
-                          <FiMic /> Voz escolhida: voz cadastrada
+                          <FiMic /> {t('studio.project.voice.selected')}
                         </p>
                         <p className="mt-2 text-xs text-purple-100/80">
-                          Essa voz foi escolhida na etapa anterior e será usada ao criar a música.
+                          {t('studio.project.voice.selectedHint')}
                         </p>
                       </div>
                     )}
                     {!audioUrl && (
                       <button onClick={createMusic} disabled={Boolean(processing) || !canCreateMusic || Boolean(selectedVoiceId && invalidVoiceIds.includes(selectedVoiceId))} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 px-4 py-3.5 font-black text-white shadow-lg shadow-purple-950/40 transition hover:from-primary-400 hover:via-purple-400 hover:to-fuchsia-400 disabled:opacity-60">
-                        <FiMusic /> Criar música agora
+                        <FiMusic /> {t('studio.project.actions.createNow')}
                       </button>
                     )}
                     {canRetryEnhance && (
                       <div className="rounded-2xl border border-emerald-700/50 bg-emerald-950/20 p-4">
-                        <p className="text-sm font-bold text-emerald-100">Áudio original guardado</p>
+                        <p className="text-sm font-bold text-emerald-100">{t('studio.project.actions.originalAudioSaved')}</p>
                         <p className="mt-1 text-xs leading-relaxed text-emerald-100/80">
-                          Você pode gerar outra versão usando o mesmo áudio enviado na melhoria, sem precisar subir o arquivo de novo. Custa 10 créditos (ou sua música grátis).
+                          {t('studio.project.actions.retryOriginalDescription')}
                         </p>
                         <button
                           type="button"
@@ -2196,7 +2186,7 @@ export default function StudioProjectDetailPage() {
                           disabled={Boolean(processing) || !canCreateMusic || !lyric.trim()}
                           className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/50 bg-emerald-900/40 px-4 py-3 text-sm font-black text-emerald-50 transition hover:border-emerald-300 hover:bg-emerald-800/50 disabled:opacity-60"
                         >
-                          <FiZap /> Tentar outra versão com o mesmo áudio (10 créditos)
+                          <FiZap /> {t('studio.project.actions.retryOriginal')}
                         </button>
                       </div>
                     )}
@@ -2246,7 +2236,7 @@ export default function StudioProjectDetailPage() {
                             type="button"
                             onClick={publishProject}
                             disabled={Boolean(processing) || !studioStatus}
-                            title={!canPublishOnDcc ? PUBLISH_PLAN_REQUIRED_MESSAGE : undefined}
+                            title={!canPublishOnDcc ? publishPlanRequiredMessage : undefined}
                             className={`inline-flex flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 font-bold text-white transition disabled:opacity-60 ${
                               canPublishOnDcc
                                 ? 'bg-green-700 hover:bg-green-600'
@@ -2267,7 +2257,7 @@ export default function StudioProjectDetailPage() {
                             </button>
                             <div className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden w-64 rounded-xl border border-amber-500/50 bg-gray-950 px-4 py-3 text-xs leading-relaxed text-amber-50 shadow-xl shadow-black/40 group-hover:block">
                               <p className="font-bold text-amber-200">Sobre publicar</p>
-                              <p className="mt-1.5">{PUBLISH_PLAN_REQUIRED_MESSAGE}</p>
+                              <p className="mt-1.5">{publishPlanRequiredMessage}</p>
                             </div>
                           </div>
                         </div>
@@ -2302,8 +2292,8 @@ export default function StudioProjectDetailPage() {
               )}
               {visibleMessage && (
                 <div
-                  ref={visibleMessage === MUSIC_GENERATION_BACKGROUND_MESSAGE ? backgroundMessageRef : undefined}
-                  tabIndex={visibleMessage === MUSIC_GENERATION_BACKGROUND_MESSAGE ? -1 : undefined}
+                  ref={visibleMessage === musicGenerationBackgroundMessage ? backgroundMessageRef : undefined}
+                  tabIndex={visibleMessage === musicGenerationBackgroundMessage ? -1 : undefined}
                   className="rounded-xl border border-green-800 bg-green-950/50 p-4 text-green-200 outline-none ring-green-500/40 focus:ring-2"
                 >
                   {visibleMessage}
@@ -2730,7 +2720,7 @@ function PublishPlanModal({ onClose }: { onClose: () => void }) {
         </div>
         <h2 className="text-2xl font-black text-white">Para publicar, precisa de plano ativo</h2>
         <p className="mt-3 text-sm leading-relaxed text-amber-50/90">
-          {PUBLISH_PLAN_REQUIRED_MESSAGE}
+          {publishPlanRequiredMessage}
         </p>
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-gray-300">
           <p><span className="font-semibold text-white">Recarga / créditos:</span> criar e gerar músicas</p>

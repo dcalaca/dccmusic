@@ -8,7 +8,8 @@
       "back": "Volver",
       "tryAgain": "Intentarlo de nuevo",
       "copy": "Copiar",
-      "copied": "¡Copiado!"
+      "copied": "¡Copiado!",
+      "delete": "Eliminar"
     },
     "status": {
       "loading": "Cargando...",
@@ -87,6 +88,100 @@
         "finalizingAudio": "Estamos finalizando el audio para que puedas escucharlo. Esta página se actualiza automáticamente.",
         "createPlayback": "Crear playback de esta versión",
         "createInspired": "Crear una nueva versión usando esta como inspiración"
+      },
+      "generation": {
+        "messages": {
+          "1": "Estamos creando tu canción...",
+          "2": "Transformando la letra en melodía...",
+          "3": "La producción está tomando forma...",
+          "4": "Ajustando voz, ambiente e instrumental...",
+          "5": "Está quedando genial...",
+          "6": "Finalizando los detalles de la canción...",
+          "7": "Casi listo, preparando el resultado..."
+        },
+        "background": "Recibimos tu solicitud. Te enviaremos un correo cuando la canción esté lista. También puedes esperar aquí.",
+        "communicationError": "Hubo un fallo de comunicación durante la generación de tu canción. No se descontaron créditos. Genera la canción nuevamente.",
+        "unavailable": "Tu letra fue guardada, pero no pudimos iniciar la creación de la canción ahora. Inténtalo más tarde.",
+        "voiceInvalid": "Tu voz personalizada no está disponible para esta generación. Debes recrearla antes de intentarlo de nuevo.",
+        "creating": "Creando canción...",
+        "noCredits": "Ya usaste tu canción gratis o no tienes saldo. Suscríbete a DCC Studio IA o compra una recarga para crear nuevas canciones.",
+        "createError": "Error al crear la canción.",
+        "retryNeedsCredits": "Necesitas 10 créditos (o tu canción gratis) para generar otra versión con el mismo audio.",
+        "saveLyricsFirst": "Guarda la letra en el proyecto antes de generar otra versión.",
+        "retryingOriginal": "Generando otra versión con el audio original...",
+        "retryError": "Error al generar otra versión.",
+        "reuseNoCredits": "Ya usaste tu canción gratis o no tienes saldo. Suscríbete a DCC Studio IA o compra una recarga para reutilizar letras y crear nuevas versiones.",
+        "noLyricsToReuse": "No hay letra para reutilizar.",
+        "creatingNewProject": "Creando nuevo proyecto...",
+        "newProjectError": "Error al crear el nuevo proyecto.",
+        "reuseError": "Error al reutilizar la letra.",
+        "statusError": "No se pudo consultar la generación de la canción ahora.",
+        "syncingAudio": "La canción ya fue creada. Estamos sincronizando el audio en DCC Music y puedes seguir usando la página.",
+        "readyUpdated": "Tu canción está lista. Actualizamos esta página automáticamente."
+      },
+      "publish": {
+        "planRequired": "Las recargas y créditos sirven para crear canciones. Para publicar en DCC Music necesitas un plan activo (Studio IA o Compositor Premium).",
+        "publishing": "Publicando en DCC Music...",
+        "error": "Error al publicar.",
+        "published": "Canción publicada en DCC Music.",
+        "unpublishConfirm": "¿Quieres despublicar esta canción? La página pública dejará de estar disponible, pero el proyecto, la letra, la portada y el audio seguirán guardados.",
+        "unpublishing": "Despublicando canción...",
+        "unpublishError": "Error al despublicar.",
+        "unpublished": "Canción despublicada. Ya no aparece públicamente, pero sigue guardada en tu proyecto."
+      },
+      "cover": {
+        "proOnly": "La portada profesional está disponible desde Studio Pro.",
+        "generating": "Generando portada profesional...",
+        "error": "Error al mejorar la portada.",
+        "created": "Portada profesional creada."
+      },
+      "lyrics": {
+        "title": "Letra de la canción",
+        "description": "Puedes corregir cualquier palabra antes de crear o publicar.",
+        "save": "Guardar letra"
+      },
+      "actions": {
+        "title": "¿Qué quieres hacer ahora?",
+        "description": "Elige una acción. Puedes guardar la letra antes de crear o publicar.",
+        "createNow": "Crear canción ahora",
+        "originalAudioSaved": "Audio original guardado",
+        "retryOriginalDescription": "Puedes generar otra versión usando el mismo audio enviado para mejora, sin volver a subirlo. Cuesta 10 créditos (o tu canción gratis).",
+        "retryOriginal": "Intentar otra versión con el mismo audio (10 créditos)"
+      },
+      "voice": {
+        "useSaved": "Usar mi voz guardada",
+        "none": "No usar voz guardada",
+        "hint": "Elige una opción. Si seleccionas una voz, se usará al crear la canción.",
+        "selected": "Voz elegida: voz guardada",
+        "selectedHint": "Esta voz fue elegida en el paso anterior y se usará al crear la canción.",
+        "unavailable": "no disponible, recrea la voz"
+      },
+      "chords": {
+        "badge": "Acordes",
+        "title": "Aprende a tocar tu canción",
+        "description": "Genera los acordes de tu canción para estudiar y tocar.",
+        "chords": "Acordes",
+        "key": "Tono",
+        "price": "Precio",
+        "credits": "10 créditos",
+        "generate": "Generar acordes"
+      },
+      "video": {
+        "createTitle": "Crear video con letra",
+        "description": "Genera un video sencillo con portada, nombre de la canción y letra siguiendo el audio. Cada versión puede tener 1 video. Las nuevas solicitudes cuestan 5 créditos.",
+        "whichVersion": "¿Qué versión quieres en el video?",
+        "chooseHint": "Escucha y elige. El botón genera solo la versión seleccionada y no se puede volver a generar la misma versión.",
+        "generating": "Generando video...",
+        "alreadyRequested": "Video ya solicitado",
+        "generatingNew": "Generando video nuevo...",
+        "regenerate": "Generar de nuevo con el nombre de la canción",
+        "courtesy": "Cortesía: genera un nuevo video con el nombre de la canción. El video anterior sigue disponible.",
+        "yourVideos": "Tus videos con letra",
+        "requestedAt": "Solicitado el {{date}}",
+        "download": "Descarga tu video",
+        "browserUnsupported": "Tu navegador no puede reproducir este video.",
+        "previewHint": "Vista previa para revisión. Usa play y el icono de sonido en los controles.",
+        "detail": "Detalle: {{detail}}"
       }
     },
     "entry": {
@@ -217,6 +312,127 @@
           "title": "Crear canción",
           "subtitle": "La IA compone para ti"
         }
+      }
+    },
+    "projects": {
+      "back": "Volver",
+      "voices": "Voces",
+      "createSong": "Crear canción",
+      "title": "Mis Proyectos",
+      "subtitle": "Organiza tus canciones por borradores, publicadas y favoritas.",
+      "originalBadgeHint": "Estrella verde: proyecto creado a partir de una canción original enviada para mejora.",
+      "playback": {
+        "title": "Elige la canción para crear el playback",
+        "description": "Abre un proyecto, escucha las versiones y haz clic en “Crear playback de esta versión”. Cuesta 10 créditos.",
+        "emptyHint": "Cuando retires la voz de una versión, el instrumental y la voz aislada quedarán guardados aquí."
+      },
+      "filters": {
+        "all": "Todos",
+        "drafts": "Borradores",
+        "published": "Publicados",
+        "favorites": "Favoritos",
+        "transcriptions": "Acordes",
+        "originals": "Canciones originales",
+        "playbacks": "Playbacks",
+        "playbacksAndVoices": "Playbacks y voces"
+      },
+      "errors": {
+        "sessionExpired": "Tu sesión venció o se cerró. Inicia sesión nuevamente para ver tus proyectos.",
+        "loadTranscriptions": "Error al cargar los acordes.",
+        "loadPlaybacks": "Error al cargar los playbacks.",
+        "loadProjects": "Error al cargar los proyectos.",
+        "discardDraft": "Error al descartar el borrador.",
+        "discardNamedDraft": "Error al descartar “{{title}}”.",
+        "discardDrafts": "Error al descartar borradores.",
+        "recipientEmail": "Ingresa el correo del compositor que recibirá el proyecto.",
+        "transfer": "No se pudo transferir el proyecto.",
+        "deleteProject": "No se pudo eliminar el proyecto.",
+        "inspiration": "Error al usar como inspiración.",
+        "download": "Error al descargar el archivo."
+      },
+      "confirm": {
+        "discardDraft": "¿Descartar el borrador “{{title}}”? Esta acción no se puede deshacer.",
+        "discardAllDrafts": "¿Descartar {{count}} borrador(es)? Esta acción no se puede deshacer."
+      },
+      "messages": {
+        "draftDiscarded": "Borrador descartado.",
+        "draftsDiscarded": "Borradores descartados.",
+        "transferred": "Proyecto transferido a {{email}}.",
+        "projectDeleted": "Proyecto eliminado correctamente."
+      },
+      "transfer": {
+        "title": "Transferir proyecto",
+        "sendTitle": "Enviar “{{title}}”",
+        "description": "El compositor recibirá el proyecto, letra, versiones, portada, videos y acordes ya generados. Los créditos y el historial de cobros no se transfieren.",
+        "emailLabel": "Correo del compositor que recibirá el proyecto",
+        "confirm": "Confirmar transferencia",
+        "action": "Transferir"
+      },
+      "delete": {
+        "title": "Eliminar",
+        "question": "¿Eliminar este proyecto?",
+        "aboutToDelete": "Estás a punto de eliminar “{{title}}” y todas las canciones y versiones de este proyecto.",
+        "permanent": "Esta acción es permanente y no se puede deshacer.",
+        "deleting": "Eliminando...",
+        "confirm": "Sí, eliminar proyecto"
+      },
+      "inspiration": {
+        "badge": "Usar como inspiración",
+        "title": "Elige la versión que se usará como inspiración",
+        "chooseVersion": "¿Qué versión quieres usar?",
+        "description": "Escucha las canciones de “{{title}}” y elige la versión que servirá como base.",
+        "how": "¿Cómo quieres la nueva versión?",
+        "similar": "Mantener parecida",
+        "faster": "Un poco más rápida",
+        "energetic": "Más animada",
+        "slowerRomantic": "Más lenta/romántica"
+      },
+      "session": {
+        "title": "Sesión finalizada",
+        "description": "Tu sesión venció. Inicia sesión nuevamente para continuar.",
+        "loginAgain": "Iniciar sesión nuevamente"
+      },
+      "myVoices": "Mis voces",
+      "myVoicesHint": "Escucha y administra las voces que registraste.",
+      "view": {
+        "small": "Tarjetas pequeñas",
+        "large": "Tarjetas grandes"
+      },
+      "discardDrafts": "Descartar borradores",
+      "loading": {
+        "transcriptions": "Cargando acordes...",
+        "originals": "Cargando canciones originales...",
+        "playbacks": "Cargando playbacks...",
+        "projects": "Cargando proyectos..."
+      },
+      "emptyStates": {
+        "transcriptions": "Todavía no hay acordes guardados.",
+        "originals": "Todavía no hay canciones originales guardadas.",
+        "playbacks": "Todavía no hay playbacks guardados."
+      },
+      "empty": "No hay proyectos en esta categoría.",
+      "createFirst": "Crear mi primera canción",
+      "openProject": "Abrir proyecto",
+      "useAsInspiration": "Usar como inspiración",
+      "actions": {
+        "createTranscription": "Crear acordes",
+        "downloadPdf": "Descargar acordes en PDF",
+        "improveAgain": "Usar para mejorar otra vez",
+        "downloadPlayback": "Descargar playback",
+        "downloadVoice": "Descargar voz",
+        "songOptions": "Opciones de la canción"
+      },
+      "labels": {
+        "transcription": "Acordes de la Canción",
+        "saved": "guardado",
+        "sentToImprove": "Enviada para mejorar el {{date}}",
+        "originalUnavailable": "Audio original no disponible.",
+        "songVersion": "Versión de la canción",
+        "separatedOn": "Separado el {{date}}",
+        "playbackInstrumental": "Playback / instrumental",
+        "isolatedVoice": "Voz aislada",
+        "fileUnavailable": "Archivo no disponible.",
+        "createdFromOriginal": "Creado a partir de una canción original enviada"
       }
     }
   },

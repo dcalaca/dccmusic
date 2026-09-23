@@ -3,24 +3,20 @@
 import { Suspense, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { FiArrowLeft, FiChevronLeft, FiChevronRight, FiDownload, FiFileText, FiHeadphones, FiHeart, FiInfo, FiLoader, FiLogIn, FiMic, FiMoreVertical, FiMusic, FiPlus, FiSend, FiStar, FiTrash2, FiX, FiZap } from 'react-icons/fi'
 
-const filters = [
-  { id: 'all', label: 'Todos' },
-  { id: 'drafts', label: 'Rascunhos' },
-  { id: 'published', label: 'Publicados' },
-  { id: 'favorites', label: 'Favoritos' },
-]
+const filters = ['all', 'drafts', 'published', 'favorites'] as const
 
 const TRANSCRIPTIONS_FILTER = 'cifras'
 const ORIGINALS_FILTER = 'originais'
 const PLAYBACKS_FILTER = 'playbacks'
 
 const inspirationVariationOptions = [
-  { id: 'similar', label: 'Manter parecido' },
-  { id: 'faster', label: 'Um pouco mais rápido' },
-  { id: 'energetic', label: 'Mais animado' },
-  { id: 'slower_romantic', label: 'Mais lento/romântico' },
+  { id: 'similar', labelKey: 'studio.projects.inspiration.similar' },
+  { id: 'faster', labelKey: 'studio.projects.inspiration.faster' },
+  { id: 'energetic', labelKey: 'studio.projects.inspiration.energetic' },
+  { id: 'slower_romantic', labelKey: 'studio.projects.inspiration.slowerRomantic' },
 ]
 
 function formatDuration(value?: number | string | null) {
@@ -31,9 +27,9 @@ function formatDuration(value?: number | string | null) {
   return `${minutes}:${String(seconds).padStart(2, '0')}`
 }
 
-function formatDate(value: string | null) {
+function formatDate(value: string | null, locale: string) {
   if (!value) return ''
-  return new Date(value).toLocaleDateString('pt-BR')
+  return new Date(value).toLocaleDateString(locale)
 }
 
 function safeFileName(value: string, extension: string) {
@@ -49,6 +45,7 @@ function safeFileName(value: string, extension: string) {
 }
 
 function StudioProjectsContent() {
+  const { t, i18n } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
   const currentFilter = searchParams.get('filter') || 'all'
@@ -80,7 +77,7 @@ function StudioProjectsContent() {
     setTranscriptions([])
     setPlaybackAssets([])
     setSessionExpired(true)
-    setError('Sua sessão expirou ou você foi desconectado. Entre novamente para ver seus projetos.')
+    setError(t('studio.projects.errors.sessionExpired'))
   }
 
   const loadProjects = () => {
@@ -106,11 +103,11 @@ function StudioProjectsContent() {
             showSessionExpired()
             return
           }
-          if (!response.ok) throw new Error(data.error || 'Erro ao carregar cifras')
+          if (!response.ok) throw new Error(t('studio.projects.errors.loadTranscriptions'))
           setProjects([])
           setTranscriptions(data.transcriptions || [])
         })
-        .catch((err) => setError(err.message || 'Erro ao carregar cifras'))
+        .catch((err) => setError(err.message || t('studio.projects.errors.loadTranscriptions')))
         .finally(() => setLoading(false))
       return
     }
@@ -126,12 +123,12 @@ function StudioProjectsContent() {
             showSessionExpired()
             return
           }
-          if (!response.ok) throw new Error(data.error || 'Erro ao carregar playbacks')
+          if (!response.ok) throw new Error(t('studio.projects.errors.loadPlaybacks'))
           setProjects([])
           setTranscriptions([])
           setPlaybackAssets(data.assets || [])
         })
-        .catch((err) => setError(err.message || 'Erro ao carregar playbacks'))
+        .catch((err) => setError(err.message || t('studio.projects.errors.loadPlaybacks')))
         .finally(() => setLoading(false))
       return
     }
@@ -148,10 +145,10 @@ function StudioProjectsContent() {
           showSessionExpired()
           return
         }
-        if (!response.ok) throw new Error(data.error || 'Erro ao carregar projetos')
+        if (!response.ok) throw new Error(t('studio.projects.errors.loadProjects'))
         setProjects(data.projects || [])
       })
-      .catch((err) => setError(err.message || 'Erro ao carregar projetos'))
+      .catch((err) => setError(err.message || t('studio.projects.errors.loadProjects')))
       .finally(() => setLoading(false))
   }
 
@@ -169,7 +166,7 @@ function StudioProjectsContent() {
   }, [])
 
   const discardDraft = async (projectId: string, projectTitle: string) => {
-    const confirmed = window.confirm(`Descartar o rascunho "${projectTitle}"? Essa ação não pode ser desfeita.`)
+    const confirmed = window.confirm(t('studio.projects.confirm.discardDraft', { title: projectTitle }))
     if (!confirmed) return
 
     const token = localStorage.getItem('composer_token')
@@ -192,12 +189,12 @@ function StudioProjectsContent() {
         showSessionExpired()
         return
       }
-      if (!response.ok) throw new Error(data.error || 'Erro ao descartar rascunho')
+      if (!response.ok) throw new Error(t('studio.projects.errors.discardDraft'))
 
       setProjects((currentProjects) => currentProjects.filter((project) => project.id !== projectId))
-      setMessage('Rascunho descartado.')
+      setMessage(t('studio.projects.messages.draftDiscarded'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao descartar rascunho')
+      setError(err.message || t('studio.projects.errors.discardDraft'))
     } finally {
       setDeletingId('')
     }
@@ -207,7 +204,7 @@ function StudioProjectsContent() {
     const draftProjects = projects.filter((project) => project.status === 'draft')
     if (draftProjects.length === 0) return
 
-    const confirmed = window.confirm(`Descartar ${draftProjects.length} rascunho(s)? Essa ação não pode ser desfeita.`)
+    const confirmed = window.confirm(t('studio.projects.confirm.discardAllDrafts', { count: draftProjects.length }))
     if (!confirmed) return
 
     const token = localStorage.getItem('composer_token')
@@ -231,13 +228,13 @@ function StudioProjectsContent() {
           showSessionExpired()
           return
         }
-        if (!response.ok) throw new Error(data.error || `Erro ao descartar "${project.title}"`)
+        if (!response.ok) throw new Error(t('studio.projects.errors.discardNamedDraft', { title: project.title }))
       }
 
       setProjects((currentProjects) => currentProjects.filter((project) => project.status !== 'draft'))
-      setMessage('Rascunhos descartados.')
+      setMessage(t('studio.projects.messages.draftsDiscarded'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao descartar rascunhos')
+      setError(err.message || t('studio.projects.errors.discardDrafts'))
       loadProjects()
     } finally {
       setDeletingDrafts(false)
@@ -264,7 +261,7 @@ function StudioProjectsContent() {
 
     const recipientEmail = transferEmail.trim().toLowerCase()
     if (!recipientEmail || !recipientEmail.includes('@')) {
-      setError('Informe o e-mail do compositor que vai receber o projeto.')
+      setError(t('studio.projects.errors.recipientEmail'))
       return
     }
 
@@ -291,14 +288,14 @@ function StudioProjectsContent() {
         showSessionExpired()
         return
       }
-      if (!response.ok) throw new Error(data.error || 'Não foi possível transferir o projeto.')
+      if (!response.ok) throw new Error(t('studio.projects.errors.transfer'))
 
       setProjects((currentProjects) => currentProjects.filter((project) => project.id !== transferProject.id))
       setTransferProject(null)
       setTransferEmail('')
-      setMessage(`Projeto transferido para ${data.recipient?.email || recipientEmail}.`)
+      setMessage(t('studio.projects.messages.transferred', { email: data.recipient?.email || recipientEmail }))
     } catch (err: any) {
-      setError(err.message || 'Não foi possível transferir o projeto.')
+      setError(err.message || t('studio.projects.errors.transfer'))
     } finally {
       setTransferringId('')
     }
@@ -331,13 +328,13 @@ function StudioProjectsContent() {
         showSessionExpired()
         return
       }
-      if (!response.ok) throw new Error(data.error || 'Não foi possível excluir o projeto.')
+      if (!response.ok) throw new Error(t('studio.projects.errors.deleteProject'))
 
       setProjects((currentProjects) => currentProjects.filter((project) => project.id !== projectId))
       setProjectToDelete(null)
-      setMessage('Projeto excluído com sucesso.')
+      setMessage(t('studio.projects.messages.projectDeleted'))
     } catch (err: any) {
-      setError(err.message || 'Não foi possível excluir o projeto.')
+      setError(err.message || t('studio.projects.errors.deleteProject'))
     } finally {
       setDeletingId('')
     }
@@ -393,10 +390,10 @@ function StudioProjectsContent() {
         showSessionExpired()
         return
       }
-      if (!response.ok) throw new Error(data.error || 'Erro ao usar como inspiração')
+      if (!response.ok) throw new Error(t('studio.projects.errors.inspiration'))
       router.push(`/compositores/admin/studio-ia/projetos/${data.project.id}`)
     } catch (err: any) {
-      setError(err.message || 'Erro ao usar como inspiração')
+      setError(err.message || t('studio.projects.errors.inspiration'))
     } finally {
       setInspiringId('')
     }
@@ -429,7 +426,7 @@ function StudioProjectsContent() {
           (typeof parsed?.error === 'string' && parsed.error) ||
           (typeof parsed?.message === 'string' && parsed.message) ||
           (text && !text.trim().startsWith('{') ? text : '') ||
-          'Erro ao baixar arquivo.'
+          t('studio.projects.errors.download')
         throw new Error(message)
       }
 
@@ -443,7 +440,7 @@ function StudioProjectsContent() {
       anchor.remove()
       URL.revokeObjectURL(url)
     } catch (err: any) {
-      setError(err.message || 'Erro ao baixar arquivo.')
+      setError(err.message || t('studio.projects.errors.download'))
     }
   }
 
@@ -453,32 +450,32 @@ function StudioProjectsContent() {
         <div className="max-w-7xl mx-auto">
           <div className="mb-6 flex items-center justify-between gap-3 sm:mb-8">
             <Link href="/compositores/admin/studio-ia" className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300">
-              <FiArrowLeft /> Voltar
+              <FiArrowLeft /> {t('studio.projects.back')}
             </Link>
             <div className="flex flex-wrap items-center justify-end gap-2">
               <Link href="/compositores/admin/minhas-vozes" className="inline-flex items-center gap-2 rounded-xl border border-purple-700 bg-purple-950/40 px-3 py-2.5 text-sm font-semibold text-purple-100 hover:bg-purple-900/50 sm:px-4 sm:py-3 sm:text-base">
-                <FiMic /> Vozes
+                <FiMic /> {t('studio.projects.voices')}
               </Link>
               <Link href="/compositores/admin/studio-ia/novo" className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-3 py-2.5 text-sm font-semibold sm:px-4 sm:py-3 sm:text-base">
-                <FiPlus /> Criar música
+                <FiPlus /> {t('studio.projects.createSong')}
               </Link>
             </div>
           </div>
 
           <div className="mb-6 sm:mb-8">
             <h1 className="mb-2 text-3xl font-black sm:text-4xl">
-              <span className="gradient-text">Meus Projetos</span>
+              <span className="gradient-text">{t('studio.projects.title')}</span>
             </h1>
-            <p className="text-gray-400">Organize suas músicas por rascunhos, publicadas e favoritas.</p>
-            <p className="mt-2 text-xs text-emerald-300"><FiStar className="mr-1 inline-block" /> Estrela verde: projeto criado a partir de uma música original enviada para melhoria.</p>
+            <p className="text-gray-400">{t('studio.projects.subtitle')}</p>
+            <p className="mt-2 text-xs text-emerald-300"><FiStar className="mr-1 inline-block" /> {t('studio.projects.originalBadgeHint')}</p>
           </div>
 
           {choosingPlayback && (
             <div className="mb-6 flex items-start gap-3 rounded-2xl border border-cyan-400/30 bg-cyan-950/25 p-4 text-cyan-50 sm:p-5">
               <FiHeadphones className="mt-0.5 h-6 w-6 shrink-0 text-cyan-300" />
               <div>
-                <p className="font-black">Escolha a música para criar o playback</p>
-                <p className="mt-1 text-sm text-cyan-100/75">Abra um projeto, ouça as versões e clique em “Criar playback desta versão”. O custo é de 10 créditos.</p>
+                <p className="font-black">{t('studio.projects.playback.title')}</p>
+                <p className="mt-1 text-sm text-cyan-100/75">{t('studio.projects.playback.description')}</p>
               </div>
             </div>
           )}
@@ -490,21 +487,21 @@ function StudioProjectsContent() {
               <div className="w-full max-w-lg rounded-3xl border border-amber-500/40 bg-gray-950 p-6 shadow-2xl shadow-black/60">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-200">Transferir projeto</p>
-                    <h2 className="mt-2 text-2xl font-black text-white">Enviar “{transferProject.title}”</h2>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-200">{t('studio.projects.transfer.title')}</p>
+                    <h2 className="mt-2 text-2xl font-black text-white">{t('studio.projects.transfer.sendTitle', { title: transferProject.title })}</h2>
                   </div>
-                  <button type="button" onClick={() => setTransferProject(null)} disabled={Boolean(transferringId)} className="rounded-xl p-2 text-gray-400 hover:bg-gray-900 hover:text-white disabled:opacity-50" aria-label="Fechar">
+                  <button type="button" onClick={() => setTransferProject(null)} disabled={Boolean(transferringId)} className="rounded-xl p-2 text-gray-400 hover:bg-gray-900 hover:text-white disabled:opacity-50" aria-label={t('common.actions.close')}>
                     <FiX className="h-5 w-5" />
                   </button>
                 </div>
-                <p className="mt-4 text-sm leading-6 text-gray-300">O compositor receberá o projeto, letra, versões, capa, vídeos e cifras já geradas. Créditos e histórico de cobrança não são transferidos.</p>
-                <label className="mt-5 block text-sm font-bold text-gray-200" htmlFor="transfer-recipient-email">E-mail do compositor que vai receber</label>
+                <p className="mt-4 text-sm leading-6 text-gray-300">{t('studio.projects.transfer.description')}</p>
+                <label className="mt-5 block text-sm font-bold text-gray-200" htmlFor="transfer-recipient-email">{t('studio.projects.transfer.emailLabel')}</label>
                 <input id="transfer-recipient-email" type="email" value={transferEmail} onChange={(event) => setTransferEmail(event.target.value)} placeholder="cliente@email.com" disabled={Boolean(transferringId)} className="mt-2 w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 text-white outline-none placeholder:text-gray-500 focus:border-amber-400 disabled:opacity-60" />
                 <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                  <button type="button" onClick={() => setTransferProject(null)} disabled={Boolean(transferringId)} className="rounded-xl border border-gray-700 px-4 py-3 font-bold text-gray-200 hover:bg-gray-900 disabled:opacity-60">Cancelar</button>
+                  <button type="button" onClick={() => setTransferProject(null)} disabled={Boolean(transferringId)} className="rounded-xl border border-gray-700 px-4 py-3 font-bold text-gray-200 hover:bg-gray-900 disabled:opacity-60">{t('common.actions.cancel')}</button>
                   <button type="button" onClick={transferSelectedProject} disabled={Boolean(transferringId)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-4 py-3 font-black text-gray-950 hover:bg-amber-400 disabled:opacity-60">
                     {transferringId ? <FiLoader className="animate-spin" /> : <FiSend />}
-                    Confirmar transferência
+                    {t('studio.projects.transfer.confirm')}
                   </button>
                 </div>
               </div>
@@ -525,12 +522,12 @@ function StudioProjectsContent() {
                   <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-red-400/25 bg-red-950/50 text-2xl text-red-300">
                     <FiTrash2 />
                   </div>
-                  <h2 id="delete-project-title" className="text-2xl font-black text-white">Excluir este projeto?</h2>
+                  <h2 id="delete-project-title" className="text-2xl font-black text-white">{t('studio.projects.delete.question')}</h2>
                   <p className="mt-3 leading-relaxed text-gray-300">
-                    Você está prestes a excluir <strong className="text-white">“{projectToDelete.title}”</strong> e todas as músicas e versões deste projeto.
+                    {t('studio.projects.delete.aboutToDelete', { title: projectToDelete.title })}
                   </p>
                   <div className="mt-5 rounded-2xl border border-red-900/60 bg-red-950/25 p-4 text-sm text-red-100">
-                    Esta ação é permanente e não poderá ser desfeita.
+                    {t('studio.projects.delete.permanent')}
                   </div>
                 </div>
                 <div className="flex flex-col-reverse gap-3 border-t border-white/10 bg-black/25 p-4 sm:flex-row sm:justify-end">
@@ -540,7 +537,7 @@ function StudioProjectsContent() {
                     disabled={Boolean(deletingId)}
                     className="rounded-xl border border-gray-700 px-5 py-3 font-bold text-gray-200 transition hover:bg-gray-900 disabled:opacity-50"
                   >
-                    Cancelar
+                    {t('common.actions.cancel')}
                   </button>
                   <button
                     type="button"
@@ -549,7 +546,7 @@ function StudioProjectsContent() {
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-5 py-3 font-black text-white transition hover:bg-red-500 disabled:cursor-wait disabled:opacity-60"
                   >
                     {deletingId ? <FiLoader className="animate-spin" /> : <FiTrash2 />}
-                    {deletingId ? 'Excluindo...' : 'Sim, excluir projeto'}
+                    {deletingId ? t('studio.projects.delete.deleting') : t('studio.projects.delete.confirm')}
                   </button>
                 </div>
               </div>
@@ -560,24 +557,24 @@ function StudioProjectsContent() {
               <div className="relative max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-[2rem] border border-purple-400/30 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.28),transparent_34%),linear-gradient(135deg,#050816,#090b16,#18092c)] shadow-2xl shadow-purple-950/50">
                 <div className="flex flex-col gap-3 border-b border-white/10 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-200">Usar de inspiração</p>
-                    <h2 className="mt-1 text-2xl font-black text-white sm:text-3xl">Qual versão você quer usar?</h2>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-200">{t('studio.projects.inspiration.badge')}</p>
+                    <h2 className="mt-1 text-2xl font-black text-white sm:text-3xl">{t('studio.projects.inspiration.chooseVersion')}</h2>
                     <p className="mt-1 max-w-2xl text-sm leading-relaxed text-gray-400">
-                      Ouça as músicas de “{inspirationProject.title}” e escolha a versão que deve servir de base.
+                      {t('studio.projects.inspiration.description', { title: inspirationProject.title })}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={closeInspirationPicker}
                     className="absolute right-4 top-4 rounded-full border border-white/10 bg-black/35 p-2 text-gray-300 transition hover:text-white sm:static"
-                    aria-label="Fechar"
+                    aria-label={t('common.actions.close')}
                   >
                     <FiX />
                   </button>
                 </div>
 
                 <div className="border-b border-white/10 px-4 py-3 sm:px-5">
-                  <p className="mb-2 text-xs font-bold text-purple-100">Como quer a nova versão?</p>
+                  <p className="mb-2 text-xs font-bold text-purple-100">{t('studio.projects.inspiration.how')}</p>
                   <div className="flex flex-wrap gap-2">
                     {inspirationVariationOptions.map((option) => (
                       <button
@@ -586,7 +583,7 @@ function StudioProjectsContent() {
                         onClick={() => setSelectedInspirationVariation(option.id)}
                         className={`rounded-full border px-3 py-2 text-xs font-bold transition ${selectedInspirationVariation === option.id ? 'border-primary-300 bg-primary-600 text-white' : 'border-purple-800/70 bg-black/25 text-purple-100 hover:border-purple-500'}`}
                       >
-                        {option.label}
+                        {t(option.labelKey)}
                       </button>
                     ))}
                   </div>
@@ -597,7 +594,7 @@ function StudioProjectsContent() {
                     type="button"
                     onClick={() => scrollInspirationPicker('left')}
                     className="absolute left-2 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-white/10 bg-black/65 p-3 text-white shadow-xl transition hover:bg-purple-900/70 lg:inline-flex"
-                    aria-label="Ver versão anterior"
+                    aria-label={t('studio.project.versions.previous')}
                   >
                     <FiChevronLeft />
                   </button>
@@ -605,7 +602,7 @@ function StudioProjectsContent() {
                     type="button"
                     onClick={() => scrollInspirationPicker('right')}
                     className="absolute right-2 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-white/10 bg-black/65 p-3 text-white shadow-xl transition hover:bg-purple-900/70 lg:inline-flex"
-                    aria-label="Ver próxima versão"
+                    aria-label={t('studio.project.versions.next')}
                   >
                     <FiChevronRight />
                   </button>
@@ -620,13 +617,13 @@ function StudioProjectsContent() {
                         <article key={version.id || index} className="min-w-[82vw] snap-center rounded-3xl border border-purple-400/20 bg-black/35 p-4 shadow-xl shadow-black/30 sm:min-w-[26rem] lg:min-w-[30rem]">
                           <div className="mb-3 flex items-start justify-between gap-3">
                             <div>
-                              <p className="text-xs font-black uppercase tracking-wide text-green-300">Música gerada #{versionNumber}</p>
+                              <p className="text-xs font-black uppercase tracking-wide text-green-300">{t('studio.project.versions.generatedSongNumber', { number: versionNumber })}</p>
                               <h3 className="mt-1 line-clamp-2 font-black text-white">
-                                {version.versionName || version.style || 'Versão gerada'}
+                                {version.versionName || version.style || t('studio.project.versions.generatedVersion')}
                               </h3>
                               <p className="mt-1 text-xs text-gray-500">
-                                {version.createdAt ? new Date(version.createdAt).toLocaleString('pt-BR') : ''}
-                                {duration ? ` · Duração ${duration}` : ''}
+                                {version.createdAt ? new Date(version.createdAt).toLocaleString(i18n.language) : ''}
+                                {duration ? ` · ${t('studio.project.versions.duration', { duration })}` : ''}
                               </p>
                             </div>
                             {version.isCurrent && (
@@ -639,7 +636,7 @@ function StudioProjectsContent() {
                           {audioUrl ? (
                             <audio controls src={audioUrl} className="w-full" />
                           ) : (
-                            <p className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4 text-sm text-gray-500">Áudio sem URL registrada.</p>
+                            <p className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4 text-sm text-gray-500">{t('studio.project.versions.noAudio')}</p>
                           )}
 
                           <button
@@ -649,14 +646,14 @@ function StudioProjectsContent() {
                             className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-black text-white transition hover:scale-[1.01] disabled:opacity-60"
                           >
                             {inspiringId ? <FiLoader className="animate-spin" /> : <FiMusic />}
-                            Usar esta versão
+                            {t('studio.project.versions.useThisVersion')}
                           </button>
                         </article>
                       )
                     })}
                   </div>
                   <p className="mt-2 text-center text-xs text-gray-500 lg:hidden">
-                    Arraste para o lado para ver outras versões.
+                    {t('studio.project.versions.swipe')}
                   </p>
                 </div>
               </div>
@@ -666,9 +663,9 @@ function StudioProjectsContent() {
             <div className="mb-6 rounded-2xl border border-primary-800 bg-primary-950/30 p-5">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-bold text-white">Sessão encerrada</h2>
+                  <h2 className="text-lg font-bold text-white">{t('studio.projects.session.title')}</h2>
                   <p className="text-sm text-gray-300">
-                    Você estava logado, mas a sessão expirou. Clique abaixo para entrar novamente.
+                    {t('studio.projects.session.description')}
                   </p>
                 </div>
                 <Link
@@ -676,7 +673,7 @@ function StudioProjectsContent() {
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 font-semibold text-white hover:bg-primary-500"
                 >
                   <FiLogIn />
-                  Entrar novamente
+                  {t('studio.projects.session.loginAgain')}
                 </Link>
               </div>
             </div>
@@ -687,13 +684,13 @@ function StudioProjectsContent() {
               <div className="flex gap-2 lg:block lg:space-y-1">
                 {filters.map((filter) => (
                   <Link
-                    key={filter.id}
-                    href={`/compositores/admin/studio-ia/projetos?filter=${filter.id}`}
+                    key={filter}
+                    href={`/compositores/admin/studio-ia/projetos?filter=${filter}`}
                     className={`block shrink-0 rounded-xl px-4 py-3 text-sm transition ${
-                      currentFilter === filter.id ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-gray-800'
+                      currentFilter === filter ? 'bg-primary-600 text-white' : 'text-gray-300 hover:bg-gray-800'
                     }`}
                   >
-                    {filter.label}
+                    {t(`studio.projects.filters.${filter}`)}
                   </Link>
                 ))}
               </div>
@@ -703,11 +700,11 @@ function StudioProjectsContent() {
                   className="flex items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 hover:bg-gray-900"
                 >
                   <FiMic />
-                  <span>Minhas vozes</span>
+                  <span>{t('studio.projects.myVoices')}</span>
                   <span className="group relative ml-auto inline-flex">
                     <FiInfo className="h-4 w-4 text-purple-200" />
                     <span className="pointer-events-none absolute bottom-full right-0 z-30 mb-2 hidden w-56 rounded-xl border border-purple-700/60 bg-gray-950 px-3 py-2 text-xs font-medium leading-relaxed text-purple-100 shadow-xl shadow-black/40 group-hover:block">
-                      Ouça e gerencie as vozes que você cadastrou.
+                      {t('studio.projects.myVoicesHint')}
                     </span>
                   </span>
                 </Link>
@@ -716,21 +713,21 @@ function StudioProjectsContent() {
                   className="mt-3 flex items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 hover:bg-gray-900"
                 >
                   <FiFileText />
-                  Cifras
+                  {t('studio.projects.filters.transcriptions')}
                 </Link>
                 <Link
                   href={`/compositores/admin/studio-ia/projetos?filter=${ORIGINALS_FILTER}`}
                   className="mt-3 flex items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 hover:bg-gray-900"
                 >
                   <FiMusic />
-                  Músicas originais
+                  {t('studio.projects.filters.originals')}
                 </Link>
                 <Link
                   href={`/compositores/admin/studio-ia/projetos?filter=${PLAYBACKS_FILTER}`}
                   className="mt-3 flex items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 hover:bg-gray-900"
                 >
                   <FiHeadphones />
-                  Playbacks e vozes
+                  {t('studio.projects.filters.playbacksAndVoices')}
                 </Link>
               </div>
               <Link
@@ -745,21 +742,21 @@ function StudioProjectsContent() {
                 className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 lg:hidden"
               >
                 <FiFileText />
-                Cifras
+                {t('studio.projects.filters.transcriptions')}
               </Link>
               <Link
                 href={`/compositores/admin/studio-ia/projetos?filter=${ORIGINALS_FILTER}`}
                 className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 lg:hidden"
               >
                 <FiMusic />
-                Músicas originais
+                {t('studio.projects.filters.originals')}
               </Link>
               <Link
                 href={`/compositores/admin/studio-ia/projetos?filter=${PLAYBACKS_FILTER}`}
                 className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-gray-800 bg-transparent px-4 py-3 text-sm font-bold text-gray-300 transition hover:border-gray-600 lg:hidden"
               >
                 <FiHeadphones />
-                Playbacks e vozes
+                {t('studio.projects.filters.playbacksAndVoices')}
               </Link>
             </aside>
 
@@ -773,7 +770,7 @@ function StudioProjectsContent() {
                       viewMode === 'small' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'
                     }`}
                   >
-                    Cards pequenos
+                    {t('studio.projects.view.small')}
                   </button>
                   <button
                     type="button"
@@ -782,7 +779,7 @@ function StudioProjectsContent() {
                       viewMode === 'large' ? 'bg-primary-600 text-white' : 'text-gray-400 hover:text-white'
                     }`}
                   >
-                    Cards grandes
+                    {t('studio.projects.view.large')}
                   </button>
                 </div>
 
@@ -794,21 +791,21 @@ function StudioProjectsContent() {
                     className="inline-flex items-center gap-2 rounded-xl border border-red-800 bg-red-950/30 px-4 py-3 text-sm font-bold text-red-100 hover:bg-red-950/60 disabled:opacity-60"
                   >
                     {deletingDrafts ? <FiLoader className="animate-spin" /> : <FiTrash2 />}
-                    Descartar rascunhos
+                    {t('studio.projects.discardDrafts')}
                   </button>
                 )}
               </div>
 
               {loading ? (
                 <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">
-                  {currentFilter === TRANSCRIPTIONS_FILTER ? 'Carregando cifras...' : currentFilter === ORIGINALS_FILTER ? 'Carregando músicas originais...' : currentFilter === PLAYBACKS_FILTER ? 'Carregando playbacks...' : 'Carregando projetos...'}
+                  {currentFilter === TRANSCRIPTIONS_FILTER ? t('studio.projects.loading.transcriptions') : currentFilter === ORIGINALS_FILTER ? t('studio.projects.loading.originals') : currentFilter === PLAYBACKS_FILTER ? t('studio.projects.loading.playbacks') : t('studio.projects.loading.projects')}
                 </div>
               ) : currentFilter === TRANSCRIPTIONS_FILTER ? (
                 transcriptions.length === 0 ? (
                   <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center">
-                    <p className="mb-4 text-gray-400">Nenhuma cifra salva ainda.</p>
+                    <p className="mb-4 text-gray-400">{t('studio.projects.emptyStates.transcriptions')}</p>
                     <Link href="/transcricao-musical" className="inline-flex rounded-xl bg-primary-600 px-5 py-3 font-semibold">
-                      Criar cifra
+                      {t('studio.projects.actions.createTranscription')}
                     </Link>
                   </div>
                 ) : (
@@ -820,7 +817,7 @@ function StudioProjectsContent() {
                             <FiFileText className="h-8 w-8" />
                           </div>
                           <span className="absolute bottom-3 left-3 rounded-full bg-black/80 px-3 py-1 text-xs font-bold text-amber-100">
-                            Cifra da Música
+                            {t('studio.projects.labels.transcription')}
                           </span>
                         </div>
                         <div className={viewMode === 'small' ? 'p-3' : 'p-4'}>
@@ -830,14 +827,14 @@ function StudioProjectsContent() {
                               salva
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500">{formatDate(item.completedAt || item.createdAt)}</p>
+                          <p className="text-xs text-gray-500">{formatDate(item.completedAt || item.createdAt, i18n.language)}</p>
                           <div className="mt-3 grid gap-2">
                             <button
                               type="button"
                               onClick={() => downloadTranscriptionFile(item, 'pdf')}
                               className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-3 py-2 text-xs font-bold text-white hover:bg-primary-500"
                             >
-                              <FiDownload /> Baixar cifra em PDF
+                              <FiDownload /> {t('studio.projects.actions.downloadPdf')}
                             </button>
                           </div>
                         </div>
@@ -848,7 +845,7 @@ function StudioProjectsContent() {
               ) : currentFilter === ORIGINALS_FILTER ? (
                 projects.length === 0 ? (
                   <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center">
-                    <p className="text-gray-400">Nenhuma música original salva ainda.</p>
+                    <p className="text-gray-400">{t('studio.projects.emptyStates.originals')}</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-800 overflow-hidden rounded-2xl border border-gray-800 bg-gray-950/70">
@@ -859,14 +856,14 @@ function StudioProjectsContent() {
                             <FiMusic className="shrink-0 text-purple-300" />
                             <h3 className="truncate font-bold text-white">{project.title}</h3>
                           </div>
-                          <p className="mt-1 text-xs text-gray-500">Enviada para melhorar em {formatDate(project.createdAt || project.updatedAt)}</p>
-                          {project.originalAudio?.audioUrl ? <audio controls src={project.originalAudio.audioUrl} className="mt-3 w-full max-w-xl" /> : <p className="mt-3 text-xs text-gray-500">Áudio original indisponível.</p>}
+                          <p className="mt-1 text-xs text-gray-500">{t('studio.projects.labels.sentToImprove', { date: formatDate(project.createdAt || project.updatedAt, i18n.language) })}</p>
+                          {project.originalAudio?.audioUrl ? <audio controls src={project.originalAudio.audioUrl} className="mt-3 w-full max-w-xl" /> : <p className="mt-3 text-xs text-gray-500">{t('studio.projects.labels.originalUnavailable')}</p>}
                         </div>
                         <Link
                           href={`/compositores/admin/studio-ia/melhorar/musica-pronta?sourceProjectId=${encodeURIComponent(project.id)}`}
                           className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary-600 px-3 py-2 text-sm font-bold text-white hover:bg-primary-500"
                         >
-                          <FiZap /> Usar para melhorar novamente
+                          <FiZap /> {t('studio.projects.actions.improveAgain')}
                         </Link>
                       </article>
                     ))}
@@ -876,8 +873,8 @@ function StudioProjectsContent() {
                 playbackAssets.length === 0 ? (
                   <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center">
                     <FiHeadphones className="mx-auto mb-4 h-9 w-9 text-cyan-300" />
-                    <p className="font-bold text-gray-200">Nenhum playback salvo ainda.</p>
-                    <p className="mt-2 text-sm text-gray-400">Quando você retirar a voz de uma versão, o instrumental e a voz isolada ficarão guardados aqui.</p>
+                    <p className="font-bold text-gray-200">{t('studio.projects.emptyStates.playbacks')}</p>
+                    <p className="mt-2 text-sm text-gray-400">{t('studio.projects.playback.emptyHint')}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -885,18 +882,18 @@ function StudioProjectsContent() {
                       <article key={asset.id} className="rounded-3xl border border-gray-800 bg-gray-950/70 p-4 sm:p-5">
                         <div className="mb-4">
                           <h3 className="truncate text-lg font-black text-white">{asset.projectTitle}</h3>
-                          <p className="mt-1 text-xs text-gray-500">{asset.versionName || 'Versão da música'} · Separado em {formatDate(asset.createdAt)}</p>
+                          <p className="mt-1 text-xs text-gray-500">{asset.versionName || t('studio.projects.labels.songVersion')} · {t('studio.projects.labels.separatedOn', { date: formatDate(asset.createdAt, i18n.language) })}</p>
                         </div>
                         <div className="grid gap-4 lg:grid-cols-2">
                           <div className="rounded-2xl border border-cyan-900/50 bg-black/30 p-4">
-                            <p className="mb-3 flex items-center gap-2 font-black text-cyan-200"><FiHeadphones /> Playback / instrumental</p>
-                            {asset.playbackUrl ? <audio controls src={asset.playbackUrl} className="w-full" /> : <p className="text-sm text-gray-500">Arquivo indisponível.</p>}
-                            {asset.playbackUrl && <a href={asset.playbackUrl} download className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-700 px-4 py-3 text-sm font-bold text-white hover:bg-cyan-600"><FiDownload /> Baixar playback</a>}
+                            <p className="mb-3 flex items-center gap-2 font-black text-cyan-200"><FiHeadphones /> {t('studio.projects.labels.playbackInstrumental')}</p>
+                            {asset.playbackUrl ? <audio controls src={asset.playbackUrl} className="w-full" /> : <p className="text-sm text-gray-500">{t('studio.projects.labels.fileUnavailable')}</p>}
+                            {asset.playbackUrl && <a href={asset.playbackUrl} download className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-700 px-4 py-3 text-sm font-bold text-white hover:bg-cyan-600"><FiDownload /> {t('studio.projects.actions.downloadPlayback')}</a>}
                           </div>
                           <div className="rounded-2xl border border-purple-900/50 bg-black/30 p-4">
-                            <p className="mb-3 flex items-center gap-2 font-black text-purple-200"><FiMic /> Voz isolada</p>
+                            <p className="mb-3 flex items-center gap-2 font-black text-purple-200"><FiMic /> {t('studio.projects.labels.isolatedVoice')}</p>
                             {asset.vocalUrl ? <audio controls src={asset.vocalUrl} className="w-full" /> : <p className="text-sm text-gray-500">Arquivo indisponível.</p>}
-                            {asset.vocalUrl && <a href={asset.vocalUrl} download className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-700 px-4 py-3 text-sm font-bold text-white hover:bg-purple-600"><FiDownload /> Baixar voz</a>}
+                            {asset.vocalUrl && <a href={asset.vocalUrl} download className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-700 px-4 py-3 text-sm font-bold text-white hover:bg-purple-600"><FiDownload /> {t('studio.projects.actions.downloadVoice')}</a>}
                           </div>
                         </div>
                       </article>
@@ -905,9 +902,9 @@ function StudioProjectsContent() {
                 )
               ) : projects.length === 0 ? (
                 <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center">
-                  <p className="text-gray-400 mb-4">Nenhum projeto nesta categoria.</p>
+                  <p className="text-gray-400 mb-4">{t('studio.projects.empty')}</p>
                   <Link href="/compositores/admin/studio-ia/novo" className="inline-flex rounded-xl bg-primary-600 px-5 py-3 font-semibold">
-                    Criar nova música
+                    {t('studio.projects.createSong')}
                   </Link>
                 </div>
               ) : (
@@ -919,7 +916,7 @@ function StudioProjectsContent() {
                           type="button"
                           onClick={() => setMenuProjectId(menuProjectId === project.id ? '' : project.id)}
                           className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-700 bg-black/80 text-white shadow-lg hover:border-primary-400"
-                          aria-label="Opções da música"
+                          aria-label={t('studio.projects.actions.songOptions')}
                         >
                           {inspiringId === project.id ? <FiLoader className="animate-spin" /> : <FiMoreVertical />}
                         </button>
@@ -942,7 +939,7 @@ function StudioProjectsContent() {
                                 className="flex w-full items-center gap-2 border-t border-gray-800 px-4 py-3 text-left text-sm font-bold text-amber-200 transition hover:bg-amber-950/30 hover:text-amber-100 disabled:opacity-60"
                               >
                                 {transferringId === project.id ? <FiLoader className="animate-spin" /> : <FiSend />}
-                                Transferir projeto
+                                {t('studio.projects.transfer.title')}
                               </button>
                             )}
                             <button
@@ -952,7 +949,7 @@ function StudioProjectsContent() {
                               className="flex w-full items-center gap-2 border-t border-gray-800 px-4 py-3 text-left text-sm font-bold text-red-300 transition hover:bg-red-950/40 hover:text-red-200 disabled:opacity-60"
                             >
                               <FiTrash2 />
-                              Excluir projeto
+                              {t('studio.projects.delete.title')}
                             </button>
                           </div>
                         )}
@@ -972,9 +969,9 @@ function StudioProjectsContent() {
                           {project.favorite && <FiHeart className="absolute right-3 top-3 h-5 w-5 fill-red-400 text-red-400" />}
                           {(project.createdFromOriginal || project.customVoice) && (
                             <div className="absolute left-3 top-3 flex items-center gap-2">
-                              {project.createdFromOriginal && <FiStar className="h-5 w-5 fill-emerald-400 text-emerald-400" aria-label="Criado a partir de música original enviada" />}
+                              {project.createdFromOriginal && <FiStar className="h-5 w-5 fill-emerald-400 text-emerald-400" aria-label={t('studio.projects.labels.createdFromOriginal')} />}
                               {project.customVoice && (
-                                <span title={`Feita com a voz: ${project.customVoice.name}`} className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-cyan-300/40 bg-black/75 text-cyan-200 shadow-lg" aria-label={`Feita com a voz: ${project.customVoice.name}`}>
+                                <span title={`${t('studio.project.versions.customVoiceTitle', { name: project.customVoice.name })}`} className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-cyan-300/40 bg-black/75 text-cyan-200 shadow-lg" aria-label={`Feita com a voz: ${project.customVoice.name}`}>
                                   <FiMic className="h-3.5 w-3.5" />
                                 </span>
                               )}
