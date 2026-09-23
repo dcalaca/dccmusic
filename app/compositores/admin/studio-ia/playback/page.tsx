@@ -57,7 +57,7 @@ function PlaybackCreator() {
           setResult(savedData)
         }
       } catch (loadError: any) {
-        setError(loadError?.message || (isUnitedStates ? 'Could not load the song.' : 'Erro ao carregar a música.'))
+        setError(loadError?.message || t('studio.tools.playback.errors.load'))
       } finally {
         setLoading(false)
       }
