@@ -58,7 +58,7 @@ export default function EditComposerVideoPage({ params }: { params: { id: string
           })
           setVideo(data.video)
         } else {
-          console.error('{t('videos.form.notFoundTitle')} na resposta')
+          console.error('[PAGE] Video not found in response')
         }
       } else {
         const errorData = await response.json()
