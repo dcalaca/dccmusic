@@ -2654,6 +2654,7 @@ function StudioProcessing({
 }
 
 function UpgradeModal({ message, onClose }: { message: string; onClose: () => void }) {
+  const { t } = useTranslation()
   const hasNoBalance = message.toLowerCase().includes('créditos suficientes') || message.toLowerCase().includes('recarga')
 
   return (
@@ -2670,7 +2671,7 @@ function UpgradeModal({ message, onClose }: { message: string; onClose: () => vo
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-purple-600/20 text-purple-200">
           <FiZap className="h-7 w-7" />
         </div>
-        <h2 className="text-2xl font-black text-white">{hasNoBalance ? '{t('studio.project.upgrade.noBalance')}' : '{t('studio.project.upgrade.title')}'}</h2>
+        <h2 className="text-2xl font-black text-white">{hasNoBalance ? t('studio.project.upgrade.noBalance') : t('studio.project.upgrade.title')}</h2>
         <p className="mt-3 text-sm text-purple-100/90">{message}</p>
         <p className="mt-3 text-sm text-gray-300">
           {t('studio.project.upgrade.description')}
@@ -2702,6 +2703,8 @@ function UpgradeModal({ message, onClose }: { message: string; onClose: () => vo
 }
 
 function PublishPlanModal({ message, onClose }: { message: string; onClose: () => void }) {
+  const { t } = useTranslation()
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
