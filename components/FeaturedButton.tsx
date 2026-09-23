@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { FiStar, FiCheckCircle, FiClock } from 'react-icons/fi'
+import { useTranslation } from 'react-i18next'
 
 interface FeaturedButtonProps {
   contentType: 'music' | 'video'
@@ -16,6 +17,7 @@ export default function FeaturedButton({
   composerId,
   currentFeatured,
 }: FeaturedButtonProps) {
+  const { t, i18n } = useTranslation()
   const [loading, setLoading] = useState(false)
   const [featuredStatus, setFeaturedStatus] = useState<{
     isActive: boolean
@@ -61,7 +63,7 @@ export default function FeaturedButton({
     try {
       const token = localStorage.getItem('composer_token')
       if (!token) {
-        alert('Faça login para continuar')
+        alert(t('featured.loginRequired'))
         return
       }
 
@@ -80,7 +82,7 @@ export default function FeaturedButton({
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao criar pagamento')
+        throw new Error(i18n.language.startsWith('pt') && data.error ? data.error : t('featured.errors.createPayment'))
       }
 
       // Redirecionar para Mercado Pago
@@ -90,14 +92,14 @@ export default function FeaturedButton({
       }
     } catch (error: any) {
       console.error('Erro ao pagar destaque:', error)
-      alert(error.message || 'Erro ao processar pagamento')
+      alert(i18n.language.startsWith('pt') ? (error.message || t('featured.errors.processPayment')) : t('featured.errors.processPayment'))
     } finally {
       setLoading(false)
     }
   }
 
   const formatExpirationDate = (date: Date) => {
-    return new Intl.DateTimeFormat('pt-BR', {
+    return new Intl.DateTimeFormat(i18n.language, {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -117,9 +119,9 @@ export default function FeaturedButton({
       <div className="flex items-center gap-2 px-3 py-2 bg-yellow-900/30 border border-yellow-700 rounded-lg">
         <FiCheckCircle className="w-4 h-4 text-yellow-400" />
         <div className="text-xs">
-          <div className="text-yellow-400 font-medium">Em Destaque</div>
+          <div className="text-yellow-400 font-medium">{t('featured.active')}</div>
           <div className="text-yellow-300/70">
-            {daysRemaining} dia{daysRemaining !== 1 ? 's' : ''} restante{daysRemaining !== 1 ? 's' : ''}
+            {t('featured.daysRemaining', { count: daysRemaining })}
           </div>
         </div>
       </div>
@@ -130,7 +132,7 @@ export default function FeaturedButton({
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-blue-900/30 border border-blue-700 rounded-lg">
         <FiClock className="w-4 h-4 text-blue-400" />
-        <div className="text-xs text-blue-300">Pagamento pendente</div>
+        <div className="text-xs text-blue-300">{t('featured.pending')}</div>
       </div>
     )
   }
@@ -140,10 +142,10 @@ export default function FeaturedButton({
       onClick={handlePayFeatured}
       disabled={loading}
       className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-700 hover:to-yellow-600 rounded-lg transition-all font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-      title="Pagar R$ 9,90 para destacar por 10 dias"
+      title={t('featured.buttonTitle')}
     >
       <FiStar className="w-4 h-4" />
-      <span>{loading ? 'Processando...' : 'Destacar (R$ 9,90)'}</span>
+      <span>{loading ? t('featured.processing') : t('featured.highlightPrice')}</span>
     </button>
   )
 }

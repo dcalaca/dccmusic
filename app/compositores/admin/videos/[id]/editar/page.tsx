@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { FiArrowLeft } from 'react-icons/fi'
 
 export default function EditComposerVideoPage({ params }: { params: { id: string } }) {
+  const { t } = useTranslation()
   const router = useRouter()
   const [composer, setComposer] = useState<any>(null)
   const [video, setVideo] = useState<any>(null)
@@ -56,7 +58,7 @@ export default function EditComposerVideoPage({ params }: { params: { id: string
           })
           setVideo(data.video)
         } else {
-          console.error('Vídeo não encontrado na resposta')
+          console.error('{t('videos.form.notFoundTitle')} na resposta')
         }
       } else {
         const errorData = await response.json()
@@ -91,20 +93,20 @@ export default function EditComposerVideoPage({ params }: { params: { id: string
               className="inline-flex items-center space-x-2 text-primary-400 hover:text-primary-300 mb-6"
             >
               <FiArrowLeft className="w-4 h-4" />
-              <span>Voltar</span>
+              <span>{t('videos.form.back')}</span>
             </Link>
             <div className="bg-red-900/50 border border-red-800 rounded-lg p-8 text-center">
               <h2 className="text-2xl font-bold mb-4 text-red-300">
-                Vídeo não encontrado
+                {t('videos.form.notFoundTitle')}
               </h2>
               <p className="text-gray-400 mb-6">
-                O vídeo que você está tentando editar não foi encontrado ou você não tem permissão para editá-lo.
+                {t('videos.form.notFoundDescription')}
               </p>
               <Link
                 href="/compositores/admin/videos"
                 className="inline-block px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors font-medium"
               >
-                Voltar para Meus Vídeos
+                {t('videos.form.backToVideos')}
               </Link>
             </div>
           </div>
@@ -122,14 +124,14 @@ export default function EditComposerVideoPage({ params }: { params: { id: string
             className="inline-flex items-center space-x-2 text-primary-400 hover:text-primary-300 mb-6"
           >
             <FiArrowLeft className="w-4 h-4" />
-            <span>Voltar</span>
+            <span>{t('videos.form.back')}</span>
           </Link>
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2">
-              <span className="gradient-text">Editar Vídeo</span>
+              <span className="gradient-text">{t('videos.form.editTitle')}</span>
             </h1>
             <p className="text-gray-400">
-              Edite as informações do vídeo
+              {t('videos.form.editSubtitle')}
             </p>
           </div>
           <ComposerVideoForm 
@@ -153,6 +155,7 @@ function ComposerVideoForm({
   composerId: string
   composerName: string 
 }) {
+  const { t, i18n } = useTranslation()
   const router = useRouter()
   const [formData, setFormData] = useState({
     title: video.title || '',
@@ -320,12 +323,12 @@ function ComposerVideoForm({
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao atualizar vídeo')
+        throw new Error(i18n.language.startsWith('pt') && data.error ? data.error : t('videos.form.errors.update'))
       }
 
       router.push('/compositores/admin/videos')
     } catch (err: any) {
-      setError(err.message || 'Erro ao atualizar vídeo')
+      setError(i18n.language.startsWith('pt') ? (err.message || t('videos.form.errors.update')) : t('videos.form.errors.update'))
     } finally {
       setLoading(false)
     }
@@ -340,7 +343,7 @@ function ComposerVideoForm({
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-2">Título *</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.title')} *</label>
         <input
           type="text"
           value={formData.title}
@@ -351,18 +354,18 @@ function ComposerVideoForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Slug</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.slug')}</label>
         <input
           type="text"
           value={formData.slug}
           onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-          placeholder="Será gerado automaticamente se vazio"
+          placeholder={t('videos.form.slugPlaceholder')}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">URL do YouTube</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.youtubeUrl')}</label>
         <input
           type="url"
           value={formData.youtubeUrl}
@@ -373,24 +376,24 @@ function ComposerVideoForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Embed do YouTube (opcional)</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.youtubeEmbed')}</label>
         <textarea
           value={formData.youtubeEmbed}
           onChange={(e) => setFormData({ ...formData, youtubeEmbed: e.target.value })}
-          placeholder="Cole o código iframe do YouTube"
+          placeholder={t('videos.form.youtubeEmbedPlaceholder')}
           rows={4}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Gênero</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.genre')}</label>
         <select
           value={formData.genre}
           onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         >
-          <option value="">Selecione um gênero</option>
+          <option value="">{t('videos.form.selectGenre')}</option>
           {genres.map((genre) => (
             <option key={genre} value={genre}>
               {genre}
@@ -400,7 +403,7 @@ function ComposerVideoForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Tags (separadas por vírgula)</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.tags')}</label>
         <input
           type="text"
           value={formData.tags}
@@ -411,7 +414,7 @@ function ComposerVideoForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Descrição</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.description')}</label>
         <textarea
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -422,7 +425,7 @@ function ComposerVideoForm({
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-2">Data de Publicação</label>
+          <label className="block text-sm font-medium mb-2">{t('videos.form.publishedAt')}</label>
           <input
             type="date"
             value={formData.publishedAt}
@@ -431,12 +434,12 @@ function ComposerVideoForm({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2">Duração (opcional)</label>
+          <label className="block text-sm font-medium mb-2">{t('videos.form.duration')}</label>
           <input
             type="text"
             value={formData.duration}
             onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-            placeholder="Ex: 3:45"
+            placeholder={t('videos.form.durationPlaceholder')}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
           />
         </div>
@@ -444,7 +447,7 @@ function ComposerVideoForm({
 
       {/* Seleção de Compositores */}
       <div>
-        <label className="block text-sm font-medium mb-2">Compositores *</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.composers')} *</label>
         
         {selectedComposers.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-3">
@@ -481,7 +484,7 @@ function ComposerVideoForm({
             onBlur={() => {
               setTimeout(() => setShowComposerList(false), 200)
             }}
-            placeholder="Buscar compositor ou criar novo..."
+            placeholder={t('videos.form.composerSearchPlaceholder')}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
           />
           
@@ -511,7 +514,7 @@ function ComposerVideoForm({
                 onClick={handleCreateNewComposer}
                 className="w-full text-left px-4 py-2 hover:bg-gray-800 transition-colors text-sm text-primary-400"
               >
-                + Criar novo: "{searchQuery.trim()}"
+                + {t('videos.form.createNewComposer', { name: searchQuery.trim() })}
               </button>
             </div>
           )}
@@ -524,13 +527,13 @@ function ComposerVideoForm({
           disabled={loading}
           className="flex-1 px-4 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium disabled:opacity-50"
         >
-          {loading ? 'Salvando...' : 'Salvar Alterações'}
+          {loading ? t('videos.form.saving') : t('videos.form.saveChanges')}
         </button>
         <Link
           href="/compositores/admin/videos"
           className="px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
         >
-          Cancelar
+          {t('videos.form.cancel')}
         </Link>
       </div>
     </form>

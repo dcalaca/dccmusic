@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import VideoCard from '@/components/VideoCard'
 import FeaturedButton from '@/components/FeaturedButton'
 import { FiPlus, FiEdit, FiTrash2, FiArrowLeft } from 'react-icons/fi'
 
 export default function ComposerVideosPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const [composer, setComposer] = useState<any>(null)
   const [videos, setVideos] = useState<any[]>([])
@@ -53,7 +55,7 @@ export default function ComposerVideosPage() {
   }
 
   const handleDelete = async (videoId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este vídeo?')) {
+    if (!confirm(t('videos.list.deleteConfirm'))) {
       return
     }
 
@@ -69,11 +71,11 @@ export default function ComposerVideosPage() {
       if (response.ok) {
         setVideos(videos.filter(v => v.id !== videoId))
       } else {
-        alert('Erro ao excluir vídeo')
+        alert(t('videos.list.deleteError'))
       }
     } catch (error) {
       console.error('Erro ao excluir:', error)
-      alert('Erro ao excluir vídeo')
+      alert(t('videos.list.deleteError'))
     }
   }
 
@@ -99,20 +101,20 @@ export default function ComposerVideosPage() {
               className="inline-flex items-center space-x-2 text-primary-400 hover:text-primary-300 mb-6"
             >
               <FiArrowLeft className="w-4 h-4" />
-              <span>Voltar</span>
+              <span>{t('videos.list.back')}</span>
             </Link>
             <div className="bg-yellow-900/50 border border-yellow-800 rounded-lg p-8 text-center">
               <h2 className="text-2xl font-bold mb-4 text-yellow-300">
-                Assinatura Necessária
+                {t('videos.list.subscriptionRequired')}
               </h2>
               <p className="text-gray-400 mb-6">
-                Você precisa de uma assinatura ativa para gerenciar seus vídeos.
+                {t('videos.list.subscriptionDescription')}
               </p>
               <Link
                 href="/compositores/planos"
                 className="inline-block px-6 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium"
               >
-                Ver Planos
+                {t('videos.list.viewPlans')}
               </Link>
             </div>
           </div>
@@ -132,13 +134,13 @@ export default function ComposerVideosPage() {
                 className="inline-flex items-center space-x-2 text-primary-400 hover:text-primary-300 mb-4"
               >
                 <FiArrowLeft className="w-4 h-4" />
-                <span>Voltar</span>
+                <span>{t('videos.list.back')}</span>
               </Link>
               <h1 className="text-4xl font-bold mb-2">
-                <span className="gradient-text">Meus Vídeos</span>
+                <span className="gradient-text">{t('videos.list.title')}</span>
               </h1>
               <p className="text-gray-400">
-                Gerencie seus vídeos cadastrados
+                {t('videos.list.subtitle')}
               </p>
             </div>
             <div className="flex gap-2">
@@ -149,27 +151,27 @@ export default function ComposerVideosPage() {
                 }}
                 className="flex items-center space-x-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-all font-medium"
               >
-                <span>Atualizar</span>
+                <span>{t('videos.list.refresh')}</span>
               </button>
               <Link
                 href="/compositores/admin/videos/novo"
                 className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium"
               >
                 <FiPlus className="w-5 h-5" />
-                <span>Novo Vídeo</span>
+                <span>{t('videos.list.newVideo')}</span>
               </Link>
             </div>
           </div>
 
           {videos.length === 0 ? (
             <div className="text-center py-16 bg-gray-900/50 border border-gray-800 rounded-lg">
-              <p className="text-gray-400 mb-6">Você ainda não cadastrou nenhum vídeo.</p>
+              <p className="text-gray-400 mb-6">{t('videos.list.empty')}</p>
               <Link
                 href="/compositores/admin/videos/novo"
                 className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium"
               >
                 <FiPlus className="w-5 h-5" />
-                <span>Cadastrar Primeiro Vídeo</span>
+                <span>{t('videos.list.firstVideo')}</span>
               </Link>
             </div>
           ) : (
@@ -190,14 +192,14 @@ export default function ComposerVideosPage() {
                         className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors text-sm"
                       >
                         <FiEdit className="w-4 h-4" />
-                        <span>Editar</span>
+                        <span>{t('videos.list.edit')}</span>
                       </Link>
                       <button
                         onClick={() => handleDelete(video.id)}
                         className="flex-1 flex items-center justify-center space-x-2 px-3 py-2 bg-red-900/50 hover:bg-red-800 rounded-lg transition-colors text-sm text-red-300"
                       >
                         <FiTrash2 className="w-4 h-4" />
-                        <span>Excluir</span>
+                        <span>{t('videos.list.delete')}</span>
                       </button>
                     </div>
                   </div>

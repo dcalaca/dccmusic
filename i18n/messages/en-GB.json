@@ -1272,5 +1272,85 @@
       "inputRequired": "Paste the song lyrics or describe your idea before generating.",
       "generate": "Could not generate the cover."
     }
+  },
+  "videos": {
+    "list": {
+      "back": "Back",
+      "subscriptionRequired": "Subscription required",
+      "subscriptionDescription": "You need an active subscription to manage your videos.",
+      "viewPlans": "View plans",
+      "title": "My Videos",
+      "subtitle": "Manage your registered videos",
+      "refresh": "Refresh",
+      "newVideo": "New Video",
+      "empty": "You have not added any videos yet.",
+      "firstVideo": "Add your first video",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Are you sure you want to delete this video?",
+      "deleteError": "Could not delete the video"
+    },
+    "form": {
+      "back": "Back",
+      "newTitle": "New Video",
+      "newSubtitle": "Add a new video",
+      "editTitle": "Edit Video",
+      "editSubtitle": "Edit the video information",
+      "notFoundTitle": "Video not found",
+      "notFoundDescription": "The video you are trying to edit was not found or you do not have permission to edit it.",
+      "backToVideos": "Back to My Videos",
+      "title": "Title",
+      "slug": "Slug",
+      "slugPlaceholder": "Generated automatically if left blank",
+      "youtubeUrl": "YouTube URL",
+      "youtubeEmbed": "YouTube embed (optional)",
+      "youtubeEmbedPlaceholder": "Paste the YouTube iframe code",
+      "genre": "Genre",
+      "selectGenre": "Select a genre",
+      "tags": "Tags (comma-separated)",
+      "description": "Description",
+      "publishedAt": "Publish date",
+      "duration": "Duration (optional)",
+      "durationPlaceholder": "Example: 3:45",
+      "composers": "Songwriters",
+      "composerSearchPlaceholder": "Search for a songwriter or create a new one...",
+      "createNewComposer": "Create new: “{{name}}”",
+      "saving": "Saving...",
+      "saveVideo": "Save Video",
+      "saveChanges": "Save changes",
+      "cancel": "Cancel",
+      "errors": {
+        "create": "Could not add the video",
+        "update": "Could not update the video"
+      }
+    },
+    "card": {
+      "views": "views"
+    }
+  },
+  "featured": {
+    "loginRequired": "Sign in to continue",
+    "active": "Featured",
+    "daysRemaining_one": "{{count}} day remaining",
+    "daysRemaining_other": "{{count}} days remaining",
+    "pending": "Payment pending",
+    "buttonTitle": "Pay R$ 9.90 to feature for 10 days",
+    "processing": "Processing...",
+    "highlightPrice": "Feature (R$ 9.90)",
+    "close": "Close",
+    "errors": {
+      "createPayment": "Could not create the payment",
+      "processPayment": "Could not process the payment"
+    },
+    "modal": {
+      "savedTitle": "Content saved!",
+      "savedSuccess": "was saved successfully!",
+      "featureTitle": "Feature for 10 days",
+      "descriptionMusic": "Feature your song on the main page and increase its visibility!",
+      "descriptionVideo": "Feature your video on the main page and increase its visibility!",
+      "pricePeriod": "for 10 days",
+      "notNow": "Not now",
+      "highlightNow": "Feature now"
+    }
   }
 }

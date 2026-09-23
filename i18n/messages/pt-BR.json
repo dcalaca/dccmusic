@@ -1272,5 +1272,85 @@
       "inputRequired": "Cole a letra da música ou descreva sua ideia antes de gerar.",
       "generate": "Erro ao gerar capa."
     }
+  },
+  "videos": {
+    "list": {
+      "back": "Voltar",
+      "subscriptionRequired": "Assinatura necessária",
+      "subscriptionDescription": "Você precisa de uma assinatura ativa para gerenciar seus vídeos.",
+      "viewPlans": "Ver planos",
+      "title": "Meus Vídeos",
+      "subtitle": "Gerencie seus vídeos cadastrados",
+      "refresh": "Atualizar",
+      "newVideo": "Novo Vídeo",
+      "empty": "Você ainda não cadastrou nenhum vídeo.",
+      "firstVideo": "Cadastrar primeiro vídeo",
+      "edit": "Editar",
+      "delete": "Excluir",
+      "deleteConfirm": "Tem certeza que deseja excluir este vídeo?",
+      "deleteError": "Erro ao excluir vídeo"
+    },
+    "form": {
+      "back": "Voltar",
+      "newTitle": "Novo Vídeo",
+      "newSubtitle": "Cadastre um novo vídeo",
+      "editTitle": "Editar Vídeo",
+      "editSubtitle": "Edite as informações do vídeo",
+      "notFoundTitle": "Vídeo não encontrado",
+      "notFoundDescription": "O vídeo que você está tentando editar não foi encontrado ou você não tem permissão para editá-lo.",
+      "backToVideos": "Voltar para Meus Vídeos",
+      "title": "Título",
+      "slug": "Slug",
+      "slugPlaceholder": "Será gerado automaticamente se vazio",
+      "youtubeUrl": "URL do YouTube",
+      "youtubeEmbed": "Embed do YouTube (opcional)",
+      "youtubeEmbedPlaceholder": "Cole o código iframe do YouTube",
+      "genre": "Gênero",
+      "selectGenre": "Selecione um gênero",
+      "tags": "Tags (separadas por vírgula)",
+      "description": "Descrição",
+      "publishedAt": "Data de publicação",
+      "duration": "Duração (opcional)",
+      "durationPlaceholder": "Ex: 3:45",
+      "composers": "Compositores",
+      "composerSearchPlaceholder": "Buscar compositor ou criar novo...",
+      "createNewComposer": "Criar novo: “{{name}}”",
+      "saving": "Salvando...",
+      "saveVideo": "Salvar Vídeo",
+      "saveChanges": "Salvar alterações",
+      "cancel": "Cancelar",
+      "errors": {
+        "create": "Erro ao cadastrar vídeo",
+        "update": "Erro ao atualizar vídeo"
+      }
+    },
+    "card": {
+      "views": "visualizações"
+    }
+  },
+  "featured": {
+    "loginRequired": "Faça login para continuar",
+    "active": "Em destaque",
+    "daysRemaining_one": "{{count}} dia restante",
+    "daysRemaining_other": "{{count}} dias restantes",
+    "pending": "Pagamento pendente",
+    "buttonTitle": "Pagar R$ 9,90 para destacar por 10 dias",
+    "processing": "Processando...",
+    "highlightPrice": "Destacar (R$ 9,90)",
+    "close": "Fechar",
+    "errors": {
+      "createPayment": "Erro ao criar pagamento",
+      "processPayment": "Erro ao processar pagamento"
+    },
+    "modal": {
+      "savedTitle": "Conteúdo salvo!",
+      "savedSuccess": "foi salvo com sucesso!",
+      "featureTitle": "Destaque por 10 dias",
+      "descriptionMusic": "Destaque sua música na página principal e aumente sua visibilidade!",
+      "descriptionVideo": "Destaque seu vídeo na página principal e aumente sua visibilidade!",
+      "pricePeriod": "por 10 dias",
+      "notNow": "Agora não",
+      "highlightNow": "Destacar agora"
+    }
   }
 }

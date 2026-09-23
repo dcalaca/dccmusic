@@ -3,10 +3,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { FiArrowLeft } from 'react-icons/fi'
 import FeaturedOfferModal from '@/components/FeaturedOfferModal'
 
 export default function NewComposerVideoPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const [composer, setComposer] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -56,14 +58,14 @@ export default function NewComposerVideoPage() {
             className="inline-flex items-center space-x-2 text-primary-400 hover:text-primary-300 mb-6"
           >
             <FiArrowLeft className="w-4 h-4" />
-            <span>Voltar</span>
+            <span>{t('videos.form.back')}</span>
           </Link>
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2">
-              <span className="gradient-text">Novo Vídeo</span>
+              <span className="gradient-text">{t('videos.form.newTitle')}</span>
             </h1>
             <p className="text-gray-400">
-              Cadastre um novo vídeo
+              {t('videos.form.newSubtitle')}
             </p>
           </div>
           <ComposerVideoForm composerId={composer.id} composerName={composer.name} />
@@ -75,6 +77,7 @@ export default function NewComposerVideoPage() {
 
 // Componente wrapper que adapta o VideoForm para compositores
 function ComposerVideoForm({ composerId, composerName }: { composerId: string; composerName: string }) {
+  const { t, i18n } = useTranslation()
   const router = useRouter()
   const [formData, setFormData] = useState({
     title: '',
@@ -248,7 +251,7 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao cadastrar vídeo')
+        throw new Error(i18n.language.startsWith('pt') && data.error ? data.error : t('videos.form.errors.create'))
       }
 
       // Mostrar modal de oferta de destaque
@@ -260,7 +263,7 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
         router.push('/compositores/admin/videos')
       }
     } catch (err: any) {
-      setError(err.message || 'Erro ao cadastrar vídeo')
+      setError(i18n.language.startsWith('pt') ? (err.message || t('videos.form.errors.create')) : t('videos.form.errors.create'))
     } finally {
       setLoading(false)
     }
@@ -275,7 +278,7 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
       )}
 
       <div>
-        <label className="block text-sm font-medium mb-2">Título *</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.title')} *</label>
         <input
           type="text"
           value={formData.title}
@@ -286,18 +289,18 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Slug</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.slug')}</label>
         <input
           type="text"
           value={formData.slug}
           onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-          placeholder="Será gerado automaticamente se vazio"
+          placeholder={t('videos.form.slugPlaceholder')}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">URL do YouTube</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.youtubeUrl')}</label>
         <input
           type="url"
           value={formData.youtubeUrl}
@@ -308,24 +311,24 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Embed do YouTube (opcional)</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.youtubeEmbed')}</label>
         <textarea
           value={formData.youtubeEmbed}
           onChange={(e) => setFormData({ ...formData, youtubeEmbed: e.target.value })}
-          placeholder="Cole o código iframe do YouTube"
+          placeholder={t('videos.form.youtubeEmbedPlaceholder')}
           rows={4}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Gênero</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.genre')}</label>
         <select
           value={formData.genre}
           onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         >
-          <option value="">Selecione um gênero</option>
+          <option value="">{t('videos.form.selectGenre')}</option>
           {genres.map((genre) => (
             <option key={genre} value={genre}>
               {genre}
@@ -335,7 +338,7 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Tags (separadas por vírgula)</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.tags')}</label>
         <input
           type="text"
           value={formData.tags}
@@ -346,7 +349,7 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">Descrição</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.description')}</label>
         <textarea
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -357,7 +360,7 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium mb-2">Data de Publicação</label>
+          <label className="block text-sm font-medium mb-2">{t('videos.form.publishedAt')}</label>
           <input
             type="date"
             value={formData.publishedAt}
@@ -366,12 +369,12 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2">Duração (opcional)</label>
+          <label className="block text-sm font-medium mb-2">{t('videos.form.duration')}</label>
           <input
             type="text"
             value={formData.duration}
             onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-            placeholder="Ex: 3:45"
+            placeholder={t('videos.form.durationPlaceholder')}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
           />
         </div>
@@ -379,7 +382,7 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
 
       {/* Seleção de Compositores */}
       <div>
-        <label className="block text-sm font-medium mb-2">Compositores *</label>
+        <label className="block text-sm font-medium mb-2">{t('videos.form.composers')} *</label>
         
         {/* Compositores selecionados */}
         {selectedComposers.length > 0 && (
@@ -419,7 +422,7 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
               // Delay para permitir clicar nos itens da lista
               setTimeout(() => setShowComposerList(false), 200)
             }}
-            placeholder="Buscar compositor ou criar novo..."
+            placeholder={t('videos.form.composerSearchPlaceholder')}
             className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
           />
           
@@ -451,7 +454,7 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
                 onClick={handleCreateNewComposer}
                 className="w-full text-left px-4 py-2 hover:bg-gray-800 transition-colors text-sm text-primary-400"
               >
-                + Criar novo: "{searchQuery.trim()}"
+                + {t('videos.form.createNewComposer', { name: searchQuery.trim() })}
               </button>
             </div>
           )}
@@ -465,13 +468,13 @@ function ComposerVideoForm({ composerId, composerName }: { composerId: string; c
           disabled={loading}
           className="flex-1 px-4 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium disabled:opacity-50"
         >
-          {loading ? 'Salvando...' : 'Salvar Vídeo'}
+          {loading ? t('videos.form.saving') : t('videos.form.saveVideo')}
         </button>
         <Link
           href="/compositores/admin/videos"
           className="px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
         >
-          Cancelar
+          {t('videos.form.cancel')}
         </Link>
       </div>
 

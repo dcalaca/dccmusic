@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { FiPlay, FiClock } from 'react-icons/fi'
 import { useEffect, useState } from 'react'
-import { formatDateShort, formatIntegerPtBR } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 
 interface VideoCardProps {
   video: {
@@ -21,29 +21,27 @@ interface VideoCardProps {
 }
 
 export default function VideoCard({ video }: VideoCardProps) {
+  const { t, i18n } = useTranslation()
   // Usar a mesma URL de thumbnail que é gerada no formulário
   const thumbnailUrl = video.thumbnailUrl || `https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`
   const [formattedDate, setFormattedDate] = useState<string>('')
   const [formattedViews, setFormattedViews] = useState<string>('')
   const [mounted, setMounted] = useState(false)
-  const [uiLanguage, setUiLanguage] = useState<'pt' | 'en' | 'es'>('pt')
   
   useEffect(() => {
     // Marcar como montado apenas no cliente para evitar hydration mismatch
     setMounted(true)
-    const lang = document.documentElement.lang || ''
-    setUiLanguage(lang.startsWith('en') ? 'en' : lang.startsWith('es') ? 'es' : 'pt')
   }, [])
 
   useEffect(() => {
     // Formatar data e visualizações apenas no cliente após montagem para evitar problemas de hidratação
     if (!mounted) return
     
-    setFormattedDate(formatDateShort(video.publishedAt))
+    setFormattedDate(new Intl.DateTimeFormat(i18n.language, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(video.publishedAt)))
     if (video.viewCount > 0) {
-      setFormattedViews(formatIntegerPtBR(video.viewCount))
+      setFormattedViews(new Intl.NumberFormat(i18n.language).format(video.viewCount))
     }
-  }, [video.publishedAt, video.viewCount, mounted])
+  }, [video.publishedAt, video.viewCount, mounted, i18n.language])
 
   return (
     <Link href={`/videos/${video.slug}`}>
@@ -81,10 +79,10 @@ export default function VideoCard({ video }: VideoCardProps) {
             {video.title}
           </h3>
           <div className="flex items-center justify-between text-xs text-gray-400">
-            <span>{mounted ? formattedDate : formatDateShort(video.publishedAt)}</span>
-            {video.viewCount > 0 && (
+            <span>{mounted ? formattedDate : ''}</span>
+            {mounted && video.viewCount > 0 && (
               <span>
-                {mounted ? formattedViews : formatIntegerPtBR(video.viewCount)} {uiLanguage === 'en' ? 'views' : uiLanguage === 'es' ? 'vistas' : 'visualizações'}
+                {formattedViews} {t('videos.card.views')}
               </span>
             )}
           </div>

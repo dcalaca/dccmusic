@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FiStar, FiX, FiCheckCircle } from 'react-icons/fi'
+import { useTranslation } from 'react-i18next'
 
 interface FeaturedOfferModalProps {
   contentType: 'music' | 'video'
@@ -19,6 +20,7 @@ export default function FeaturedOfferModal({
   composerId,
   onClose,
 }: FeaturedOfferModalProps) {
+  const { t, i18n } = useTranslation()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
@@ -27,7 +29,7 @@ export default function FeaturedOfferModal({
     try {
       const token = localStorage.getItem('composer_token')
       if (!token) {
-        alert('Faça login para continuar')
+        alert(t('featured.loginRequired'))
         return
       }
 
@@ -46,7 +48,7 @@ export default function FeaturedOfferModal({
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao criar pagamento')
+        throw new Error(i18n.language.startsWith('pt') && data.error ? data.error : t('featured.errors.createPayment'))
       }
 
       // Redirecionar para Mercado Pago
@@ -56,7 +58,7 @@ export default function FeaturedOfferModal({
       }
     } catch (error: any) {
       console.error('Erro ao pagar destaque:', error)
-      alert(error.message || 'Erro ao processar pagamento')
+      alert(i18n.language.startsWith('pt') ? (error.message || t('featured.errors.processPayment')) : t('featured.errors.processPayment'))
       setLoading(false)
     }
   }
@@ -66,6 +68,7 @@ export default function FeaturedOfferModal({
       <div className="bg-gray-900 border border-gray-800 rounded-lg max-w-md w-full p-6 relative">
         <button
           onClick={onClose}
+          aria-label={t('featured.close')}
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
         >
           <FiX className="w-5 h-5" />
@@ -76,24 +79,24 @@ export default function FeaturedOfferModal({
             <FiStar className="w-8 h-8 text-yellow-400" />
           </div>
           <h2 className="text-2xl font-bold mb-2">
-            <span className="gradient-text">Conteúdo Salvo!</span>
+            <span className="gradient-text">{t('featured.modal.savedTitle')}</span>
           </h2>
           <p className="text-gray-300 mb-4">
-            <strong className="text-white">{contentTitle}</strong> foi salvo com sucesso!
+            <strong className="text-white">{contentTitle}</strong> {t('featured.modal.savedSuccess')}
           </p>
         </div>
 
         <div className="bg-primary-900/20 border border-primary-800 rounded-lg p-4 mb-6">
           <h3 className="text-lg font-semibold text-primary-300 mb-2 flex items-center gap-2">
             <FiCheckCircle className="w-5 h-5" />
-            Destaque por 10 dias
+            {t('featured.modal.featureTitle')}
           </h3>
           <p className="text-gray-300 text-sm mb-3">
-            Destaque sua {contentType === 'music' ? 'música' : 'vídeo'} na página principal e aumente sua visibilidade!
+            {contentType === 'music' ? t('featured.modal.descriptionMusic') : t('featured.modal.descriptionVideo')}
           </p>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-bold text-yellow-400">R$ 9,90</span>
-            <span className="text-gray-400 text-sm">por 10 dias</span>
+            <span className="text-gray-400 text-sm">{t('featured.modal.pricePeriod')}</span>
           </div>
         </div>
 
@@ -102,7 +105,7 @@ export default function FeaturedOfferModal({
             onClick={onClose}
             className="flex-1 px-4 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors font-medium"
           >
-            Agora não
+            {t('featured.modal.notNow')}
           </button>
           <button
             onClick={handlePayFeatured}
@@ -112,12 +115,12 @@ export default function FeaturedOfferModal({
             {loading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span>Processando...</span>
+                <span>{t('featured.processing')}</span>
               </>
             ) : (
               <>
                 <FiStar className="w-4 h-4" />
-                <span>Destacar Agora</span>
+                <span>{t('featured.modal.highlightNow')}</span>
               </>
             )}
           </button>
