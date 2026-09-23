@@ -2468,6 +2468,7 @@ function PendingMusicRequestSummary({
   voicePreferences?: string
   onRefresh: () => Promise<void>
 }) {
+  const { t } = useTranslation()
   const [refreshing, setRefreshing] = useState(false)
   const headingRef = useRef<HTMLHeadingElement | null>(null)
   const summaryItems = [
@@ -2591,6 +2592,7 @@ function StudioProcessing({
   previewAudioUrl?: string
   onClose?: () => void
 }) {
+  const { t } = useTranslation()
   const isCover = message.toLowerCase().includes('capa')
   const steps = isCover
     ? ['Interpretando a letra', 'Criando direção visual', 'Gerando imagem', 'Salvando capa no projeto']
