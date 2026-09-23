@@ -1637,5 +1637,93 @@
     "views": "{{formattedCount}} views",
     "copied": "Copied!",
     "openPlatform": "Open on music platform"
+  },
+  "about": {
+    "title": "About DCC Music",
+    "hero": "DCC Music helps songwriters turn ideas into complete songs, generate chord sheets, organise projects and share their creations professionally.",
+    "studioCta": "Discover Studio AI",
+    "chords": "Song chords",
+    "composersCta": "Browse songwriters",
+    "whyTitle": "Why DCC Music exists",
+    "why1": "Many people have a good song idea but do not know how to turn it into a finished song. They may need organised lyrics, production, cover art, promotion or simply an easy tool to use.",
+    "why2": "DCC Music was created to bridge that gap. It brings AI creation, project organisation, a songwriter workspace, songs, videos and sharing tools together in one place.",
+    "why3": "Simplicity comes first. Songwriters can write an idea, submit lyrics, record themselves singing a passage or upload a song to improve. Studio AI helps develop it into a more complete track.",
+    "why4": "Every creation is saved in a project with its history, versions, date, lyrics, audio and cover art. Songwriters can return later, compare versions and choose which song to keep developing.",
+    "studioBadge": "AI music creation",
+    "studioTitle": "Studio AI: from idea to finished song",
+    "studio1": "Studio AI helps songwriters at every stage: write or improve lyrics, generate songs, record vocals in the browser, use a version as inspiration, create cover art and keep everything organised.",
+    "studio2": "The goal is to give songwriters control. You do not need technical experience: describe what you want to create and follow the project in your account.",
+    "studioExplore": "Explore Studio AI",
+    "studioItem1Title": "AI lyrics",
+    "studioItem1Text": "Create, improve or complete lyrics with ease.",
+    "studioItem2Title": "Record on the site",
+    "studioItem2Text": "Sing a passage and use your recording as a reference.",
+    "studioItem3Title": "Song versions",
+    "studioItem3Text": "Listen to the generated versions and choose your favourite.",
+    "studioItem4Title": "Saved projects",
+    "studioItem4Text": "Keep lyrics, audio, cover art and history organised.",
+    "chordsTitle": "Song chords: ready to play",
+    "chords1": "After creating a song in Studio AI, you can generate a PDF chord sheet with lyrics, chords, key and BPM. It is saved in your account under My Projects, in the Chords filter.",
+    "chords2": "This service costs 10 credits per song and is available for songs created in Studio AI.",
+    "chordsCta": "Generate chord sheet",
+    "chordsItem1Title": "PDF chord sheet",
+    "chordsItem1Text": "Ready to print and play.",
+    "chordsItem2Title": "Lyrics and chords",
+    "chordsItem2Text": "A clearly organised chord sheet.",
+    "chordsItem3Title": "Key and BPM",
+    "chordsItem3Text": "Song details when available.",
+    "chordsItem4Title": "Saved history",
+    "chordsItem4Text": "Download it again whenever you like.",
+    "featuresTitle": "What the platform offers",
+    "valuesTitle": "Our approach",
+    "value1Title": "Music comes first",
+    "value1Text": "Technology should serve music and make life easier for songwriters.",
+    "value2Title": "Simplicity",
+    "value2Text": "The platform is designed so anyone can create with ease.",
+    "value3Title": "Organisation",
+    "value3Text": "Every song should be saved, easy to find and ready to develop further.",
+    "historyTitle": "Organised history",
+    "historyText": "Studio AI projects keep lyrics, audio, versions, cover art and dates together. This helps songwriters follow each song’s progress.",
+    "promotionTitle": "From creation to sharing",
+    "promotionText": "Songwriters can create privately, choose their favourite version and then share or publish their music with a professional presentation.",
+    "helpTitle": "Need help?",
+    "helpText": "Contact support. If your question is about a Studio AI song, include the project code so we can help you faster.",
+    "showEmail": "Show email",
+    "copyEmail": "Copy email",
+    "schemaDescription": "Explore DCC Music: Studio AI for creating songs, song chords and tools to help songwriters share their work.",
+    "metaTitle": "What is DCC Music? | AI Music and Chords",
+    "metaDescription": "DCC Music is a platform for creating songs with AI, generating chord sheets, organising projects and sharing songwriters’ work.",
+    "metaOgTitle": "What is DCC Music? | AI Music Platform",
+    "metaOgDescription": "DCC Music brings together Studio AI, chord sheets, music projects and tools to help songwriters create and share their work.",
+    "metaTwitterTitle": "What is DCC Music?",
+    "metaTwitterDescription": "Create songs with AI, generate chord sheets, organise projects and share your work.",
+    "feature1": {
+      "title": "DCC Studio AI",
+      "description": "Create lyrics, complete songs, versions, cover art and organised projects with the help of AI."
+    },
+    "feature2": {
+      "title": "Song chords",
+      "description": "Organise lyrics and chords into a sheet you can play and print."
+    },
+    "feature3": {
+      "title": "Easy creation",
+      "description": "Turn an idea, a sung passage or lyrics into a finished song."
+    },
+    "feature4": {
+      "title": "Songs and versions",
+      "description": "Keep lyrics, audio, cover art, history and versions in each project."
+    },
+    "feature5": {
+      "title": "Sharing",
+      "description": "Songs, videos, profiles and public links help songwriters present their work professionally."
+    },
+    "feature6": {
+      "title": "Songwriter workspace",
+      "description": "Manage your details, songs, videos, credits and Studio AI creations in one place."
+    },
+    "feature7": {
+      "title": "Plans and credits",
+      "description": "Use monthly plans or one-off top-ups to create more songs when you need them."
+    }
   }
 }

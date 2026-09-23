@@ -1637,5 +1637,93 @@
     "views": "{{formattedCount}} visualizaciones",
     "copied": "¡Copiado!",
     "openPlatform": "Abrir en la plataforma"
+  },
+  "about": {
+    "title": "Sobre DCC Music",
+    "hero": "DCC Music ayuda a los compositores a transformar ideas en canciones completas, generar partituras con acordes, organizar proyectos y dar a conocer sus creaciones de forma profesional.",
+    "studioCta": "Conoce Studio IA",
+    "chords": "Acordes de la canción",
+    "composersCta": "Ver compositores",
+    "whyTitle": "Por qué existe DCC Music",
+    "why1": "Muchas personas tienen una buena idea para una canción, pero no saben cómo convertirla en una canción terminada. A veces faltan letras organizadas, producción, portada, promoción o simplemente una herramienta fácil de usar.",
+    "why2": "DCC Music nació para acortar esa distancia. La plataforma reúne creación con IA, organización de proyectos, un espacio para compositores, canciones, vídeos y herramientas de promoción en un solo lugar.",
+    "why3": "La sencillez es lo primero. El compositor puede escribir una idea, enviar una letra, grabar un fragmento cantado o subir una canción para mejorarla. Studio IA le ayuda a continuar hasta tener una canción más completa.",
+    "why4": "Cada creación se guarda en un proyecto con historial, versiones, fecha, letra, audio y portada. Así, el compositor puede volver después, comparar versiones y elegir la mejor canción para seguir trabajando.",
+    "studioBadge": "Creación musical con IA",
+    "studioTitle": "Studio IA: de la idea a la canción terminada",
+    "studio1": "Studio IA ayuda al compositor en cada etapa: escribir o mejorar letras, generar canciones, grabar la voz en el navegador, usar una versión como inspiración, crear portadas y mantener todo organizado.",
+    "studio2": "La idea es dar autonomía a quien compone. No necesitas conocimientos técnicos: solo indica qué quieres crear y sigue el proyecto desde tu cuenta.",
+    "studioExplore": "Explorar Studio IA",
+    "studioItem1Title": "Letras con IA",
+    "studioItem1Text": "Crea, mejora o completa letras fácilmente.",
+    "studioItem2Title": "Grabar en el sitio",
+    "studioItem2Text": "Canta un fragmento y usa la grabación como referencia.",
+    "studioItem3Title": "Versiones de la canción",
+    "studioItem3Text": "Escucha las versiones generadas y elige la mejor.",
+    "studioItem4Title": "Proyectos guardados",
+    "studioItem4Text": "Letra, audio, portada e historial siempre organizados.",
+    "chordsTitle": "Acordes de la canción: listos para tocar",
+    "chords1": "Después de crear una canción en Studio IA, puedes generar un PDF con letra, acordes, tonalidad y BPM. Se guarda en tu cuenta, en Mis Proyectos, dentro del filtro Acordes.",
+    "chords2": "El servicio cuesta 10 créditos por canción y está disponible para canciones creadas en Studio IA.",
+    "chordsCta": "Generar acordes",
+    "chordsItem1Title": "Acordes en PDF",
+    "chordsItem1Text": "Listo para imprimir y tocar.",
+    "chordsItem2Title": "Letra y acordes",
+    "chordsItem2Text": "Acordes organizados con claridad.",
+    "chordsItem3Title": "Tonalidad y BPM",
+    "chordsItem3Text": "Datos de la canción cuando estén disponibles.",
+    "chordsItem4Title": "Historial guardado",
+    "chordsItem4Text": "Descárgalo de nuevo cuando quieras.",
+    "featuresTitle": "Qué ofrece la plataforma",
+    "valuesTitle": "Nuestra forma de trabajar",
+    "value1Title": "La música es lo primero",
+    "value1Text": "La tecnología debe estar al servicio de la música y facilitar la vida del compositor.",
+    "value2Title": "Sencillez",
+    "value2Text": "La plataforma está diseñada para que cualquiera pueda crear fácilmente.",
+    "value3Title": "Organización",
+    "value3Text": "Cada canción debe quedar registrada, ser fácil de encontrar y estar lista para seguir trabajando.",
+    "historyTitle": "Historial organizado",
+    "historyText": "Los proyectos de Studio IA guardan letra, audio, versiones, portada y fecha. Así puedes seguir el progreso de cada canción.",
+    "promotionTitle": "De la creación a la difusión",
+    "promotionText": "Puedes crear en privado, elegir la mejor versión y después compartir o publicar tu música con una presentación profesional.",
+    "helpTitle": "¿Necesitas ayuda?",
+    "helpText": "Contacta con soporte. Si tu consulta es sobre una canción de Studio IA, incluye el código del proyecto para facilitar la atención.",
+    "showEmail": "Mostrar correo",
+    "copyEmail": "Copiar correo",
+    "schemaDescription": "Conoce DCC Music: Studio IA para crear canciones, acordes y herramientas para que los compositores difundan su obra.",
+    "metaTitle": "¿Qué es DCC Music? | Música con IA y acordes",
+    "metaDescription": "DCC Music es una plataforma para crear canciones con inteligencia artificial, generar acordes, organizar proyectos y difundir obras de compositores.",
+    "metaOgTitle": "¿Qué es DCC Music? | Plataforma de música con IA",
+    "metaOgDescription": "DCC Music reúne Studio IA, acordes, proyectos musicales y herramientas para crear y difundir obras.",
+    "metaTwitterTitle": "¿Qué es DCC Music?",
+    "metaTwitterDescription": "Crea canciones con IA, genera acordes, organiza proyectos y difunde tus obras.",
+    "feature1": {
+      "title": "DCC Studio IA",
+      "description": "Crea letras, canciones completas, versiones, portadas y proyectos organizados con ayuda de la IA."
+    },
+    "feature2": {
+      "title": "Acordes de la canción",
+      "description": "Organiza letras y acordes en un documento listo para tocar e imprimir."
+    },
+    "feature3": {
+      "title": "Creación sencilla",
+      "description": "Transforma una idea, un fragmento cantado o una letra en una canción terminada."
+    },
+    "feature4": {
+      "title": "Canciones y versiones",
+      "description": "Guarda letras, audio, portadas, historial y versiones en cada proyecto."
+    },
+    "feature5": {
+      "title": "Difusión",
+      "description": "Canciones, vídeos, perfiles y enlaces públicos ayudan a presentar tu trabajo profesionalmente."
+    },
+    "feature6": {
+      "title": "Espacio del compositor",
+      "description": "Gestiona tus datos, canciones, vídeos, créditos y creaciones de Studio IA en un solo lugar."
+    },
+    "feature7": {
+      "title": "Planes y créditos",
+      "description": "Usa planes mensuales o recargas puntuales para crear más canciones cuando lo necesites."
+    }
   }
 }
