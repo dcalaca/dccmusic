@@ -358,6 +358,107 @@
           "title": "Create song",
           "subtitle": "AI composes for you"
         }
+      },
+      "customStyleOption": "Other / enter my style",
+      "customStyleExample": "Example: cinematic indie pop",
+      "structureHint": "Use Standard to let AI choose the best song structure.",
+      "instrumentExamples": "Example: acoustic guitar, piano, strings",
+      "avoidInstruments": "Instruments to avoid (optional)",
+      "avoidInstrumentsExample": "Example: synthesizer, electric guitar",
+      "extraInstructionsExample": "Example: use my saved voice with a calm, expressive male performance.",
+      "saveLyricsHeading": "Save lyrics and open project",
+      "generateLyricsHeading": "Generate professional lyrics",
+      "lyricsCostHint": "Generating lyrics uses no credits. Creating the song afterward costs {{cost}} credits.",
+      "savingLyrics": "Saving lyrics...",
+      "creatingLyrics": "Creating lyrics...",
+      "saveProject": "Save and Create Project",
+      "createSong": "Create my song",
+      "approxSongs": "You can create about {{count}} song(s).",
+      "freeSongs": "+ {{count}} free song(s)",
+      "sampleSongTitle": "False Key",
+      "sampleLyrics": "[Verse]\nI keep a secret in my heart\nI never found the words to say\n\n[Chorus]\nMy heart speaks in silence\nBut it only calls your name",
+      "optionLabels": {
+        "romantic": "Romantic",
+        "heartbreak": "Heartbreak",
+        "catchy": "Catchy",
+        "funny": "Funny",
+        "reflective": "Reflective",
+        "ballad": "Ballad",
+        "sad": "Sad",
+        "motivational": "Motivational",
+        "standard": "Standard",
+        "structureABC": "A/B/Chorus/C/Chorus",
+        "structureABA": "A/Chorus/A/Chorus",
+        "short": "Short",
+        "medium": "Medium",
+        "long": "Long",
+        "aiChoose": "Let AI choose",
+        "maleVoice": "Male voice",
+        "femaleVoice": "Female voice",
+        "duet": "Male and female duet",
+        "lowVoice": "Low voice",
+        "midVoice": "Mid-range voice",
+        "highVoice": "High voice",
+        "raspyVoice": "Raspy voice",
+        "softVoice": "Soft voice",
+        "powerfulVoice": "Powerful voice"
+      },
+      "languageLabels": {
+        "enUS": "English (United States)",
+        "enGB": "English (United Kingdom)",
+        "ptBR": "Portuguese (Brazil)",
+        "ptPT": "Portuguese (Portugal)",
+        "esPY": "Spanish (Paraguay)",
+        "esCO": "Spanish (Colombia)",
+        "esMX": "Spanish (Mexico)",
+        "esES": "Spanish (Spain)"
+      },
+      "lyricOptions": {
+        "avoidCliches": "Avoid clichés",
+        "avoidChildishRhymes": "Avoid childish rhymes",
+        "avoidRepeatedWords": "Avoid repeated words",
+        "stickyChorus": "Make the chorus catchier",
+        "popularLanguage": "Use everyday language",
+        "sophisticatedLanguage": "Use sophisticated language"
+      },
+      "themes": {
+        "amor": {
+          "label": "Love",
+          "text": "A true love story filled with affection, desire, and the wish to stay together."
+        },
+        "termino": {
+          "label": "Breakup",
+          "text": "The end of a relationship, the pain of saying goodbye, and the struggle to move on."
+        },
+        "sofrencia": {
+          "label": "Heartbreak",
+          "text": "Someone who is still in love, suffers in silence, and cannot forget the person they loved."
+        },
+        "saudade": {
+          "label": "Missing someone",
+          "text": "Missing someone special, the memories they shared, and moments that will never return."
+        },
+        "perdao": {
+          "label": "Forgiveness",
+          "text": "A sincere apology filled with regret and the desire to start over."
+        },
+        "fe": {
+          "label": "Faith",
+          "text": "A message of faith, hope, and strength to get through difficult times."
+        },
+        "festa": {
+          "label": "Party",
+          "text": "A night of celebration, joy, friendship, and living in the moment."
+        },
+        "superacao": {
+          "label": "Overcoming",
+          "text": "Someone who fell, got back up, and discovered their own strength along the way."
+        }
+      },
+      "highlights": {
+        "professionalLyrics": "Professional lyrics",
+        "readyToSing": "Ready to sing",
+        "inSeconds": "In seconds"
       }
     },
     "projects": {

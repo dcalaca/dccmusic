@@ -188,62 +188,28 @@ function getStudioCountryPreset(country: string) {
   return { language: 'Português (Brasil)', defaultStyle: 'Sertanejo', styleOptions: null as string[] | null, isSpanish: false }
 }
 
-const themeSuggestions = [
-  { id: 'amor', label: 'Amor', text: 'Uma história de amor verdadeira, com carinho, desejo e a vontade de ficar juntos.' },
-  { id: 'termino', label: 'Término', text: 'O fim de um relacionamento, a dor da despedida e a dificuldade de seguir em frente.' },
-  { id: 'sofrencia', label: 'Sofrência', text: 'Alguém que ainda ama, sofre em silêncio e não consegue esquecer a pessoa amada.' },
-  { id: 'saudade', label: 'Saudade', text: 'A saudade de alguém especial, das memórias e dos momentos que não voltam mais.' },
-  { id: 'perdao', label: 'Perdão', text: 'Um pedido de perdão sincero, com arrependimento e vontade de recomeçar.' },
-  { id: 'fe', label: 'Fé', text: 'Uma mensagem de fé, esperança e força para atravessar os momentos difíceis.' },
-  { id: 'festa', label: 'Festa', text: 'Uma noite de festa, alegria, amizade e vontade de curtir sem pensar no amanhã.' },
-  { id: 'superacao', label: 'Superação', text: 'Uma pessoa que caiu, se levantou e descobriu a própria força no caminho.' },
-]
-const themeSuggestionsEsPy = [
-  { id: 'amor', label: 'Amor', text: 'Una historia de amor verdadero, con cariño, deseo y ganas de permanecer juntos.' },
-  { id: 'termino', label: 'Ruptura', text: 'El final de una relación, el dolor de la despedida y la dificultad de seguir adelante.' },
-  { id: 'sofrencia', label: 'Desamor', text: 'Alguien que todavía ama, sufre en silencio y no logra olvidar a la persona amada.' },
-  { id: 'saudade', label: 'Añoranza', text: 'La añoranza de alguien especial, de los recuerdos y de los momentos que ya no volverán.' },
-  { id: 'perdao', label: 'Perdón', text: 'Un pedido sincero de perdón, con arrepentimiento y deseos de comenzar de nuevo.' },
-  { id: 'fe', label: 'Fe', text: 'Un mensaje de fe, esperanza y fortaleza para atravesar los momentos difíciles.' },
-  { id: 'festa', label: 'Fiesta', text: 'Una noche de fiesta, alegría y amistad, con ganas de disfrutar sin pensar en mañana.' },
-  { id: 'superacao', label: 'Superación', text: 'Una persona que cayó, volvió a levantarse y descubrió su propia fuerza en el camino.' },
-]
-const themeSuggestionsEn = [
-  { id: 'amor', label: 'Love', text: 'A true love story filled with affection, desire, and the wish to stay together.' },
-  { id: 'termino', label: 'Breakup', text: 'The end of a relationship, the pain of saying goodbye, and the struggle to move on.' },
-  { id: 'sofrencia', label: 'Heartbreak', text: 'Someone who is still in love, suffers in silence, and cannot forget the person they loved.' },
-  { id: 'saudade', label: 'Missing someone', text: 'Missing someone special, the memories they shared, and moments that will never return.' },
-  { id: 'perdao', label: 'Forgiveness', text: 'A sincere apology filled with regret and the desire to start over.' },
-  { id: 'fe', label: 'Faith', text: 'A message of faith, hope, and strength to get through difficult times.' },
-  { id: 'festa', label: 'Party', text: 'A night of celebration, joy, friendship, and living in the moment.' },
-  { id: 'superacao', label: 'Overcoming', text: 'Someone who fell, got back up, and discovered their own strength along the way.' },
-]
+const themeIds = ['amor', 'termino', 'sofrencia', 'saudade', 'perdao', 'fe', 'festa', 'superacao'] as const
 
-const englishOptionLabels: Record<string, string> = {
-  'Romântica': 'Romantic',
-  'Sofrência': 'Heartbreak',
-  'Chiclete': 'Catchy',
-  'Engraçada': 'Funny',
-  'Reflexiva': 'Reflective',
-  'Balada': 'Ballad',
-  'Triste': 'Sad',
-  'Motivacional': 'Motivational',
-  'Padrão': 'Standard',
-  'A/B/Refrão/C/Refrão': 'A/B/Chorus/C/Chorus',
-  'A/Refrão/A/Refrão': 'A/Chorus/A/Chorus',
-  'curta': 'Short',
-  'média': 'Medium',
-  'longa': 'Long',
-  'Deixar a IA escolher': 'Let AI choose',
-  'Voz masculina': 'Male voice',
-  'Voz feminina': 'Female voice',
-  'Dueto masculino e feminino': 'Male and female duet',
-  'Voz grave': 'Low voice',
-  'Voz média': 'Mid-range voice',
-  'Voz aguda': 'High voice',
-  'Voz rouca': 'Raspy voice',
-  'Voz suave': 'Soft voice',
-  'Voz forte': 'Powerful voice',
+const optionLabelKeys: Record<string, string> = {
+  'Romântica': 'romantic', 'Sofrência': 'heartbreak', 'Chiclete': 'catchy',
+  'Engraçada': 'funny', 'Reflexiva': 'reflective', 'Balada': 'ballad',
+  'Triste': 'sad', 'Motivacional': 'motivational', 'Padrão': 'standard',
+  'Estándar': 'standard', 'A/B/Refrão/C/Refrão': 'structureABC',
+  'A/Refrão/A/Refrão': 'structureABA',
+  'A/B/Estribillo/C/Estribillo': 'structureABC',
+  'A/Estribillo/A/Estribillo': 'structureABA',
+  'curta': 'short', 'média': 'medium', 'longa': 'long',
+  'Deixar a IA escolher': 'aiChoose', 'Voz masculina': 'maleVoice',
+  'Voz feminina': 'femaleVoice', 'Dueto masculino e feminino': 'duet',
+  'Voz grave': 'lowVoice', 'Voz média': 'midVoice', 'Voz aguda': 'highVoice',
+  'Voz rouca': 'raspyVoice', 'Voz suave': 'softVoice', 'Voz forte': 'powerfulVoice',
+}
+
+const songLanguageLabelKeys: Record<string, string> = {
+  'English (United States)': 'enUS', 'English (United Kingdom)': 'enGB',
+  'Português (Brasil)': 'ptBR', 'Português (Portugal)': 'ptPT',
+  'Español (Paraguay)': 'esPY', 'Español (Colombia)': 'esCO',
+  'Español (México)': 'esMX', 'Español (España)': 'esES',
 }
 
 function canCreateFromStudioStatus(status: any) {
@@ -278,18 +244,20 @@ export default function NewStudioMusicPage() {
   const { t, i18n } = useTranslation()
   const router = useRouter()
   const { country } = useLocalization()
-  const isParaguay = country === 'PY'
-  const isColombia = country === 'CO'
-  const isPortugal = country === 'PT'
-  const isMexico = country === 'MX'
-  const isSpain = String(country) === 'ES'
-  const isEnglish = String(country) === 'US' || String(country) === 'GB'
   const countryPreset = getStudioCountryPreset(country)
   const isSpanish = countryPreset.isSpanish
-  const localizedThemeSuggestions = isEnglish ? themeSuggestionsEn : isSpanish ? themeSuggestionsEsPy : themeSuggestions
   const localizedStructures = isSpanish
     ? ['Estándar', 'A/B/Estribillo/C/Estribillo', 'A/Estribillo/A/Estribillo']
     : structures
+  const optionLabels = Object.fromEntries(
+    Object.entries(optionLabelKeys).map(([value, key]) => [value, t(`studio.create.optionLabels.${key}`)])
+  )
+  for (const value of [customStyleOption, customStyleOptionEs, customStyleOptionEn]) {
+    optionLabels[value] = t('studio.create.customStyleOption')
+  }
+  const languageLabels = Object.fromEntries(
+    Object.entries(songLanguageLabelKeys).map(([value, key]) => [value, t(`studio.create.languageLabels.${key}`)])
+  )
   const errorRef = useRef<HTMLDivElement>(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -459,13 +427,12 @@ export default function NewStudioMusicPage() {
     }, 50)
   }
   const applyThemeSuggestion = (themeId: string) => {
-    const theme = localizedThemeSuggestions.find((item) => item.id === themeId)
-    if (!theme) return
+    if (!themeIds.some((id) => id === themeId)) return
     setSelectedTheme(themeId)
     setHasOwnLyric(false)
     setForm((current) => ({
       ...current,
-      idea: theme.text.slice(0, ideaMaxLength),
+      idea: t(`studio.create.themes.${themeId}.text`).slice(0, ideaMaxLength),
       mood: themeId === 'festa' ? 'Chiclete' : themeId === 'fe' || themeId === 'superacao' ? 'Motivacional' : current.mood,
     }))
     setError('')
@@ -671,9 +638,9 @@ export default function NewStudioMusicPage() {
                     </p>
                     <div className="mt-5 flex flex-wrap gap-2">
                       {([
-                        { label: isEnglish ? 'Professional lyrics' : 'Letra profissional', Icon: FiFileText },
-                        { label: isEnglish ? 'Ready to sing' : 'Pronta para cantar', Icon: FiMusic },
-                        { label: isEnglish ? 'In seconds' : 'Em segundos', Icon: FiClock },
+                        { label: t('studio.create.highlights.professionalLyrics'), Icon: FiFileText },
+                        { label: t('studio.create.highlights.readyToSing'), Icon: FiMusic },
+                        { label: t('studio.create.highlights.inSeconds'), Icon: FiClock },
                       ] as const).map(({ label, Icon }) => (
                         <div
                           key={label}
@@ -693,7 +660,7 @@ export default function NewStudioMusicPage() {
                           <FiPlay className="h-5 w-5" />
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-black text-white">{isEnglish ? 'False Key' : 'Chave Falsa'}</p>
+                          <p className="truncate text-sm font-black text-white">{t('studio.create.sampleSongTitle')}</p>
                           <p className="truncate text-xs text-purple-200/70">{t('studio.new.preview.style')}</p>
                         </div>
                       </div>
@@ -757,6 +724,7 @@ export default function NewStudioMusicPage() {
                           : t('studio.create.fields.style')}
                         value={form.style}
                         options={styles}
+                        optionLabels={optionLabels}
                         onChange={(value) => setForm({ ...form, style: value })}
                       />
                       {isCustomStyle ? (
@@ -765,18 +733,18 @@ export default function NewStudioMusicPage() {
                           <input
                             value={form.customStyle}
                             onChange={(e) => setForm({ ...form, customStyle: e.target.value })}
-                            placeholder={isEnglish ? 'Example: cinematic indie pop' : isMexico ? 'Ej.: corrido romántico con sierreño' : isSpain ? 'Ej.: flamenco pop con guitarra española' : isPortugal ? 'Ex.: fado pop contemporâneo' : 'Ex: piseiro romântico'}
+                            placeholder={t('studio.create.customStyleExample')}
                             className="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/55"
                           />
                         </div>
                       ) : (
-                        <Select label={t('studio.create.fields.mood')} value={form.mood} options={moods} optionLabels={isEnglish ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, mood: value })} />
+                        <Select label={t('studio.create.fields.mood')} value={form.mood} options={moods} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, mood: value })} />
                       )}
                       {isCustomStyle && (
-                        <Select label={t('studio.create.fields.mood')} value={form.mood} options={moods} optionLabels={isEnglish ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, mood: value })} />
+                        <Select label={t('studio.create.fields.mood')} value={form.mood} options={moods} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, mood: value })} />
                       )}
-                      <Select label={t('studio.create.fields.lyricsLength')} value={form.lineCount} options={lineCounts} optionLabels={isEnglish ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, lineCount: value })} />
-                      <Select label={t('studio.create.fields.language')} value={form.songLanguage} options={songLanguages} onChange={(value) => setForm({ ...form, songLanguage: value })} />
+                      <Select label={t('studio.create.fields.lyricsLength')} value={form.lineCount} options={lineCounts} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, lineCount: value })} />
+                      <Select label={t('studio.create.fields.language')} value={form.songLanguage} options={songLanguages} optionLabels={languageLabels} onChange={(value) => setForm({ ...form, songLanguage: value })} />
                     </div>
                   </section>
 
@@ -785,8 +753,8 @@ export default function NewStudioMusicPage() {
 
                     <div className="mt-5 grid gap-3">
                       <div className="grid gap-3 sm:grid-cols-2">
-                        <Select label={t('studio.create.fields.voiceType')} value={form.voiceGender} options={voiceGenders} optionLabels={isEnglish ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, voiceGender: value })} />
-                        <Select label={t('studio.create.fields.voiceTone')} value={form.voiceTone} options={voiceTones} optionLabels={isEnglish ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, voiceTone: value })} />
+                        <Select label={t('studio.create.fields.voiceType')} value={form.voiceGender} options={voiceGenders} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, voiceGender: value })} />
+                        <Select label={t('studio.create.fields.voiceTone')} value={form.voiceTone} options={voiceTones} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, voiceTone: value })} />
                       </div>
 
                       <div className="rounded-2xl border border-purple-300/15 bg-black/30 p-3.5">
@@ -831,18 +799,18 @@ export default function NewStudioMusicPage() {
                       <div className="mb-3">
                         <p className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-gray-500">{t('studio.create.themeIdeas')}</p>
                         <div className="flex flex-wrap gap-2">
-                          {localizedThemeSuggestions.map((theme) => (
+                          {themeIds.map((themeId) => (
                             <button
-                              key={theme.id}
+                              key={themeId}
                               type="button"
-                              onClick={() => applyThemeSuggestion(theme.id)}
+                              onClick={() => applyThemeSuggestion(themeId)}
                               className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
-                                selectedTheme === theme.id
+                                selectedTheme === themeId
                                   ? 'border-primary-400/60 bg-primary-500/20 text-primary-100'
                                   : 'border-white/10 bg-black/25 text-gray-300 hover:border-primary-400/40 hover:text-white'
                               }`}
                             >
-                              {theme.label}
+                              {t(`studio.create.themes.${themeId}.label`)}
                             </button>
                           ))}
                         </div>
@@ -895,12 +863,12 @@ export default function NewStudioMusicPage() {
                       <div className="mt-3 space-y-3">
                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                           {[
-                            ['avoidCliches', isEnglish ? 'Avoid clichés' : isSpanish ? 'Evitar clichés' : 'Evitar clichês'],
-                            ['avoidChildishRhymes', isEnglish ? 'Avoid childish rhymes' : isSpanish ? 'Evitar rimas infantiles' : 'Evitar rimas infantis'],
-                            ['avoidRepeatedWords', isEnglish ? 'Avoid repeated words' : isSpanish ? 'Evitar palabras repetidas' : 'Evitar palavras repetidas'],
-                            ['stickyChorus', isEnglish ? 'Make the chorus catchier' : isSpanish ? 'Estribillo más pegadizo' : 'Refrão mais chiclete'],
-                            ['popularLanguage', isEnglish ? 'Use everyday language' : isSpanish ? 'Lenguaje más popular' : 'Linguagem mais popular'],
-                            ['sophisticatedLanguage', isEnglish ? 'Use sophisticated language' : isSpanish ? 'Lenguaje más sofisticado' : 'Linguagem mais sofisticada'],
+                            ['avoidCliches', t('studio.create.lyricOptions.avoidCliches')],
+                            ['avoidChildishRhymes', t('studio.create.lyricOptions.avoidChildishRhymes')],
+                            ['avoidRepeatedWords', t('studio.create.lyricOptions.avoidRepeatedWords')],
+                            ['stickyChorus', t('studio.create.lyricOptions.stickyChorus')],
+                            ['popularLanguage', t('studio.create.lyricOptions.popularLanguage')],
+                            ['sophisticatedLanguage', t('studio.create.lyricOptions.sophisticatedLanguage')],
                           ].map(([key, label]) => (
                             <label key={key} className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/25 px-3 py-2.5 text-xs font-bold text-gray-200 transition hover:border-primary-400/30 sm:text-sm">
                               <input
@@ -915,13 +883,9 @@ export default function NewStudioMusicPage() {
                         </div>
 
                         <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                          <Select label={t('studio.create.fields.structure')} value={form.structure} options={localizedStructures} optionLabels={isEnglish ? englishOptionLabels : undefined} onChange={(value) => setForm({ ...form, structure: value })} />
+                          <Select label={t('studio.create.fields.structure')} value={form.structure} options={localizedStructures} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, structure: value })} />
                           <p className="mt-1.5 text-[11px] leading-relaxed text-gray-500">
-                            {isEnglish
-                              ? 'Use Standard to let AI choose the best song structure.'
-                              : isSpanish
-                              ? 'Usa Estándar para que la IA elija la mejor organización de la canción.'
-                              : 'Use Padrão para deixar a IA escolher a melhor organização da música.'}
+                            {t('studio.create.structureHint')}
                           </p>
                         </div>
 
@@ -931,27 +895,17 @@ export default function NewStudioMusicPage() {
                             <input
                               value={form.wantInstruments}
                               onChange={(e) => setForm({ ...form, wantInstruments: e.target.value })}
-                              placeholder={isParaguay
-                                ? 'Ej.: guitarra, arpa paraguaya, piano'
-                                : isColombia
-                                  ? 'Ej.: acordeón, caja vallenata, guitarra'
-                                  : isMexico
-                                    ? 'Ej.: acordeón, bajo sexto, trompeta, tololoche'
-                                    : isPortugal
-                                      ? 'Ex.: guitarra portuguesa, viola, piano'
-                                      : isEnglish
-                                        ? 'Example: acoustic guitar, piano, strings'
-                                        : 'Ex: viola, violão, piano'}
+                              placeholder={t('studio.create.instrumentExamples')}
                               className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/50"
                             />
                           </div>
 
                           <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                            <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{isEnglish ? 'Instruments to avoid (optional)' : isSpanish ? 'Instrumentos que quieres evitar (opcional)' : 'Instrumentos para evitar (opcional)'}</label>
+                            <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{t('studio.create.avoidInstruments')}</label>
                             <input
                               value={form.avoidInstruments}
                               onChange={(e) => setForm({ ...form, avoidInstruments: e.target.value })}
-                              placeholder={isEnglish ? 'Example: synthesizer, electric guitar' : isSpanish ? 'Ej.: sintetizador, guitarra eléctrica' : 'Ex: acordeon, sanfona'}
+                              placeholder={t('studio.create.avoidInstrumentsExample')}
                               className="w-full rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/50"
                             />
                           </div>
@@ -967,11 +921,7 @@ export default function NewStudioMusicPage() {
                             onChange={(e) => setForm({ ...form, extraInstructions: e.target.value.slice(0, 700) })}
                             rows={3}
                             maxLength={700}
-                            placeholder={isEnglish
-                              ? 'Example: use my saved voice with a calm, expressive male performance.'
-                              : isSpanish
-                              ? 'Ej.: usar mi voz registrada con una interpretación masculina tranquila y expresiva.'
-                              : 'Ex.: usar minha voz cadastrada com interpretação masculina calma e expressiva.'}
+                            placeholder={t('studio.create.extraInstructionsExample')}
                             className="mt-3 w-full resize-none rounded-2xl border border-purple-300/20 bg-gray-950 px-4 py-3 text-sm leading-relaxed text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400"
                           />
                           <p className="mt-2 text-right text-[11px] text-gray-500">
@@ -993,18 +943,10 @@ export default function NewStudioMusicPage() {
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <p className="text-sm font-bold text-white">
-                        {hasOwnLyric
-                          ? (isEnglish ? 'Save lyrics and open project' : 'Salvar letra e abrir o projeto')
-                          : (isEnglish ? 'Generate professional lyrics' : 'Gerar letra profissional')}
+                        {t(hasOwnLyric ? 'studio.create.saveLyricsHeading' : 'studio.create.generateLyricsHeading')}
                       </p>
                       <p className="mt-1 text-xs leading-relaxed text-gray-300">
-                        {isEnglish ? (
-                          <>Generating lyrics <span className="font-bold text-green-300">uses no credits</span>. Creating the song afterward costs{' '}
-                            <span className="font-bold text-purple-200">{studioMusicCredits} credits</span>.</>
-                        ) : (
-                          <>Gerar a letra <span className="font-bold text-green-300">não consome créditos</span>. A criação da música depois custa{' '}
-                            <span className="font-bold text-purple-200">{studioMusicCredits} créditos</span>.</>
-                        )}
+                        {t('studio.create.lyricsCostHint', { cost: studioMusicCredits })}
                       </p>
                     </div>
                     <button
@@ -1014,9 +956,9 @@ export default function NewStudioMusicPage() {
                       className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 px-6 py-4 text-base font-black text-white shadow-lg shadow-purple-950/40 transition hover:scale-[1.01] hover:from-primary-400 hover:via-purple-400 hover:to-fuchsia-400 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto lg:min-w-[280px]"
                     >
                       {loading ? <FiLoader className="animate-spin" /> : <FiArrowRight />}
-                      {loading
-                        ? (hasOwnLyric ? (isEnglish ? 'Saving lyrics...' : 'Salvando letra...') : (isEnglish ? 'Creating lyrics...' : 'Criando letra...'))
-                        : (hasOwnLyric ? (isEnglish ? 'Save and Create Project' : 'Salvar e Criar Projeto') : (isEnglish ? 'Create my song' : 'Criar minha música'))}
+                      {t(loading
+                        ? hasOwnLyric ? 'studio.create.savingLyrics' : 'studio.create.creatingLyrics'
+                        : hasOwnLyric ? 'studio.create.saveProject' : 'studio.create.createSong')}
                       {!loading && !hasOwnLyric && (
                         <span className="rounded-full bg-black/25 px-2.5 py-1 text-[11px] font-bold text-purple-50">
                           {t('studio.new.freeLyrics')}
@@ -1045,14 +987,10 @@ export default function NewStudioMusicPage() {
 
                 <div className="mt-4 space-y-2 text-sm text-gray-300">
                   <p>
-                    {isEnglish ? (
-                      <>You can create about <span className="font-bold text-white">{musicsFromCredits}</span> song{musicsFromCredits === 1 ? '' : 's'}.</>
-                    ) : (
-                      <>Dá para criar cerca de <span className="font-bold text-white">{musicsFromCredits}</span> música{musicsFromCredits === 1 ? '' : 's'}.</>
-                    )}
+                    {t('studio.create.approxSongs', { count: musicsFromCredits })}
                   </p>
                   {freeMusicRemaining > 0 && (
-                    <p className="font-bold text-green-300">+ {freeMusicRemaining} {isEnglish ? `free song${freeMusicRemaining === 1 ? '' : 's'}` : 'música grátis'}</p>
+                    <p className="font-bold text-green-300">{t('studio.create.freeSongs', { count: freeMusicRemaining })}</p>
                   )}
                   {renewLabel && (
                     <p className="text-xs text-gray-500">{t('studio.create.sidebar.renewal')}: {renewLabel}</p>
@@ -1085,21 +1023,7 @@ export default function NewStudioMusicPage() {
                     <div>
                       <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-primary-300">{t('studio.create.sample.aiCreates')}</p>
                       <p className="mt-1 whitespace-pre-line text-xs leading-relaxed text-gray-200">
-                        {isEnglish
-                          ? `[Verse]
-I keep a secret in my heart
-I never found the words to say
-
-[Chorus]
-My heart speaks in silence
-But it only calls your name`
-                          : `[A]
-Guardo no peito um segredo
-Que nunca tive coragem de falar
-
-[Refrão]
-Meu coração em silêncio
-Só sabe te amar`}
+                        {t('studio.create.sampleLyrics')}
                       </p>
                     </div>
                   </div>

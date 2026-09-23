@@ -358,6 +358,107 @@
           "title": "Criar música",
           "subtitle": "IA compondo para você"
         }
+      },
+      "customStyleOption": "Outro / escrever meu estilo",
+      "customStyleExample": "Ex.: piseiro romântico",
+      "structureHint": "Use Padrão para deixar a IA escolher a melhor organização da música.",
+      "instrumentExamples": "Ex.: viola, violão, piano",
+      "avoidInstruments": "Instrumentos para evitar (opcional)",
+      "avoidInstrumentsExample": "Ex.: acordeon, sanfona",
+      "extraInstructionsExample": "Ex.: usar minha voz cadastrada com interpretação masculina calma e expressiva.",
+      "saveLyricsHeading": "Salvar letra e abrir o projeto",
+      "generateLyricsHeading": "Gerar letra profissional",
+      "lyricsCostHint": "Gerar a letra não consome créditos. A criação da música depois custa {{cost}} créditos.",
+      "savingLyrics": "Salvando letra...",
+      "creatingLyrics": "Criando letra...",
+      "saveProject": "Salvar e Criar Projeto",
+      "createSong": "Criar minha música",
+      "approxSongs": "Dá para criar cerca de {{count}} música(s).",
+      "freeSongs": "+ {{count}} música(s) grátis",
+      "sampleSongTitle": "Chave Falsa",
+      "sampleLyrics": "[A]\nGuardo no peito um segredo\nQue nunca tive coragem de falar\n\n[Refrão]\nMeu coração em silêncio\nSó sabe te amar",
+      "optionLabels": {
+        "romantic": "Romântica",
+        "heartbreak": "Sofrência",
+        "catchy": "Chiclete",
+        "funny": "Engraçada",
+        "reflective": "Reflexiva",
+        "ballad": "Balada",
+        "sad": "Triste",
+        "motivational": "Motivacional",
+        "standard": "Padrão",
+        "structureABC": "A/B/Refrão/C/Refrão",
+        "structureABA": "A/Refrão/A/Refrão",
+        "short": "Curta",
+        "medium": "Média",
+        "long": "Longa",
+        "aiChoose": "Deixar a IA escolher",
+        "maleVoice": "Voz masculina",
+        "femaleVoice": "Voz feminina",
+        "duet": "Dueto masculino e feminino",
+        "lowVoice": "Voz grave",
+        "midVoice": "Voz média",
+        "highVoice": "Voz aguda",
+        "raspyVoice": "Voz rouca",
+        "softVoice": "Voz suave",
+        "powerfulVoice": "Voz forte"
+      },
+      "languageLabels": {
+        "enUS": "Inglês (Estados Unidos)",
+        "enGB": "Inglês (Reino Unido)",
+        "ptBR": "Português (Brasil)",
+        "ptPT": "Português (Portugal)",
+        "esPY": "Espanhol (Paraguai)",
+        "esCO": "Espanhol (Colômbia)",
+        "esMX": "Espanhol (México)",
+        "esES": "Espanhol (Espanha)"
+      },
+      "lyricOptions": {
+        "avoidCliches": "Evitar clichês",
+        "avoidChildishRhymes": "Evitar rimas infantis",
+        "avoidRepeatedWords": "Evitar palavras repetidas",
+        "stickyChorus": "Refrão mais chiclete",
+        "popularLanguage": "Linguagem mais popular",
+        "sophisticatedLanguage": "Linguagem mais sofisticada"
+      },
+      "themes": {
+        "amor": {
+          "label": "Amor",
+          "text": "Uma história de amor verdadeira, com carinho, desejo e a vontade de ficar juntos."
+        },
+        "termino": {
+          "label": "Término",
+          "text": "O fim de um relacionamento, a dor da despedida e a dificuldade de seguir em frente."
+        },
+        "sofrencia": {
+          "label": "Sofrência",
+          "text": "Alguém que ainda ama, sofre em silêncio e não consegue esquecer a pessoa amada."
+        },
+        "saudade": {
+          "label": "Saudade",
+          "text": "A saudade de alguém especial, das memórias e dos momentos que não voltam mais."
+        },
+        "perdao": {
+          "label": "Perdão",
+          "text": "Um pedido de perdão sincero, com arrependimento e vontade de recomeçar."
+        },
+        "fe": {
+          "label": "Fé",
+          "text": "Uma mensagem de fé, esperança e força para atravessar os momentos difíceis."
+        },
+        "festa": {
+          "label": "Festa",
+          "text": "Uma noite de festa, alegria, amizade e vontade de curtir sem pensar no amanhã."
+        },
+        "superacao": {
+          "label": "Superação",
+          "text": "Uma pessoa que caiu, se levantou e descobriu a própria força no caminho."
+        }
+      },
+      "highlights": {
+        "professionalLyrics": "Letra profissional",
+        "readyToSing": "Pronta para cantar",
+        "inSeconds": "Em segundos"
       }
     },
     "projects": {

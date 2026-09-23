@@ -358,6 +358,107 @@
           "title": "Crear canción",
           "subtitle": "La IA compone para ti"
         }
+      },
+      "customStyleOption": "Otro / escribir mi estilo",
+      "customStyleExample": "Ej.: pop latino cinematográfico",
+      "structureHint": "Usa Estándar para que la IA elija la mejor estructura de la canción.",
+      "instrumentExamples": "Ej.: guitarra, arpa paraguaya, piano",
+      "avoidInstruments": "Instrumentos que quieres evitar (opcional)",
+      "avoidInstrumentsExample": "Ej.: sintetizador, guitarra eléctrica",
+      "extraInstructionsExample": "Ej.: usar mi voz guardada con una interpretación masculina tranquila y expresiva.",
+      "saveLyricsHeading": "Guardar la letra y abrir el proyecto",
+      "generateLyricsHeading": "Generar una letra profesional",
+      "lyricsCostHint": "Generar la letra no consume créditos. Crear la canción después cuesta {{cost}} créditos.",
+      "savingLyrics": "Guardando la letra...",
+      "creatingLyrics": "Creando la letra...",
+      "saveProject": "Guardar y crear proyecto",
+      "createSong": "Crear mi canción",
+      "approxSongs": "Puedes crear aproximadamente {{count}} canción(es).",
+      "freeSongs": "+ {{count}} canción(es) gratis",
+      "sampleSongTitle": "Llave Falsa",
+      "sampleLyrics": "[Verso]\nGuardo un secreto en mi corazón\nQue nunca me atreví a contar\n\n[Estribillo]\nMi corazón habla en silencio\nY solo sabe pronunciar tu nombre",
+      "optionLabels": {
+        "romantic": "Romántica",
+        "heartbreak": "Desamor",
+        "catchy": "Pegadiza",
+        "funny": "Divertida",
+        "reflective": "Reflexiva",
+        "ballad": "Balada",
+        "sad": "Triste",
+        "motivational": "Motivadora",
+        "standard": "Estándar",
+        "structureABC": "A/B/Estribillo/C/Estribillo",
+        "structureABA": "A/Estribillo/A/Estribillo",
+        "short": "Corta",
+        "medium": "Media",
+        "long": "Larga",
+        "aiChoose": "Dejar que la IA elija",
+        "maleVoice": "Voz masculina",
+        "femaleVoice": "Voz femenina",
+        "duet": "Dueto masculino y femenino",
+        "lowVoice": "Voz grave",
+        "midVoice": "Voz media",
+        "highVoice": "Voz aguda",
+        "raspyVoice": "Voz ronca",
+        "softVoice": "Voz suave",
+        "powerfulVoice": "Voz potente"
+      },
+      "languageLabels": {
+        "enUS": "Inglés (Estados Unidos)",
+        "enGB": "Inglés (Reino Unido)",
+        "ptBR": "Portugués (Brasil)",
+        "ptPT": "Portugués (Portugal)",
+        "esPY": "Español (Paraguay)",
+        "esCO": "Español (Colombia)",
+        "esMX": "Español (México)",
+        "esES": "Español (España)"
+      },
+      "lyricOptions": {
+        "avoidCliches": "Evitar clichés",
+        "avoidChildishRhymes": "Evitar rimas infantiles",
+        "avoidRepeatedWords": "Evitar palabras repetidas",
+        "stickyChorus": "Estribillo mais pegadizo",
+        "popularLanguage": "Usar lenguaje cotidiano",
+        "sophisticatedLanguage": "Usar lenguaje sofisticado"
+      },
+      "themes": {
+        "amor": {
+          "label": "Amor",
+          "text": "Una historia de amor verdadero, con cariño, deseo y ganas de permanecer juntos."
+        },
+        "termino": {
+          "label": "Ruptura",
+          "text": "El final de una relación, el dolor de la despedida y la dificultad de seguir adelante."
+        },
+        "sofrencia": {
+          "label": "Desamor",
+          "text": "Alguien que todavía ama, sufre en silencio y no logra olvidar a la persona amada."
+        },
+        "saudade": {
+          "label": "Añoranza",
+          "text": "La añoranza de alguien especial, de los recuerdos y de los momentos que ya no volverán."
+        },
+        "perdao": {
+          "label": "Perdón",
+          "text": "Un pedido sincero de perdón, con arrepentimiento y deseos de comenzar de nuevo."
+        },
+        "fe": {
+          "label": "Fe",
+          "text": "Un mensaje de fe, esperanza y fortaleza para atravesar los momentos difíciles."
+        },
+        "festa": {
+          "label": "Fiesta",
+          "text": "Una noche de fiesta, alegría y amistad, con ganas de disfrutar sin pensar en mañana."
+        },
+        "superacao": {
+          "label": "Superación",
+          "text": "Una persona que cayó, volvió a levantarse y descubrió su propia fuerza en el camino."
+        }
+      },
+      "highlights": {
+        "professionalLyrics": "Letra profesional",
+        "readyToSing": "Lista para cantar",
+        "inSeconds": "En segundos"
       }
     },
     "projects": {
