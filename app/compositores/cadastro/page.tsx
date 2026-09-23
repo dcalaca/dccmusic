@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { FiArrowRight, FiEye, FiEyeOff, FiLock, FiMail, FiUser } from 'react-icons/fi'
 import { getStoredPartnerAttribution } from '@/components/PartnerAttribution'
 import { pushGtmEvent } from '@/components/GtmEvents'
@@ -10,6 +11,7 @@ import { blogAttributionEventPayload } from '@/lib/blog/attribution'
 import { validateSignupEmail } from '@/lib/email-validation'
 
 export default function ComposerSignupPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const [formData, setFormData] = useState({
     fullName: '',
@@ -36,19 +38,19 @@ export default function ComposerSignupPage() {
     setErrorField('')
 
     if (!formData.fullName.trim()) {
-      setError('Informe seu nome.')
+      setError(t('auth.errors.nameRequired'))
       return
     }
 
     const emailValidation = validateSignupEmail(formData.email)
     if (!emailValidation.valid) {
-      setError(emailValidation.error)
+      setError(emailValidation.suggestion ? t('auth.errors.emailSuggestion', { email: emailValidation.suggestion }) : t('auth.errors.invalidEmail'))
       setEmailSuggestion(emailValidation.suggestion || '')
       return
     }
 
     if (formData.password !== formData.confirmPassword) {
-      setError('As senhas não coincidem.')
+      setError(t('auth.errors.passwordMismatch'))
       return
     }
 
@@ -75,10 +77,10 @@ export default function ComposerSignupPage() {
         if (data.field === 'email' || data.code === 'EMAIL_TAKEN') {
           setErrorField('email')
         }
-        throw new Error(data.error || 'Erro ao cadastrar')
+        throw new Error(data.code === 'EMAIL_TAKEN' ? t('auth.errors.emailTaken') : t('auth.errors.signupFailed'))
       }
 
-      const successMessage = data.message || 'Cadastro realizado com sucesso! Faça login para continuar.'
+      const successMessage = t('auth.login.signupSuccess')
       pushGtmEvent('dcc_complete_registration', {
         product_id: 'composer_signup',
         product_name: 'Cadastro de compositor',
@@ -107,7 +109,7 @@ export default function ComposerSignupPage() {
         `/compositores/login?cadastro=sucesso&email=${encodeURIComponent(formData.email)}&mensagem=${encodeURIComponent(successMessage)}`
       )
     } catch (err: any) {
-      setError(err.message || 'Erro ao cadastrar. Tente novamente.')
+      setError(err.message || t('auth.errors.signupFailed'))
       setLoading(false)
     }
   }
@@ -118,10 +120,10 @@ export default function ComposerSignupPage() {
         <div className="max-w-md mx-auto">
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-bold mb-2">
-              <span className="gradient-text">Cadastro</span>
+              <span className="gradient-text">{t('auth.signup.title')}</span>
             </h1>
             <p className="text-gray-400">
-              Crie sua conta para comentar, avaliar, criar músicas e comprar créditos.
+              {t('auth.signup.subtitle')}
             </p>
           </div>
 
@@ -141,14 +143,14 @@ export default function ComposerSignupPage() {
                       }}
                       className="rounded-lg border border-red-700 bg-red-950/60 px-3 py-2 text-left text-xs font-bold text-red-100 hover:bg-red-900/70"
                     >
-                      Corrigir para {emailSuggestion}
+                      {t('auth.signup.correctTo', { email: emailSuggestion })}
                     </button>
                   )}
                 </div>
               )}
 
               <div>
-                <label className="block text-sm font-medium mb-2">Seu nome</label>
+                <label className="block text-sm font-medium mb-2">{t('auth.fields.name')}</label>
                 <div className="relative">
                   <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
@@ -157,13 +159,13 @@ export default function ComposerSignupPage() {
                     onChange={(event) => setFormData({ ...formData, fullName: event.target.value })}
                     required
                     className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
-                    placeholder="Seu nome"
+                    placeholder={t('auth.placeholders.name')}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Email</label>
+                <label className="block text-sm font-medium mb-2">{t('auth.fields.email')}</label>
                 <div className="relative">
                   <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
@@ -187,7 +189,7 @@ export default function ComposerSignupPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Senha</label>
+                <label className="block text-sm font-medium mb-2">{t('auth.fields.password')}</label>
                 <div className="relative">
                   <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
@@ -197,7 +199,7 @@ export default function ComposerSignupPage() {
                     required
                     minLength={6}
                     className="w-full pl-10 pr-12 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder={t('auth.placeholders.minPassword')}
                   />
                   <button
                     type="button"
@@ -210,7 +212,7 @@ export default function ComposerSignupPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">Confirmar senha</label>
+                <label className="block text-sm font-medium mb-2">{t('auth.fields.confirmPassword')}</label>
                 <div className="relative">
                   <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
@@ -219,7 +221,7 @@ export default function ComposerSignupPage() {
                     onChange={(event) => setFormData({ ...formData, confirmPassword: event.target.value })}
                     required
                     className="w-full pl-10 pr-12 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
-                    placeholder="Digite a senha novamente"
+                    placeholder={t('auth.placeholders.confirmPassword')}
                   />
                   <button
                     type="button"
@@ -237,10 +239,10 @@ export default function ComposerSignupPage() {
                 className="w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
-                  <span>Cadastrando...</span>
+                  <span>{t('auth.signup.creating')}</span>
                 ) : (
                   <>
-                    <span>Criar conta</span>
+                    <span>{t('auth.signup.createAccount')}</span>
                     <FiArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -250,21 +252,21 @@ export default function ComposerSignupPage() {
             <div className="mt-6 space-y-3">
               <div className="text-center">
                 <p className="text-gray-400 text-sm">
-                  Já tem uma conta?{' '}
+                  {t('auth.signup.haveAccount')}{' '}
                   <Link href="/compositores/login" className="text-primary-400 hover:text-primary-300">
-                    Fazer login
+                    {t('auth.signup.signIn')}
                   </Link>
                 </p>
               </div>
               <div className="border-t border-gray-800 pt-4">
                 <p className="text-center text-gray-400 text-sm mb-3">
-                  Após o cadastro, você poderá fazer uma música grátis no DCC Studio IA.
+                  {t('auth.signup.freeSongHint')}
                 </p>
                 <Link
                   href="/studio-ia"
                   className="block w-full px-4 py-2 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium text-center text-sm"
                 >
-                  Conhecer DCC Studio IA
+                  {t('auth.signup.discoverStudio')}
                 </Link>
               </div>
             </div>

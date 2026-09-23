@@ -128,5 +128,116 @@
       "subtitle": "Comentários, respostas, gostos e músicas prontas",
       "empty": "Ainda não há notificações."
     }
+  },
+  "auth": {
+    "fields": {
+      "email": "E-mail",
+      "password": "Senha",
+      "name": "Seu nome",
+      "confirmPassword": "Confirmar senha",
+      "newPassword": "Nova senha",
+      "confirmNewPassword": "Confirmar nova senha"
+    },
+    "placeholders": {
+      "password": "Sua senha",
+      "name": "Seu nome",
+      "minPassword": "Mínimo 6 caracteres",
+      "confirmPassword": "Digite a senha novamente"
+    },
+    "errors": {
+      "emailNotFound": "E-mail não cadastrado. Vamos te levar para criar sua conta.",
+      "invalidPassword": "Senha incorreta. Tente novamente.",
+      "emailNotVerified": "Seu e-mail ainda não foi confirmado. Confirme o e-mail para entrar.",
+      "loginFailed": "Erro ao fazer login. Tente novamente.",
+      "resendVerification": "Erro ao reenviar confirmação.",
+      "nameRequired": "Informe seu nome.",
+      "invalidEmail": "E-mail inválido. Verifique o endereço digitado.",
+      "emailSuggestion": "O domínio do e-mail parece incorreto. Você quis dizer {{email}}?",
+      "passwordMismatch": "As senhas não coincidem.",
+      "emailTaken": "Este e-mail já está cadastrado. Faça login ou use outro e-mail.",
+      "signupFailed": "Não foi possível concluir o cadastro. Tente novamente.",
+      "resetRequestFailed": "Erro ao solicitar nova senha.",
+      "invalidResetLink": "Link inválido ou já utilizado. Solicite um novo link de redefinição de senha.",
+      "expiredResetLink": "Este link expirou. Solicite um novo link de redefinição de senha.",
+      "passwordTooShort": "A senha deve ter pelo menos 6 caracteres.",
+      "resetFailed": "Erro ao criar nova senha.",
+      "tempPasswordNotAllowed": "Escolha uma senha diferente de “123”.",
+      "sessionExpired": "Sessão expirada. Faça login novamente.",
+      "changePasswordFailed": "Erro ao trocar senha."
+    },
+    "login": {
+      "title": "Login Compositor",
+      "subtitle": "Uma conta só: com ela você comenta, avalia e cria músicas no Studio IA.",
+      "signupSuccess": "Cadastro realizado com sucesso! Confirme seu e-mail para ativar a conta.",
+      "passwordChanged": "Senha alterada com sucesso! Faça login com sua nova senha.",
+      "lastStep": "Último passo",
+      "confirmEmailTitle": "Confirme seu e-mail para ativar a conta",
+      "sentEmail": "Enviamos um e-mail",
+      "withSubject": "com o assunto",
+      "confirmEmailSubject": "Confirme seu e-mail na DCC Music",
+      "checkFolders": "Confira também as pastas",
+      "spam": "Spam",
+      "promotions": "Promoções",
+      "openEmailPrefix": "Abra o e-mail e clique no",
+      "confirmButtonHint": "botão roxo “Confirmar meu e-mail”",
+      "openEmailSuffix": "para liberar o login e usar sua música grátis no Studio IA.",
+      "resendingEmail": "Reenviando e-mail...",
+      "resendEmail": "Não recebeu? Reenviar e-mail de confirmação",
+      "resending": "Reenviando...",
+      "resendLink": "Reenviar link de confirmação",
+      "verificationSent": "Enviamos um novo link de confirmação para seu e-mail.",
+      "forgotPassword": "Esqueci minha senha",
+      "signingIn": "Entrando...",
+      "signIn": "Entrar",
+      "noAccount": "Não tem uma conta?",
+      "signUp": "Cadastre-se",
+      "viewStudioPlans": "Ver planos DCC Studio IA",
+      "viewPremiumPlans": "Ver Planos Premium"
+    },
+    "signup": {
+      "title": "Cadastro",
+      "subtitle": "Crie sua conta para comentar, avaliar, criar músicas e comprar créditos.",
+      "correctTo": "Corrigir para {{email}}",
+      "creating": "Cadastrando...",
+      "createAccount": "Criar conta",
+      "haveAccount": "Já tem uma conta?",
+      "signIn": "Fazer login",
+      "freeSongHint": "Após o cadastro, você poderá fazer uma música grátis no DCC Studio IA.",
+      "discoverStudio": "Conhecer DCC Studio IA"
+    },
+    "forgot": {
+      "title": "Esqueci minha senha",
+      "subtitle": "Informe seu e-mail de compositor para receber o link de redefinição.",
+      "success": "Se este e-mail estiver cadastrado, enviaremos um link para criar uma nova senha.",
+      "sending": "Enviando...",
+      "sendLink": "Enviar link para nova senha",
+      "backToLogin": "Voltar para o login"
+    },
+    "reset": {
+      "title": "Criar nova senha",
+      "subtitle": "Digite uma senha nova para voltar a acessar sua conta de compositor.",
+      "saving": "Salvando...",
+      "save": "Salvar nova senha",
+      "requestAnother": "Solicitar outro link"
+    },
+    "change": {
+      "title": "Trocar Senha",
+      "subtitle": "Você está usando uma senha temporária. Crie uma nova senha segura.",
+      "saving": "Salvando...",
+      "save": "Salvar Nova Senha",
+      "afterSave": "Após salvar, você precisará fazer login novamente com sua nova senha."
+    },
+    "verify": {
+      "confirming": "Confirmando seu e-mail e entrando na sua conta...",
+      "missingToken": "Link sem token de confirmação.",
+      "loginError": "E-mail confirmado, mas não foi possível criar o login automático.",
+      "confirmed": "E-mail confirmado. Entrando no seu painel...",
+      "expired": "O link pode estar expirado, já ter sido usado ou estar incorreto.",
+      "unable": "Não foi possível confirmar",
+      "confirmedTitle": "E-mail confirmado",
+      "confirmingTitle": "Confirmando e-mail",
+      "login": "Ir para login",
+      "entering": "Entrando no painel..."
+    }
   }
 }

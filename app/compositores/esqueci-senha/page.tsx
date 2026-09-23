@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { FiArrowLeft, FiCheckCircle, FiMail } from 'react-icons/fi'
 
 export default function ForgotComposerPasswordPage() {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -24,11 +26,11 @@ export default function ForgotComposerPasswordPage() {
       })
 
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao solicitar nova senha')
+      if (!response.ok) throw new Error(t('auth.errors.resetRequestFailed'))
 
-      setSuccess(data.message || 'Se este e-mail estiver cadastrado, enviaremos um link para criar uma nova senha.')
+      setSuccess(t('auth.forgot.success'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao solicitar nova senha')
+      setError(err.message || t('auth.errors.resetRequestFailed'))
     } finally {
       setLoading(false)
     }
@@ -40,10 +42,10 @@ export default function ForgotComposerPasswordPage() {
         <div className="max-w-md mx-auto">
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-bold mb-2">
-              <span className="gradient-text">Esqueci minha senha</span>
+              <span className="gradient-text">{t('auth.forgot.title')}</span>
             </h1>
             <p className="text-gray-400">
-              Informe seu e-mail de compositor para receber o link de redefinição.
+              {t('auth.forgot.subtitle')}
             </p>
           </div>
 
@@ -86,7 +88,7 @@ export default function ForgotComposerPasswordPage() {
                 disabled={loading}
                 className="w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? 'Enviando...' : 'Enviar link para nova senha'}
+                {loading ? t('auth.forgot.sending') : t('auth.forgot.sendLink')}
               </button>
             </form>
 
@@ -96,7 +98,7 @@ export default function ForgotComposerPasswordPage() {
                 className="inline-flex items-center justify-center gap-2 text-sm text-primary-400 hover:text-primary-300"
               >
                 <FiArrowLeft />
-                Voltar para o login
+                {t('auth.forgot.backToLogin')}
               </Link>
             </div>
           </div>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { FiCheckCircle, FiXCircle, FiLoader, FiMail } from 'react-icons/fi'
 
 type VerifyState = 'loading' | 'success' | 'error'
@@ -12,18 +13,23 @@ type VerifyComposerEmailClientProps = {
   language: 'pt' | 'en' | 'es'
 }
 
-const COPY = {
-  pt: { confirming: 'Confirmando seu e-mail e entrando na sua conta...', missingToken: 'Link sem token de confirmação.', confirmError: 'Não foi possível confirmar seu e-mail.', loginError: 'E-mail confirmado, mas não foi possível criar o login automático.', confirmed: 'E-mail confirmado. Entrando no seu painel...', expired: 'O link pode estar expirado, já ter sido usado ou estar incorreto.', unable: 'Não foi possível confirmar', confirmedTitle: 'E-mail confirmado', confirmingTitle: 'Confirmando e-mail', login: 'Ir para login', entering: 'Entrando no painel...' },
-  en: { confirming: 'Confirming your email and signing you in...', missingToken: 'Confirmation link has no token.', confirmError: 'We could not confirm your email.', loginError: 'Your email was confirmed, but we could not create the automatic sign-in.', confirmed: 'Email confirmed. Taking you to your dashboard...', expired: 'The link may have expired, already been used, or be invalid.', unable: 'We could not confirm your email', confirmedTitle: 'Email confirmed', confirmingTitle: 'Confirming email', login: 'Go to login', entering: 'Opening your dashboard...' },
-  es: { confirming: 'Confirmando tu correo e iniciando sesión...', missingToken: 'El enlace de confirmación no tiene token.', confirmError: 'No pudimos confirmar tu correo.', loginError: 'Tu correo fue confirmado, pero no pudimos iniciar sesión automáticamente.', confirmed: 'Correo confirmado. Entrando a tu panel...', expired: 'El enlace puede haber vencido, ya haber sido utilizado o ser incorrecto.', unable: 'No fue posible confirmar tu correo', confirmedTitle: 'Correo confirmado', confirmingTitle: 'Confirmando correo', login: 'Ir al inicio de sesión', entering: 'Entrando a tu panel...' },
+const LOCALE_BY_LANGUAGE = {
+  pt: 'pt-BR',
+  en: 'en-US',
+  es: 'es-ES',
 } as const
 
 export default function VerifyComposerEmailClient({ token, language }: VerifyComposerEmailClientProps) {
   const router = useRouter()
-  const copy = COPY[language]
+  const { t, i18n } = useTranslation()
   const requestedRef = useRef(false)
   const [state, setState] = useState<VerifyState>('loading')
-  const [message, setMessage] = useState<string>(copy.confirming)
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    const locale = LOCALE_BY_LANGUAGE[language]
+    if (i18n.language !== locale) void i18n.changeLanguage(locale)
+  }, [i18n, language])
 
   useEffect(() => {
     if (requestedRef.current) return
@@ -31,9 +37,8 @@ export default function VerifyComposerEmailClient({ token, language }: VerifyCom
 
     async function confirmEmail() {
       try {
-        if (!token) {
-          throw new Error(copy.missingToken)
-        }
+        setMessage(t('auth.verify.confirming'))
+        if (!token) throw new Error(t('auth.verify.missingToken'))
 
         const response = await fetch('/api/compositores/email-verification/confirm', {
           method: 'POST',
@@ -45,11 +50,11 @@ export default function VerifyComposerEmailClient({ token, language }: VerifyCom
         const data = await response.json()
 
         if (!response.ok || !data?.ok) {
-          throw new Error(data?.error || copy.confirmError)
+          throw new Error(data?.reason === 'missing' ? t('auth.verify.missingToken') : t('auth.verify.expired'))
         }
 
         if (!data.login?.token || !data.login?.composer) {
-          throw new Error(copy.loginError)
+          throw new Error(t('auth.verify.loginError'))
         }
 
         localStorage.setItem('composer_token', data.login.token)
@@ -58,19 +63,19 @@ export default function VerifyComposerEmailClient({ token, language }: VerifyCom
         window.dispatchEvent(new Event('authChange'))
 
         setState('success')
-        setMessage(copy.confirmed)
+        setMessage(t('auth.verify.confirmed'))
 
         window.setTimeout(() => {
           router.replace(data.login.redirectTo || '/compositores/admin/studio-ia')
         }, 700)
       } catch (error: any) {
         setState('error')
-        setMessage(error?.message || copy.expired)
+        setMessage(error?.message || t('auth.verify.expired'))
       }
     }
 
     confirmEmail()
-  }, [copy, router, token])
+  }, [router, t, token])
 
   const success = state === 'success'
   const error = state === 'error'
@@ -94,10 +99,10 @@ export default function VerifyComposerEmailClient({ token, language }: VerifyCom
           )}
 
           <h1 className="mb-3 text-3xl font-black">
-            {error ? copy.unable : success ? copy.confirmedTitle : copy.confirmingTitle}
+            {error ? t('auth.verify.unable') : success ? t('auth.verify.confirmedTitle') : t('auth.verify.confirmingTitle')}
           </h1>
 
-          <p className="mb-6 text-gray-300">{message}</p>
+          <p className="mb-6 text-gray-300">{message || t('auth.verify.confirming')}</p>
 
           {error ? (
             <Link
@@ -105,12 +110,12 @@ export default function VerifyComposerEmailClient({ token, language }: VerifyCom
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white"
             >
               <FiMail />
-              {copy.login}
+              {t('auth.verify.login')}
             </Link>
           ) : (
             <div className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white">
               <FiLoader className="animate-spin" />
-              {copy.entering}
+              {t('auth.verify.entering')}
             </div>
           )}
         </div>

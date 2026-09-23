@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { FiLock, FiEye, FiEyeOff, FiAlertCircle } from 'react-icons/fi'
 
 export default function ComposerChangePasswordPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -29,17 +31,17 @@ export default function ComposerChangePasswordPage() {
 
     // Validações
     if (!formData.newPassword || formData.newPassword.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres')
+      setError(t('auth.errors.passwordTooShort'))
       return
     }
 
     if (formData.newPassword !== formData.confirmPassword) {
-      setError('As senhas não coincidem')
+      setError(t('auth.errors.passwordMismatch'))
       return
     }
 
     if (formData.newPassword === '123') {
-      setError('Por favor, escolha uma senha diferente de "123"')
+      setError(t('auth.errors.tempPasswordNotAllowed'))
       return
     }
 
@@ -48,7 +50,7 @@ export default function ComposerChangePasswordPage() {
       const tempToken = localStorage.getItem('composer_token_temp')
       
       if (!tempToken) {
-        throw new Error('Sessão expirada. Por favor, faça login novamente.')
+        throw new Error(t('auth.errors.sessionExpired'))
       }
 
       const response = await fetch('/api/compositores/change-password', {
@@ -65,7 +67,7 @@ export default function ComposerChangePasswordPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao trocar senha')
+        throw new Error(response.status === 401 ? t('auth.errors.sessionExpired') : t('auth.errors.changePasswordFailed'))
       }
 
       // Remover token temporário
@@ -74,7 +76,7 @@ export default function ComposerChangePasswordPage() {
       // Redirecionar para login com mensagem de sucesso
       router.push('/compositores/login?passwordChanged=true')
     } catch (err: any) {
-      setError(err.message || 'Erro ao trocar senha')
+      setError(err.message || t('auth.errors.changePasswordFailed'))
     } finally {
       setLoading(false)
     }
@@ -89,10 +91,10 @@ export default function ComposerChangePasswordPage() {
               <FiAlertCircle className="w-8 h-8 text-yellow-400" />
             </div>
             <h1 className="text-3xl font-bold mb-2">
-              <span className="gradient-text">Trocar Senha</span>
+              <span className="gradient-text">{t('auth.change.title')}</span>
             </h1>
             <p className="text-gray-400">
-              Você está usando uma senha temporária. Por favor, crie uma nova senha segura.
+              {t('auth.change.subtitle')}
             </p>
           </div>
 
@@ -105,7 +107,7 @@ export default function ComposerChangePasswordPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Nova Senha *
+                {t('auth.fields.newPassword')} *
               </label>
               <div className="relative">
                 <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -116,7 +118,7 @@ export default function ComposerChangePasswordPage() {
                   required
                   minLength={6}
                   className="w-full pl-10 pr-12 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder={t('auth.placeholders.minPassword')}
                 />
                 <button
                   type="button"
@@ -134,7 +136,7 @@ export default function ComposerChangePasswordPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Confirmar Nova Senha *
+                {t('auth.fields.confirmNewPassword')} *
               </label>
               <div className="relative">
                 <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -145,7 +147,7 @@ export default function ComposerChangePasswordPage() {
                   required
                   minLength={6}
                   className="w-full pl-10 pr-12 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary-500"
-                  placeholder="Digite a senha novamente"
+                  placeholder={t('auth.placeholders.confirmPassword')}
                 />
                 <button
                   type="button"
@@ -166,13 +168,13 @@ export default function ComposerChangePasswordPage() {
               disabled={loading}
               className="w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Salvando...' : 'Salvar Nova Senha'}
+              {loading ? t('auth.change.saving') : t('auth.change.save')}
             </button>
           </form>
 
           <div className="mt-6 pt-6 border-t border-gray-800 text-center">
             <p className="text-gray-400 text-sm">
-              Após salvar, você precisará fazer login novamente com sua nova senha.
+              {t('auth.change.afterSave')}
             </p>
           </div>
         </div>

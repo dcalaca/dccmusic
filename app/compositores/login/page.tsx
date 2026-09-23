@@ -3,9 +3,11 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { FiMail, FiLock, FiArrowRight, FiEye, FiEyeOff, FiAlertCircle, FiRefreshCw } from 'react-icons/fi'
 
 function LoginForm() {
+  const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirect')
@@ -27,16 +29,16 @@ function LoginForm() {
   useEffect(() => {
     if (isPostSignup) {
       const mensagem = searchParams.get('mensagem')
-      setSuccess(mensagem || 'Cadastro realizado com sucesso! Confirme seu e-mail para ativar a conta.')
+      setSuccess(mensagem || t('auth.login.signupSuccess'))
       if (signupEmail) {
         setFormData((current) => ({ ...current, email: signupEmail }))
         setUnverifiedEmail(signupEmail)
       }
     }
     if (searchParams.get('passwordChanged') === 'true') {
-      setSuccess('Senha alterada com sucesso! Faça login com sua nova senha.')
+      setSuccess(t('auth.login.passwordChanged'))
     }
-  }, [searchParams, isPostSignup, signupEmail])
+  }, [searchParams, isPostSignup, signupEmail, t])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -56,7 +58,7 @@ function LoginForm() {
 
       if (!response.ok) {
         if (data.code === 'EMAIL_NOT_FOUND') {
-          setError('E-mail não cadastrado. Vamos te levar para criar sua conta.')
+          setError(t('auth.errors.emailNotFound'))
           window.setTimeout(() => {
             router.push(`/compositores/cadastro?email=${encodeURIComponent(formData.email.trim())}`)
           }, 1600)
@@ -67,9 +69,9 @@ function LoginForm() {
           setVerificationLanguage(data.language === 'en' || data.language === 'es' ? data.language : 'pt')
         }
         if (data.code === 'INVALID_PASSWORD') {
-          throw new Error('Senha incorreta. Tente novamente.')
+          throw new Error(t('auth.errors.invalidPassword'))
         }
-        throw new Error(data.error || 'Erro ao fazer login')
+        throw new Error(data.code === 'EMAIL_NOT_VERIFIED' ? t('auth.errors.emailNotVerified') : t('auth.errors.loginFailed'))
       }
 
       // Se precisa trocar senha (senha temporária "123")
@@ -94,7 +96,7 @@ function LoginForm() {
 
       router.push(safeRedirect)
     } catch (err: any) {
-      setError(err.message || 'Erro ao fazer login. Tente novamente.')
+      setError(err.message || t('auth.errors.loginFailed'))
     } finally {
       setLoading(false)
     }
@@ -118,11 +120,11 @@ function LoginForm() {
       })
       const data = await response.json()
 
-      if (!response.ok) throw new Error(data.error || 'Erro ao reenviar confirmação')
+      if (!response.ok) throw new Error(t('auth.errors.resendVerification'))
 
-      setSuccess(data.message || 'Enviamos um novo link de confirmação para seu e-mail.')
+      setSuccess(t('auth.login.verificationSent'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao reenviar confirmação')
+      setError(err.message || t('auth.errors.resendVerification'))
     } finally {
       setResendingVerification(false)
     }
@@ -134,10 +136,10 @@ function LoginForm() {
         <div className="max-w-md mx-auto">
           <div className="mb-8 text-center">
             <h1 className="text-4xl font-bold mb-2">
-              <span className="gradient-text">Login Compositor</span>
+              <span className="gradient-text">{t('auth.login.title')}</span>
             </h1>
             <p className="text-gray-400">
-              Uma conta só: com ela você comenta, avalia e cria músicas no Studio IA.
+              {t('auth.login.subtitle')}
             </p>
           </div>
 
@@ -149,27 +151,27 @@ function LoginForm() {
                     <FiMail className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-300">Último passo</p>
-                    <h2 className="mt-1 text-xl font-black text-white">Confirme seu e-mail para ativar a conta</h2>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-300">{t('auth.login.lastStep')}</p>
+                    <h2 className="mt-1 text-xl font-black text-white">{t('auth.login.confirmEmailTitle')}</h2>
                   </div>
                 </div>
                 <p className="text-sm leading-relaxed text-gray-200">
-                  Enviamos um e-mail
+                  {t('auth.login.sentEmail')}
                   {signupEmail ? (
                     <>
                       {' '}para <span className="font-semibold text-white">{signupEmail}</span>
                     </>
                   ) : null}{' '}
-                  com o assunto{' '}
-                  <span className="font-semibold text-white">“Confirme seu e-mail na DCC Music”</span>.
+                  {t('auth.login.withSubject')}{' '}
+                  <span className="font-semibold text-white">“{t('auth.login.confirmEmailSubject')}”</span>.
                 </p>
                 <div className="mt-4 rounded-xl border border-amber-700/40 bg-black/30 p-4">
                   <p className="flex items-start gap-2 text-sm font-bold text-amber-100">
                     <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                    Confira também as pastas <span className="text-white">Spam</span> e <span className="text-white">Promoções</span>.
+                    {t('auth.login.checkFolders')} <span className="text-white">{t('auth.login.spam')}</span> e <span className="text-white">{t('auth.login.promotions')}</span>.
                   </p>
                   <p className="mt-3 text-sm leading-relaxed text-gray-300">
-                    Abra o e-mail e clique no <span className="font-bold text-purple-300">botão roxo “Confirmar meu e-mail”</span> para liberar o login e usar sua música grátis no Studio IA.
+                    {t('auth.login.openEmailPrefix')} <span className="font-bold text-purple-300">{t('auth.login.confirmButtonHint')}</span> {t('auth.login.openEmailSuffix')}
                   </p>
                 </div>
                 <button
@@ -179,7 +181,7 @@ function LoginForm() {
                   className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-purple-500/40 bg-purple-600/20 px-4 py-3 text-sm font-bold text-purple-100 transition hover:border-purple-400 hover:bg-purple-600/30 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <FiRefreshCw className={`h-4 w-4 ${resendingVerification ? 'animate-spin' : ''}`} />
-                  {resendingVerification ? 'Reenviando e-mail...' : 'Não recebeu? Reenviar e-mail de confirmação'}
+                  {resendingVerification ? t('auth.login.resendingEmail') : t('auth.login.resendEmail')}
                 </button>
               </div>
             )}
@@ -196,8 +198,8 @@ function LoginForm() {
                       className="mt-3 inline-flex rounded-lg bg-red-700 px-4 py-2 text-xs font-bold text-white hover:bg-red-600 disabled:opacity-60"
                     >
                       {resendingVerification
-                        ? (verificationLanguage === 'en' ? 'Resending...' : verificationLanguage === 'es' ? 'Reenviando...' : 'Reenviando...')
-                        : (verificationLanguage === 'en' ? 'Resend confirmation link' : verificationLanguage === 'es' ? 'Reenviar enlace de confirmación' : 'Reenviar link de confirmação')}
+                        ? t('auth.login.resending')
+                        : t('auth.login.resendLink')}
                     </button>
                   )}
                 </div>
@@ -242,7 +244,7 @@ function LoginForm() {
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     required
                     className="w-full pl-10 pr-12 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
-                    placeholder="Sua senha"
+                    placeholder={t('auth.placeholders.password')}
                   />
                   <button
                     type="button"
@@ -258,7 +260,7 @@ function LoginForm() {
                 </div>
                 <div className="mt-2 text-right">
                   <Link href="/compositores/esqueci-senha" className="text-sm text-primary-400 hover:text-primary-300">
-                    Esqueci minha senha
+                    {t('auth.login.forgotPassword')}
                   </Link>
                 </div>
               </div>
@@ -269,10 +271,10 @@ function LoginForm() {
                 className="w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
-                  <span>Entrando...</span>
+                  <span>{t('auth.login.signingIn')}</span>
                 ) : (
                   <>
-                    <span>Entrar</span>
+                    <span>{t('auth.login.signIn')}</span>
                     <FiArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -282,9 +284,9 @@ function LoginForm() {
             <div className="mt-6 space-y-3">
               <div className="text-center">
                 <p className="text-gray-400 text-sm">
-                  Não tem uma conta?{' '}
+                  {t('auth.login.noAccount')}{' '}
                   <Link href="/compositores/cadastro" className="text-primary-400 hover:text-primary-300">
-                    Cadastre-se
+                    {t('auth.login.signUp')}
                   </Link>
                 </p>
               </div>
@@ -293,7 +295,7 @@ function LoginForm() {
                   href={isStudioRedirect ? '/compositores/planos' : '/compositores/planos'}
                   className="block w-full px-4 py-2 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium text-center text-sm"
                 >
-                  {isStudioRedirect ? 'Ver planos DCC Studio IA' : 'Ver Planos Premium'}
+                  {isStudioRedirect ? t('auth.login.viewStudioPlans') : t('auth.login.viewPremiumPlans')}
                 </Link>
               </div>
             </div>

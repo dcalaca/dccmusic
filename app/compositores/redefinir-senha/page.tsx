@@ -2,10 +2,12 @@
 
 import { Suspense, useState } from 'react'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiEye, FiEyeOff, FiLock } from 'react-icons/fi'
 
 function ResetPasswordForm() {
+  const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token') || ''
@@ -21,17 +23,17 @@ function ResetPasswordForm() {
     setError('')
 
     if (!token) {
-      setError('Link inválido. Solicite um novo link de redefinição de senha.')
+      setError(t('auth.errors.invalidResetLink'))
       return
     }
 
     if (newPassword.length < 6) {
-      setError('A senha deve ter pelo menos 6 caracteres.')
+      setError(t('auth.errors.passwordTooShort'))
       return
     }
 
     if (newPassword !== confirmPassword) {
-      setError('As senhas não coincidem.')
+      setError(t('auth.errors.passwordMismatch'))
       return
     }
 
@@ -44,11 +46,11 @@ function ResetPasswordForm() {
       })
 
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao criar nova senha')
+      if (!response.ok) throw new Error(data.reason === 'expired' ? t('auth.errors.expiredResetLink') : data.reason ? t('auth.errors.invalidResetLink') : t('auth.errors.resetFailed'))
 
       router.push('/compositores/login?passwordChanged=true')
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar nova senha')
+      setError(err.message || t('auth.errors.resetFailed'))
     } finally {
       setLoading(false)
     }
@@ -58,7 +60,7 @@ function ResetPasswordForm() {
     <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
       {!token && (
         <div className="mb-5 bg-red-900/50 border border-red-800 text-red-300 px-4 py-3 rounded-lg text-sm">
-          Link inválido. Solicite um novo link de redefinição de senha.
+          {t('auth.errors.invalidResetLink')}
         </div>
       )}
 
@@ -71,7 +73,7 @@ function ResetPasswordForm() {
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="block text-sm font-medium mb-2">
-            Nova senha
+            {t('auth.fields.newPassword')}
           </label>
           <div className="relative">
             <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -82,7 +84,7 @@ function ResetPasswordForm() {
               required
               minLength={6}
               className="w-full pl-10 pr-12 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
-              placeholder="Mínimo 6 caracteres"
+              placeholder={t('auth.placeholders.minPassword')}
             />
             <button
               type="button"
@@ -96,7 +98,7 @@ function ResetPasswordForm() {
 
         <div>
           <label className="block text-sm font-medium mb-2">
-            Confirmar nova senha
+            {t('auth.fields.confirmNewPassword')}
           </label>
           <div className="relative">
             <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -107,7 +109,7 @@ function ResetPasswordForm() {
               required
               minLength={6}
               className="w-full pl-10 pr-12 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
-              placeholder="Digite a senha novamente"
+              placeholder={t('auth.placeholders.confirmPassword')}
             />
             <button
               type="button"
@@ -124,13 +126,13 @@ function ResetPasswordForm() {
           disabled={loading || !token}
           className="w-full px-4 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Salvando...' : 'Salvar nova senha'}
+          {loading ? t('auth.reset.saving') : t('auth.reset.save')}
         </button>
       </form>
 
       <div className="mt-6 pt-6 border-t border-gray-800 text-center">
         <Link href="/compositores/esqueci-senha" className="text-sm text-primary-400 hover:text-primary-300">
-          Solicitar outro link
+          {t('auth.reset.requestAnother')}
         </Link>
       </div>
     </div>
@@ -149,10 +151,10 @@ export default function ResetComposerPasswordPage() {
           <div className="max-w-md mx-auto">
             <div className="mb-8 text-center">
               <h1 className="text-4xl font-bold mb-2">
-                <span className="gradient-text">Criar nova senha</span>
+                <span className="gradient-text">{t('auth.reset.title')}</span>
               </h1>
               <p className="text-gray-400">
-                Digite uma senha nova para voltar a acessar sua conta de compositor.
+                {t('auth.reset.subtitle')}
               </p>
             </div>
 

@@ -128,5 +128,116 @@
       "subtitle": "Comments, replies, likes, and finished songs",
       "empty": "No notifications yet."
     }
+  },
+  "auth": {
+    "fields": {
+      "email": "Email",
+      "password": "Password",
+      "name": "Your name",
+      "confirmPassword": "Confirm password",
+      "newPassword": "New password",
+      "confirmNewPassword": "Confirm new password"
+    },
+    "placeholders": {
+      "password": "Your password",
+      "name": "Your name",
+      "minPassword": "At least 6 characters",
+      "confirmPassword": "Enter the password again"
+    },
+    "errors": {
+      "emailNotFound": "Email not registered. We'll take you to create your account.",
+      "invalidPassword": "Incorrect password. Try again.",
+      "emailNotVerified": "Your email has not been confirmed yet. Confirm it to sign in.",
+      "loginFailed": "Could not sign in. Try again.",
+      "resendVerification": "Could not resend the confirmation email.",
+      "nameRequired": "Enter your name.",
+      "invalidEmail": "Invalid email. Check the address you entered.",
+      "emailSuggestion": "The email domain looks incorrect. Did you mean {{email}}?",
+      "passwordMismatch": "The passwords do not match.",
+      "emailTaken": "This email is already registered. Sign in or use another email.",
+      "signupFailed": "We could not complete your registration. Try again.",
+      "resetRequestFailed": "Could not request a new password.",
+      "invalidResetLink": "This link is invalid or has already been used. Request a new password reset link.",
+      "expiredResetLink": "This link has expired. Request a new password reset link.",
+      "passwordTooShort": "The password must be at least 6 characters.",
+      "resetFailed": "Could not create a new password.",
+      "tempPasswordNotAllowed": "Choose a password other than “123”.",
+      "sessionExpired": "Your session has expired. Sign in again.",
+      "changePasswordFailed": "Could not change your password."
+    },
+    "login": {
+      "title": "Songwriter Login",
+      "subtitle": "One account lets you comment, rate, and create songs in AI Studio.",
+      "signupSuccess": "Registration completed! Confirm your email to activate your account.",
+      "passwordChanged": "Password changed successfully! Sign in with your new password.",
+      "lastStep": "Last step",
+      "confirmEmailTitle": "Confirm your email to activate your account",
+      "sentEmail": "We sent an email",
+      "withSubject": "with the subject",
+      "confirmEmailSubject": "Confirm your email at DCC Music",
+      "checkFolders": "Also check your",
+      "spam": "Spam",
+      "promotions": "Promotions",
+      "openEmailPrefix": "Open the email and click the",
+      "confirmButtonHint": "purple “Confirm my email” button",
+      "openEmailSuffix": "to enable sign-in and use your free song in AI Studio.",
+      "resendingEmail": "Resending email...",
+      "resendEmail": "Didn't receive it? Resend confirmation email",
+      "resending": "Resending...",
+      "resendLink": "Resend confirmation link",
+      "verificationSent": "We sent a new confirmation link to your email.",
+      "forgotPassword": "Forgot my password",
+      "signingIn": "Signing in...",
+      "signIn": "Sign in",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "viewStudioPlans": "View DCC AI Studio plans",
+      "viewPremiumPlans": "View Premium Plans"
+    },
+    "signup": {
+      "title": "Sign Up",
+      "subtitle": "Create your account to comment, rate, create songs, and buy credits.",
+      "correctTo": "Correct to {{email}}",
+      "creating": "Creating account...",
+      "createAccount": "Create account",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "freeSongHint": "After signing up, you can create one free song in DCC AI Studio.",
+      "discoverStudio": "Discover DCC AI Studio"
+    },
+    "forgot": {
+      "title": "Forgot my password",
+      "subtitle": "Enter your songwriter email to receive a password reset link.",
+      "success": "If this email is registered, we'll send a link to create a new password.",
+      "sending": "Sending...",
+      "sendLink": "Send password reset link",
+      "backToLogin": "Back to sign in"
+    },
+    "reset": {
+      "title": "Create a new password",
+      "subtitle": "Enter a new password to regain access to your songwriter account.",
+      "saving": "Saving...",
+      "save": "Save new password",
+      "requestAnother": "Request another link"
+    },
+    "change": {
+      "title": "Change Password",
+      "subtitle": "You're using a temporary password. Create a new secure password.",
+      "saving": "Saving...",
+      "save": "Save New Password",
+      "afterSave": "After saving, you'll need to sign in again with your new password."
+    },
+    "verify": {
+      "confirming": "Confirming your email and signing you in...",
+      "missingToken": "Confirmation link has no token.",
+      "loginError": "Your email was confirmed, but we could not create the automatic sign-in.",
+      "confirmed": "Email confirmed. Taking you to your dashboard...",
+      "expired": "The link may have expired, already been used, or be invalid.",
+      "unable": "We could not confirm your email",
+      "confirmedTitle": "Email confirmed",
+      "confirmingTitle": "Confirming email",
+      "login": "Go to login",
+      "entering": "Opening your dashboard..."
+    }
   }
 }
