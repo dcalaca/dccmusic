@@ -2,16 +2,18 @@
 
 import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiArrowRight, FiCheckCircle, FiClock, FiLoader } from 'react-icons/fi'
 import { trackGoogleAdsPurchaseConversion } from '@/components/GoogleAdsEvents'
 import { identifyTikTokCurrentComposer, trackTikTokEvent } from '@/components/TikTokEvents'
 
 function StudioTopupPendingContent() {
+  const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [syncStatus, setSyncStatus] = useState<'checking' | 'paid' | 'pending' | 'error'>('checking')
-  const [message, setMessage] = useState('Conferindo se o pagamento já foi confirmado...')
+  const [message, setMessage] = useState(t('payment.topup.pending.checking'))
 
   const trackStudioTopupPurchase = async (data: any) => {
     if (typeof window === 'undefined') return
@@ -75,7 +77,7 @@ function StudioTopupPendingContent() {
       if (!token || !topupId) {
         if (cancelled) return
         setSyncStatus('pending')
-        setMessage('A recarga será liberada automaticamente quando o Mercado Pago confirmar o pagamento.')
+        setMessage(t('payment.topup.pending.autoRelease'))
         return
       }
 
@@ -89,13 +91,13 @@ function StudioTopupPendingContent() {
           body: JSON.stringify({ topupId, paymentId }),
         })
         const data = await response.json()
-        if (!response.ok) throw new Error(data.error || 'Erro ao conferir recarga')
+        if (!response.ok) throw new Error(t('payment.topup.errors.check'))
 
         if (cancelled) return
 
         if (data.status === 'paid') {
           setSyncStatus('paid')
-          setMessage('Pagamento confirmado. Seus créditos já foram liberados no Studio IA.')
+          setMessage(t('payment.topup.success.paid'))
           trackStudioTopupPurchase(data)
           window.dispatchEvent(new Event('studioBalanceChange'))
           const successParams = new URLSearchParams()
@@ -106,12 +108,12 @@ function StudioTopupPendingContent() {
         }
 
         setSyncStatus('pending')
-        setMessage('Pagamento recebido. Estamos aguardando a confirmação final do Mercado Pago...')
+        setMessage(t('payment.topup.pending.received'))
         retryTimer = setTimeout(syncTopup, 4000)
       } catch (error: any) {
         if (cancelled) return
         setSyncStatus('error')
-        setMessage(error.message || 'Não foi possível conferir automaticamente agora. A confirmação por webhook ainda pode liberar seus créditos.')
+        setMessage(error.message || t('payment.topup.success.webhookFallback'))
         retryTimer = setTimeout(syncTopup, 6000)
       }
     }
@@ -122,7 +124,7 @@ function StudioTopupPendingContent() {
       cancelled = true
       if (retryTimer) clearTimeout(retryTimer)
     }
-  }, [router, searchParams])
+  }, [router, searchParams, t])
 
   const isPaid = syncStatus === 'paid'
   const isChecking = syncStatus === 'checking'
@@ -143,7 +145,7 @@ function StudioTopupPendingContent() {
             <FiClock className="mx-auto mb-4 h-16 w-16 text-yellow-300" />
           )}
           <h1 className="mb-3 text-3xl font-black">
-            {isPaid ? 'Recarga liberada' : 'Pagamento pendente'}
+            {isPaid ? t('payment.topup.pending.releasedTitle') : t('payment.topup.pending.title')}
           </h1>
           <p className="mb-6 text-gray-300">
             {message}
@@ -156,7 +158,7 @@ function StudioTopupPendingContent() {
                 : 'bg-gray-800 hover:bg-gray-700'
             }`}
           >
-            Voltar ao Studio IA <FiArrowRight />
+            {t('payment.topup.backToStudio')} <FiArrowRight />
           </Link>
         </div>
       </div>
