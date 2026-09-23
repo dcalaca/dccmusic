@@ -1,6 +1,4 @@
 import { createInstance, type i18n, type InitOptions } from 'i18next'
-import { initReactI18next } from 'react-i18next'
-
 import { defaultLocale, normalizeLocale, type AppLocale } from './config'
 
 import ptBR from './messages/pt-BR.json'
@@ -46,7 +44,6 @@ export function getI18nOptions(locale?: string | null): InitOptions {
 export async function createDccI18n(locale: AppLocale | string = defaultLocale): Promise<i18n> {
   const instance = createInstance()
 
-  instance.use(initReactI18next)
   await instance.init(getI18nOptions(locale))
 
   return instance
