@@ -6,7 +6,9 @@
       "save": "Save",
       "close": "Close",
       "back": "Back",
-      "tryAgain": "Try again"
+      "tryAgain": "Try again",
+      "copy": "Copy",
+      "copied": "Copied!"
     },
     "status": {
       "loading": "Loading...",
@@ -86,6 +88,45 @@
         "createPlayback": "Create playback from this version",
         "createInspired": "Create a new version using this as inspiration"
       }
+    }
+  },
+  "footer": {
+    "description": "A platform to listen to songs and videos, create with AI Studio, generate chords, and showcase songwriters.",
+    "auditTitle": "View the public receipt for this audit",
+    "auditAlt": "Technical quality seal — click to read the public audit receipt",
+    "quickLinks": "Quick Links",
+    "contact": "Contact",
+    "showEmail": "Show Email",
+    "copyEmail": "Copy email",
+    "rights": "All rights reserved.",
+    "links": {
+      "videos": "Videos",
+      "songs": "Songs",
+      "studio": "AI Studio",
+      "chords": "Song Chords",
+      "distribution": "Digital Distribution",
+      "composers": "Songwriters",
+      "blog": "Blog",
+      "about": "About",
+      "faq": "FAQ"
+    }
+  },
+  "global": {
+    "country": {
+      "change": "Change country",
+      "prefix": "Country:",
+      "choose": "Choose your country"
+    },
+    "view": {
+      "list": "List",
+      "grid": "Grid",
+      "listAria": "List view",
+      "gridAria": "Grid view"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "Comments, replies, likes, and finished songs",
+      "empty": "No notifications yet."
     }
   }
 }

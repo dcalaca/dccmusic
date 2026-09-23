@@ -6,7 +6,9 @@
       "save": "Salvar",
       "close": "Fechar",
       "back": "Voltar",
-      "tryAgain": "Tentar novamente"
+      "tryAgain": "Tentar novamente",
+      "copy": "Copiar",
+      "copied": "Copiado!"
     },
     "status": {
       "loading": "Carregando...",
@@ -86,6 +88,45 @@
         "createPlayback": "Criar playback desta versão",
         "createInspired": "Criar nova versão usando esta como inspiração"
       }
+    }
+  },
+  "footer": {
+    "description": "Plataforma para ouvir músicas e vídeos, criar com Studio IA, gerar cifras e divulgar o trabalho de compositores.",
+    "auditTitle": "Ver o recibo público desta auditoria",
+    "auditAlt": "Carimbo de qualidade técnica — clique para ler o recibo público da auditoria",
+    "quickLinks": "Links Rápidos",
+    "contact": "Contato",
+    "showEmail": "Ver Email",
+    "copyEmail": "Copiar email",
+    "rights": "Todos os direitos reservados.",
+    "links": {
+      "videos": "Vídeos",
+      "songs": "Músicas",
+      "studio": "Studio IA",
+      "chords": "Cifra da Música",
+      "distribution": "Distribuição Digital",
+      "composers": "Compositores",
+      "blog": "Blog",
+      "about": "Sobre",
+      "faq": "FAQ"
+    }
+  },
+  "global": {
+    "country": {
+      "change": "Mudar país",
+      "prefix": "País:",
+      "choose": "Escolha o seu país"
+    },
+    "view": {
+      "list": "Lista",
+      "grid": "Grade",
+      "listAria": "Visualização em lista",
+      "gridAria": "Visualização em grade"
+    },
+    "notifications": {
+      "title": "Notificações",
+      "subtitle": "Comentários, respostas, curtidas e músicas prontas",
+      "empty": "Nenhuma notificação ainda."
     }
   }
 }

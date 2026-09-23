@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { FiX, FiInfo } from 'react-icons/fi'
 
 interface ToastProps {
@@ -10,17 +11,12 @@ interface ToastProps {
   duration?: number
 }
 
-export default function Toast({
-  message,
-  type = 'info',
-  onClose,
-  duration = 3000,
-}: ToastProps) {
+export default function Toast({ message, type = 'info', onClose, duration = 3000 }: ToastProps) {
+  const { t } = useTranslation()
+
   useEffect(() => {
     if (duration > 0) {
-      const timer = setTimeout(() => {
-        onClose()
-      }, duration)
+      const timer = setTimeout(() => onClose(), duration)
       return () => clearTimeout(timer)
     }
   }, [duration, onClose])
@@ -33,17 +29,10 @@ export default function Toast({
   }
 
   return (
-    <div
-      className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg backdrop-blur-sm animate-slide-in-right ${typeStyles[type]}`}
-      role="alert"
-    >
+    <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg backdrop-blur-sm animate-slide-in-right ${typeStyles[type]}`} role="alert">
       <FiInfo className="w-5 h-5 flex-shrink-0" />
       <p className="text-sm font-medium flex-1">{message}</p>
-      <button
-        onClick={onClose}
-        className="flex-shrink-0 hover:opacity-70 transition-opacity"
-        aria-label="Fechar"
-      >
+      <button onClick={onClose} className="flex-shrink-0 hover:opacity-70 transition-opacity" aria-label={t('common.actions.close')}>
         <FiX className="w-4 h-4" />
       </button>
     </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Link from 'next/link'
 import { FiBell } from 'react-icons/fi'
 import { formatDateShort } from '@/lib/utils'
@@ -22,6 +23,7 @@ type NotificationBellProps = {
 }
 
 export default function NotificationBell({ open, onOpenChange }: NotificationBellProps) {
+  const { t } = useTranslation()
   const [unreadCount, setUnreadCount] = useState(0)
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [loading, setLoading] = useState(false)
@@ -49,7 +51,7 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
       setUnreadCount(Number(data.unreadCount) || 0)
       setNotifications(Array.isArray(data.notifications) ? data.notifications : [])
     } catch (error) {
-      console.error('Erro ao carregar notificações:', error)
+      console.error('Failed to load notifications:', error)
     }
   }
 
@@ -67,11 +69,9 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
         },
         body: JSON.stringify({ all: true }),
       })
-      setNotifications((current) =>
-        current.map((item) => ({ ...item, readAt: item.readAt || new Date().toISOString() }))
-      )
+      setNotifications((current) => current.map((item) => ({ ...item, readAt: item.readAt || new Date().toISOString() })))
     } catch (error) {
-      console.error('Erro ao marcar notificações como lidas:', error)
+      console.error('Failed to mark notifications as read:', error)
     }
   }
 
@@ -101,42 +101,27 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
 
   return (
     <div className="relative z-[120]">
-      <button
-        type="button"
-        onClick={handleToggle}
-        className="relative flex h-10 w-10 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
-        title="Notificações"
-        aria-label="Notificações"
-      >
+      <button type="button" onClick={handleToggle} className="relative flex h-10 w-10 items-center justify-center rounded-lg text-gray-300 transition-colors hover:bg-gray-800 hover:text-white" title={t('global.notifications.title')} aria-label={t('global.notifications.title')}>
         <FiBell className="h-5 w-5" />
-        {unreadCount > 0 && (
-          <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-black" />
-        )}
+        {unreadCount > 0 && <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-black" />}
       </button>
 
       {open && (
         <div className="absolute right-0 z-[130] mt-2 w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-lg border border-gray-700 bg-gray-900 shadow-2xl shadow-black/50">
           <div className="border-b border-gray-700 px-4 py-3">
-            <div className="text-sm font-bold text-white">Notificações</div>
-            <div className="text-xs text-gray-400">Comentários, respostas, curtidas e músicas prontas</div>
+            <div className="text-sm font-bold text-white">{t('global.notifications.title')}</div>
+            <div className="text-xs text-gray-400">{t('global.notifications.subtitle')}</div>
           </div>
           <div className="max-h-80 overflow-y-auto">
             {loading && notifications.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-gray-400">Carregando...</div>
+              <div className="px-4 py-8 text-center text-sm text-gray-400">{t('common.status.loading')}</div>
             ) : notifications.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-gray-400">Nenhuma notificação ainda.</div>
+              <div className="px-4 py-8 text-center text-sm text-gray-400">{t('global.notifications.empty')}</div>
             ) : (
               notifications.map((item) => (
-                <Link
-                  key={item.id}
-                  href={item.href || '/compositores/admin'}
-                  onClick={() => onOpenChange(false)}
-                  className="block border-b border-gray-800 px-4 py-3 transition-colors last:border-b-0 hover:bg-gray-800"
-                >
+                <Link key={item.id} href={item.href || '/compositores/admin'} onClick={() => onOpenChange(false)} className="block border-b border-gray-800 px-4 py-3 transition-colors last:border-b-0 hover:bg-gray-800">
                   <div className="text-sm font-medium text-white">{item.title}</div>
-                  {item.body && (
-                    <div className="mt-1 line-clamp-2 text-xs text-gray-400">{item.body}</div>
-                  )}
+                  {item.body && <div className="mt-1 line-clamp-2 text-xs text-gray-400">{item.body}</div>}
                   <div className="mt-1 text-[11px] text-gray-500">{formatDateShort(item.createdAt)}</div>
                 </Link>
               ))

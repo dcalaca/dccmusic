@@ -6,7 +6,9 @@
       "save": "Guardar",
       "close": "Cerrar",
       "back": "Volver",
-      "tryAgain": "Intentarlo de nuevo"
+      "tryAgain": "Intentarlo de nuevo",
+      "copy": "Copiar",
+      "copied": "¡Copiado!"
     },
     "status": {
       "loading": "Cargando...",
@@ -86,6 +88,45 @@
         "createPlayback": "Crear playback de esta versión",
         "createInspired": "Crear una nueva versión usando esta como inspiración"
       }
+    }
+  },
+  "footer": {
+    "description": "Plataforma para escuchar canciones y vídeos, crear con Studio IA, generar acordes y dar visibilidad al trabajo de compositores.",
+    "auditTitle": "Ver el comprobante público de esta auditoría",
+    "auditAlt": "Sello de calidad técnica — haz clic para leer el comprobante público de la auditoría",
+    "quickLinks": "Enlaces rápidos",
+    "contact": "Contacto",
+    "showEmail": "Ver correo",
+    "copyEmail": "Copiar correo",
+    "rights": "Todos los derechos reservados.",
+    "links": {
+      "videos": "Vídeos",
+      "songs": "Canciones",
+      "studio": "Studio IA",
+      "chords": "Acordes de la Canción",
+      "distribution": "Distribución Digital",
+      "composers": "Compositores",
+      "blog": "Blog",
+      "about": "Acerca de",
+      "faq": "FAQ"
+    }
+  },
+  "global": {
+    "country": {
+      "change": "Cambiar país",
+      "prefix": "País:",
+      "choose": "Elige tu país"
+    },
+    "view": {
+      "list": "Lista",
+      "grid": "Cuadrícula",
+      "listAria": "Vista de lista",
+      "gridAria": "Vista de cuadrícula"
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "subtitle": "Comentarios, respuestas, me gusta y canciones listas",
+      "empty": "Aún no hay notificaciones."
     }
   }
 }
