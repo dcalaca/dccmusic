@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { FiInfo, FiLoader, FiX } from 'react-icons/fi'
+import { useTranslation } from 'react-i18next'
 import { useLocalization } from '@/components/LocalizationProvider'
 
 const STRIPE_SCRIPT = 'https://js.stripe.com/v3/'
 let stripeScriptPromise: Promise<void> | null = null
 
 function loadStripeScript() {
-  if (typeof window === 'undefined') return Promise.reject(new Error('Stripe indisponível'))
+  if (typeof window === 'undefined') return Promise.reject(new Error('Stripe unavailable'))
   if ((window as any).Stripe) return Promise.resolve()
   if (stripeScriptPromise) return stripeScriptPromise
   stripeScriptPromise = new Promise((resolve, reject) => {
@@ -17,7 +18,7 @@ function loadStripeScript() {
     script.src = STRIPE_SCRIPT
     script.async = true
     script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Não foi possível carregar o pagamento alternativo.'))
+    script.onerror = () => reject(new Error('Stripe could not be loaded'))
     if (!existing) document.head.appendChild(script)
   })
   return stripeScriptPromise
@@ -34,38 +35,21 @@ export function StripePaymentOverlay({
   onClose: () => void
   onComplete: () => void | Promise<void>
 }) {
-  const { country } = useLocalization()
+  useLocalization()
+  const { t } = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const checkoutRef = useRef<any>(null)
   const onCompleteRef = useRef(onComplete)
   const [error, setError] = useState('')
   const [ready, setReady] = useState(false)
 
-  const isSpanish = ['MX', 'PY', 'CO'].includes(String(country))
-  const isEnglish = String(country) === 'US' || String(country) === 'GB'
-  const copy = isEnglish
-    ? {
-        title: 'Card payment',
-        loading: 'Loading secure payment...',
-        declineTitle: 'If your card is declined',
-        declineText: 'The refusal comes from the card issuer, not DCC Music. No credits are added unless the payment is approved. Try another card or check with your bank that online purchases are enabled.',
-        close: 'Close',
-      }
-    : isSpanish
-      ? {
-          title: 'Pago con tarjeta',
-          loading: 'Cargando pago seguro...',
-          declineTitle: 'Si tu tarjeta es rechazada',
-          declineText: 'El rechazo proviene del banco emisor de la tarjeta, no de DCC Music. No se agregan créditos hasta que el pago sea aprobado. Prueba con otra tarjeta o confirma con tu banco que las compras en línea estén habilitadas.',
-          close: 'Cerrar',
-        }
-      : {
-          title: 'Pagamento com cartão',
-          loading: 'Carregando pagamento seguro...',
-          declineTitle: 'Se o seu cartão for recusado',
-          declineText: 'A recusa vem do banco emissor do cartão, não da DCC Music. Nenhum crédito é adicionado enquanto o pagamento não for aprovado. Tente outro cartão ou confirme com seu banco se compras online estão liberadas.',
-          close: 'Fechar',
-        }
+  const copy = {
+    title: t('payment.stripe.title'),
+    loading: t('payment.stripe.loading'),
+    declineTitle: t('payment.stripe.declineTitle'),
+    declineText: t('payment.stripe.declineText'),
+    close: t('common.actions.close'),
+  }
 
   useEffect(() => { onCompleteRef.current = onComplete }, [onComplete])
 
@@ -82,7 +66,7 @@ export function StripePaymentOverlay({
         checkout.mount(containerRef.current)
         setReady(true)
       } catch (err: any) {
-        if (!cancelled) setError(err?.message || 'Não foi possível abrir o pagamento alternativo.')
+        if (!cancelled) setError(err?.message || t('payment.stripe.openError'))
       }
     })()
     return () => {
@@ -90,7 +74,7 @@ export function StripePaymentOverlay({
       checkoutRef.current?.destroy?.()
       checkoutRef.current = null
     }
-  }, [clientSecret, publishableKey])
+  }, [clientSecret, publishableKey, t])
 
   return (
     <div className="fixed inset-0 z-[210] flex items-end justify-center bg-black/80 sm:items-center sm:p-4">
