@@ -88,6 +88,136 @@
         "createPlayback": "Create playback from this version",
         "createInspired": "Create a new version using this as inspiration"
       }
+    },
+    "entry": {
+      "back": "Back",
+      "errors": {
+        "load": "Could not load AI Studio."
+      },
+      "lockedDescription": "AI music studio for users with a free song, an active plan, or one-time credits.",
+      "freeTrialTitle": "You have 1 free song to try. Click here.",
+      "freeTrialDescription": "Create your first complete AI song and see how DCC AI Studio works.",
+      "availableCredits": "You have {{count}} credits available.",
+      "useTopup": "Click here to create your next song using your top-up.",
+      "viewPlan": "View DCC AI Studio plan",
+      "buyTopup": "Buy one-time top-up",
+      "exclusive": "Exclusive DCC AI Studio",
+      "heroDescription": "Create complete songs with AI, organize projects, generate covers, and publish on DCC Music.",
+      "createSong": "Create New Song",
+      "createCover": "Create Cover",
+      "improveSong": "Improve Song",
+      "myVoices": "My Voices",
+      "myProjects": "My Projects",
+      "balance": "Current balance",
+      "availableApprox": "{{credits}} credits available, about {{songs}} song(s)",
+      "monthUsage": "Monthly usage",
+      "creditRules": "Generating a song uses 10 credits. Creating an approved voice uses 2 credits. Improving a cover uses 2 credits.",
+      "oneTimeBalance": "You're using one-time credits with no monthly fee.",
+      "topup": "One-time top-up",
+      "generatedMonth": "songs generated this month",
+      "savedProjects": "saved projects",
+      "published": "published on DCC",
+      "recentProjects": "Recent projects",
+      "viewAll": "View all",
+      "noProjects": "You haven't created any Studio projects yet.",
+      "createFirst": "Create first song",
+      "freeStyle": "Free"
+    },
+    "create": {
+      "backToPlans": "Back to plans",
+      "noCreditsTitle": "You're out of AI Studio credits",
+      "noCreditsDescription": "To create new songs, choose an AI Studio plan or buy a credit pack. If you just paid, refresh this page in a few seconds.",
+      "viewPlans": "View plans",
+      "buyTopup": "Buy credit pack",
+      "backToStudio": "Back to AI Studio",
+      "badge": "AI Studio",
+      "heroPrefix": "Your next ",
+      "heroHighlight": "song starts here",
+      "heroDescription": "Share your idea in a few words and AI will create complete, ready-to-sing lyrics.",
+      "validation": {
+        "title": "Enter the song title.",
+        "customStyle": "Describe the music style you want.",
+        "lyrics": "Paste the complete lyrics before continuing.",
+        "idea": "Describe what the song will be about."
+      },
+      "errors": {
+        "noCredits": "You have already used your free song and have no credits left. Choose a plan or buy a credit pack to keep creating.",
+        "project": "Could not create the project.",
+        "lyrics": "Could not generate the lyrics.",
+        "song": "Could not create the song."
+      },
+      "lyricsProvided": "Lyrics provided by the songwriter.",
+      "sections": {
+        "detailsTitle": "Song details",
+        "detailsSubtitle": "Add the basics so AI can create your lyrics.",
+        "voiceTitle": "Vocal direction",
+        "voiceSubtitle": "Optional, but it helps improve the final result.",
+        "lyricsReady": "Lyrics ready",
+        "ideaTitle": "Song idea",
+        "lyricsReadySubtitle": "Paste the complete lyrics to create your project.",
+        "ideaSubtitle": "Tell us about your idea, story, or feeling."
+      },
+      "fields": {
+        "title": "Song title",
+        "style": "Music style",
+        "styleLoading": "Music style (loading...)",
+        "customStyle": "Enter the style",
+        "mood": "Song mood",
+        "lyricsLength": "Lyrics length",
+        "language": "Song language",
+        "voiceType": "Voice type",
+        "voiceTone": "Vocal quality",
+        "savedVoice": "Saved voice",
+        "noClonedVoice": "Do not use a cloned voice",
+        "structure": "Song structure",
+        "extraInstructions": "Additional song instructions"
+      },
+      "placeholders": {
+        "title": "Example: False Key",
+        "lyrics": "Paste the complete song lyrics here...",
+        "idea": "Example: Tell the story, feeling, or idea you want to turn into a song..."
+      },
+      "hints": {
+        "shortTitle": "Use a short title to reduce errors during creation.",
+        "savedVoice": "If you do not choose one, AI will follow only the voice type and vocal quality selected above.",
+        "ownLyrics": "In this mode, we save your lyrics without generating new ones. The system only reorganizes line breaks to help AI sing them better, without changing any words."
+      },
+      "themeIdeas": "THEME IDEAS",
+      "advanced": "Advanced settings",
+      "actions": {
+        "useAI": "Create with AI instead",
+        "haveLyrics": "I already have lyrics",
+        "saveLyricsTitle": "Save lyrics and open project",
+        "generateLyricsTitle": "Generate professional lyrics"
+      },
+      "sidebar": {
+        "creditsAvailable": "credits available",
+        "renewal": "Renewal / period",
+        "viewCredits": "View my credits"
+      },
+      "sample": {
+        "title": "Sample result",
+        "youWrite": "You write",
+        "aiCreates": "AI creates"
+      },
+      "steps": {
+        "1": {
+          "title": "Song details",
+          "subtitle": "Tell us about your song"
+        },
+        "2": {
+          "title": "Vocal direction",
+          "subtitle": "Choose the vocal style"
+        },
+        "3": {
+          "title": "Song idea",
+          "subtitle": "Describe your idea"
+        },
+        "4": {
+          "title": "Create song",
+          "subtitle": "AI composes for you"
+        }
+      }
     }
   },
   "footer": {

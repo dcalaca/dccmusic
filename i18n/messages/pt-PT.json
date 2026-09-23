@@ -88,6 +88,136 @@
         "createPlayback": "Criar playback desta versão",
         "createInspired": "Criar nova versão usando esta como inspiração"
       }
+    },
+    "entry": {
+      "back": "Voltar",
+      "errors": {
+        "load": "Erro ao carregar Studio IA."
+      },
+      "lockedDescription": "Estúdio musical com IA para quem tem música grátis, plano ativo ou créditos avulsos.",
+      "freeTrialTitle": "Você tem 1 música grátis para testar, clique aqui.",
+      "freeTrialDescription": "Crie sua primeira música completa com IA e veja como funciona o DCC Studio IA.",
+      "availableCredits": "Você tem {{count}} créditos disponíveis.",
+      "useTopup": "Clique aqui para criar sua próxima música usando sua recarga.",
+      "viewPlan": "Conhecer plano DCC Studio IA",
+      "buyTopup": "Comprar recarga avulsa",
+      "exclusive": "Exclusivo DCC Studio IA",
+      "heroDescription": "Crie músicas completas com Inteligência Artificial, organize projetos, gere capas e publique no DCC Music.",
+      "createSong": "Criar Nova Música",
+      "createCover": "Criar Capa",
+      "improveSong": "Melhorar Música",
+      "myVoices": "Minhas Vozes",
+      "myProjects": "Meus Projetos",
+      "balance": "Saldo atual",
+      "availableApprox": "{{credits}} créditos disponíveis, aproximadamente {{songs}} música(s)",
+      "monthUsage": "Uso do mês",
+      "creditRules": "Gerar música usa 10 créditos. Criar voz aprovada usa 2 créditos. Melhorar capa usa 2 créditos.",
+      "oneTimeBalance": "Você está usando saldo avulso, sem mensalidade.",
+      "topup": "Recarga avulsa",
+      "generatedMonth": "músicas geradas no mês",
+      "savedProjects": "projetos salvos",
+      "published": "publicados no DCC",
+      "recentProjects": "Projetos recentes",
+      "viewAll": "Ver todos",
+      "noProjects": "Você ainda não criou projetos no Studio.",
+      "createFirst": "Criar primeira música",
+      "freeStyle": "Livre"
+    },
+    "create": {
+      "backToPlans": "Voltar para planos",
+      "noCreditsTitle": "Você está sem saldo no Studio IA",
+      "noCreditsDescription": "Para criar novas músicas, escolha um plano Studio IA ou compre uma recarga avulsa. Se você acabou de pagar, atualize a página em alguns segundos.",
+      "viewPlans": "Ver planos",
+      "buyTopup": "Comprar recarga avulsa",
+      "backToStudio": "Voltar ao Studio",
+      "badge": "Studio IA",
+      "heroPrefix": "Sua próxima ",
+      "heroHighlight": "música começa aqui",
+      "heroDescription": "Conte sua ideia em poucas palavras e a IA cria uma letra completa, pronta para cantar.",
+      "validation": {
+        "title": "Informe o nome da música.",
+        "customStyle": "Escreva o estilo musical que você quer.",
+        "lyrics": "Cole a letra completa antes de continuar.",
+        "idea": "Descreva sobre o que será a música."
+      },
+      "errors": {
+        "noCredits": "Você já usou sua música grátis e está sem saldo. Para continuar criando, escolha um plano ou compre uma recarga avulsa.",
+        "project": "Erro ao criar projeto.",
+        "lyrics": "Erro ao gerar letra.",
+        "song": "Erro ao criar música."
+      },
+      "lyricsProvided": "Letra informada pelo compositor.",
+      "sections": {
+        "detailsTitle": "Informações da música",
+        "detailsSubtitle": "Preencha o básico para a IA criar a letra.",
+        "voiceTitle": "Direção de voz",
+        "voiceSubtitle": "Opcional, mas ajuda no resultado final.",
+        "lyricsReady": "Letra pronta",
+        "ideaTitle": "Ideia da música",
+        "lyricsReadySubtitle": "Cole a letra completa para criar o projeto.",
+        "ideaSubtitle": "Fale sobre sua ideia, história ou sentimento."
+      },
+      "fields": {
+        "title": "Nome da música",
+        "style": "Estilo musical",
+        "styleLoading": "Estilo musical (carregando...)",
+        "customStyle": "Digite o estilo",
+        "mood": "Clima da música",
+        "lyricsLength": "Tamanho da letra",
+        "language": "Idioma da música",
+        "voiceType": "Tipo de voz",
+        "voiceTone": "Característica",
+        "savedVoice": "Voz cadastrada",
+        "noClonedVoice": "Não usar voz clonada",
+        "structure": "Estrutura da música",
+        "extraInstructions": "Outras instruções para a música"
+      },
+      "placeholders": {
+        "title": "Ex: Chave Falsa",
+        "lyrics": "Cole aqui a letra completa da música...",
+        "idea": "Ex: Conte a história, sentimento ou ideia que deseja transformar em música..."
+      },
+      "hints": {
+        "shortTitle": "Use um nome curto para reduzir erro na criação.",
+        "savedVoice": "Se não escolher, a IA segue apenas o tipo e característica de voz acima.",
+        "ownLyrics": "Neste modo, salvamos sua letra no projeto sem gerar uma nova com IA. O sistema só reorganiza as quebras de linha para ajudar a IA a cantar melhor, sem mudar nenhuma palavra."
+      },
+      "themeIdeas": "Sugestões de temas",
+      "advanced": "Ajustes finos",
+      "actions": {
+        "useAI": "Quero gerar com IA",
+        "haveLyrics": "Já tenho a letra",
+        "saveLyricsTitle": "Salvar letra e abrir o projeto",
+        "generateLyricsTitle": "Gerar letra profissional"
+      },
+      "sidebar": {
+        "creditsAvailable": "créditos disponíveis",
+        "renewal": "Renovação / período",
+        "viewCredits": "Ver meus créditos"
+      },
+      "sample": {
+        "title": "Exemplo de resultado",
+        "youWrite": "Você escreve",
+        "aiCreates": "A IA cria"
+      },
+      "steps": {
+        "1": {
+          "title": "Informações",
+          "subtitle": "Conte sobre sua música"
+        },
+        "2": {
+          "title": "Direção de voz",
+          "subtitle": "Defina o estilo vocal"
+        },
+        "3": {
+          "title": "Ideia da música",
+          "subtitle": "Fale sobre sua ideia"
+        },
+        "4": {
+          "title": "Criar música",
+          "subtitle": "IA compondo para você"
+        }
+      }
     }
   },
   "footer": {

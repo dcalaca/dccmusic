@@ -88,6 +88,136 @@
         "createPlayback": "Crear playback de esta versión",
         "createInspired": "Crear una nueva versión usando esta como inspiración"
       }
+    },
+    "entry": {
+      "back": "Volver",
+      "errors": {
+        "load": "Error al cargar Studio IA."
+      },
+      "lockedDescription": "Estudio musical con IA para quienes tienen una canción gratis, un plan activo o créditos de recarga.",
+      "freeTrialTitle": "Tienes 1 canción gratis para probar. Haz clic aquí.",
+      "freeTrialDescription": "Crea tu primera canción completa con IA y descubre cómo funciona DCC Studio IA.",
+      "availableCredits": "Tienes {{count}} créditos disponibles.",
+      "useTopup": "Haz clic aquí para crear tu próxima canción usando tu recarga.",
+      "viewPlan": "Ver plan DCC Studio IA",
+      "buyTopup": "Comprar recarga",
+      "exclusive": "Exclusivo DCC Studio IA",
+      "heroDescription": "Crea canciones completas con IA, organiza proyectos, genera portadas y publica en DCC Music.",
+      "createSong": "Crear Nueva Canción",
+      "createCover": "Crear Portada",
+      "improveSong": "Mejorar Canción",
+      "myVoices": "Mis Voces",
+      "myProjects": "Mis Proyectos",
+      "balance": "Saldo actual",
+      "availableApprox": "{{credits}} créditos disponibles, aproximadamente {{songs}} canción(es)",
+      "monthUsage": "Uso del mes",
+      "creditRules": "Generar una canción usa 10 créditos. Crear una voz aprobada usa 2 créditos. Mejorar una portada usa 2 créditos.",
+      "oneTimeBalance": "Estás usando saldo de recarga, sin mensualidad.",
+      "topup": "Recarga",
+      "generatedMonth": "canciones generadas este mes",
+      "savedProjects": "proyectos guardados",
+      "published": "publicados en DCC",
+      "recentProjects": "Proyectos recientes",
+      "viewAll": "Ver todos",
+      "noProjects": "Todavía no has creado proyectos en Studio.",
+      "createFirst": "Crear primera canción",
+      "freeStyle": "Libre"
+    },
+    "create": {
+      "backToPlans": "Volver a planes",
+      "noCreditsTitle": "Te has quedado sin saldo en Studio IA",
+      "noCreditsDescription": "Para crear nuevas canciones, elige un plan Studio IA o compra una recarga. Si acabas de pagar, actualiza esta página en unos segundos.",
+      "viewPlans": "Ver planes",
+      "buyTopup": "Comprar recarga",
+      "backToStudio": "Volver a Studio IA",
+      "badge": "Studio IA",
+      "heroPrefix": "Tu próxima ",
+      "heroHighlight": "canción empieza aquí",
+      "heroDescription": "Cuéntanos tu idea en pocas palabras y la IA creará una letra completa, lista para cantar.",
+      "validation": {
+        "title": "Escribe el nombre de la canción.",
+        "customStyle": "Describe el estilo musical que quieres.",
+        "lyrics": "Pega la letra completa antes de continuar.",
+        "idea": "Describe de qué tratará la canción."
+      },
+      "errors": {
+        "noCredits": "Ya usaste tu canción gratis y no tienes saldo. Para seguir creando, elige un plan o compra una recarga.",
+        "project": "Error al crear el proyecto.",
+        "lyrics": "Error al generar la letra.",
+        "song": "Error al crear la canción."
+      },
+      "lyricsProvided": "Letra proporcionada por el compositor.",
+      "sections": {
+        "detailsTitle": "Información de la canción",
+        "detailsSubtitle": "Completa lo básico para que la IA cree la letra.",
+        "voiceTitle": "Dirección vocal",
+        "voiceSubtitle": "Opcional, pero ayuda a mejorar el resultado final.",
+        "lyricsReady": "Letra lista",
+        "ideaTitle": "Idea de la canción",
+        "lyricsReadySubtitle": "Pega la letra completa para crear el proyecto.",
+        "ideaSubtitle": "Cuéntanos tu idea, historia o sentimiento."
+      },
+      "fields": {
+        "title": "Nombre de la canción",
+        "style": "Estilo musical",
+        "styleLoading": "Estilo musical (cargando...)",
+        "customStyle": "Escribe el estilo",
+        "mood": "Clima de la canción",
+        "lyricsLength": "Tamaño de la letra",
+        "language": "Idioma de la canción",
+        "voiceType": "Tipo de voz",
+        "voiceTone": "Característica vocal",
+        "savedVoice": "Voz guardada",
+        "noClonedVoice": "No usar voz clonada",
+        "structure": "Estructura de la canción",
+        "extraInstructions": "Otras instrucciones para la canción"
+      },
+      "placeholders": {
+        "title": "Ej.: Llave Falsa",
+        "lyrics": "Pega aquí la letra completa de la canción...",
+        "idea": "Ej.: Cuenta la historia, emoción o idea que quieres convertir en canción..."
+      },
+      "hints": {
+        "shortTitle": "Usa un nombre corto para reducir errores durante la creación.",
+        "savedVoice": "Si no eliges una, la IA seguirá solo el tipo y la característica vocal seleccionados arriba.",
+        "ownLyrics": "En este modo guardamos tu letra sin generar una nueva con IA. El sistema solo reorganiza los saltos de línea para ayudar a la IA a cantarla mejor, sin cambiar ninguna palabra."
+      },
+      "themeIdeas": "IDEAS DE TEMAS",
+      "advanced": "Ajustes avanzados",
+      "actions": {
+        "useAI": "Quiero crearla con IA",
+        "haveLyrics": "Ya tengo la letra",
+        "saveLyricsTitle": "Guardar letra y abrir proyecto",
+        "generateLyricsTitle": "Generar letra profesional"
+      },
+      "sidebar": {
+        "creditsAvailable": "créditos disponibles",
+        "renewal": "Renovación / período",
+        "viewCredits": "Ver mis créditos"
+      },
+      "sample": {
+        "title": "Ejemplo de resultado",
+        "youWrite": "Tú escribes",
+        "aiCreates": "La IA crea"
+      },
+      "steps": {
+        "1": {
+          "title": "Información",
+          "subtitle": "Cuéntanos sobre tu canción"
+        },
+        "2": {
+          "title": "Dirección vocal",
+          "subtitle": "Define el estilo vocal"
+        },
+        "3": {
+          "title": "Idea de la canción",
+          "subtitle": "Describe tu idea"
+        },
+        "4": {
+          "title": "Crear canción",
+          "subtitle": "La IA compone para ti"
+        }
+      }
     }
   },
   "footer": {

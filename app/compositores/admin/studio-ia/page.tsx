@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { FiArrowLeft, FiBarChart2, FiCreditCard, FiFolder, FiImage, FiMic, FiMusic, FiPlus, FiZap } from 'react-icons/fi'
 
@@ -17,6 +18,7 @@ type Project = {
 }
 
 export default function StudioDashboardPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [allowed, setAllowed] = useState(false)
@@ -62,13 +64,13 @@ export default function StudioDashboardPage() {
         setProjects(projectsData.projects || [])
       }
     } catch (err: any) {
-      setError(err.message || 'Erro ao carregar Studio IA')
+      setError(err.message || t('studio.entry.errors.load'))
     } finally {
       if (!options?.silent) {
         setLoading(false)
       }
     }
-  }, [router])
+  }, [router, t])
 
   useEffect(() => {
     loadDashboard()
@@ -105,22 +107,22 @@ export default function StudioDashboardPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto">
             <Link href="/compositores/admin" className="mb-6 inline-flex items-center gap-2 text-primary-400 sm:mb-8">
-              <FiArrowLeft /> Voltar
+              <FiArrowLeft /> {t('studio.entry.back')}
             </Link>
             <div className="rounded-2xl border border-purple-700/60 bg-gradient-to-br from-purple-950/60 via-black to-gray-950 p-5 text-center sm:rounded-3xl sm:p-8">
               <FiZap className="mx-auto mb-4 h-12 w-12 text-purple-300" />
               <h1 className="mb-3 text-3xl font-black sm:text-4xl">DCC Studio IA</h1>
               <p className="text-gray-300 mb-6">
-                Estúdio musical com IA para quem tem música grátis, plano ativo ou créditos avulsos.
+                {t('studio.entry.lockedDescription')}
               </p>
               {freeMusicRemaining > 0 && (
                 <Link
                   href="/compositores/admin/studio-ia/novo"
                   className="mb-5 block rounded-2xl border border-green-500/50 bg-green-950/30 px-5 py-4 text-green-100 transition hover:border-green-300 hover:bg-green-950/50"
                 >
-                  <span className="block text-lg font-black">Você tem 1 música grátis para testar, clique aqui.</span>
+                  <span className="block text-lg font-black">{t('studio.entry.freeTrialTitle')}</span>
                   <span className="mt-1 block text-sm text-green-200/85">
-                    Crie sua primeira música completa com IA e veja como funciona o DCC Studio IA.
+                    {t('studio.entry.freeTrialDescription')}
                   </span>
                 </Link>
               )}
@@ -129,17 +131,17 @@ export default function StudioDashboardPage() {
                   href="/compositores/admin/studio-ia/novo"
                   className="mb-5 block rounded-2xl border border-green-500/50 bg-green-950/30 px-5 py-4 text-green-100 transition hover:border-green-300 hover:bg-green-950/50"
                 >
-                  <span className="block text-lg font-black">Você tem {creditsRemaining} créditos disponíveis.</span>
+                  <span className="block text-lg font-black">{t('studio.entry.availableCredits', { count: creditsRemaining })}</span>
                   <span className="mt-1 block text-sm text-green-200/85">
-                    Clique aqui para criar sua próxima música usando sua recarga.
+                    {t('studio.entry.useTopup')}
                   </span>
                 </Link>
               )}
               <Link href="/studio-ia#planos" className="inline-flex w-full justify-center rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-6 py-3 font-semibold sm:w-auto">
-                Conhecer plano DCC Studio IA
+                {t('studio.entry.viewPlan')}
               </Link>
               <Link href="/compositores/admin/studio-ia/recarga" className="ml-0 mt-3 inline-flex w-full justify-center rounded-xl border border-purple-700 px-6 py-3 font-semibold text-purple-100 hover:bg-purple-950/40 sm:ml-3 sm:mt-0 sm:w-auto">
-                Comprar recarga avulsa
+                {t('studio.entry.buyTopup')}
               </Link>
             </div>
           </div>
@@ -159,7 +161,7 @@ export default function StudioDashboardPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <Link href="/compositores/admin" className="mb-6 inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 sm:mb-8">
-            <FiArrowLeft /> Voltar
+            <FiArrowLeft /> {t('studio.entry.back')}
           </Link>
 
           <motion.section
@@ -172,52 +174,52 @@ export default function StudioDashboardPage() {
             <div className="relative grid gap-8 lg:grid-cols-[1.35fr_0.65fr] items-center">
               <div>
                 <span className="mb-4 inline-flex rounded-full border border-purple-400/40 bg-purple-950/50 px-4 py-2 text-sm text-purple-200">
-                  Exclusivo DCC Studio IA
+                  {t('studio.entry.exclusive')}
                 </span>
                 <h1 className="mb-4 text-3xl font-black sm:text-6xl">
                   <span className="gradient-text">DCC Studio IA</span>
                 </h1>
                 <p className="max-w-3xl text-base text-gray-300 sm:text-xl">
-                  Crie músicas completas com Inteligência Artificial, organize projetos, gere capas e publique no DCC Music.
+                  {t('studio.entry.heroDescription')}
                 </p>
                 <div className="mt-8 flex flex-col sm:flex-row gap-3">
                   <Link href="/compositores/admin/studio-ia/novo" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-6 py-4 font-bold hover:scale-[1.01] transition">
-                    <FiPlus /> Criar Nova Música
+                    <FiPlus /> {t('studio.entry.createSong')}
                   </Link>
                   <Link href="/compositores/admin/studio-ia/criar-capa" className="inline-flex items-center justify-center gap-2 rounded-xl bg-fuchsia-900/70 px-6 py-4 font-semibold hover:bg-fuchsia-800 transition">
-                    <FiImage /> Criar Capa
+                    <FiImage /> {t('studio.entry.createCover')}
                   </Link>
                   <Link href="/compositores/admin/studio-ia/melhorar" className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-900/70 px-6 py-4 font-semibold hover:bg-purple-800 transition">
-                    <FiZap /> Melhorar Música
+                    <FiZap /> {t('studio.entry.improveSong')}
                   </Link>
                   <Link href="/compositores/admin/minhas-vozes" className="inline-flex items-center justify-center gap-2 rounded-xl bg-fuchsia-900/70 px-6 py-4 font-semibold hover:bg-fuchsia-800 transition">
-                    <FiMic /> Minhas Vozes
+                    <FiMic /> {t('studio.entry.myVoices')}
                   </Link>
                   <Link href="/compositores/admin/studio-ia/projetos" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-800 px-6 py-4 font-semibold hover:bg-gray-700 transition">
-                    <FiFolder /> Meus Projetos
+                    <FiFolder /> {t('studio.entry.myProjects')}
                   </Link>
                 </div>
               </div>
 
               <div className="rounded-2xl border border-gray-800 bg-black/50 p-4 sm:p-6">
-                <p className="text-sm font-semibold text-gray-400">Saldo atual</p>
+                <p className="text-sm font-semibold text-gray-400">{t('studio.entry.balance')}</p>
                 <p className="mt-1 text-4xl font-black text-green-300">{credits.remaining}</p>
                 <p className="mt-1 text-sm text-gray-300">
-                  créditos disponíveis, aproximadamente {remainingMusics} música(s)
+                  {t('studio.entry.availableApprox', { credits: credits.remaining, songs: remainingMusics })}
                 </p>
                 <div className="mt-5 flex justify-between text-sm mb-3">
-                  <span className="text-gray-400">Uso do mês</span>
+                  <span className="text-gray-400">{t('studio.entry.monthUsage')}</span>
                   <span className="font-semibold text-primary-300">{credits.used} / {credits.limit}</span>
                 </div>
                 <div className="h-3 rounded-full bg-gray-800 overflow-hidden">
                   <div className="h-full bg-gradient-to-r from-primary-500 to-purple-500" style={{ width: `${creditPercent}%` }} />
                 </div>
                 <p className="mt-3 text-xs text-gray-500">
-                  Gerar música usa 10 créditos. Criar voz aprovada usa 2 créditos. Melhorar capa usa 2 créditos.
+                  {t('studio.entry.creditRules')}
                 </p>
                 {!hasStudioPlan && (
                   <p className="mt-2 text-xs text-purple-200">
-                    Você está usando saldo avulso, sem mensalidade.
+                    {t('studio.entry.oneTimeBalance')}
                   </p>
                 )}
                 {credits.remaining <= 0 && (
@@ -226,7 +228,7 @@ export default function StudioDashboardPage() {
                     className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-3 text-sm font-bold text-white hover:from-primary-500 hover:to-purple-500"
                   >
                     <FiCreditCard />
-                    Recarga avulsa
+                    {t('studio.entry.topup')}
                   </Link>
                 )}
               </div>
@@ -239,32 +241,32 @@ export default function StudioDashboardPage() {
             <div className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4 sm:p-5">
               <FiMusic className="mb-3 h-6 w-6 text-primary-300" />
               <p className="text-2xl font-black">{status?.stats?.musicGenerations || 0} / {status?.stats?.musicLimit || 20}</p>
-              <p className="text-sm text-gray-400">músicas geradas no mês</p>
+              <p className="text-sm text-gray-400">{t('studio.entry.generatedMonth')}</p>
             </div>
             <div className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4 sm:p-5">
               <FiFolder className="mb-3 h-6 w-6 text-primary-300" />
               <p className="text-2xl font-black">{status?.stats?.totalProjects || 0}</p>
-              <p className="text-sm text-gray-400">projetos salvos</p>
+              <p className="text-sm text-gray-400">{t('studio.entry.savedProjects')}</p>
             </div>
             <div className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4 sm:p-5">
               <FiBarChart2 className="mb-3 h-6 w-6 text-primary-300" />
               <p className="text-2xl font-black">{status?.stats?.publishedProjects || 0}</p>
-              <p className="text-sm text-gray-400">publicados no DCC</p>
+              <p className="text-sm text-gray-400">{t('studio.entry.published')}</p>
             </div>
           </div>
 
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Projetos recentes</h2>
+            <h2 className="text-2xl font-bold">{t('studio.entry.recentProjects')}</h2>
             <Link href="/compositores/admin/studio-ia/projetos" className="text-sm text-primary-300 hover:text-primary-200">
-              Ver todos
+              {t('studio.entry.viewAll')}
             </Link>
           </div>
 
           {recentProjects.length === 0 ? (
             <div className="rounded-3xl border border-gray-800 bg-gray-950/60 p-10 text-center">
-              <p className="text-gray-400 mb-4">Você ainda não criou projetos no Studio.</p>
+              <p className="text-gray-400 mb-4">{t('studio.entry.noProjects')}</p>
               <Link href="/compositores/admin/studio-ia/novo" className="inline-flex rounded-xl bg-primary-600 px-5 py-3 font-semibold">
-                Criar primeira música
+                {t('studio.entry.createFirst')}
               </Link>
             </div>
           ) : (
@@ -276,7 +278,7 @@ export default function StudioDashboardPage() {
                   </div>
                   <div className="p-3 sm:p-4">
                     <h3 className="font-bold group-hover:text-primary-300 transition">{project.title}</h3>
-                    <p className="text-sm text-gray-400">{project.style || 'Livre'} · {project.status}</p>
+                    <p className="text-sm text-gray-400">{project.style || t('studio.entry.freeStyle')} · {project.status}</p>
                   </div>
                 </Link>
               ))}
