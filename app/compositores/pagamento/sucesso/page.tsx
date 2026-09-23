@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { FiCheckCircle, FiArrowRight } from 'react-icons/fi'
 import { trackGoogleAdsPurchaseConversion } from '@/components/GoogleAdsEvents'
 import { identifyTikTokCurrentComposer } from '@/components/TikTokEvents'
@@ -10,6 +11,7 @@ import { pushGtmEvent } from '@/components/GtmEvents'
 import { blogAttributionEventPayload } from '@/lib/blog/attribution'
 
 function PaymentSuccessContent() {
+  const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
   const subscriptionId = searchParams.get('subscription_id')
@@ -115,22 +117,22 @@ function PaymentSuccessContent() {
             {loading ? (
               <div>
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400 mx-auto mb-4"></div>
-                <p className="text-gray-400">Processando...</p>
+                <p className="text-gray-400">{t('payment.status.processing')}</p>
               </div>
             ) : (
               <>
                 <FiCheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
                 <h1 className="text-3xl font-bold mb-4">
-                  <span className="gradient-text">Pagamento Aprovado!</span>
+                  <span className="gradient-text">{t('payment.status.approvedTitle')}</span>
                 </h1>
                 <p className="text-gray-400 mb-6">
-                  Sua assinatura foi ativada com sucesso. Agora você pode cadastrar suas músicas e vídeos!
+                  {t('payment.status.approvedDescription')}
                 </p>
                 <Link
                   href="/compositores/admin"
                   className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium"
                 >
-                  <span>Ir para Área do Compositor</span>
+                  <span>{t('payment.status.goToComposerArea')}</span>
                   <FiArrowRight className="w-4 h-4" />
                 </Link>
               </>
