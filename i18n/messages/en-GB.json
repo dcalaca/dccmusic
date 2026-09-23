@@ -14,5 +14,78 @@
       "success": "Completed",
       "error": "Something went wrong"
     }
+  },
+  "menu": {
+    "home": "Home",
+    "createSong": "Create your song",
+    "createSongMobile": "Create song",
+    "spotifyPlatforms": "Spotify & Platforms",
+    "spotify": "Spotify",
+    "plans": "Plans",
+    "explore": "Explore",
+    "songChords": "Song Chords",
+    "chords": "Chords",
+    "premiumComposers": "Premium Composers",
+    "composers": "Composers",
+    "blog": "Blog"
+  },
+  "header": {
+    "composer": "Composer",
+    "studioBalance": "AI Studio balance",
+    "myStudio": "My AI Studio",
+    "compositions": "Compositions",
+    "addSong": "Add song",
+    "mySongs": "My songs",
+    "myVideos": "My videos",
+    "premiumCompositions": "Premium compositions",
+    "viewPlans": "View composer plans",
+    "account": "Account and statement",
+    "logout": "Log out",
+    "credits": "{{count}} credits",
+    "composerAccess": "Composer access"
+  },
+  "studio": {
+    "project": {
+      "audio": {
+        "listen": "Listen to song",
+        "pause": "Pause song",
+        "play": "Play song",
+        "progress": "Song progress",
+        "download": "Download song"
+      },
+      "inspiration": {
+        "eyebrow": "Choose inspiration",
+        "title": "Which version do you want to use?",
+        "description": "Listen to the songs in this project and choose the version that should be the basis for the new creation.",
+        "howTransform": "How do you want to transform it?",
+        "variations": {
+          "similar": "Similar to the previous one",
+          "sameStyleNewMelody": "Same style, different melody",
+          "creative": "More creative / more different from the previous one"
+        }
+      },
+      "versions": {
+        "previous": "View previous version",
+        "next": "View next version",
+        "chosen": "Selected version",
+        "generatedSongNumber": "Generated song #{{number}}",
+        "generatedVersion": "Generated version",
+        "duration": "Duration {{duration}}",
+        "current": "current",
+        "noAudio": "No audio URL is registered.",
+        "useThisVersion": "Use this version",
+        "swipe": "Swipe sideways to see other versions.",
+        "ready": "Song ready",
+        "chooseTitle": "Choose your version",
+        "chooseDescription": "Listen to the generated versions below. The current version is marked, but all versions remain available here.",
+        "versionNumber": "Version {{number}}",
+        "published": "published",
+        "customVoiceTitle": "Made with voice: {{name}}",
+        "voiceLabel": "Voice: {{name}}",
+        "finalizingAudio": "Finishing the audio so you can listen. This page refreshes automatically.",
+        "createPlayback": "Create playback from this version",
+        "createInspired": "Create a new version using this as inspiration"
+      }
+    }
   }
 }

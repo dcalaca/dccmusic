@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { FiMusic, FiPlayCircle, FiHome, FiCompass, FiShield, FiUsers, FiUser, FiLogOut, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe, FiBookOpen } from 'react-icons/fi'
 import NotificationBell from './NotificationBell'
 import CountrySelector from './CountrySelector'
@@ -42,17 +43,18 @@ function HeaderComposerAvatar({
 }
 
 const siteNavItems = [
-  { href: '/', label: 'Home', icon: FiHome },
-  { href: '/studio-ia', label: 'Crie sua música', mobileLabel: 'Criar música', icon: FiZap },
-  { href: '/distribuicao-digital', label: 'Spotify e Plataformas', mobileLabel: 'Spotify', icon: FiGlobe },
-  { href: '/compositores/planos', label: 'Planos', icon: FiCreditCard },
-  { href: '/musicas', label: 'Explorar', mobileLabel: 'Explorar', icon: FiCompass },
-  { href: '/transcricao-musical', label: 'Cifra da Música', mobileLabel: 'Cifra', icon: FiFileText },
-  { href: '/compositores', label: 'Compositores Premium', mobileLabel: 'Compositores', icon: FiUsers },
+  { id: 'home', href: '/', labelKey: 'menu.home', icon: FiHome },
+  { id: 'create-song', href: '/studio-ia', labelKey: 'menu.createSong', mobileLabelKey: 'menu.createSongMobile', icon: FiZap },
+  { id: 'distribution', href: '/distribuicao-digital', labelKey: 'menu.spotifyPlatforms', mobileLabelKey: 'menu.spotify', icon: FiGlobe },
+  { id: 'plans', href: '/compositores/planos', labelKey: 'menu.plans', icon: FiCreditCard },
+  { id: 'explore', href: '/musicas', labelKey: 'menu.explore', icon: FiCompass },
+  { id: 'chords', href: '/transcricao-musical', labelKey: 'menu.songChords', mobileLabelKey: 'menu.chords', icon: FiFileText },
+  { id: 'premium-composers', href: '/compositores', labelKey: 'menu.premiumComposers', mobileLabelKey: 'menu.composers', icon: FiUsers },
 ]
 export default function Header() {
   const pathname = usePathname()
   const router = useRouter()
+  const { t, i18n } = useTranslation()
   const [composer, setComposer] = useState<any>(null)
   const [composerHasToken, setComposerHasToken] = useState(false)
   const [composerStudioBalance, setComposerStudioBalance] = useState<number | null>(null)
@@ -60,12 +62,9 @@ export default function Header() {
   const [showBell, setShowBell] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [surface, setSurface] = useState<'blog' | 'site'>('site')
-  const [uiLanguage, setUiLanguage] = useState<'pt' | 'en' | 'es'>('pt')
 
   useEffect(() => {
     setMounted(true)
-    const lang = document.documentElement.lang || ''
-    setUiLanguage(lang.startsWith('en') ? 'en' : lang.startsWith('es') ? 'es' : 'pt')
     const host = window.location.hostname
     const isBlog = host.startsWith('blog.') || window.location.pathname.startsWith('/blog')
     setSurface(isBlog ? 'blog' : 'site')
@@ -201,15 +200,25 @@ export default function Header() {
     window.dispatchEvent(new Event('authChange'))
   }
 
-  const copy = uiLanguage === 'en'
-    ? { composer: 'Composer', studioBalance: 'Studio IA balance', myStudio: 'My AI Studio', compositions: 'Compositions', addSong: 'Add song', mySongs: 'My songs', myVideos: 'My videos', premiumCompositions: 'Premium compositions', viewPlans: 'View composer plans', account: 'Account and statement', logout: 'Log out' }
-    : uiLanguage === 'es'
-      ? { composer: 'Compositor', studioBalance: 'Saldo Studio IA', myStudio: 'Mi Studio IA', compositions: 'Composiciones', addSong: 'Registrar canción', mySongs: 'Mis canciones', myVideos: 'Mis vídeos', premiumCompositions: 'Composiciones Premium', viewPlans: 'Ver aviso y planes de compositor', account: 'Cuenta y extracto', logout: 'Salir' }
-      : { composer: 'Compositor', studioBalance: 'Saldo Studio IA', myStudio: 'Meu Studio IA', compositions: 'Composições', addSong: 'Cadastrar música', mySongs: 'Minhas músicas', myVideos: 'Meus vídeos', premiumCompositions: 'Composições Premium', viewPlans: 'Ver aviso e planos de compositor', account: 'Conta e extrato', logout: 'Sair' }
-  const showBlog = !mounted || uiLanguage === 'pt'
+  const copy = {
+    composer: t('header.composer'),
+    studioBalance: t('header.studioBalance'),
+    myStudio: t('header.myStudio'),
+    compositions: t('header.compositions'),
+    addSong: t('header.addSong'),
+    mySongs: t('header.mySongs'),
+    myVideos: t('header.myVideos'),
+    premiumCompositions: t('header.premiumCompositions'),
+    viewPlans: t('header.viewPlans'),
+    account: t('header.account'),
+    logout: t('header.logout'),
+    composerAccess: t('header.composerAccess'),
+  }
+  const activeLanguage = i18n.resolvedLanguage || i18n.language || 'pt-BR'
+  const showBlog = !mounted || activeLanguage.startsWith('pt')
 
   const composerDisplayName = composer?.name || composer?.email || copy.composer
-  const composerBalanceLabel = composerStudioBalance === null ? null : `${composerStudioBalance} créditos`
+  const composerBalanceLabel = composerStudioBalance === null ? null : t('header.credits', { count: composerStudioBalance })
   const composerIsPremium = Boolean(composer?.isPremium)
   const isLocal = mounted && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   const blogHomeHref = !mounted
@@ -224,20 +233,28 @@ export default function Header() {
   const siteHomeHref = mounted && surface === 'blog' && !isLocal ? 'https://www.dccmusic.online/' : '/'
   const navItems = [
     {
+      id: 'home',
       href: surface === 'blog' ? siteHomeHref : '/',
-      label: 'Home',
+      label: t('menu.home'),
+      mobileLabel: t('menu.home'),
       icon: FiHome,
     },
-    ...siteNavItems.filter((item) => item.href !== '/'),
-    ...(showBlog ? [{ href: blogHomeHref, label: 'Blog', icon: FiBookOpen }] : []),
+    ...siteNavItems
+      .filter((item) => item.id !== 'home')
+      .map((item) => ({
+        ...item,
+        label: t(item.labelKey),
+        mobileLabel: t('mobileLabelKey' in item ? item.mobileLabelKey : item.labelKey),
+      })),
+    ...(showBlog ? [{ id: 'blog', href: blogHomeHref, label: t('menu.blog'), mobileLabel: t('menu.blog'), icon: FiBookOpen }] : []),
   ]
   const logoHref = surface === 'blog' ? (pathname.startsWith('/blog') ? '/blog' : '/') : '/'
 
-  const isNavActive = (item: { href: string; label: string }) => {
-    if (item.label === 'Blog') {
+  const isNavActive = (item: { href: string; id: string }) => {
+    if (item.id === 'blog') {
       return surface === 'blog' || pathname === '/blog' || pathname.startsWith('/blog/')
     }
-    if (item.label === 'Home') {
+    if (item.id === 'home') {
       return pathname === '/' && surface !== 'blog'
     }
 
@@ -245,7 +262,7 @@ export default function Header() {
     if (!matches) return false
 
     const hasMoreSpecificMatch = navItems.some((other) => {
-      if (other.href === item.href || other.label === 'Home' || other.label === 'Blog') return false
+      if (other.href === item.href || other.id === 'home' || other.id === 'blog') return false
       if (other.href.length <= item.href.length) return false
       return pathname === other.href || pathname.startsWith(`${other.href}/`)
     })
@@ -280,7 +297,7 @@ export default function Header() {
                 const isActive = isNavActive(item)
                 return (
                   <Link
-                    key={item.label}
+                    key={item.id}
                     href={item.href}
                     className={`flex shrink-0 items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
                       isActive
@@ -342,7 +359,7 @@ export default function Header() {
                     </Link>
                     <div className="border-b border-gray-800 py-2">
                       <div className="px-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-500">
-                        Composições
+                        {copy.compositions}
                       </div>
                       {composerIsPremium ? (
                         <>
@@ -412,7 +429,7 @@ export default function Header() {
                 className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-medium transition-all"
               >
                 <FiShield className="w-4 h-4" />
-                <span>Acesso do Compositor</span>
+                <span>{copy.composerAccess}</span>
               </Link>
             )}
           </nav>
@@ -423,10 +440,10 @@ export default function Header() {
               {navItems.map((item) => {
                 const Icon = item.icon
                 const isActive = isNavActive(item)
-                const mobileLabel = 'mobileLabel' in item ? item.mobileLabel : item.label
+                const mobileLabel = item.mobileLabel || item.label
                 return (
                   <Link
-                    key={item.label}
+                    key={item.id}
                     href={item.href}
                     className={`flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-[11px] font-semibold transition-all sm:px-3 sm:text-xs ${
                       isActive
@@ -484,7 +501,7 @@ export default function Header() {
                     </Link>
                     <div className="border-b border-gray-800 py-2">
                       <div className="px-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-500">
-                        Composições
+                        {copy.compositions}
                       </div>
                       {composerIsPremium ? (
                         <>
@@ -552,7 +569,7 @@ export default function Header() {
               <Link
                 href="/compositores/admin"
                 className="shrink-0 rounded-lg bg-gradient-to-r from-primary-600 to-purple-600 p-2 text-white transition-all hover:from-primary-700 hover:to-purple-700"
-                title="Acesso do Compositor"
+                title={copy.composerAccess}
               >
                 <FiShield className="w-5 h-5" />
               </Link>

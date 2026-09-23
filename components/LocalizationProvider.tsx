@@ -1,6 +1,8 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createInstance } from 'i18next'
+import { I18nextProvider } from 'react-i18next'
 import { usePathname } from 'next/navigation'
 import { COUNTRY_CONFIG, COUNTRY_COOKIE, type DccCountry, type DccLocale, formatLocalizedMoney, normalizeCountry } from '@/lib/localization'
 import { translateToParaguayanSpanish } from '@/lib/i18n-es-py'
@@ -8,6 +10,7 @@ import { translateToMexicanSpanish } from '@/lib/i18n-es-mx'
 import { translateToEuropeanPortuguese } from '@/lib/i18n-pt-pt'
 import { translateToAmericanEnglish } from '@/lib/i18n-en-us'
 import { translateEnglishOverride } from '@/lib/i18n-en-overrides'
+import { getI18nOptions } from '@/i18n/i18next'
 
 type LocalizationContextValue = { country: DccCountry; locale: DccLocale; currency: 'BRL' | 'PYG' | 'COP' | 'EUR' | 'MXN' | 'USD' | 'GBP'; paymentProvider: 'mercadopago' | 'stripe'; setCountry: (country: DccCountry) => void; formatMoney: (brlValue: number) => string }
 const LocalizationContext = createContext<LocalizationContextValue | null>(null)
@@ -43,11 +46,26 @@ function translateElementAttributes(element: Element, country: DccCountry) { if 
 function translateDom(root: ParentNode, country: DccCountry) { const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); const textNodes: Node[] = []; let node = walker.nextNode(); while (node) { textNodes.push(node); node = walker.nextNode() } textNodes.forEach((textNode) => translateTextNode(textNode, country)); if (root instanceof Element) translateElementAttributes(root, country); root.querySelectorAll?.<HTMLElement>('[placeholder], [title], [aria-label]').forEach((element) => translateElementAttributes(element, country)) }
 
 export default function LocalizationProvider({ initialCountry, children }: { initialCountry: DccCountry; children: React.ReactNode }) {
-  const pathname = usePathname(); const [country, setCountryState] = useState<DccCountry>(normalizeCountry(initialCountry)); const config = COUNTRY_CONFIG[String(country)]
+  const pathname = usePathname()
+  const [country, setCountryState] = useState<DccCountry>(normalizeCountry(initialCountry))
+  const config = COUNTRY_CONFIG[String(country)]
+  const [i18n] = useState(() => {
+    const instance = createInstance()
+    void instance.init(getI18nOptions(config.locale))
+    return instance
+  })
   const setCountry = useCallback((nextCountry: DccCountry) => { document.cookie = `${COUNTRY_COOKIE}=${String(nextCountry)}; path=/; max-age=31536000; samesite=lax`; localStorage.setItem(COUNTRY_COOKIE, String(nextCountry)); setCountryState(nextCountry); window.location.reload() }, [])
+  useEffect(() => {
+    if (i18n.language !== config.locale) void i18n.changeLanguage(config.locale)
+  }, [config.locale, i18n])
+
   useEffect(() => { document.documentElement.lang = config.locale; document.documentElement.dataset.country = String(country); if (String(country) === 'BR' || pathname.startsWith('/admin')) return; document.title = translateCopy(document.title, country); translateDom(document.body, country); const observer = new MutationObserver((mutations) => { for (const mutation of mutations) { if (mutation.type === 'characterData') { translateTextNode(mutation.target, country); continue } if (mutation.type === 'attributes') { translateElementAttributes(mutation.target as Element, country); continue } mutation.addedNodes.forEach((node) => { if (node.nodeType === Node.TEXT_NODE) translateTextNode(node, country); else if (node.nodeType === Node.ELEMENT_NODE) translateDom(node as ParentNode, country) }) } }); observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: [...translatableAttributes] }); return () => observer.disconnect() }, [config.locale, country, pathname])
   const formatMoney = useCallback((brlValue: number) => formatLocalizedMoney(brlValue, country), [country])
   const value = useMemo<LocalizationContextValue>(() => ({ country, locale: config.locale, currency: config.currency, paymentProvider: config.paymentProvider, setCountry, formatMoney }), [config, country, formatMoney, setCountry])
-  return <LocalizationContext.Provider value={value}>{children}</LocalizationContext.Provider>
+  return (
+    <I18nextProvider i18n={i18n}>
+      <LocalizationContext.Provider value={value}>{children}</LocalizationContext.Provider>
+    </I18nextProvider>
+  )
 }
 export function useLocalization() { const context = useContext(LocalizationContext); if (!context) throw new Error('useLocalization precisa estar dentro de LocalizationProvider'); return context }

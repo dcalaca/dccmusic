@@ -4,9 +4,11 @@ Estrutura central de internacionalização para migração gradual e segura.
 
 ## Estado atual
 
-`i18next` e `react-i18next` já fazem parte das dependências do projeto, mas ainda não foram ligados globalmente à aplicação. Isso é intencional: nenhuma página, rota, e-mail ou fluxo atual foi alterado.
+`i18next` e `react-i18next` estão ligados globalmente pelo `LocalizationProvider`. O locale regional definido pela DCC é a fonte de verdade da instância i18next.
 
-A base está pronta para cada área ser migrada aos poucos com chamadas como:
+A migração continua gradual: áreas já migradas usam `useTranslation()` e os textos centralizados em `i18n/messages`; áreas antigas continuam com o tradutor legado como fallback temporário até serem convertidas.
+
+Use chamadas como:
 
 ```ts
 t('studio.actions.createSong')

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { FiArrowLeft, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiCloud, FiCode, FiCreditCard, FiDownload, FiExternalLink, FiEyeOff, FiFileText, FiHeadphones, FiHeart, FiLoader, FiLock, FiMic, FiMusic, FiPause, FiPlay, FiSave, FiShield, FiVideo, FiX, FiZap } from 'react-icons/fi'
 import CopyButton from '@/components/CopyButton'
@@ -38,9 +39,9 @@ const PUBLISH_PLAN_REQUIRED_MESSAGE =
   'A recarga e os créditos servem para criar músicas. Para publicar no DCC Music, é necessário ter um plano ativo (Studio IA ou Compositor Premium).'
 
 const inspirationVariationOptions = [
-  { id: 'similar', label: 'Parecida com a anterior' },
-  { id: 'same_style_new_melody', label: 'Mesmo estilo, mas melodia diferente' },
-  { id: 'creative', label: 'Mais criativa / fugir mais da anterior' },
+  { id: 'similar', labelKey: 'studio.project.inspiration.variations.similar' },
+  { id: 'same_style_new_melody', labelKey: 'studio.project.inspiration.variations.sameStyleNewMelody' },
+  { id: 'creative', labelKey: 'studio.project.inspiration.variations.creative' },
 ]
 
 function canCreateFromStudioStatus(status: any) {
@@ -106,7 +107,9 @@ function sanitizeCoverDownloadName(value: string) {
     .toLowerCase() || 'capa-dcc-music'}.jpg`
 }
 
-function StudioAudioPlayer({ src, label = 'Ouvir música' }: { src: string; label?: string }) {
+function StudioAudioPlayer({ src, label }: { src: string; label?: string }) {
+  const { t } = useTranslation()
+  const resolvedLabel = label || t('studio.project.audio.listen')
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const progressRef = useRef<HTMLDivElement | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -184,7 +187,7 @@ function StudioAudioPlayer({ src, label = 'Ouvir música' }: { src: string; labe
       const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url
-      link.download = sanitizeDownloadName(label)
+      link.download = sanitizeDownloadName(resolvedLabel)
       document.body.appendChild(link)
       link.click()
       link.remove()
@@ -207,18 +210,18 @@ function StudioAudioPlayer({ src, label = 'Ouvir música' }: { src: string; labe
           type="button"
           onClick={togglePlayback}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-700 text-white hover:bg-primary-600"
-          aria-label={isPlaying ? 'Pausar música' : 'Tocar música'}
+          aria-label={isPlaying ? t('studio.project.audio.pause') : t('studio.project.audio.play')}
         >
           {isPlaying ? <FiPause /> : <FiPlay />}
         </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-bold text-white">{label}</p>
+          <p className="truncate text-sm font-bold text-white">{resolvedLabel}</p>
           <div className="mt-2 flex items-center gap-2">
             <span className="w-10 text-xs text-gray-400">{formatGenerationTime(Math.floor(currentTime))}</span>
             <div
               ref={progressRef}
               role="slider"
-              aria-label="Progresso da música"
+              aria-label={t('studio.project.audio.progress')}
               aria-valuemin={0}
               aria-valuemax={Math.max(0, Math.floor(duration))}
               aria-valuenow={Math.floor(currentTime)}
@@ -235,7 +238,7 @@ function StudioAudioPlayer({ src, label = 'Ouvir música' }: { src: string; labe
           onClick={downloadAudio}
           disabled={downloading}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-700 bg-gray-900 text-gray-200 hover:border-primary-500 hover:text-white disabled:opacity-60"
-          aria-label="Baixar música"
+          aria-label={t('studio.project.audio.download')}
         >
           {downloading ? <FiLoader className="animate-spin" /> : <FiDownload />}
         </button>
@@ -395,6 +398,7 @@ const videoRequestStatus: Record<string, { label: string; description: string }>
 export default function StudioProjectDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const { t, i18n } = useTranslation()
   const projectId = String(params.id)
   const [project, setProject] = useState<any>(null)
   const [lyric, setLyric] = useState('')
@@ -1516,10 +1520,10 @@ export default function StudioProjectDetailPage() {
               >
                 <div className="flex flex-col gap-3 border-b border-white/10 p-4 sm:flex-row sm:items-start sm:justify-between sm:p-5">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-200">Escolher inspiração</p>
-                    <h2 className="mt-1 text-2xl font-black text-white sm:text-3xl">Qual versão você quer usar?</h2>
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-purple-200">{t('studio.project.inspiration.eyebrow')}</p>
+                    <h2 className="mt-1 text-2xl font-black text-white sm:text-3xl">{t('studio.project.inspiration.title')}</h2>
                     <p className="mt-1 max-w-2xl text-sm leading-relaxed text-gray-400">
-                      Ouça as músicas deste projeto e clique em usar na versão que deve servir de base para a nova criação.
+                      {t('studio.project.inspiration.description')}
                     </p>
                   </div>
                   <button
@@ -1533,7 +1537,7 @@ export default function StudioProjectDetailPage() {
                 </div>
 
                 <div className="border-b border-white/10 px-4 py-3 sm:px-5">
-                  <p className="mb-2 text-xs font-bold text-purple-100">Como quer transformar?</p>
+                  <p className="mb-2 text-xs font-bold text-purple-100">{t('studio.project.inspiration.howTransform')}</p>
                   <div className="flex flex-wrap gap-2">
                     {inspirationVariationOptions.map((option) => (
                       <button
@@ -1542,7 +1546,7 @@ export default function StudioProjectDetailPage() {
                         onClick={() => setSelectedInspirationVariation(option.id)}
                         className={`rounded-full border px-3 py-2 text-xs font-bold transition ${selectedInspirationVariation === option.id ? 'border-primary-300 bg-primary-600 text-white' : 'border-purple-800/70 bg-black/25 text-purple-100 hover:border-purple-500'}`}
                       >
-                        {option.label}
+                        {t(option.labelKey)}
                       </button>
                     ))}
                   </div>
@@ -1553,7 +1557,7 @@ export default function StudioProjectDetailPage() {
                     type="button"
                     onClick={() => scrollInspirationPicker('left')}
                     className="absolute left-2 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-white/10 bg-black/65 p-3 text-white shadow-xl transition hover:bg-purple-900/70 lg:inline-flex"
-                    aria-label="Ver versão anterior"
+                    aria-label={t('studio.project.versions.previous')}
                   >
                     <FiChevronLeft />
                   </button>
@@ -1561,7 +1565,7 @@ export default function StudioProjectDetailPage() {
                     type="button"
                     onClick={() => scrollInspirationPicker('right')}
                     className="absolute right-2 top-1/2 z-10 hidden -translate-y-1/2 rounded-full border border-white/10 bg-black/65 p-3 text-white shadow-xl transition hover:bg-purple-900/70 lg:inline-flex"
-                    aria-label="Ver próxima versão"
+                    aria-label={t('studio.project.versions.next')}
                   >
                     <FiChevronRight />
                   </button>
@@ -1585,28 +1589,28 @@ export default function StudioProjectDetailPage() {
                           <div className="mb-3 flex items-start justify-between gap-3">
                             <div>
                               {isPreselected && (
-                                <p className="mb-1 text-xs font-black uppercase tracking-wide text-primary-200">Versão escolhida</p>
+                                <p className="mb-1 text-xs font-black uppercase tracking-wide text-primary-200">{t('studio.project.versions.chosen')}</p>
                               )}
-                              <p className="text-xs font-black uppercase tracking-wide text-green-300">Música gerada #{versionNumber}</p>
+                              <p className="text-xs font-black uppercase tracking-wide text-green-300">{t('studio.project.versions.generatedSongNumber', { number: versionNumber })}</p>
                               <h3 className="mt-1 line-clamp-2 font-black text-white">
-                                {version.versionName || version.style || 'Versão gerada'}
+                                {version.versionName || version.style || t('studio.project.versions.generatedVersion')}
                               </h3>
                               <p className="mt-1 text-xs text-gray-500">
-                                {new Date(version.createdAt).toLocaleString('pt-BR')}
-                                {duration ? ` · Duração ${duration}` : ''}
+                                {new Date(version.createdAt).toLocaleString(i18n.language)}
+                                {duration ? ` · ${t('studio.project.versions.duration', { duration })}` : ''}
                               </p>
                             </div>
                             {version.isCurrent && (
                               <span className="rounded-full bg-green-950 px-3 py-1 text-xs font-bold text-green-300">
-                                atual
+                                {t('studio.project.versions.current')}
                               </span>
                             )}
                           </div>
 
                           {versionAudioUrl ? (
-                            <StudioAudioPlayer src={versionAudioUrl} label={`Música gerada #${versionNumber}`} />
+                            <StudioAudioPlayer src={versionAudioUrl} label={t('studio.project.versions.generatedSongNumber', { number: versionNumber })} />
                           ) : (
-                            <p className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4 text-sm text-gray-500">Áudio sem URL registrada.</p>
+                            <p className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4 text-sm text-gray-500">{t('studio.project.versions.noAudio')}</p>
                           )}
 
                           <button
@@ -1616,14 +1620,14 @@ export default function StudioProjectDetailPage() {
                             className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-black text-white transition hover:scale-[1.01] disabled:opacity-60"
                           >
                             {processing ? <FiLoader className="animate-spin" /> : <FiMusic />}
-                            Usar esta versão
+                            {t('studio.project.versions.useThisVersion')}
                           </button>
                         </article>
                       )
                     })}
                   </div>
                   <p className="mt-2 text-center text-xs text-gray-500 lg:hidden">
-                    Arraste para o lado para ver outras versões.
+                    {t('studio.project.versions.swipe')}
                   </p>
                 </div>
               </motion.div>
@@ -1856,10 +1860,10 @@ export default function StudioProjectDetailPage() {
                   {shouldShowVersionList && (
                     <section className="mt-5 rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:rounded-[1.75rem] sm:p-5">
                       <div className="mb-4">
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-green-300">Música pronta</p>
-                        <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">Escolha sua versão</h2>
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-green-300">{t('studio.project.versions.ready')}</p>
+                        <h2 className="mt-1 text-xl font-black text-white sm:text-2xl">{t('studio.project.versions.chooseTitle')}</h2>
                         <p className="mt-1 text-sm text-gray-400">
-                          Ouça as versões geradas abaixo. A versão atual está marcada, mas todas ficam disponíveis aqui.
+                          {t('studio.project.versions.chooseDescription')}
                         </p>
                       </div>
                       <div className="grid gap-3 lg:grid-cols-2">
@@ -1874,37 +1878,37 @@ export default function StudioProjectDetailPage() {
                                 <div className="min-w-0">
                                   <div className="flex flex-wrap items-center gap-2">
                                     <p className="text-xs font-bold uppercase tracking-wide text-green-300">
-                                      Versão {versionNumber}
+                                      {t('studio.project.versions.versionNumber', { number: versionNumber })}
                                     </p>
                                     {version.isCurrent && (
                                       <span className="rounded-full bg-green-950 px-2.5 py-1 text-[11px] font-bold text-green-300">
-                                        atual
+                                        {t('studio.project.versions.current')}
                                       </span>
                                     )}
                                     {version.isPublished && (
                                       <span className="rounded-full bg-primary-950 px-2.5 py-1 text-[11px] font-bold text-primary-200">
-                                        publicada
+                                        {t('studio.project.versions.published')}
                                       </span>
                                     )}
                                     {version.customVoice && (
-                                      <span title={`Feita com a voz: ${version.customVoice.name}`} className="inline-flex items-center gap-1 rounded-full border border-cyan-400/30 bg-cyan-950/30 px-2.5 py-1 text-[11px] font-bold text-cyan-100">
-                                        <FiMic className="h-3 w-3" /> Voz: {version.customVoice.name}
+                                      <span title={t('studio.project.versions.customVoiceTitle', { name: version.customVoice.name })} className="inline-flex items-center gap-1 rounded-full border border-cyan-400/30 bg-cyan-950/30 px-2.5 py-1 text-[11px] font-bold text-cyan-100">
+                                        <FiMic className="h-3 w-3" /> {t('studio.project.versions.voiceLabel', { name: version.customVoice.name })}
                                       </span>
                                     )}
                                   </div>
                                   <h3 className="mt-1 line-clamp-2 font-black text-white">
-                                    {version.versionName || version.style || `Música gerada #${versionNumber}`}
+                                    {version.versionName || version.style || t('studio.project.versions.generatedSongNumber', { number: versionNumber })}
                                   </h3>
                                   <p className="mt-1 text-xs text-gray-500">
-                                    {new Date(version.createdAt).toLocaleString('pt-BR')}
+                                    {new Date(version.createdAt).toLocaleString(i18n.language)}
                                     {duration ? ` · ${duration}` : ''}
                                   </p>
                                 </div>
                               </div>
                               {versionAudioUrl ? (
-                                <StudioAudioPlayer src={versionAudioUrl} label={`Versão ${versionNumber}`} />
+                                <StudioAudioPlayer src={versionAudioUrl} label={t('studio.project.versions.versionNumber', { number: versionNumber })} />
                               ) : (
-                                <p className="rounded-2xl border border-cyan-400/20 bg-cyan-950/20 p-4 text-sm text-cyan-100"><FiLoader className="mr-2 inline animate-spin" />Finalizando o áudio para você ouvir. Esta página atualiza automaticamente.</p>
+                                <p className="rounded-2xl border border-cyan-400/20 bg-cyan-950/20 p-4 text-sm text-cyan-100"><FiLoader className="mr-2 inline animate-spin" />{t('studio.project.versions.finalizingAudio')}</p>
                               )}
                               {versionAudioUrl && (
                                 <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -1912,7 +1916,7 @@ export default function StudioProjectDetailPage() {
                                     href={`/compositores/admin/studio-ia/playback?projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(version.id)}`}
                                     className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-600 to-primary-600 px-4 py-3 text-sm font-black text-white transition hover:scale-[1.01] sm:w-auto"
                                   >
-                                    <FiHeadphones /> Criar playback desta versão
+                                    <FiHeadphones /> {t('studio.project.versions.createPlayback')}
                                   </Link>
                                   <button
                                     type="button"
@@ -1920,7 +1924,7 @@ export default function StudioProjectDetailPage() {
                                     disabled={Boolean(processing) || !canReuseLyric}
                                     className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-purple-500/50 bg-purple-950/30 px-4 py-3 text-sm font-bold text-purple-100 transition hover:border-purple-300 hover:bg-purple-900/40 disabled:opacity-60 sm:w-auto"
                                   >
-                                    <FiMusic /> Criar nova versão usando esta como inspiração
+                                    <FiMusic /> {t('studio.project.versions.createInspired')}
                                   </button>
                                 </div>
                               )}
@@ -1983,7 +1987,7 @@ export default function StudioProjectDetailPage() {
                                       : 'border-fuchsia-800/70 bg-black/25 text-fuchsia-100 hover:border-fuchsia-500'
                                   }`}
                                 >
-                                  Versão {versionNumber}
+                                  {t('studio.project.versions.versionNumber', { number: versionNumber })}
                                   {version.isCurrent ? ' · atual' : ''}
                                 </button>
                               )
@@ -2531,7 +2535,7 @@ function PendingMusicRequestSummary({
             <div className="grid gap-2 sm:grid-cols-2">
               {summaryItems.map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-white/10 bg-gray-950/70 p-3">
-                  <p className="text-[11px] font-black uppercase tracking-wide text-gray-500">{label}</p>
+                  <p className="text-[11px] font-black uppercase tracking-wide text-gray-500">{resolvedLabel}</p>
                   <p className="mt-1 text-sm font-bold text-gray-100">{value}</p>
                 </div>
               ))}

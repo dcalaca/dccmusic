@@ -1,5 +1,5 @@
 export type DccCountry = 'BR' | 'PY' | 'CO' | 'PT' | 'MX' | 'ES' | 'US' | 'GB'
-export type DccLocale = 'pt-BR' | 'es-PY' | 'es-CO' | 'pt-PT' | 'es-MX' | 'en-US' | 'en-GB'
+export type DccLocale = 'pt-BR' | 'es-PY' | 'es-CO' | 'pt-PT' | 'es-MX' | 'es-ES' | 'en-US' | 'en-GB'
 
 export const DEFAULT_COUNTRY: DccCountry = 'BR'
 export const DEFAULT_LOCALE: DccLocale = 'pt-BR'
@@ -23,7 +23,7 @@ export const COUNTRY_CONFIG: Record<string, CountryRuntimeConfig> = {
   CO: { country: 'CO', locale: 'es-CO', currency: 'COP', label: 'Colombia', flag: '🇨🇴', paymentProvider: 'stripe' },
   PT: { country: 'PT', locale: 'pt-PT', currency: 'EUR', label: 'Portugal', flag: '🇵🇹', paymentProvider: 'stripe' },
   MX: { country: 'MX', locale: 'es-MX', currency: 'MXN', label: 'México', flag: '🇲🇽', paymentProvider: 'stripe' },
-  ES: { country: 'ES', locale: 'es-MX', currency: 'EUR', label: 'España', flag: '🇪🇸', paymentProvider: 'stripe' },
+  ES: { country: 'ES', locale: 'es-ES', currency: 'EUR', label: 'España', flag: '🇪🇸', paymentProvider: 'stripe' },
   US: { country: 'US', locale: 'en-US', currency: 'USD', label: 'United States', flag: '🇺🇸', paymentProvider: 'stripe' },
   GB: { country: 'GB', locale: 'en-GB', currency: 'GBP', label: 'United Kingdom', flag: '🇬🇧', paymentProvider: 'stripe' },
 }

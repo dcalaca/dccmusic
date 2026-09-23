@@ -32,6 +32,7 @@ export function getI18nOptions(locale?: string | null): InitOptions {
     resources: i18nResources,
     lng: normalizedLocale,
     fallbackLng: defaultLocale,
+    initImmediate: false,
     supportedLngs: Object.keys(i18nResources),
     defaultNS: translationNamespace,
     ns: [translationNamespace],

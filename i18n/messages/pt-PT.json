@@ -14,5 +14,78 @@
       "success": "Concluído",
       "error": "Ocorreu um erro"
     }
+  },
+  "menu": {
+    "home": "Início",
+    "createSong": "Crie a sua música",
+    "createSongMobile": "Criar música",
+    "spotifyPlatforms": "Spotify e Plataformas",
+    "spotify": "Spotify",
+    "plans": "Planos",
+    "explore": "Explorar",
+    "songChords": "Cifra da Música",
+    "chords": "Cifra",
+    "premiumComposers": "Compositores Premium",
+    "composers": "Compositores",
+    "blog": "Blog"
+  },
+  "header": {
+    "composer": "Compositor",
+    "studioBalance": "Saldo Studio IA",
+    "myStudio": "O meu Studio IA",
+    "compositions": "Composições",
+    "addSong": "Registar música",
+    "mySongs": "As minhas músicas",
+    "myVideos": "Os meus vídeos",
+    "premiumCompositions": "Composições Premium",
+    "viewPlans": "Ver aviso e planos de compositor",
+    "account": "Conta e extrato",
+    "logout": "Sair",
+    "credits": "{{count}} créditos",
+    "composerAccess": "Acesso do Compositor"
+  },
+  "studio": {
+    "project": {
+      "audio": {
+        "listen": "Ouvir música",
+        "pause": "Pausar música",
+        "play": "Reproduzir música",
+        "progress": "Progresso da música",
+        "download": "Descarregar música"
+      },
+      "inspiration": {
+        "eyebrow": "Escolher inspiração",
+        "title": "Que versão quer usar?",
+        "description": "Ouça as músicas deste projeto e escolha a versão que deve servir de base à nova criação.",
+        "howTransform": "Como quer transformar?",
+        "variations": {
+          "similar": "Parecida com a anterior",
+          "sameStyleNewMelody": "Mesmo estilo, mas melodia diferente",
+          "creative": "Mais criativa / mais diferente da anterior"
+        }
+      },
+      "versions": {
+        "previous": "Ver versão anterior",
+        "next": "Ver versão seguinte",
+        "chosen": "Versão escolhida",
+        "generatedSongNumber": "Música gerada #{{number}}",
+        "generatedVersion": "Versão gerada",
+        "duration": "Duração {{duration}}",
+        "current": "atual",
+        "noAudio": "Não existe um URL de áudio registado.",
+        "useThisVersion": "Usar esta versão",
+        "swipe": "Deslize para o lado para ver outras versões.",
+        "ready": "Música pronta",
+        "chooseTitle": "Escolha a sua versão",
+        "chooseDescription": "Ouça as versões geradas abaixo. A versão atual está assinalada, mas todas continuam disponíveis aqui.",
+        "versionNumber": "Versão {{number}}",
+        "published": "publicada",
+        "customVoiceTitle": "Feita com a voz: {{name}}",
+        "voiceLabel": "Voz: {{name}}",
+        "finalizingAudio": "Estamos a finalizar o áudio para poder ouvi-lo. Esta página é atualizada automaticamente.",
+        "createPlayback": "Criar playback desta versão",
+        "createInspired": "Criar nova versão usando esta como inspiração"
+      }
+    }
   }
 }
