@@ -41,6 +41,7 @@ type DeliveryRow = {
   recipient_email: string
   recipient_name: string | null
   status: 'pending' | 'sent' | 'failed' | 'skipped'
+  claimed_at?: string | null
 }
 
 export const CAMPAIGN_BATCH_SIZE = 40
@@ -83,10 +84,16 @@ async function sendCampaignViaResend(input: {
   ctaLabel?: string | null
   ctaUrl?: string | null
   unsubscribeUrl?: string | null
+  idempotencyKey: string
 }) {
   const apiKey = String(process.env.RESEND_API_KEY || '').trim()
-  const sender = parseSender(process.env.RESEND_FROM_EMAIL || process.env.BREVO_FROM_EMAIL || process.env.SMTP_FROM_EMAIL)
-  const replyTo = parseSender(process.env.RESEND_REPLY_TO_EMAIL || process.env.BREVO_REPLY_TO_EMAIL || process.env.SMTP_REPLY_TO_EMAIL)
+  const sender = parseSender('DCC Music <suporte@email.dccmusic.online>')
+  const replyTo = parseSender(
+    process.env.RESEND_REPLY_TO_EMAIL ||
+    process.env.BREVO_REPLY_TO_EMAIL ||
+    process.env.SMTP_REPLY_TO_EMAIL ||
+    'suporte@dccmusic.online'
+  )
 
   if (!apiKey || !sender?.email) throw new Error('Resend não configurado para campanhas')
 
@@ -117,6 +124,7 @@ async function sendCampaignViaResend(input: {
       accept: 'application/json',
       authorization: `Bearer ${apiKey}`,
       'content-type': 'application/json',
+      'Idempotency-Key': input.idempotencyKey,
     },
     body: JSON.stringify({
       from: sender.name ? `${sender.name} <${sender.email}>` : sender.email,
@@ -271,20 +279,25 @@ async function freezeCampaignAudience(campaign: EmailCampaign) {
     if (error && !String(error.message || '').toLowerCase().includes('duplicate')) throw error
   }
 
+  const actualCount = await queueExists(campaign.id)
   const frozenAt = new Date().toISOString()
   const { error: updateError } = await supabaseAdmin
     .from('admin_email_campaigns')
-    .update({ target_count: recipients.length, frozen_at: frozenAt, updated_at: frozenAt })
+    .update({ target_count: actualCount, frozen_at: frozenAt, updated_at: frozenAt })
     .eq('id', campaign.id)
   if (updateError) throw updateError
 
-  return recipients.length
+  return actualCount
 }
 
 async function claimDelivery(row: DeliveryRow) {
   const { data, error } = await supabaseAdmin
     .from('admin_email_campaign_deliveries')
-    .update({ status: 'skipped', error_message: DELIVERY_CLAIM_TAG })
+    .update({
+      status: 'skipped',
+      error_message: DELIVERY_CLAIM_TAG,
+      claimed_at: new Date().toISOString(),
+    })
     .eq('id', row.id)
     .eq('status', 'pending')
     .select('id')
@@ -305,6 +318,7 @@ async function finalizeDelivery(row: DeliveryRow, input: {
       provider_message_id: input.providerMessageId || null,
       error_message: input.errorMessage || null,
       sent_at: input.status === 'sent' ? new Date().toISOString() : null,
+      claimed_at: null,
     })
     .eq('id', row.id)
     .eq('error_message', DELIVERY_CLAIM_TAG)
@@ -320,6 +334,34 @@ async function countDeliveries(campaignId: string, status?: string) {
   const { count, error } = await query
   if (error) throw error
   return Number(count || 0)
+}
+
+async function countReservedDeliveries(campaignId: string) {
+  const { count, error } = await supabaseAdmin
+    .from('admin_email_campaign_deliveries')
+    .select('id', { count: 'exact', head: true })
+    .eq('campaign_id', campaignId)
+    .eq('status', 'skipped')
+    .eq('error_message', DELIVERY_CLAIM_TAG)
+  if (error) throw error
+  return Number(count || 0)
+}
+
+async function recoverStaleClaims(campaignId: string) {
+  const staleBefore = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+  const { error } = await supabaseAdmin
+    .from('admin_email_campaign_deliveries')
+    .update({
+      status: 'pending',
+      error_message: null,
+      claimed_at: null,
+    })
+    .eq('campaign_id', campaignId)
+    .eq('status', 'skipped')
+    .eq('error_message', DELIVERY_CLAIM_TAG)
+    .lt('claimed_at', staleBefore)
+
+  if (error) throw error
 }
 
 export async function sendEmailCampaign(campaignId: string, options?: { limit?: number }) {
@@ -338,6 +380,8 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
       .eq('id', campaignId)
     return { campaignId, totalRecipients: 0, attempted: 0, sent: 0, failed: 0, remaining: 0, errors: [] as string[] }
   }
+
+  await recoverStaleClaims(campaignId)
 
   const { data: pendingRows, error: pendingError } = await supabaseAdmin
     .from('admin_email_campaign_deliveries')
@@ -384,6 +428,7 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
           recipientId: row.recipient_id,
           campaignId,
         }),
+        idempotencyKey: `admin-campaign/${campaignId}/${row.id}`,
       })
 
       sent += 1
@@ -396,10 +441,14 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
     }
   }
 
-  const remaining = await countDeliveries(campaignId, 'pending')
+  const pendingTotal = await countDeliveries(campaignId, 'pending')
+  const reservedTotal = await countReservedDeliveries(campaignId)
   const sentTotal = await countDeliveries(campaignId, 'sent')
   const failedTotal = await countDeliveries(campaignId, 'failed')
-  const nextStatus = remaining > 0 ? 'paused' : 'sent'
+  const skippedAll = await countDeliveries(campaignId, 'skipped')
+  const skippedTotal = Math.max(0, skippedAll - reservedTotal)
+  const remaining = pendingTotal + reservedTotal
+  const nextStatus = remaining > 0 ? 'sending' : 'sent'
   const now = new Date().toISOString()
 
   const { error: updateError } = await supabaseAdmin
@@ -422,6 +471,12 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
     attempted: (pendingRows || []).length,
     sent,
     failed,
+    sentTotal,
+    failedTotal,
+    skippedTotal,
+    pendingTotal,
+    reservedTotal,
+    processedTotal: sentTotal + failedTotal + skippedTotal,
     remaining,
     errors,
   }
@@ -449,19 +504,37 @@ export async function processDueEmailCampaigns(options?: {
   }
 
   const now = new Date()
-  const { data, error } = await supabaseAdmin
-    .from('admin_email_campaigns')
-    .select('*')
-    .eq('status', 'scheduled')
-    .lte('scheduled_at', now.toISOString())
-    .order('scheduled_at', { ascending: true })
-    .limit(5)
-  if (error) throw error
+  const staleSendingBefore = new Date(now.getTime() - 2 * 60 * 1000).toISOString()
+
+  const [scheduledResult, sendingResult] = await Promise.all([
+    supabaseAdmin
+      .from('admin_email_campaigns')
+      .select('*')
+      .eq('status', 'scheduled')
+      .lte('scheduled_at', now.toISOString())
+      .order('scheduled_at', { ascending: true })
+      .limit(5),
+    supabaseAdmin
+      .from('admin_email_campaigns')
+      .select('*')
+      .eq('status', 'sending')
+      .lte('updated_at', staleSendingBefore)
+      .order('updated_at', { ascending: true })
+      .limit(5),
+  ])
+
+  if (scheduledResult.error) throw scheduledResult.error
+  if (sendingResult.error) throw sendingResult.error
+
+  const uniqueCampaigns = new Map<string, EmailCampaign>()
+  for (const campaign of [...(scheduledResult.data || []), ...(sendingResult.data || [])]) {
+    uniqueCampaigns.set((campaign as any).id, campaign as EmailCampaign)
+  }
 
   const results = []
-  for (const campaign of data || []) {
-    if (!shouldProcessCampaign(campaign as EmailCampaign, now)) continue
-    results.push(await continueEmailCampaign((campaign as any).id, { limitPerCampaign: options?.limitPerCampaign }))
+  for (const campaign of Array.from(uniqueCampaigns.values()).slice(0, 5)) {
+    if (campaign.status === 'scheduled' && !shouldProcessCampaign(campaign, now)) continue
+    results.push(await continueEmailCampaign(campaign.id, { limitPerCampaign: options?.limitPerCampaign }))
   }
   return results
 }

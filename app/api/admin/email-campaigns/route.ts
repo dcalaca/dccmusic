@@ -49,8 +49,8 @@ function normalizeRecurringDay(value: any) {
 }
 
 async function getDeliveryStats(campaignIds: string[]) {
-  const stats = new Map<string, { sent: number; failed: number; skipped: number; pending: number }>()
-  campaignIds.forEach((id) => stats.set(id, { sent: 0, failed: 0, skipped: 0, pending: 0 }))
+  const stats = new Map<string, { sent: number; failed: number; skipped: number; pending: number; reserved: number }>()
+  campaignIds.forEach((id) => stats.set(id, { sent: 0, failed: 0, skipped: 0, pending: 0, reserved: 0 }))
   if (campaignIds.length === 0) return stats
 
   const { data, error } = await supabaseAdmin
@@ -65,7 +65,8 @@ async function getDeliveryStats(campaignIds: string[]) {
     if ((row as any).status === 'sent') item.sent += 1
     else if ((row as any).status === 'failed') item.failed += 1
     else if ((row as any).status === 'pending') item.pending += 1
-    else if ((row as any).status === 'skipped' && (row as any).error_message !== '__reserved__') item.skipped += 1
+    else if ((row as any).status === 'skipped' && (row as any).error_message === '__reserved__') item.reserved += 1
+    else if ((row as any).status === 'skipped') item.skipped += 1
   }
 
   return stats
@@ -173,7 +174,7 @@ export async function GET(request: NextRequest) {
         target_count: livePendingCounts.has(campaign.id)
           ? livePendingCounts.get(campaign.id)
           : campaign.target_count,
-        deliveries: stats.get(campaign.id) || { sent: 0, failed: 0, skipped: 0, pending: 0 },
+        deliveries: stats.get(campaign.id) || { sent: 0, failed: 0, skipped: 0, pending: 0, reserved: 0 },
         clicks: clickStats.get(campaign.id) || { total: 0, human: 0, bot: 0, unknown: 0 },
       })),
       audienceCounts: {
@@ -264,8 +265,10 @@ export async function PATCH(request: NextRequest) {
     if (!id) return NextResponse.json({ error: 'Campanha não informada.' }, { status: 400 })
 
     if (action === 'send') {
-      const result = await sendEmailCampaign(id, { limit: CAMPAIGN_BATCH_SIZE })
-      return NextResponse.json({ result, autoContinue: false })
+      const requestedLimit = Number(body.limit || CAMPAIGN_BATCH_SIZE)
+      const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? Math.floor(requestedLimit) : CAMPAIGN_BATCH_SIZE, 1), CAMPAIGN_BATCH_SIZE)
+      const result = await sendEmailCampaign(id, { limit })
+      return NextResponse.json({ result, autoContinue: result.remaining > 0 })
     }
 
     if (action === 'pause') {

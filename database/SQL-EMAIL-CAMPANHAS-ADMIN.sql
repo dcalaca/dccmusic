@@ -40,6 +40,7 @@ create table if not exists public.admin_email_campaign_deliveries (
   provider_message_id text,
   error_message text,
   sent_at timestamptz,
+  claimed_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -72,6 +73,10 @@ create index if not exists idx_admin_email_campaigns_status_schedule
 
 create index if not exists idx_admin_email_campaign_deliveries_campaign
   on public.admin_email_campaign_deliveries(campaign_id, status, created_at);
+
+create index if not exists idx_admin_email_campaign_deliveries_reserved
+  on public.admin_email_campaign_deliveries(campaign_id, claimed_at)
+  where status = 'skipped' and error_message = '__reserved__';
 
 alter table public.admin_email_campaigns enable row level security;
 alter table public.admin_email_campaign_deliveries enable row level security;

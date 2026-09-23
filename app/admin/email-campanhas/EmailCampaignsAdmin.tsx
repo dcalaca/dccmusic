@@ -23,7 +23,7 @@ type Campaign = {
   target_to?: string | null
   target_count?: number
   frozen_at?: string | null
-  deliveries?: { sent: number; failed: number; skipped: number; pending: number }
+  deliveries?: { sent: number; failed: number; skipped: number; pending: number; reserved?: number }
   clicks?: { total: number; human: number; bot: number; unknown: number }
 }
 
@@ -269,15 +269,15 @@ export default function EmailCampaignsAdmin() {
 
   const runAction = async (campaign: Campaign, action: 'send' | 'pause') => {
     const sentSoFar = campaign.deliveries?.sent || campaign.sent_count || 0
-    const pending = campaign.deliveries?.pending || 0
+    const pending = (campaign.deliveries?.pending || 0) + (campaign.deliveries?.reserved || 0)
     const targetLabel = campaign.target_mode === 'pending_email'
       ? `${campaign.target_count || pending || 'os'} cadastros com e-mail pendente`
       : audienceLabels[campaign.audience]
 
     const confirmMessage = action === 'send'
       ? sentSoFar > 0 || pending > 0
-        ? `Enviar o próximo lote da campanha "${campaign.name}"? Quem já recebeu não recebe novamente.`
-        : `Iniciar a campanha "${campaign.name}" para ${targetLabel}? A lista será congelada antes do primeiro envio.`
+        ? `Retomar a campanha "${campaign.name}" e continuar automaticamente até terminar a lista? Quem já foi processado não recebe novamente.`
+        : `Iniciar a campanha "${campaign.name}" para ${targetLabel}? A lista será congelada e o envio seguirá automaticamente, em ordem, até concluir.`
       : `Pausar a campanha "${campaign.name}"?`
 
     if (!confirm(confirmMessage)) return
@@ -286,27 +286,76 @@ export default function EmailCampaignsAdmin() {
     setSuccess('')
 
     try {
-      const response = await fetch('/api/admin/email-campaigns', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: campaign.id, action }),
-      })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao processar campanha')
-
-      if (action === 'send') {
-        const result = data.result
-        setSuccess(
-          result.remaining > 0
-            ? `Lote concluído: ${result.sent} enviado(s), ${result.failed} falha(s). Restam ${result.remaining}. Nada continuará sozinho; envie o próximo lote quando quiser.`
-            : `Campanha concluída: ${result.sent} enviado(s) neste lote, ${result.failed} falha(s).`
-        )
-      } else {
+      if (action === 'pause') {
+        const response = await fetch('/api/admin/email-campaigns', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: campaign.id, action }),
+        })
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Erro ao pausar campanha')
         setSuccess('Campanha pausada.')
+        await loadCampaigns(true)
+        return
       }
-      await loadCampaigns()
+
+      let finalResult: any = null
+      let sentThisRun = 0
+      let failedThisRun = 0
+      let idleRounds = 0
+
+      while (true) {
+        const response = await fetch('/api/admin/email-campaigns', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: campaign.id, action: 'send', limit: 20 }),
+        })
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Erro ao processar campanha')
+
+        const result = data.result
+        finalResult = result
+        sentThisRun += Number(result.sent || 0)
+        failedThisRun += Number(result.failed || 0)
+
+        setCampaigns((current) => current.map((item) => item.id === campaign.id ? {
+          ...item,
+          status: result.remaining > 0 ? 'sending' : 'sent',
+          frozen_at: item.frozen_at || new Date().toISOString(),
+          target_count: Number(result.totalRecipients || item.target_count || 0),
+          sent_count: Number(result.sentTotal || 0),
+          failed_count: Number(result.failedTotal || 0),
+          deliveries: {
+            sent: Number(result.sentTotal || 0),
+            failed: Number(result.failedTotal || 0),
+            skipped: Number(result.skippedTotal || 0),
+            pending: Number(result.pendingTotal || 0),
+            reserved: Number(result.reservedTotal || 0),
+          },
+        } : item))
+
+        if (Number(result.remaining || 0) <= 0) break
+
+        if (Number(result.attempted || 0) === 0) {
+          idleRounds += 1
+          if (idleRounds >= 5) break
+          await new Promise((resolve) => window.setTimeout(resolve, 1200))
+        } else {
+          idleRounds = 0
+          await new Promise((resolve) => window.setTimeout(resolve, 250))
+        }
+      }
+
+      if (finalResult && Number(finalResult.remaining || 0) > 0) {
+        setSuccess(`Envio em andamento: ${finalResult.processedTotal || 0} de ${finalResult.totalRecipients || 0} processados. O servidor continuará a recuperação automática se esta tela for fechada.`)
+      } else {
+        setSuccess(`Campanha concluída. ${sentThisRun} enviado(s) nesta execução e ${failedThisRun} falha(s). Cada destinatário foi processado uma única vez.`)
+      }
+
+      await loadCampaigns(true)
     } catch (err: any) {
-      setError(err.message || 'Erro ao processar campanha')
+      setError(`${err.message || 'Erro ao processar campanha'} A campanha pode ser retomada com segurança; destinatários já reservados não serão duplicados.`)
+      await loadCampaigns(true)
     } finally {
       setProcessingId('')
     }
@@ -320,7 +369,7 @@ export default function EmailCampaignsAdmin() {
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-fuchsia-500/40 bg-fuchsia-950/40 px-3 py-1 text-sm text-fuchsia-100"><FiMail /> CRM de e-mails</div>
             <h1 className="text-3xl font-black text-white">Campanhas e relacionamento</h1>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-400">
-              Crie campanhas, filtre públicos, acompanhe envios e cliques. Antes do primeiro disparo, a lista de destinatários é congelada. Cada clique em enviar processa no máximo 40 e-mails e nunca continua sozinho.
+              Crie campanhas, filtre públicos, acompanhe envios e cliques. Antes do primeiro disparo, a lista de destinatários é congelada. Um clique inicia o envio automático; cada destinatário é processado individualmente e a proteção contra duplicidade fica registrada no banco.
             </p>
           </div>
           <div className="grid gap-2 rounded-2xl border border-gray-800 bg-black/40 p-4 text-sm text-gray-300 sm:grid-cols-3 lg:min-w-[28rem]">
@@ -428,13 +477,20 @@ export default function EmailCampaignsAdmin() {
               const failedCount = campaign.deliveries?.failed || campaign.failed_count || 0
               const skippedCount = campaign.deliveries?.skipped || 0
               const pendingCount = campaign.deliveries?.pending || 0
+              const reservedCount = campaign.deliveries?.reserved || 0
               const humanClicks = campaign.clicks?.human || 0
               const totalClicks = campaign.clicks?.total || 0
-              const isFrozen = Boolean(campaign.frozen_at)
-              const estimatedTotal = isFrozen ? Number(campaign.target_count || sentCount + failedCount + skippedCount + pendingCount) : (campaign.target_mode === 'pending_email' ? Number(campaign.target_count || 0) : audienceCounts[campaign.audience] || 0)
-              const remaining = isFrozen ? pendingCount : estimatedTotal
+              const queueTotal = sentCount + failedCount + skippedCount + pendingCount + reservedCount
+              const isFrozen = Boolean(campaign.frozen_at) || queueTotal > 0
+              const estimatedTotal = isFrozen
+                ? Number(campaign.target_count || queueTotal)
+                : (campaign.target_mode === 'pending_email' ? Number(campaign.target_count || 0) : audienceCounts[campaign.audience] || 0)
+              const remaining = isFrozen ? pendingCount + reservedCount : estimatedTotal
+              const processedCount = sentCount + failedCount + skippedCount
+              const progressPercent = estimatedTotal > 0 ? Math.min(100, Math.round((processedCount / estimatedTotal) * 100)) : 0
+              const isProcessing = processingId === campaign.id
               const canSend = campaign.status !== 'sent' && campaign.status !== 'scheduled'
-              const sendLabel = isFrozen && (sentCount > 0 || failedCount > 0) ? 'Enviar próximo lote' : 'Iniciar envio'
+              const sendLabel = isProcessing ? 'Enviando...' : isFrozen && processedCount > 0 ? 'Retomar envio' : 'Iniciar envio'
 
               return (
                 <article key={campaign.id} className="rounded-2xl border border-gray-800 bg-black/35 p-4">
@@ -443,12 +499,27 @@ export default function EmailCampaignsAdmin() {
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <span className="rounded-full border border-gray-700 bg-gray-900 px-3 py-1 text-xs font-bold text-gray-200">{statusLabels[campaign.status]}</span>
                         <span className="rounded-full border border-fuchsia-800 bg-fuchsia-950/30 px-3 py-1 text-xs font-bold text-fuchsia-100">{campaign.target_mode === 'pending_email' ? 'E-mail pendente' : audienceLabels[campaign.audience]}</span>
-                        {isFrozen && <span className="rounded-full border border-emerald-800 bg-emerald-950/30 px-3 py-1 text-xs font-bold text-emerald-100">Lista congelada: {campaign.target_count}</span>}
+                        {isFrozen && <span className="rounded-full border border-emerald-800 bg-emerald-950/30 px-3 py-1 text-xs font-bold text-emerald-100">Lista congelada: {estimatedTotal}</span>}
                       </div>
                       <h3 className="text-lg font-black text-white">{campaign.name}</h3>
                       <p className="mt-1 text-sm font-semibold text-gray-300">{campaign.subject}</p>
                       <p className="mt-2 text-xs text-gray-500">Próximo envio: {formatDateTime(campaign.next_run_at || campaign.scheduled_at)} · Enviados: {sentCount} · Restantes: {remaining} · Falhas: {failedCount}</p>
                       <p className="mt-1 text-xs text-fuchsia-200">Cliques no botão: {humanClicks} humano(s) · {totalClicks} total(is)</p>
+                      {estimatedTotal > 0 && (
+                        <div className="mt-4 max-w-2xl">
+                          <div className="mb-1 flex items-center justify-between gap-3 text-xs text-gray-400">
+                            <span>{isProcessing ? 'Envio automático em andamento' : campaign.status === 'sent' ? 'Envio concluído' : 'Progresso do envio'}</span>
+                            <strong className="text-gray-200">{progressPercent}%</strong>
+                          </div>
+                          <div className="h-2.5 overflow-hidden rounded-full bg-gray-800">
+                            <div className="h-full rounded-full bg-fuchsia-600 transition-all duration-300" style={{ width: `${progressPercent}%` }} />
+                          </div>
+                          <p className="mt-1 text-xs text-gray-500">
+                            {processedCount} de {estimatedTotal} processados · {sentCount} enviados · {failedCount} falhas · {remaining} restantes
+                            {reservedCount > 0 ? ` · ${reservedCount} em processamento` : ''}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {canSend && <button onClick={() => runAction(campaign, 'send')} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl bg-green-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{processingId === campaign.id ? <FiLoader className="animate-spin" /> : <FiSend />}{sendLabel}</button>}
@@ -464,7 +535,7 @@ export default function EmailCampaignsAdmin() {
 
       <div className="rounded-2xl border border-blue-800/50 bg-blue-950/20 p-5 text-sm leading-relaxed text-blue-100">
         <p className="font-bold">Segurança do CRM</p>
-        <p className="mt-2">A lista é congelada antes do primeiro envio, cada destinatário fica registrado individualmente e cada clique dispara no máximo 40 e-mails. Não existe continuação automática no navegador.</p>
+        <p className="mt-2">A lista é congelada antes do primeiro envio. Cada destinatário tem uma entrega única no banco, a reserva é atômica antes de chamar o Resend e cada envio usa uma chave de idempotência. O botão inicia lotes sequenciais automaticamente até concluir; se a tela for fechada no meio, o cron retoma campanhas paradas sem reenviar quem já foi processado.</p>
       </div>
     </section>
   )
