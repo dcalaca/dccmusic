@@ -539,7 +539,13 @@
           "transcribed": "Letra transcrita. Foram debitados {{count}} crédito(s). Revise e corrija se precisar.",
           "lyricCompleted": "Completei a letra. Revise antes de produzir a música.",
           "started": "Produção iniciada. Vamos abrir o projeto para você acompanhar."
-        }
+        },
+        "lyricsUnderstood": "Letra que a IA entendeu",
+        "lyricsPlaceholder": "Depois de clicar em Entender letra, o texto aparece aqui. Você também pode escrever manualmente.",
+        "step3": "3. Escolha o que fazer",
+        "step3Hint": "Use “completar” se cantou só uma parte. Use “já está pronta” se cantou a música inteira.",
+        "produceWithLyrics": "Produzir com essa letra",
+        "productionHint": "A produção usa a sua gravação como guia de melodia e interpretação. A IA recebe a instrução para não passar de 4:30. Custo: 10 créditos quando a música é iniciada."
       },
       "playback": {
         "errors": {

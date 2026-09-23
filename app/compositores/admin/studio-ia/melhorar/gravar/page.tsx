@@ -348,8 +348,8 @@ export default function RecordMusicPage() {
               </div>
 
               <label className="mt-4 block">
-                <span className="mb-1.5 block text-sm font-bold text-gray-300">Letra que a IA entendeu</span>
-                <textarea value={lyric} onChange={(event) => setLyric(event.target.value)} rows={10} placeholder="Depois de clicar em Entender letra, o texto aparece aqui. Você também pode escrever manualmente." className="w-full rounded-2xl border border-gray-700 bg-black/40 px-4 py-3 text-sm leading-relaxed text-white outline-none focus:border-primary-500" />
+                <span className="mb-1.5 block text-sm font-bold text-gray-300">{t('studio.tools.record.lyricsUnderstood')}</span>
+                <textarea value={lyric} onChange={(event) => setLyric(event.target.value)} rows={10} placeholder={t('studio.tools.record.lyricsPlaceholder')} className="w-full rounded-2xl border border-gray-700 bg-black/40 px-4 py-3 text-sm leading-relaxed text-white outline-none focus:border-primary-500" />
               </label>
 
               <label className="mt-3 block">
@@ -360,8 +360,8 @@ export default function RecordMusicPage() {
           </div>
 
           <section className="mt-4 rounded-[1.75rem] border border-purple-300/15 bg-gradient-to-br from-purple-950/30 via-gray-950 to-black p-4 sm:p-5">
-            <h2 className="text-xl font-black text-white">3. Escolha o que fazer</h2>
-            <p className="mt-1 text-sm text-gray-400">Use “completar” se cantou só uma parte. Use “já está pronta” se cantou a música inteira.</p>
+            <h2 className="text-xl font-black text-white">{t('studio.tools.record.step3')}</h2>
+            <p className="mt-1 text-sm text-gray-400">{t('studio.tools.record.step3Hint')}</p>
             <div className="mt-4 grid gap-3 lg:grid-cols-3">
               <button
                 type="button"
@@ -388,11 +388,11 @@ export default function RecordMusicPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-5 py-4 font-black text-white disabled:opacity-60"
               >
                 {busy === 'creating' ? <FiLoader className="animate-spin" /> : <FiMusic />}
-                Produzir com essa letra
+                {t('studio.tools.record.produceWithLyrics')}
               </button>
             </div>
             <p className="mt-3 text-xs leading-relaxed text-purple-100/75">
-              A produção usa a sua gravação como guia de melodia e interpretação. A IA recebe a instrução para não passar de 4:30. Custo: 10 créditos quando a música é iniciada.
+              {t('studio.tools.record.productionHint')}
             </p>
           </section>
         </div>

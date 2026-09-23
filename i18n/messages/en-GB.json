@@ -539,7 +539,13 @@
           "transcribed": "Lyrics transcribed. {{count}} credit(s) were charged. Review and correct them if needed.",
           "lyricCompleted": "Lyrics completed. Review them before producing the song.",
           "started": "Production started. We'll open the project so you can follow progress."
-        }
+        },
+        "lyricsUnderstood": "Lyrics understood by AI",
+        "lyricsPlaceholder": "After you click Transcribe lyrics, the text appears here. You can also write it manually.",
+        "step3": "3. Choose what to do next",
+        "step3Hint": "Choose “Complete my song” if you sang only part of it. Choose “My song is already complete” if you sang the whole song.",
+        "produceWithLyrics": "Produce with these lyrics",
+        "productionHint": "Production uses your recording as a guide for melody and performance. AI is instructed to keep the song under 4:30. Cost: 10 credits when song production starts."
       },
       "playback": {
         "errors": {
