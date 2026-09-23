@@ -21,7 +21,6 @@ function LoginForm() {
   const [success, setSuccess] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [unverifiedEmail, setUnverifiedEmail] = useState('')
-  const [verificationLanguage, setVerificationLanguage] = useState<'pt' | 'en' | 'es'>('pt')
   const [resendingVerification, setResendingVerification] = useState(false)
   const isPostSignup = searchParams.get('cadastro') === 'sucesso'
   const signupEmail = searchParams.get('email') || ''
@@ -66,7 +65,6 @@ function LoginForm() {
         }
         if (data.code === 'EMAIL_NOT_VERIFIED') {
           setUnverifiedEmail(data.email || formData.email)
-          setVerificationLanguage(data.language === 'en' || data.language === 'es' ? data.language : 'pt')
         }
         if (data.code === 'INVALID_PASSWORD') {
           throw new Error(t('auth.errors.invalidPassword'))
@@ -217,7 +215,7 @@ function LoginForm() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Email
+                  {t('auth.fields.email')}
                 </label>
                 <div className="relative">
                   <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -234,7 +232,7 @@ function LoginForm() {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Senha
+                  {t('auth.fields.password')}
                 </label>
                 <div className="relative">
                   <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
