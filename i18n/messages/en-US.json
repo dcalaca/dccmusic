@@ -1161,5 +1161,116 @@
         "generate": "Could not generate the new phrase."
       }
     }
+  },
+  "covers": {
+    "back": "Back",
+    "title": "AI Cover Generator",
+    "loading": "Loading premium feature...",
+    "variationInstruction": "Create a new visual variation while keeping the same core emotion.",
+    "access": {
+      "description": "This feature is for active Gold Plan subscribers and lets you generate professional AI cover art.",
+      "viewGold": "View Gold Plan"
+    },
+    "hero": {
+      "badge": "Gold Plan Exclusive",
+      "subtitle": "Turn your song into professional cover art in seconds.",
+      "description": "AI interprets emotion, style, setting, and the main feeling to create modern, cinematic artwork."
+    },
+    "usage": {
+      "title": "Monthly usage",
+      "used": "{{used}} / {{count}} covers used",
+      "reset": "The counter resets automatically every month."
+    },
+    "form": {
+      "songTitle": "Song title",
+      "songTitlePlaceholder": "Example: Perfect Fool",
+      "addText": "Add text to the cover",
+      "addTextHint": "Turn this off to generate and download the cover without any text.",
+      "coverText": "Cover text (optional)",
+      "coverTextPlaceholder": "Example: Stone in My Chest",
+      "coverTextHint": "If enabled and left blank, the site uses the song title. The text is applied by the site for readability.",
+      "fontStyle": "Font style",
+      "textColor": "Text color",
+      "idea": "Paste the song lyrics or describe your idea",
+      "ideaPlaceholder": "Example: A sad country song in a bar at night, full of longing...",
+      "description": "Cover description (leave blank to generate only the image)",
+      "descriptionPlaceholder": "Example: A couple apart on a wet road under a streetlight, sad and cinematic mood...",
+      "descriptionHint": "Use this field only if you want to guide the image. You do not need to write a technical prompt.",
+      "musicStyle": "Music style",
+      "visualStyle": "Cover visual style"
+    },
+    "textStyles": {
+      "strong": "Bold",
+      "classic": "Classic",
+      "modern": "Modern",
+      "romantic": "Romantic",
+      "minimal": "Minimalist"
+    },
+    "textColors": {
+      "white": "White",
+      "gold": "Gold",
+      "purple": "Neon Purple",
+      "red": "Red",
+      "black": "Black"
+    },
+    "musicStyles": {
+      "sertanejo": "Country / Sertanejo",
+      "funk": "Funk",
+      "trap": "Trap",
+      "gospel": "Gospel",
+      "pagode": "Pagode",
+      "rock": "Rock",
+      "mpb": "MPB",
+      "pop": "Pop",
+      "electronic": "Electronic"
+    },
+    "visualStyles": {
+      "realistic": "Realistic",
+      "cinematic": "Cinematic",
+      "anime": "Anime",
+      "vintage": "Vintage",
+      "neon": "Neon",
+      "minimalist": "Minimalist",
+      "dark": "Dark",
+      "romantic": "Romantic"
+    },
+    "generate": "✨ Generate Cover",
+    "generating": "Creating your artwork...",
+    "generatingHint": "Interpreting emotion, mood, and musical identity.",
+    "generatedTitle": "Generated cover",
+    "limitReached": "You have reached the monthly limit. More generation options will be available in future upgrades.",
+    "actions": {
+      "download": "Download PNG",
+      "variation": "Variation",
+      "share": "Share"
+    },
+    "empty": {
+      "title": "Your cover will appear here",
+      "description": "Paste the lyrics or describe the song and AI will create premium artwork."
+    },
+    "library": {
+      "title": "Cover library",
+      "untitled": "Untitled",
+      "empty": "Generated covers will be saved here so you can download them again."
+    },
+    "alt": {
+      "generated": "AI-generated cover",
+      "cover": "Generated cover"
+    },
+    "share": {
+      "title": "Cover created on DCCMusic",
+      "text": "Cover created with DCCMusic's AI Cover Generator."
+    },
+    "messages": {
+      "variationCreated": "New variation created successfully.",
+      "created": "Cover created successfully.",
+      "linkCopied": "Temporary cover link copied."
+    },
+    "errors": {
+      "goldOnly": "This feature is exclusive to active Gold Plan subscribers.",
+      "load": "Could not load the AI Cover Generator.",
+      "inputRequired": "Paste the song lyrics or describe your idea before generating.",
+      "generate": "Could not generate the cover."
+    }
   }
 }

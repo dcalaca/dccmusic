@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import {
   FiArrowLeft,
   FiClock,
@@ -14,21 +15,40 @@ import {
   FiZap,
 } from 'react-icons/fi'
 
-const musicStyles = ['Sertanejo', 'Funk', 'Trap', 'Gospel', 'Pagode', 'Rock', 'MPB', 'Pop', 'Eletrônica']
-const visualStyles = ['Realista', 'Cinematográfica', 'Anime', 'Vintage', 'Neon', 'Minimalista', 'Sombria', 'Romântica']
+const musicStyles = [
+  { value: 'Sertanejo', key: 'sertanejo' },
+  { value: 'Funk', key: 'funk' },
+  { value: 'Trap', key: 'trap' },
+  { value: 'Gospel', key: 'gospel' },
+  { value: 'Pagode', key: 'pagode' },
+  { value: 'Rock', key: 'rock' },
+  { value: 'MPB', key: 'mpb' },
+  { value: 'Pop', key: 'pop' },
+  { value: 'Eletrônica', key: 'electronic' },
+]
+const visualStyles = [
+  { value: 'Realista', key: 'realistic' },
+  { value: 'Cinematográfica', key: 'cinematic' },
+  { value: 'Anime', key: 'anime' },
+  { value: 'Vintage', key: 'vintage' },
+  { value: 'Neon', key: 'neon' },
+  { value: 'Minimalista', key: 'minimalist' },
+  { value: 'Sombria', key: 'dark' },
+  { value: 'Romântica', key: 'romantic' },
+]
 const textStyles = [
-  { id: 'impact', label: 'Forte', canvasFont: 'bold 92px Impact, Arial Black, sans-serif', previewClass: 'font-black tracking-wide' },
-  { id: 'classic', label: 'Clássica', canvasFont: 'bold 86px Georgia, serif', previewClass: 'font-serif font-bold' },
-  { id: 'modern', label: 'Moderna', canvasFont: 'bold 86px Arial, sans-serif', previewClass: 'font-sans font-black' },
-  { id: 'romantic', label: 'Romântica', canvasFont: 'italic bold 82px Georgia, serif', previewClass: 'font-serif font-bold italic' },
-  { id: 'minimal', label: 'Minimalista', canvasFont: '600 72px Arial, sans-serif', previewClass: 'font-sans font-semibold tracking-[0.18em] uppercase' },
+  { id: 'impact', labelKey: 'strong', canvasFont: 'bold 92px Impact, Arial Black, sans-serif', previewClass: 'font-black tracking-wide' },
+  { id: 'classic', labelKey: 'classic', canvasFont: 'bold 86px Georgia, serif', previewClass: 'font-serif font-bold' },
+  { id: 'modern', labelKey: 'modern', canvasFont: 'bold 86px Arial, sans-serif', previewClass: 'font-sans font-black' },
+  { id: 'romantic', labelKey: 'romantic', canvasFont: 'italic bold 82px Georgia, serif', previewClass: 'font-serif font-bold italic' },
+  { id: 'minimal', labelKey: 'minimal', canvasFont: '600 72px Arial, sans-serif', previewClass: 'font-sans font-semibold tracking-[0.18em] uppercase' },
 ]
 const textColors = [
-  { id: 'white', label: 'Branco', value: '#ffffff', previewClass: 'text-white' },
-  { id: 'gold', label: 'Dourado', value: '#facc15', previewClass: 'text-yellow-300' },
-  { id: 'purple', label: 'Roxo Neon', value: '#d946ef', previewClass: 'text-fuchsia-400' },
-  { id: 'red', label: 'Vermelho', value: '#f87171', previewClass: 'text-red-400' },
-  { id: 'black', label: 'Preto', value: '#111827', previewClass: 'text-gray-950' },
+  { id: 'white', labelKey: 'white', value: '#ffffff', previewClass: 'text-white' },
+  { id: 'gold', labelKey: 'gold', value: '#facc15', previewClass: 'text-yellow-300' },
+  { id: 'purple', labelKey: 'purple', value: '#d946ef', previewClass: 'text-fuchsia-400' },
+  { id: 'red', labelKey: 'red', value: '#f87171', previewClass: 'text-red-400' },
+  { id: 'black', labelKey: 'black', value: '#111827', previewClass: 'text-gray-950' },
 ]
 
 type CoverHistoryItem = {
@@ -50,6 +70,7 @@ type CoverStatus = {
 }
 
 export default function AICoverGeneratorPage() {
+  const { t, i18n } = useTranslation()
   const router = useRouter()
   const [composer, setComposer] = useState<any>(null)
   const [loadingStatus, setLoadingStatus] = useState(true)
@@ -125,19 +146,19 @@ export default function AICoverGeneratorPage() {
       }
 
       if (response.status === 403) {
-        setAccessError(data.error || 'Recurso exclusivo para assinantes ativos do Plano Ouro.')
+        setAccessError(i18n.language.startsWith('pt') && data.error ? data.error : t('covers.errors.goldOnly'))
         setStatus(null)
         return
       }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao carregar Gerador de Capas IA')
+        throw new Error(i18n.language.startsWith('pt') && data.error ? data.error : t('covers.errors.load'))
       }
 
       setStatus(data)
       setCurrentCover(data.history?.[0] || null)
     } catch (err: any) {
-      setAccessError(err.message || 'Erro ao carregar Gerador de Capas IA')
+      setAccessError(i18n.language.startsWith('pt') ? (err.message || t('covers.errors.load')) : t('covers.errors.load'))
     } finally {
       setLoadingStatus(false)
     }
@@ -148,7 +169,7 @@ export default function AICoverGeneratorPage() {
     setSuccessMessage('')
 
     if (!inputText.trim()) {
-      setError('Cole a letra da música ou descreva sua ideia antes de gerar.')
+      setError(t('covers.errors.inputRequired'))
       return
     }
 
@@ -165,7 +186,7 @@ export default function AICoverGeneratorPage() {
         body: JSON.stringify({
           title,
           inputText: variation
-            ? `${inputText}\n\nCrie uma nova variação visual mantendo a mesma emoção central.`
+            ? `${inputText}\n\n${t('covers.variationInstruction')}`
             : inputText,
           coverDescription,
           musicStyle,
@@ -176,7 +197,7 @@ export default function AICoverGeneratorPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao gerar capa')
+        throw new Error(i18n.language.startsWith('pt') && data.error ? data.error : t('covers.errors.generate'))
       }
 
       setCurrentCover(data.cover)
@@ -189,9 +210,9 @@ export default function AICoverGeneratorPage() {
           }
         : previous
       )
-      setSuccessMessage(variation ? 'Nova variação criada com sucesso.' : 'Capa criada com sucesso.')
+      setSuccessMessage(variation ? t('covers.messages.variationCreated') : t('covers.messages.created'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao gerar capa')
+      setError(i18n.language.startsWith('pt') ? (err.message || t('covers.errors.generate')) : t('covers.errors.generate'))
     } finally {
       setGenerating(false)
     }
@@ -285,15 +306,15 @@ export default function AICoverGeneratorPage() {
 
     if (navigator.share) {
       await navigator.share({
-        title: cover.title || 'Capa criada no DCCMusic',
-        text: 'Capa criada com o Gerador de Capas IA da DCCMusic.',
+        title: cover.title || t('covers.share.title'),
+        text: t('covers.share.text'),
         url: cover.imageUrl,
       })
       return
     }
 
     await navigator.clipboard.writeText(cover.imageUrl)
-    setSuccessMessage('Link temporário da capa copiado.')
+    setSuccessMessage(t('covers.messages.linkCopied'))
   }
 
   if (loadingStatus) {
@@ -301,7 +322,7 @@ export default function AICoverGeneratorPage() {
       <div className="min-h-screen py-8 flex items-center justify-center">
         <div className="text-center">
           <div className="mx-auto mb-4 h-14 w-14 rounded-full border-2 border-primary-500 border-t-transparent animate-spin" />
-          <p className="text-gray-300">Carregando recurso premium...</p>
+          <p className="text-gray-300">{t('covers.loading')}</p>
         </div>
       </div>
     )
@@ -314,26 +335,26 @@ export default function AICoverGeneratorPage() {
           <div className="max-w-3xl mx-auto">
             <Link href="/compositores/admin" className="inline-flex items-center space-x-2 text-primary-400 hover:text-primary-300 mb-8">
               <FiArrowLeft className="w-4 h-4" />
-              <span>Voltar</span>
+              <span>{t('covers.back')}</span>
             </Link>
 
             <div className="relative overflow-hidden rounded-3xl border border-yellow-700/60 bg-gradient-to-br from-yellow-950/50 via-gray-950 to-purple-950/40 p-8 text-center">
               <div className="absolute -top-24 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-yellow-500/20 blur-3xl" />
               <FiLock className="relative mx-auto mb-4 h-12 w-12 text-yellow-300" />
               <h1 className="relative text-3xl sm:text-4xl font-bold mb-4">
-                Gerador de Capas IA
+                {t('covers.title')}
               </h1>
               <p className="relative text-lg text-gray-300 mb-6">
                 {accessError}
               </p>
               <p className="relative text-sm text-gray-400 mb-8">
-                Este recurso foi criado para assinantes ativos do Plano Ouro e permite gerar capas profissionais com IA.
+                {t('covers.access.description')}
               </p>
               <Link
                 href="/compositores/planos"
                 className="relative inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-yellow-500 to-purple-600 px-6 py-3 font-semibold text-white hover:from-yellow-400 hover:to-purple-500 transition-all"
               >
-                Ver Plano Ouro
+                {t('covers.access.viewGold')}
               </Link>
             </div>
           </div>
@@ -348,7 +369,7 @@ export default function AICoverGeneratorPage() {
         <div className="max-w-7xl mx-auto">
           <Link href="/compositores/admin" className="inline-flex items-center space-x-2 text-primary-400 hover:text-primary-300 mb-8">
             <FiArrowLeft className="w-4 h-4" />
-            <span>Voltar</span>
+            <span>{t('covers.back')}</span>
           </Link>
 
           <section className="relative overflow-hidden rounded-3xl border border-primary-700/50 bg-gradient-to-br from-black via-gray-950 to-purple-950/40 p-6 sm:p-10 mb-8">
@@ -358,24 +379,24 @@ export default function AICoverGeneratorPage() {
               <div>
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary-500/40 bg-primary-950/40 px-4 py-2 text-sm text-primary-200">
                   <FiZap className="h-4 w-4" />
-                  Exclusivo Plano Ouro
+                  {t('covers.hero.badge')}
                 </div>
                 <h1 className="text-4xl sm:text-6xl font-black mb-4">
-                  <span className="gradient-text">Gerador de Capas IA</span>
+                  <span className="gradient-text">{t('covers.title')}</span>
                 </h1>
                 <p className="text-xl text-gray-300 max-w-2xl">
-                  Transforme sua música em uma capa profissional em segundos.
+                  {t('covers.hero.subtitle')}
                 </p>
                 <p className="text-gray-400 mt-4 max-w-2xl">
-                  A IA interpreta emoção, estilo, ambiente e sentimento principal para criar artes modernas e cinematográficas.
+                  {t('covers.hero.description')}
                 </p>
               </div>
 
               <div className="rounded-2xl border border-gray-800 bg-black/50 p-5 backdrop-blur">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-gray-400">Uso mensal</span>
+                  <span className="text-sm text-gray-400">{t('covers.usage.title')}</span>
                   <span className="text-sm font-semibold text-primary-300">
-                    {status?.used || 0} / {status?.limit || 100} capas utilizadas
+                    {t('covers.usage.used', { used: status?.used || 0, count: status?.limit || 100 })}
                   </span>
                 </div>
                 <div className="h-3 rounded-full bg-gray-800 overflow-hidden">
@@ -385,7 +406,7 @@ export default function AICoverGeneratorPage() {
                   />
                 </div>
                 <p className="mt-3 text-xs text-gray-500">
-                  O contador reseta automaticamente todo mês.
+                  {t('covers.usage.reset')}
                 </p>
               </div>
             </div>
@@ -405,11 +426,11 @@ export default function AICoverGeneratorPage() {
               )}
 
               <div className="mb-5">
-                <label className="block text-sm font-medium mb-2">Nome da música</label>
+                <label className="block text-sm font-medium mb-2">{t('covers.form.songTitle')}</label>
                 <input
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
-                  placeholder="Ex: Idiota perfeito"
+                  placeholder={t('covers.form.songTitlePlaceholder')}
                   className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 outline-none focus:border-primary-500"
                 />
               </div>
@@ -424,28 +445,28 @@ export default function AICoverGeneratorPage() {
                     className="mt-1 h-4 w-4 rounded border-gray-700 bg-gray-900 text-primary-600 focus:ring-primary-500"
                   />
                   <label htmlFor="showTextOnCover" className="cursor-pointer">
-                    <span className="block text-sm font-semibold text-white">Adicionar texto na capa</span>
+                    <span className="block text-sm font-semibold text-white">{t('covers.form.addText')}</span>
                     <span className="block text-xs text-gray-500">
-                      Desmarque para gerar e baixar a capa sem nada escrito.
+                      {t('covers.form.addTextHint')}
                     </span>
                   </label>
                 </div>
-                <label className="block text-sm font-medium mb-2">Texto na capa (opcional)</label>
+                <label className="block text-sm font-medium mb-2">{t('covers.form.coverText')}</label>
                 <input
                   value={coverText}
                   onChange={(event) => setCoverText(event.target.value)}
                   disabled={!showTextOnCover}
-                  placeholder="Ex: Pedra no peito"
+                  placeholder={t('covers.form.coverTextPlaceholder')}
                   className="w-full rounded-xl border border-gray-700 bg-gray-900 px-4 py-3 outline-none focus:border-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
                 />
                 <p className="mt-2 text-xs text-gray-500">
-                  Se ativado e deixar vazio, o site usa o nome da música. O texto é aplicado pelo site para ficar legível.
+                  {t('covers.form.coverTextHint')}
                 </p>
 
                 {showTextOnCover && (
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Estilo da fonte</label>
+                      <label className="block text-sm font-medium mb-2">{t('covers.form.fontStyle')}</label>
                       <select
                         value={coverTextStyle}
                         onChange={(event) => setCoverTextStyle(event.target.value)}
@@ -453,13 +474,13 @@ export default function AICoverGeneratorPage() {
                       >
                         {textStyles.map((style) => (
                           <option key={style.id} value={style.id}>
-                            {style.label}
+                            {t(`covers.textStyles.${style.labelKey}`)}
                           </option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Cor do texto</label>
+                      <label className="block text-sm font-medium mb-2">{t('covers.form.textColor')}</label>
                       <select
                         value={coverTextColor}
                         onChange={(event) => setCoverTextColor(event.target.value)}
@@ -467,7 +488,7 @@ export default function AICoverGeneratorPage() {
                       >
                         {textColors.map((color) => (
                           <option key={color.id} value={color.id}>
-                            {color.label}
+                            {t(`covers.textColors.${color.labelKey}`)}
                           </option>
                         ))}
                       </select>
@@ -477,65 +498,65 @@ export default function AICoverGeneratorPage() {
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Cole aqui a letra da música ou descreva sua ideia</label>
+                <label className="block text-sm font-medium mb-2">{t('covers.form.idea')}</label>
                 <textarea
                   value={inputText}
                   onChange={(event) => setInputText(event.target.value)}
-                  placeholder="Ex: Música sertaneja sofrida em um bar à noite, clima de saudade..."
+                  placeholder={t('covers.form.ideaPlaceholder')}
                   rows={10}
                   className="w-full resize-none rounded-2xl border border-gray-700 bg-gray-900 px-4 py-4 outline-none focus:border-primary-500"
                 />
               </div>
 
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">Descrição da capa (deixe vazio para gerar apenas a imagem)</label>
+                <label className="block text-sm font-medium mb-2">{t('covers.form.description')}</label>
                 <textarea
                   value={coverDescription}
                   onChange={(event) => setCoverDescription(event.target.value)}
-                  placeholder="Ex: Um casal afastado em uma estrada molhada, luz de poste, clima triste e cinematográfico..."
+                  placeholder={t('covers.form.descriptionPlaceholder')}
                   rows={4}
                   className="w-full resize-none rounded-2xl border border-gray-700 bg-gray-900 px-4 py-4 outline-none focus:border-primary-500"
                 />
                 <p className="mt-2 text-xs text-gray-500">
-                  Use esse campo somente se quiser direcionar a imagem. Não é necessário escrever prompt técnico.
+                  {t('covers.form.descriptionHint')}
                 </p>
               </div>
 
               <div className="mb-6">
-                <h2 className="text-sm font-semibold mb-3">Seleção de estilo musical</h2>
+                <h2 className="text-sm font-semibold mb-3">{t('covers.form.musicStyle')}</h2>
                 <div className="flex flex-wrap gap-2">
                   {musicStyles.map((style) => (
                     <button
-                      key={style}
+                      key={style.value}
                       type="button"
-                      onClick={() => setMusicStyle(style)}
+                      onClick={() => setMusicStyle(style.value)}
                       className={`rounded-full border px-4 py-2 text-sm transition-all ${
-                        musicStyle === style
+                        musicStyle === style.value
                           ? 'border-primary-400 bg-primary-600 text-white shadow-lg shadow-primary-900/40'
                           : 'border-gray-700 bg-gray-900 text-gray-300 hover:border-primary-500'
                       }`}
                     >
-                      {style}
+                      {t(`covers.musicStyles.${style.key}`)}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="mb-8">
-                <h2 className="text-sm font-semibold mb-3">Estilo visual da capa</h2>
+                <h2 className="text-sm font-semibold mb-3">{t('covers.form.visualStyle')}</h2>
                 <div className="flex flex-wrap gap-2">
                   {visualStyles.map((style) => (
                     <button
-                      key={style}
+                      key={style.value}
                       type="button"
-                      onClick={() => setVisualStyle(style)}
+                      onClick={() => setVisualStyle(style.value)}
                       className={`rounded-full border px-4 py-2 text-sm transition-all ${
-                        visualStyle === style
+                        visualStyle === style.value
                           ? 'border-purple-300 bg-purple-600 text-white shadow-lg shadow-purple-900/40'
                           : 'border-gray-700 bg-gray-900 text-gray-300 hover:border-purple-500'
                       }`}
                     >
-                      {style}
+                      {t(`covers.visualStyles.${style.key}`)}
                     </button>
                   ))}
                 </div>
@@ -547,12 +568,12 @@ export default function AICoverGeneratorPage() {
                 disabled={generating || (status?.remaining || 0) <= 0}
                 className="w-full rounded-2xl bg-gradient-to-r from-primary-600 via-purple-600 to-fuchsia-600 px-6 py-4 text-lg font-bold text-white shadow-xl shadow-purple-950/40 transition-all hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {generating ? 'Criando sua arte...' : '✨ Gerar Capa'}
+                {generating ? t('covers.generating') : t('covers.generate')}
               </button>
 
               {(status?.remaining || 0) <= 0 && (
                 <p className="mt-4 text-center text-sm text-yellow-300">
-                  Você atingiu o limite mensal. Em breve teremos upgrades para ampliar gerações.
+                  {t('covers.limitReached')}
                 </p>
               )}
             </div>
@@ -567,15 +588,15 @@ export default function AICoverGeneratorPage() {
                       <div className="absolute bottom-10 right-8 h-32 w-32 rounded-full bg-primary-400/30 blur-3xl" />
                       <FiImage className="absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 text-primary-200" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-2">Criando sua arte...</h3>
-                    <p className="text-gray-400">Interpretando emoção, clima e identidade musical.</p>
+                    <h3 className="text-2xl font-bold mb-2">{t('covers.generating')}</h3>
+                    <p className="text-gray-400">{t('covers.generatingHint')}</p>
                   </div>
                 ) : currentCover?.imageUrl ? (
                   <>
                     <div className="relative overflow-hidden rounded-2xl shadow-2xl shadow-purple-950/40">
                       <img
                         src={currentCover.imageUrl}
-                        alt={currentCover.title || 'Capa gerada com IA'}
+                        alt={currentCover.title || t('covers.alt.generated')}
                         className="aspect-square w-full object-cover"
                       />
                       {showTextOnCover && (coverText.trim() || currentCover.title || title) && (
@@ -587,7 +608,7 @@ export default function AICoverGeneratorPage() {
                       )}
                     </div>
                     <div className="mt-5">
-                      <h3 className="text-xl font-bold">{currentCover.title || title || 'Capa gerada'}</h3>
+                      <h3 className="text-xl font-bold">{currentCover.title || title || t('covers.generatedTitle')}</h3>
                       <p className="text-sm text-gray-400">
                         {currentCover.musicStyle} · {currentCover.visualStyle}
                       </p>
@@ -598,7 +619,7 @@ export default function AICoverGeneratorPage() {
                         onClick={() => handleDownload(currentCover)}
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-800 px-4 py-3 text-sm hover:bg-gray-700"
                       >
-                        <FiDownload /> Baixar PNG
+                        <FiDownload /> {t('covers.actions.download')}
                       </button>
                       <button
                         type="button"
@@ -606,14 +627,14 @@ export default function AICoverGeneratorPage() {
                         disabled={generating || (status?.remaining || 0) <= 0}
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm hover:bg-primary-600 disabled:opacity-60"
                       >
-                        <FiRefreshCw /> Variação
+                        <FiRefreshCw /> {t('covers.actions.variation')}
                       </button>
                       <button
                         type="button"
                         onClick={() => handleShare(currentCover)}
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-700 px-4 py-3 text-sm hover:bg-purple-600"
                       >
-                        <FiShare2 /> Compartilhar
+                        <FiShare2 /> {t('covers.actions.share')}
                       </button>
                     </div>
                   </>
@@ -622,9 +643,9 @@ export default function AICoverGeneratorPage() {
                     <div className="mx-auto mb-6 flex h-48 w-48 items-center justify-center rounded-3xl border border-dashed border-gray-700 bg-gray-900/70">
                       <FiImage className="h-16 w-16 text-gray-600" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-2">Sua capa aparecerá aqui</h3>
+                    <h3 className="text-2xl font-bold mb-2">{t('covers.empty.title')}</h3>
                     <p className="text-gray-400">
-                      Escreva a letra ou descreva a música para a IA criar uma arte premium.
+                      {t('covers.empty.description')}
                     </p>
                   </div>
                 )}
@@ -632,7 +653,7 @@ export default function AICoverGeneratorPage() {
 
               <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-6">
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-xl font-bold">Biblioteca de capas</h2>
+                  <h2 className="text-xl font-bold">{t('covers.library.title')}</h2>
                   <FiClock className="text-primary-300" />
                 </div>
                 {status?.history?.length ? (
@@ -647,22 +668,22 @@ export default function AICoverGeneratorPage() {
                         {cover.imageUrl ? (
                           <img
                             src={cover.imageUrl}
-                            alt={cover.title || 'Capa gerada'}
+                            alt={cover.title || t('covers.alt.cover')}
                             className="aspect-square w-full rounded-xl object-cover ring-1 ring-gray-800 transition-all group-hover:ring-primary-400"
                           />
                         ) : (
                           <div className="aspect-square rounded-xl bg-gray-900 ring-1 ring-gray-800" />
                         )}
-                        <p className="mt-2 truncate text-sm font-medium">{cover.title || 'Sem título'}</p>
+                        <p className="mt-2 truncate text-sm font-medium">{cover.title || t('covers.library.untitled')}</p>
                         <p className="text-xs text-gray-500">
-                          {new Date(cover.createdAt).toLocaleDateString('pt-BR')}
+                          {new Date(cover.createdAt).toLocaleDateString(i18n.language)}
                         </p>
                       </button>
                     ))}
                   </div>
                 ) : (
                   <p className="text-sm text-gray-400">
-                    As capas geradas ficarão salvas aqui para baixar novamente.
+                    {t('covers.library.empty')}
                   </p>
                 )}
               </div>

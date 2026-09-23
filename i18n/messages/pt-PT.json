@@ -1161,5 +1161,116 @@
         "generate": "Não foi possível gerar a nova frase."
       }
     }
+  },
+  "covers": {
+    "back": "Voltar",
+    "title": "Gerador de Capas IA",
+    "loading": "Carregando recurso premium...",
+    "variationInstruction": "Crie uma nova variação visual mantendo a mesma emoção central.",
+    "access": {
+      "description": "Este recurso foi criado para assinantes ativos do Plano Ouro e permite gerar capas profissionais com IA.",
+      "viewGold": "Ver Plano Ouro"
+    },
+    "hero": {
+      "badge": "Exclusivo Plano Ouro",
+      "subtitle": "Transforme sua música em uma capa profissional em segundos.",
+      "description": "A IA interpreta emoção, estilo, ambiente e sentimento principal para criar artes modernas e cinematográficas."
+    },
+    "usage": {
+      "title": "Uso mensal",
+      "used": "{{used}} / {{count}} capas utilizadas",
+      "reset": "O contador reseta automaticamente todo mês."
+    },
+    "form": {
+      "songTitle": "Nome da música",
+      "songTitlePlaceholder": "Ex: Idiota perfeito",
+      "addText": "Adicionar texto na capa",
+      "addTextHint": "Desmarque para gerar e baixar a capa sem nada escrito.",
+      "coverText": "Texto na capa (opcional)",
+      "coverTextPlaceholder": "Ex: Pedra no peito",
+      "coverTextHint": "Se ativado e deixar vazio, o site usa o nome da música. O texto é aplicado pelo site para ficar legível.",
+      "fontStyle": "Estilo da fonte",
+      "textColor": "Cor do texto",
+      "idea": "Cole aqui a letra da música ou descreva sua ideia",
+      "ideaPlaceholder": "Ex: Música sertaneja sofrida em um bar à noite, clima de saudade...",
+      "description": "Descrição da capa (deixe vazio para gerar apenas a imagem)",
+      "descriptionPlaceholder": "Ex: Um casal afastado em uma estrada molhada, luz de poste, clima triste e cinematográfico...",
+      "descriptionHint": "Use esse campo somente se quiser direcionar a imagem. Não é necessário escrever prompt técnico.",
+      "musicStyle": "Seleção de estilo musical",
+      "visualStyle": "Estilo visual da capa"
+    },
+    "textStyles": {
+      "strong": "Forte",
+      "classic": "Clássica",
+      "modern": "Moderna",
+      "romantic": "Romântica",
+      "minimal": "Minimalista"
+    },
+    "textColors": {
+      "white": "Branco",
+      "gold": "Dourado",
+      "purple": "Roxo Neon",
+      "red": "Vermelho",
+      "black": "Preto"
+    },
+    "musicStyles": {
+      "sertanejo": "Sertanejo",
+      "funk": "Funk",
+      "trap": "Trap",
+      "gospel": "Gospel",
+      "pagode": "Pagode",
+      "rock": "Rock",
+      "mpb": "MPB",
+      "pop": "Pop",
+      "electronic": "Eletrônica"
+    },
+    "visualStyles": {
+      "realistic": "Realista",
+      "cinematic": "Cinematográfica",
+      "anime": "Anime",
+      "vintage": "Vintage",
+      "neon": "Neon",
+      "minimalist": "Minimalista",
+      "dark": "Sombria",
+      "romantic": "Romântica"
+    },
+    "generate": "✨ Gerar Capa",
+    "generating": "Criando sua arte...",
+    "generatingHint": "Interpretando emoção, clima e identidade musical.",
+    "generatedTitle": "Capa gerada",
+    "limitReached": "Você atingiu o limite mensal. Em breve teremos upgrades para ampliar gerações.",
+    "actions": {
+      "download": "Baixar PNG",
+      "variation": "Variação",
+      "share": "Compartilhar"
+    },
+    "empty": {
+      "title": "Sua capa aparecerá aqui",
+      "description": "Escreva a letra ou descreva a música para a IA criar uma arte premium."
+    },
+    "library": {
+      "title": "Biblioteca de capas",
+      "untitled": "Sem título",
+      "empty": "As capas geradas ficarão salvas aqui para baixar novamente."
+    },
+    "alt": {
+      "generated": "Capa gerada com IA",
+      "cover": "Capa gerada"
+    },
+    "share": {
+      "title": "Capa criada no DCCMusic",
+      "text": "Capa criada com o Gerador de Capas IA da DCCMusic."
+    },
+    "messages": {
+      "variationCreated": "Nova variação criada com sucesso.",
+      "created": "Capa criada com sucesso.",
+      "linkCopied": "Link temporário da capa copiado."
+    },
+    "errors": {
+      "goldOnly": "Recurso exclusivo para assinantes ativos do Plano Ouro.",
+      "load": "Erro ao carregar Gerador de Capas IA.",
+      "inputRequired": "Cole a letra da música ou descreva sua ideia antes de gerar.",
+      "generate": "Erro ao gerar capa."
+    }
   }
 }

@@ -1161,5 +1161,116 @@
         "generate": "No se pudo generar la nueva frase."
       }
     }
+  },
+  "covers": {
+    "back": "Volver",
+    "title": "Generador de Portadas con IA",
+    "loading": "Cargando recurso premium...",
+    "variationInstruction": "Crea una nueva variación visual manteniendo la misma emoción central.",
+    "access": {
+      "description": "Este recurso fue creado para suscriptores activos del Plan Oro y permite generar portadas profesionales con IA.",
+      "viewGold": "Ver Plan Oro"
+    },
+    "hero": {
+      "badge": "Exclusivo Plan Oro",
+      "subtitle": "Transforma tu canción en una portada profesional en segundos.",
+      "description": "La IA interpreta emoción, estilo, ambiente y sentimiento principal para crear artes modernas y cinematográficas."
+    },
+    "usage": {
+      "title": "Uso mensual",
+      "used": "{{used}} / {{count}} portadas utilizadas",
+      "reset": "El contador se reinicia automáticamente cada mes."
+    },
+    "form": {
+      "songTitle": "Nombre de la canción",
+      "songTitlePlaceholder": "Ej.: Idiota perfecto",
+      "addText": "Agregar texto a la portada",
+      "addTextHint": "Desactiva esta opción para generar y descargar la portada sin texto.",
+      "coverText": "Texto de la portada (opcional)",
+      "coverTextPlaceholder": "Ej.: Piedra en el pecho",
+      "coverTextHint": "Si está activado y lo dejas vacío, el sitio usa el nombre de la canción. El texto lo aplica el sitio para que quede legible.",
+      "fontStyle": "Estilo de fuente",
+      "textColor": "Color del texto",
+      "idea": "Pega aquí la letra de la canción o describe tu idea",
+      "ideaPlaceholder": "Ej.: Canción de desamor en un bar de noche, con clima de nostalgia...",
+      "description": "Descripción de la portada (déjala vacía para generar solo la imagen)",
+      "descriptionPlaceholder": "Ej.: Una pareja separada en una carretera mojada, luz de farola, ambiente triste y cinematográfico...",
+      "descriptionHint": "Usa este campo solo si quieres orientar la imagen. No necesitas escribir un prompt técnico.",
+      "musicStyle": "Selección de estilo musical",
+      "visualStyle": "Estilo visual de la portada"
+    },
+    "textStyles": {
+      "strong": "Fuerte",
+      "classic": "Clásica",
+      "modern": "Moderna",
+      "romantic": "Romántica",
+      "minimal": "Minimalista"
+    },
+    "textColors": {
+      "white": "Blanco",
+      "gold": "Dorado",
+      "purple": "Morado Neón",
+      "red": "Rojo",
+      "black": "Negro"
+    },
+    "musicStyles": {
+      "sertanejo": "Sertanejo",
+      "funk": "Funk",
+      "trap": "Trap",
+      "gospel": "Gospel",
+      "pagode": "Pagode",
+      "rock": "Rock",
+      "mpb": "MPB",
+      "pop": "Pop",
+      "electronic": "Electrónica"
+    },
+    "visualStyles": {
+      "realistic": "Realista",
+      "cinematic": "Cinematográfica",
+      "anime": "Anime",
+      "vintage": "Vintage",
+      "neon": "Neón",
+      "minimalist": "Minimalista",
+      "dark": "Oscura",
+      "romantic": "Romántica"
+    },
+    "generate": "✨ Generar Portada",
+    "generating": "Creando tu arte...",
+    "generatingHint": "Interpretando emoción, clima e identidad musical.",
+    "generatedTitle": "Portada generada",
+    "limitReached": "Alcanzaste el límite mensual. Próximamente habrá opciones para ampliar las generaciones.",
+    "actions": {
+      "download": "Descargar PNG",
+      "variation": "Variación",
+      "share": "Compartir"
+    },
+    "empty": {
+      "title": "Tu portada aparecerá aquí",
+      "description": "Escribe la letra o describe la canción para que la IA cree un arte premium."
+    },
+    "library": {
+      "title": "Biblioteca de portadas",
+      "untitled": "Sin título",
+      "empty": "Las portadas generadas quedarán guardadas aquí para volver a descargarlas."
+    },
+    "alt": {
+      "generated": "Portada generada con IA",
+      "cover": "Portada generada"
+    },
+    "share": {
+      "title": "Portada creada en DCCMusic",
+      "text": "Portada creada con el Generador de Portadas con IA de DCCMusic."
+    },
+    "messages": {
+      "variationCreated": "Nueva variación creada correctamente.",
+      "created": "Portada creada correctamente.",
+      "linkCopied": "Enlace temporal de la portada copiado."
+    },
+    "errors": {
+      "goldOnly": "Recurso exclusivo para suscriptores activos del Plan Oro.",
+      "load": "Error al cargar el Generador de Portadas con IA.",
+      "inputRequired": "Pega la letra de la canción o describe tu idea antes de generar.",
+      "generate": "Error al generar la portada."
+    }
   }
 }
