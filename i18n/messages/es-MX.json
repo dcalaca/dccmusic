@@ -104,7 +104,7 @@
         "background": "Recibimos tu solicitud. Te enviaremos un correo cuando la canción esté lista. También puedes esperar aquí.",
         "communicationError": "Hubo un fallo de comunicación durante la generación de tu canción. No se descontaron créditos. Genera la canción nuevamente.",
         "unavailable": "Tu letra fue guardada, pero no pudimos iniciar la creación de la canción ahora. Inténtalo más tarde.",
-        "voiceInvalid": "Tu voz personalizada no está disponible para esta generación. Debes recrearla antes de intentarlo de nuevo.",
+        "voiceInvalid": "La voz seleccionada ha caducado. Elige una voz nueva o vuelve a crear tu voz personalizada. No se descontaron créditos.",
         "creating": "Creando canción...",
         "noCredits": "Ya usaste tu canción gratis o no tienes saldo. Suscríbete a DCC Studio IA o compra una recarga para crear nuevas canciones.",
         "createError": "Error al crear la canción.",

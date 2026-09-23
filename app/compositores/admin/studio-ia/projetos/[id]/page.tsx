@@ -1058,7 +1058,13 @@ export default function StudioProjectDetailPage() {
       setPreviewAudioUrl('')
       setGenerationBackgroundMode(false)
       setMessage('')
-      setError(data.generation?.error_message || musicGenerationCommunicationError)
+      const generationError = String(data.generation?.error_message || '')
+      const normalizedGenerationError = generationError.toLowerCase()
+      const isExpiredVoiceError =
+        normalizedGenerationError.includes('voice has expired') ||
+        normalizedGenerationError.includes('voz cadastrada') ||
+        normalizedGenerationError.includes('voz personalizada') && normalizedGenerationError.includes('expir')
+      setError(isExpiredVoiceError ? studioVoiceInvalidMessage : (generationError || musicGenerationCommunicationError))
       await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
       return
     }

@@ -104,7 +104,7 @@
         "background": "We received your request. We'll email you as soon as the song is ready. You can also wait here.",
         "communicationError": "There was a communication failure while generating your song. No credits were deducted. Please generate the song again.",
         "unavailable": "Your lyrics were saved, but we couldn't start creating the song right now. Try again later.",
-        "voiceInvalid": "Your custom voice is not available for this generation. Recreate the voice before trying again.",
+        "voiceInvalid": "The selected voice has expired. Choose a new voice or recreate your custom voice. No credits were deducted.",
         "creating": "Creating song...",
         "noCredits": "You've already used your free song or have no credits left. Subscribe to DCC AI Studio or buy a top-up to create more songs.",
         "createError": "Could not create the song.",

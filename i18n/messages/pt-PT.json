@@ -104,7 +104,7 @@
         "background": "Recebemos sua solicitação. Assim que a música estiver pronta, te mandamos um e-mail. Você também pode aguardar por aqui mesmo. Sinto que está vindo um sucesso!",
         "communicationError": "Houve uma falha na comunicação para geração da sua música. Não foi descontado do seu saldo. Gere a música novamente.",
         "unavailable": "Sua letra foi salva, mas não conseguimos iniciar a criação da música agora. Tente novamente mais tarde.",
-        "voiceInvalid": "Sua voz personalizada não está disponível para esta geração. É necessário recriar a voz antes de tentar novamente.",
+        "voiceInvalid": "A voz selecionada expirou. Escolha uma nova voz ou recrie a sua voz personalizada. Nenhum crédito foi descontado.",
         "creating": "Criando música...",
         "noCredits": "Você já usou sua música grátis ou está sem saldo. Assine um plano DCC Studio IA ou faça uma recarga avulsa para criar novas músicas.",
         "createError": "Erro ao criar música.",
