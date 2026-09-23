@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 type PlanPurchaseLinkProps = {
   href: string
@@ -11,6 +12,7 @@ type PlanPurchaseLinkProps = {
 }
 
 export function PlanPurchaseLink({ href, planType, className, children }: PlanPurchaseLinkProps) {
+  const { t } = useTranslation()
   const [checking, setChecking] = useState(true)
   const [blocked, setBlocked] = useState(false)
 
@@ -58,7 +60,7 @@ export function PlanPurchaseLink({ href, planType, className, children }: PlanPu
         disabled
         className={`${className} cursor-not-allowed opacity-60`}
       >
-        Verificando plano...
+        {t('payment.plans.checkingPlan')}
       </button>
     )
   }
@@ -68,10 +70,10 @@ export function PlanPurchaseLink({ href, planType, className, children }: PlanPu
       <button
         type="button"
         disabled
-        title="Você já possui um plano ativo nesta categoria"
+        title={t('payment.plans.alreadyActiveTitle')}
         className={`${className} cursor-not-allowed opacity-60`}
       >
-        Plano já ativo
+        {t('payment.plans.alreadyActive')}
       </button>
     )
   }
