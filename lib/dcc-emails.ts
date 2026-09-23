@@ -196,15 +196,12 @@ async function completeEmailEvent(input: DccEmailInput, result: EmailResult) {
 
 async function sendResendEmail(input: DccEmailInput): Promise<EmailResult> {
   const apiKey = normalizeEmailHeader(process.env.RESEND_API_KEY)
-  const sender = parseEmailHeader(
-    process.env.RESEND_FROM_EMAIL ||
-    process.env.BREVO_FROM_EMAIL ||
-    process.env.SMTP_FROM_EMAIL
-  )
+  const sender = parseEmailHeader('DCC Music <suporte@email.dccmusic.online>')
   const replyTo = parseEmailHeader(
     process.env.RESEND_REPLY_TO_EMAIL ||
     process.env.BREVO_REPLY_TO_EMAIL ||
-    process.env.SMTP_REPLY_TO_EMAIL
+    process.env.SMTP_REPLY_TO_EMAIL ||
+    'suporte@dccmusic.online'
   )
   const adminEmail = parseEmailHeader(process.env.ADMIN_EMAIL || process.env.DCC_ADMIN_EMAIL)
   const allowAdminBcc = process.env.ALLOW_RESEND_ADMIN_BCC === 'true'
