@@ -1,4 +1,5 @@
 import { FiMessageCircle, FiMusic, FiPlayCircle, FiUsers, FiZap } from 'react-icons/fi'
+import { createDccI18n } from '@/i18n/i18next'
 
 type AiMusicDay = {
   date: string
@@ -19,7 +20,7 @@ export type SiteStatsCompactProps = {
   aiMusicDays?: AiMusicDay[]
 }
 
-export default function SiteStatsCompact({
+export default async function SiteStatsCompact({
   locale = 'pt-BR',
   totalVideos,
   videoViews,
@@ -31,6 +32,8 @@ export default function SiteStatsCompact({
   deliveredAiMusics = 0,
   aiMusicDays = [],
 }: SiteStatsCompactProps) {
+  const i18n = await createDccI18n(locale)
+  const t = i18n.t.bind(i18n)
   const totalInteractions = totalComments + totalRatings
   const maxAiDay = Math.max(1, ...aiMusicDays.map((day) => day.deliveredMusics))
   const formatInteger = (value: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)
@@ -40,12 +43,12 @@ export default function SiteStatsCompact({
       <div className="container mx-auto px-3 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl min-w-0">
           <div className="mb-6 text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary-300">Em atividade no site</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary-300">{t('siteStats.badge')}</p>
             <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
-              A força do DCC Music em números
+              {t('siteStats.title')}
             </h2>
             <p className="mx-auto mt-2 max-w-2xl text-sm text-gray-400">
-              Studio IA, comunidade e engajamento crescendo todos os dias.
+              {t('siteStats.subtitle')}
             </p>
           </div>
 
@@ -53,12 +56,12 @@ export default function SiteStatsCompact({
             <div className="flex min-w-0 items-center justify-between gap-4 rounded-2xl border border-purple-900/70 bg-gradient-to-br from-gray-950 via-purple-950/35 to-gray-950 px-4 py-4 sm:px-5">
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-purple-300">
-                  Músicas criadas na DCC
+                  {t('siteStats.createdSongs')}
                 </p>
                 <p className="mt-1 text-3xl font-black leading-none text-white tabular-nums sm:text-4xl">
                   {formatInteger(deliveredAiMusics)}
                 </p>
-                <p className="mt-2 text-[11px] lowercase text-gray-500">atualização em tempo real</p>
+                <p className="mt-2 text-[11px] lowercase text-gray-500">{t('siteStats.realtime')}</p>
               </div>
               <div
                 className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-purple-950 text-purple-300 ring-1 ring-purple-500/30"
@@ -70,12 +73,12 @@ export default function SiteStatsCompact({
 
             <div className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-green-900/70 bg-gray-950 px-4 py-4">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">Comunidade</p>
+                <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">{t('siteStats.community')}</p>
                 <p className="mt-1 text-2xl font-black leading-tight text-white tabular-nums sm:text-3xl">
                   {formatInteger(totalComposers)}
                 </p>
                 <p className="mt-1 text-[11px] text-gray-500 tabular-nums sm:text-xs">
-                  compositores
+                  {t('siteStats.songwriters')}
                 </p>
               </div>
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-green-950 text-green-300 sm:h-10 sm:w-10" aria-hidden>
@@ -85,12 +88,12 @@ export default function SiteStatsCompact({
 
             <div className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-yellow-900/70 bg-gray-950 px-4 py-4">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">Interações</p>
+                <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">{t('siteStats.interactions')}</p>
                 <p className="mt-1 text-2xl font-black leading-tight text-white tabular-nums sm:text-3xl">
                   {formatInteger(totalInteractions)}
                 </p>
                 <p className="mt-1 text-[11px] text-gray-500 tabular-nums sm:text-xs">
-                  {formatInteger(totalComments)} comentários + {formatInteger(totalRatings)} avaliações
+                  {t('siteStats.commentsRatings', { comments: formatInteger(totalComments), ratings: formatInteger(totalRatings) })}
                 </p>
               </div>
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-yellow-950 text-yellow-300 sm:h-10 sm:w-10" aria-hidden>
@@ -102,8 +105,8 @@ export default function SiteStatsCompact({
           {aiMusicDays.length > 0 && (
             <div className="mt-5 min-w-0 overflow-hidden rounded-2xl border border-purple-900/70 bg-gradient-to-br from-purple-950/45 via-gray-950 to-black p-3 sm:p-5">
               <div className="mb-4 min-w-0">
-                <h3 className="text-lg font-black text-white">Músicas IA entregues</h3>
-                <p className="mt-1 text-xs text-gray-400 sm:text-sm">Últimos 14 dias</p>
+                <h3 className="text-lg font-black text-white">{t('siteStats.aiDelivered')}</h3>
+                <p className="mt-1 text-xs text-gray-400 sm:text-sm">{t('siteStats.last14Days')}</p>
               </div>
 
               <div className="flex h-36 min-w-0 items-end gap-1 border-b border-gray-800 px-0.5 pb-2 sm:h-44 sm:gap-2 sm:px-1">
@@ -128,12 +131,12 @@ export default function SiteStatsCompact({
           <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-cyan-900/70 bg-gray-950 px-4 py-4">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">Total de vídeos</p>
+                <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">{t('siteStats.totalVideos')}</p>
                 <p className="mt-1 text-2xl font-black leading-tight text-white tabular-nums">
                   {formatInteger(totalVideos)}
                 </p>
                 <p className="mt-1 text-[11px] text-gray-500 tabular-nums sm:text-xs">
-                  Visualizações: {formatInteger(videoViews)}
+                  {t('siteStats.views', { count: formatInteger(videoViews) })}
                 </p>
               </div>
               <div
@@ -146,12 +149,12 @@ export default function SiteStatsCompact({
 
             <div className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-primary-900/70 bg-gray-950 px-4 py-4">
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">Total de músicas</p>
+                <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">{t('siteStats.totalMusics')}</p>
                 <p className="mt-1 text-2xl font-black leading-tight text-white tabular-nums">
                   {formatInteger(totalMusics)}
                 </p>
                 <p className="mt-1 text-[11px] text-gray-500 tabular-nums sm:text-xs">
-                  Visualizações: {formatInteger(musicViews)}
+                  {t('siteStats.views', { count: formatInteger(musicViews) })}
                 </p>
               </div>
               <div

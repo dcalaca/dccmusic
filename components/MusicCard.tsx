@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { FiMusic, FiExternalLink, FiEye } from 'react-icons/fi'
 import { useEffect, useState } from 'react'
 import { canFetchMusicImage, isSpotifyUrl } from '@/lib/spotify-utils'
-import { formatDateShort, formatIntegerPtBR } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 
 interface MusicCardProps {
   music: {
@@ -24,6 +24,7 @@ interface MusicCardProps {
 }
 
 export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
+  const { t, i18n } = useTranslation()
   const hasSpotify = isSpotifyUrl(music.spotifyUrl)
   const href = music.href || `/musicas/${music.slug}`
   const canLoadPlatformImage = canFetchMusicImage(music.spotifyUrl)
@@ -33,25 +34,22 @@ export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
   const [formattedDate, setFormattedDate] = useState<string>('')
   const [formattedViews, setFormattedViews] = useState<string>('')
   const [mounted, setMounted] = useState(false)
-  const [uiLanguage, setUiLanguage] = useState<'pt' | 'en' | 'es'>('pt')
   const viewCount = music.viewCount ?? 0
   
   useEffect(() => {
     // Marcar como montado apenas no cliente para evitar hydration mismatch
     setMounted(true)
-    const lang = document.documentElement.lang || ''
-    setUiLanguage(lang.startsWith('en') ? 'en' : lang.startsWith('es') ? 'es' : 'pt')
   }, [])
 
   useEffect(() => {
     // Formatar data apenas no cliente após montagem para evitar problemas de hidratação
     if (!mounted) return
     
-    setFormattedDate(formatDateShort(music.publishedAt))
+    setFormattedDate(new Intl.DateTimeFormat(i18n.language, { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(music.publishedAt)))
     if (viewCount > 0) {
-      setFormattedViews(formatIntegerPtBR(viewCount))
+      setFormattedViews(new Intl.NumberFormat(i18n.language).format(viewCount))
     }
-  }, [music.publishedAt, viewCount, mounted])
+  }, [music.publishedAt, viewCount, mounted, i18n.language])
 
   useEffect(() => {
     // Buscar capa automática apenas para plataformas com oEmbed suportado.
@@ -109,7 +107,7 @@ export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
                       {music.genre}
                     </span>
                   )}
-                  <span>{mounted ? formattedDate : formatDateShort(music.publishedAt)}</span>
+                  <span>{mounted ? formattedDate : ''}</span>
                   {hasSpotify && (
                     <span className="px-2 py-1 rounded bg-green-900/50 text-green-300 border border-green-800">
                       Spotify
@@ -123,11 +121,11 @@ export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
                 </div>
               </div>
             </div>
-            {viewCount > 0 && (
+            {mounted && viewCount > 0 && (
               <div className="flex items-center gap-1 text-xs text-gray-400 shrink-0">
                 <FiEye className="w-3.5 h-3.5" />
                 <span>
-                  {mounted ? formattedViews : formatIntegerPtBR(viewCount)} {uiLanguage === 'en' ? 'views' : uiLanguage === 'es' ? 'vistas' : 'visualizações'}
+                  {formattedViews} {t('musicCard.views')}
                 </span>
               </div>
             )}
@@ -163,7 +161,7 @@ export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
                 {music.title}
               </h3>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-300">
-                <span>{mounted ? formattedDate : formatDateShort(music.publishedAt)}</span>
+                <span>{mounted ? formattedDate : ''}</span>
                 {hasSpotify && (
                   <span className="px-2 py-1 rounded bg-green-900/50 text-green-300 border border-green-800">
                     Spotify
@@ -174,10 +172,10 @@ export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
                     {music.sourceLabel}
                   </span>
                 )}
-                {viewCount > 0 && (
+                {mounted && viewCount > 0 && (
                   <span className="inline-flex items-center gap-1">
                     <FiEye className="w-3.5 h-3.5" />
-                    {mounted ? formattedViews : formatIntegerPtBR(viewCount)} {uiLanguage === 'en' ? 'views' : uiLanguage === 'es' ? 'vistas' : 'visualizações'}
+                    {formattedViews} {t('musicCard.views')}
                   </span>
                 )}
               </div>
@@ -201,7 +199,7 @@ export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
               {music.title}
             </h3>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-400">
-              <span>{mounted ? formattedDate : formatDateShort(music.publishedAt)}</span>
+              <span>{mounted ? formattedDate : ''}</span>
               {hasSpotify && (
                 <span className="px-2 py-1 rounded bg-green-900/50 text-green-300 border border-green-800">
                   Spotify
@@ -212,10 +210,10 @@ export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
                   {music.sourceLabel}
                 </span>
               )}
-              {viewCount > 0 && (
+              {mounted && viewCount > 0 && (
                 <span className="inline-flex items-center gap-1">
                   <FiEye className="w-3.5 h-3.5" />
-                  {mounted ? formattedViews : formatIntegerPtBR(viewCount)} {uiLanguage === 'en' ? 'views' : uiLanguage === 'es' ? 'vistas' : 'visualizações'}
+                  {formattedViews} {t('musicCard.views')}
                 </span>
               )}
             </div>

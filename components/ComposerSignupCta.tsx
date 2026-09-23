@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 
 type ComposerStatus = 'guest' | 'premium' | 'basic'
 
@@ -11,6 +12,7 @@ type ComposerSignupCtaProps = {
 }
 
 export default function ComposerSignupCta({ guestLabel, className }: ComposerSignupCtaProps) {
+  const { t } = useTranslation()
   const [status, setStatus] = useState<ComposerStatus>('guest')
 
   useEffect(() => {
@@ -33,12 +35,12 @@ export default function ComposerSignupCta({ guestLabel, className }: ComposerSig
   const cta = status === 'premium'
     ? {
         href: '/compositores/admin/musicas/nova',
-        label: 'Cadastrar música',
+        label: t('composerCta.addMusic'),
       }
     : status === 'basic'
       ? {
           href: '/compositores/planos#compositor-premium',
-          label: 'Ver planos de Compositor Premium',
+          label: t('composerCta.viewPremiumPlans'),
         }
       : {
           href: '/compositores/cadastro',

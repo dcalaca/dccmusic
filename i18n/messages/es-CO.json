@@ -1352,5 +1352,89 @@
       "notNow": "Ahora no",
       "highlightNow": "Destacar ahora"
     }
+  },
+  "home": {
+    "metadata": {
+      "title": "Crear Música con IA Online | DCC Music",
+      "description": "Crea música con inteligencia artificial a partir de una idea o letra. Usa el Studio IA de DCC Music y prueba tu primera creación gratis.",
+      "openGraphDescription": "Escribe tu idea o letra y conviértela en una canción completa con inteligencia artificial."
+    },
+    "featured": {
+      "title": "Canciones más escuchadas",
+      "exploreAll": "Explorar todas las canciones"
+    },
+    "composer": {
+      "title": "¿Eres compositor? Publica tus canciones",
+      "subtitle": "Recibe valoraciones y llega a nuevos oyentes",
+      "signupFree": "Registrarse gratis"
+    },
+    "hero": {
+      "ariaLabel": "Destacado principal",
+      "titlePrefix": "Crea tu canción con",
+      "titleHighlight": "inteligencia artificial",
+      "description": "Escribe una idea o una letra, elige un estilo y conviértelo todo en una canción completa. Tu primera creación es gratis.",
+      "create": "Crear canción con IA",
+      "explore": "Explorar canciones"
+    },
+    "cta": {
+      "title": "Crea tu próxima canción con inteligencia artificial.",
+      "subtitle": "Empieza con una idea, una letra o simplemente un sentimiento. Tu primera creación es gratis.",
+      "start": "Empezar a crear",
+      "explore": "Explorar"
+    }
+  },
+  "exploreMusic": {
+    "title": "Explorar canciones",
+    "subtitle": "Descubre canciones creadas por la comunidad DCC Music.",
+    "featuredVideos": "Vídeos musicales destacados",
+    "loadingFilters": "Cargando filtros...",
+    "empty": "No se encontraron canciones.",
+    "count_one": "{{count}} canción encontrada",
+    "count_other": "{{count}} canciones encontradas",
+    "loadingSongs": "Cargando canciones...",
+    "pagination": {
+      "previous": "Anterior",
+      "pageOf": "Página {{page}} de {{total}}",
+      "next": "Siguiente"
+    }
+  },
+  "musicFilters": {
+    "search": "Buscar",
+    "placeholder": "Título, etiquetas...",
+    "genres": "Géneros",
+    "none": "Ninguno",
+    "platform": "Plataforma",
+    "all": "Todas",
+    "sort": "Ordenar por",
+    "mostViewed": "Más vistos",
+    "recent": "Más recientes",
+    "old": "Más antiguos",
+    "az": "A-Z",
+    "close": "Cerrar",
+    "clear": "Limpiar",
+    "filters": "Filtros"
+  },
+  "musicCard": {
+    "views": "vistas"
+  },
+  "siteStats": {
+    "badge": "Actividad en el sitio",
+    "title": "La fuerza de DCC Music en números",
+    "subtitle": "Studio IA, comunidad e interacción creciendo cada día.",
+    "createdSongs": "Canciones creadas en DCC",
+    "realtime": "actualización en tiempo real",
+    "community": "Comunidad",
+    "songwriters": "compositores",
+    "interactions": "Interacciones",
+    "commentsRatings": "{{comments}} comentarios + {{ratings}} valoraciones",
+    "aiDelivered": "Canciones IA entregadas",
+    "last14Days": "Últimos 14 días",
+    "totalVideos": "Total de videos",
+    "totalMusics": "Total de canciones",
+    "views": "Visualizaciones: {{count}}"
+  },
+  "composerCta": {
+    "addMusic": "Registrar canción",
+    "viewPremiumPlans": "Ver planes de Compositor Premium"
   }
 }

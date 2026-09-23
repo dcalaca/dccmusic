@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiX, FiFilter } from 'react-icons/fi'
+import { useTranslation } from 'react-i18next'
 
 interface MusicFiltersProps {
   genres: Array<{ id: string; name: string; slug: string; count?: number }>
@@ -15,20 +16,10 @@ interface MusicFiltersProps {
 }
 
 export default function MusicFilters({ genres, currentParams }: MusicFiltersProps) {
+  const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
-  const [uiLanguage, setUiLanguage] = useState<'pt' | 'en' | 'es'>('pt')
-  useEffect(() => {
-    const lang = document.documentElement.lang || ''
-    setUiLanguage(lang.startsWith('en') ? 'en' : lang.startsWith('es') ? 'es' : 'pt')
-  }, [])
-  
-  const copy = uiLanguage === 'en'
-    ? { search: 'Search', placeholder: 'Title, tags...', genres: 'Genres', none: 'None', platform: 'Platform', all: 'All', sort: 'Sort by', mostViewed: 'Most viewed', recent: 'Newest', old: 'Oldest', az: 'A-Z', close: 'Close', clear: 'Clear', filters: 'Filters' }
-    : uiLanguage === 'es'
-      ? { search: 'Buscar', placeholder: 'Título, etiquetas...', genres: 'Géneros', none: 'Ninguno', platform: 'Plataforma', all: 'Todas', sort: 'Ordenar por', mostViewed: 'Más vistos', recent: 'Más recientes', old: 'Más antiguos', az: 'A-Z', close: 'Cerrar', clear: 'Limpiar', filters: 'Filtros' }
-      : { search: 'Buscar', placeholder: 'Título, tags...', genres: 'Gêneros', none: 'Nenhum', platform: 'Plataforma', all: 'Todas', sort: 'Ordenar por', mostViewed: 'Mais vistos', recent: 'Mais recentes', old: 'Mais antigos', az: 'A-Z', close: 'Fechar', clear: 'Limpar', filters: 'Filtros' }
 
   // Inicializar estados da URL - se não há gêneros na URL, não selecionar nenhum (mostrar todos)
   const getGenresFromParams = () => {
@@ -154,12 +145,12 @@ export default function MusicFilters({ genres, currentParams }: MusicFiltersProp
     <div className="space-y-6">
       {/* Busca */}
       <div>
-        <label className="block text-sm font-medium mb-2">{copy.search}</label>
+        <label className="block text-sm font-medium mb-2">{t('musicFilters.search')}</label>
         <input
           type="text"
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          placeholder={copy.placeholder}
+          placeholder={t('musicFilters.placeholder')}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         />
       </div>
@@ -167,12 +158,12 @@ export default function MusicFilters({ genres, currentParams }: MusicFiltersProp
       {/* Gêneros */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className="block text-sm font-medium">{copy.genres}</label>
+          <label className="block text-sm font-medium">{t('musicFilters.genres')}</label>
           <button
             onClick={deselectAllGenres}
             className="text-xs px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded transition-colors"
           >
-            Nenhum
+            {t('musicFilters.none')}
           </button>
         </div>
         <div className="space-y-2 max-h-64 overflow-y-auto">
@@ -200,29 +191,29 @@ export default function MusicFilters({ genres, currentParams }: MusicFiltersProp
 
       {/* Plataforma */}
       <div>
-        <label className="block text-sm font-medium mb-2">{copy.platform}</label>
+        <label className="block text-sm font-medium mb-2">{t('musicFilters.platform')}</label>
         <select
           value={plataforma}
           onChange={(e) => setPlataforma(e.target.value)}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         >
-          <option value="">{copy.all}</option>
+          <option value="">{t('musicFilters.all')}</option>
           <option value="spotify">Spotify</option>
         </select>
       </div>
 
       {/* Ordem */}
       <div>
-        <label className="block text-sm font-medium mb-2">{copy.sort}</label>
+        <label className="block text-sm font-medium mb-2">{t('musicFilters.sort')}</label>
         <select
           value={ordem}
           onChange={(e) => setOrdem(e.target.value)}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         >
-          <option value="mais-vistos">{copy.mostViewed}</option>
-          <option value="recentes">{copy.recent}</option>
-          <option value="antigos">{copy.old}</option>
-          <option value="az">{copy.az}</option>
+          <option value="mais-vistos">{t('musicFilters.mostViewed')}</option>
+          <option value="recentes">{t('musicFilters.recent')}</option>
+          <option value="antigos">{t('musicFilters.old')}</option>
+          <option value="az">{t('musicFilters.az')}</option>
         </select>
       </div>
 
@@ -232,13 +223,13 @@ export default function MusicFilters({ genres, currentParams }: MusicFiltersProp
           onClick={() => setIsMobileOpen(false)}
           className="lg:hidden w-full px-4 py-2 bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors font-medium"
         >
-          Fechar
+          {t('musicFilters.close')}
         </button>
         <button
           onClick={clearFilters}
           className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
         >
-          Limpar
+          {t('musicFilters.clear')}
         </button>
       </div>
     </div>
@@ -253,7 +244,7 @@ export default function MusicFilters({ genres, currentParams }: MusicFiltersProp
       >
         <span className="flex items-center space-x-2">
           <FiFilter className="w-5 h-5" />
-          <span>{copy.filters}</span>
+          <span>{t('musicFilters.filters')}</span>
         </span>
         {(selectedGenres.length > 0 || plataforma || ordem !== 'mais-vistos' || busca) && (
           <span className="px-2 py-1 bg-primary-600 rounded text-xs">
@@ -264,7 +255,7 @@ export default function MusicFilters({ genres, currentParams }: MusicFiltersProp
 
       {/* Desktop: Sidebar sempre visível */}
       <div className="hidden lg:block bg-gray-900/50 p-6 rounded-lg border border-gray-800">
-        <h2 className="text-lg font-semibold mb-4">{copy.filters}</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('musicFilters.filters')}</h2>
         <FiltersContent />
       </div>
 
@@ -273,7 +264,7 @@ export default function MusicFilters({ genres, currentParams }: MusicFiltersProp
         <div className="lg:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
           <div className="absolute right-0 top-0 h-full w-80 bg-gray-900 border-l border-gray-800 p-6 overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold">{copy.filters}</h2>
+              <h2 className="text-xl font-semibold">{t('musicFilters.filters')}</h2>
               <button
                 onClick={() => setIsMobileOpen(false)}
                 className="p-2 hover:bg-gray-800 rounded-lg transition-colors"

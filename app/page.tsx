@@ -8,22 +8,28 @@ import { Suspense } from 'react'
 import { cookies, headers } from 'next/headers'
 import Link from 'next/link'
 import { FiMusic, FiArrowRight, FiZap } from 'react-icons/fi'
-import { COUNTRY_COOKIE, COUNTRY_CONFIG, normalizeCountry, type DccCountry } from '@/lib/localization'
+import { COUNTRY_COOKIE, COUNTRY_CONFIG, getLocaleForCountry, normalizeCountry, type DccCountry } from '@/lib/localization'
+import { createDccI18n } from '@/i18n/i18next'
 
-export const metadata = {
-  title: 'Criar Música com IA Online | DCC Music',
-  description:
-    'Crie música com inteligência artificial a partir de uma ideia ou letra. Use o Studio IA da DCC Music e experimente sua primeira criação grátis.',
-  alternates: {
-    canonical: '/',
-  },
-  openGraph: {
-    title: 'Criar Música com IA Online | DCC Music',
-    description:
-      'Digite sua ideia ou letra e transforme em uma música completa com inteligência artificial.',
-    url: 'https://www.dccmusic.online',
-    type: 'website',
-  },
+export async function generateMetadata() {
+  const requestHeaders = headers()
+  const country = normalizeCountry(cookies().get(COUNTRY_COOKIE)?.value || requestHeaders.get('x-dcc-country') || requestHeaders.get('x-vercel-ip-country') || requestHeaders.get('cf-ipcountry'))
+  const i18n = await createDccI18n(getLocaleForCountry(country))
+  const t = i18n.t.bind(i18n)
+
+  return {
+    title: t('home.metadata.title'),
+    description: t('home.metadata.description'),
+    alternates: {
+      canonical: '/',
+    },
+    openGraph: {
+      title: t('home.metadata.title'),
+      description: t('home.metadata.openGraphDescription'),
+      url: 'https://www.dccmusic.online',
+      type: 'website',
+    },
+  }
 }
 
 export const dynamic = 'force-dynamic' // Tornar dinâmico para evitar erro durante build se tabelas não existirem
@@ -222,6 +228,8 @@ async function getSiteSummaryStats(country: DccCountry) {
 }
 
 async function HomeDynamicContent({ country }: { country: DccCountry }) {
+  const i18n = await createDccI18n(getLocaleForCountry(country))
+  const t = i18n.t.bind(i18n)
   const [{ featuredMusics }, siteStats] = await Promise.all([
     getFeaturedContent(),
     getSiteSummaryStats(country),
@@ -233,8 +241,8 @@ async function HomeDynamicContent({ country }: { country: DccCountry }) {
         <section className="bg-black py-9 sm:py-10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{country === 'US' || country === 'GB' ? 'Most-played songs' : 'Músicas mais ouvidas'}</span></h2>
-              <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{country === 'US' || country === 'GB' ? 'Explore all songs' : 'Explorar todas as músicas'}</span><FiArrowRight className="h-5 w-5" /></Link>
+              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{t('home.featured.title')}</span></h2>
+              <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{t('home.featured.exploreAll')}</span><FiArrowRight className="h-5 w-5" /></Link>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {featuredMusics.map((music) => <MusicCard key={music.id} music={music} />)}
@@ -259,8 +267,8 @@ async function HomeDynamicContent({ country }: { country: DccCountry }) {
       <section className="border-t border-purple-900 bg-black">
         <div className="container mx-auto px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-            <div className="flex items-center gap-2.5 text-left sm:gap-3"><span className="text-xl leading-none sm:text-2xl" aria-hidden>🎤</span><div><p className="text-sm font-bold leading-tight text-white sm:text-base">{country === 'US' || country === 'GB' ? 'Are you a songwriter? Publish your songs' : 'É compositor? Publique suas músicas'}</p><p className="mt-0.5 text-xs text-gray-400">{country === 'US' || country === 'GB' ? 'Get feedback and reach new listeners' : 'Receba avaliações e alcance novos ouvintes'}</p></div></div>
-            <ComposerSignupCta guestLabel={country === 'US' || country === 'GB' ? 'Sign up free' : 'Cadastrar grátis'} className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-white px-5 py-2 text-sm font-bold text-violet-950 transition hover:bg-gray-100 sm:w-auto" />
+            <div className="flex items-center gap-2.5 text-left sm:gap-3"><span className="text-xl leading-none sm:text-2xl" aria-hidden>🎤</span><div><p className="text-sm font-bold leading-tight text-white sm:text-base">{t('home.composer.title')}</p><p className="mt-0.5 text-xs text-gray-400">{t('home.composer.subtitle')}</p></div></div>
+            <ComposerSignupCta guestLabel={t('home.composer.signupFree')} className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-white px-5 py-2 text-sm font-bold text-violet-950 transition hover:bg-gray-100 sm:w-auto" />
           </div>
         </div>
       </section>
@@ -271,9 +279,11 @@ async function HomeDynamicContent({ country }: { country: DccCountry }) {
 export default async function Home() {
   const requestHeaders = headers()
   const country = normalizeCountry(cookies().get(COUNTRY_COOKIE)?.value || requestHeaders.get('x-dcc-country') || requestHeaders.get('x-vercel-ip-country') || requestHeaders.get('cf-ipcountry'))
+  const i18n = await createDccI18n(getLocaleForCountry(country))
+  const t = i18n.t.bind(i18n)
   return (
     <div className="min-h-screen">
-      <section className="relative flex flex-col bg-black" aria-label={country === 'US' || country === 'GB' ? 'Main highlight' : 'Destaque principal'}>
+      <section className="relative flex flex-col bg-black" aria-label={t('home.hero.ariaLabel')}>
         {/* Hero: foto em tela cheia + copy centralizada por cima (sem colunas) */}
         <div className="relative min-h-[min(68vh,680px)] w-full bg-black">
           <HeroImageCarousel
@@ -285,13 +295,13 @@ export default async function Home() {
             <div className="flex flex-1 flex-col items-center justify-center px-4 pt-7 pb-12 sm:px-6 sm:pt-9 sm:pb-14">
               <div className="w-full max-w-2xl text-center">
                 <h1 className="text-2xl font-bold leading-tight tracking-tight text-balance sm:text-3xl md:text-4xl [text-shadow:0_2px_8px_rgba(0,0,0,0.95),0_4px_24px_rgba(0,0,0,0.85)]">
-                  <span className="text-white">{country === 'US' || country === 'GB' ? 'Create your song with ' : 'Crie sua música com '}</span>
+                  <span className="text-white">{t('home.hero.titlePrefix')}</span>{' '}
                   <span className="font-bold text-fuchsia-400 sm:text-fuchsia-300 [text-shadow:0_1px_0_rgba(0,0,0,0.9),0_2px_12px_rgba(0,0,0,0.85)]">
-                    {country === 'US' || country === 'GB' ? 'artificial intelligence' : 'inteligência artificial'}
+                    {t('home.hero.titleHighlight')}
                   </span>
                 </h1>
                 <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-gray-100 sm:mt-4 sm:text-base [text-shadow:0_1px_6px_rgba(0,0,0,0.95),0_2px_16px_rgba(0,0,0,0.8)]">
-                  {country === 'US' || country === 'GB' ? 'Write an idea or lyrics, choose a style and turn it into a complete song. Your first creation is free.' : 'Escreva uma ideia ou uma letra, escolha o estilo e transforme tudo em uma música completa. Sua primeira criação é grátis.'}
+                  {t('home.hero.description')}
                 </p>
                 <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:mt-7 sm:flex-row sm:flex-wrap">
                   <Link
@@ -299,7 +309,7 @@ export default async function Home() {
                     className="group inline-flex min-h-[46px] w-full max-w-xs items-center justify-center rounded-lg bg-purple-600 px-7 py-3 text-base font-semibold text-white transition hover:bg-purple-500 sm:w-auto"
                   >
                     <FiZap className="mr-2 h-5 w-5 shrink-0" />
-                    {country === 'US' || country === 'GB' ? 'Create song with AI' : 'Criar música com IA'}
+                    {t('home.hero.create')}
                     <FiArrowRight className="ml-2 h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                   <Link
@@ -307,7 +317,7 @@ export default async function Home() {
                     className="group inline-flex min-h-[46px] w-full max-w-xs items-center justify-center rounded-lg border-2 border-white bg-black px-7 py-3 text-base font-semibold text-white transition hover:bg-gray-950 sm:w-auto"
                   >
                     <FiMusic className="mr-2 h-5 w-5 shrink-0" />
-                    {country === 'US' || country === 'GB' ? 'Explore songs' : 'Explorar músicas'}
+                    {t('home.hero.explore')}
                     <FiArrowRight className="ml-2 h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 </div>
@@ -320,16 +330,16 @@ export default async function Home() {
       <section className="border-y border-purple-900/60 bg-gradient-to-r from-purple-950/50 via-black to-primary-950/40">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-5 text-center sm:flex-row sm:px-6 sm:py-6 sm:text-left lg:px-8">
           <div>
-            <p className="text-base font-bold text-white sm:text-lg">{country === 'US' || country === 'GB' ? 'Create your next song with AI.' : 'Crie sua próxima música com inteligência artificial.'}</p>
-            <p className="mt-1 text-sm text-gray-300">{country === 'US' || country === 'GB' ? 'Start with an idea, a lyric or just a feeling. Your first creation is free.' : 'Comece com uma ideia, uma letra ou apenas um sentimento. Sua primeira criação é grátis.'}</p>
+            <p className="text-base font-bold text-white sm:text-lg">{t('home.cta.title')}</p>
+            <p className="mt-1 text-sm text-gray-300">{t('home.cta.subtitle')}</p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             <Link href="/studio-ia" className="inline-flex min-h-[42px] items-center justify-center rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-purple-500">
-              {country === 'US' || country === 'GB' ? 'Start creating' : 'Começar a criar'}
+              {t('home.cta.start')}
               <FiArrowRight className="ml-2 h-4 w-4" />
             </Link>
             <Link href="/musicas" className="inline-flex min-h-[42px] items-center justify-center rounded-lg border border-gray-600 px-5 py-2.5 text-sm font-semibold text-gray-200 transition hover:border-purple-400 hover:text-white">
-              {country === 'US' || country === 'GB' ? 'Explore' : 'Explorar'}
+              {t('home.cta.explore')}
             </Link>
           </div>
         </div>

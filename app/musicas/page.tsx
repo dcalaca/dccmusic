@@ -6,7 +6,8 @@ import { Suspense } from 'react'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { headers } from 'next/headers'
-import { normalizeCountry } from '@/lib/localization'
+import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
+import { createDccI18n } from '@/i18n/i18next'
 import Link from 'next/link'
 import { FiPlayCircle } from 'react-icons/fi'
 
@@ -79,13 +80,8 @@ async function getPublishedStudioMusics() {
 
 export default async function MusicasPage({ searchParams = {} }: MusicasPageProps) {
   const country = normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))
-  const isEnglish = country === 'US' || country === 'GB'
-  const isSpanish = country === 'PY' || country === 'CO' || country === 'MX' || country === 'ES'
-  const copy = isEnglish
-    ? { title: 'Explore songs', subtitle: 'Discover songs created by the DCC Music community.', videos: 'Featured music videos' }
-    : isSpanish
-      ? { title: 'Explorar canciones', subtitle: 'Descubre canciones creadas por la comunidad DCC Music.', videos: 'Vídeos musicales destacados' }
-      : { title: 'Explorar músicas', subtitle: 'Descubra músicas criadas pela comunidade DCC Music.', videos: 'Vídeos musicais em destaque' }
+  const i18n = await createDccI18n(getLocaleForCountry(country))
+  const t = i18n.t.bind(i18n)
 
   // Buscar TODAS as músicas sem filtros no banco, incluindo músicas publicadas do Studio IA
   const [catalogMusics, studioMusics] = await Promise.all([
@@ -194,20 +190,20 @@ export default async function MusicasPage({ searchParams = {} }: MusicasPageProp
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-4xl sm:text-5xl font-bold mb-4">
-              <span className="gradient-text">{copy.title}</span>
+              <span className="gradient-text">{t('exploreMusic.title')}</span>
             </h1>
-            <p className="text-gray-400">{copy.subtitle}</p>
+            <p className="text-gray-400">{t('exploreMusic.subtitle')}</p>
           </div>
           <Link href="/videos" className="inline-flex min-h-[42px] items-center justify-center gap-2 self-start rounded-lg border border-gray-700 px-4 py-2.5 text-sm font-semibold text-gray-200 transition hover:border-purple-400 hover:text-white sm:self-auto">
             <FiPlayCircle className="h-4 w-4" />
-            {copy.videos}
+            {t('exploreMusic.featuredVideos')}
           </Link>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Sidebar de Filtros */}
           <aside className="lg:w-64 flex-shrink-0">
-            <Suspense fallback={<div className="text-gray-400">{isEnglish ? 'Loading filters...' : isSpanish ? 'Cargando filtros...' : 'Carregando filtros...'}</div>}>
+            <Suspense fallback={<div className="text-gray-400">{t('exploreMusic.loadingFilters')}</div>}>
               <MusicFilters genres={genres} currentParams={searchParams} />
             </Suspense>
           </aside>
@@ -216,19 +212,19 @@ export default async function MusicasPage({ searchParams = {} }: MusicasPageProp
           <main className="flex-1">
             {paginatedMusics.length === 0 ? (
               <div className="text-center py-16">
-                <p className="text-gray-400 text-lg">{isEnglish ? 'No songs found.' : isSpanish ? 'No se encontraron canciones.' : 'Nenhuma música encontrada.'}</p>
+                <p className="text-gray-400 text-lg">{t('exploreMusic.empty')}</p>
               </div>
             ) : (
               <>
                 <div className="flex items-center justify-between mb-4">
                   <div className="text-sm text-gray-400">
-                    {isEnglish ? `${total} ${total === 1 ? 'song found' : 'songs found'}` : isSpanish ? `${total} ${total === 1 ? 'canción encontrada' : 'canciones encontradas'}` : `${total} música${total !== 1 ? 's' : ''} encontrada${total !== 1 ? 's' : ''}`}
+                    {t('exploreMusic.count', { count: total })}
                   </div>
                   <Suspense fallback={<div className="w-32 h-10 bg-gray-800 rounded-lg animate-pulse"></div>}>
                     <ViewToggle defaultView={visualizacao} />
                   </Suspense>
                 </div>
-                <Suspense fallback={<div className="text-gray-400">{isEnglish ? 'Loading songs...' : isSpanish ? 'Cargando canciones...' : 'Carregando músicas...'}</div>}>
+                <Suspense fallback={<div className="text-gray-400">{t('exploreMusic.loadingSongs')}</div>}>
                   <MusicList musics={paginatedMusics} view={visualizacao} />
                 </Suspense>
 
@@ -240,18 +236,18 @@ export default async function MusicasPage({ searchParams = {} }: MusicasPageProp
                         href={buildPaginationUrl(pagina - 1)}
                         className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
                       >
-                        Anterior
+                        {t('exploreMusic.pagination.previous')}
                       </a>
                     )}
                     <span className="px-4 py-2 text-gray-400">
-                      Página {pagina} de {totalPages}
+                      {t('exploreMusic.pagination.pageOf', { page: pagina, total: totalPages })}
                     </span>
                     {pagina < totalPages && (
                       <a
                         href={buildPaginationUrl(pagina + 1)}
                         className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
                       >
-                        Próxima
+                        {t('exploreMusic.pagination.next')}
                       </a>
                     )}
                   </div>
