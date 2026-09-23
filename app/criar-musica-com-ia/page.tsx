@@ -1,43 +1,45 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
+import { createDccI18n } from '@/i18n/i18next'
+import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 import SeoAiLandingPage from '@/components/SeoAiLandingPage'
 
-export const metadata: Metadata = {
-  title: 'Criar Música com IA Online | DCC Music',
-  description: 'Crie música com inteligência artificial a partir de uma ideia ou letra. Escolha o estilo, gere sua música online e experimente a primeira criação grátis.',
-  alternates: { canonical: '/criar-musica-com-ia' },
-  openGraph: {
-    title: 'Criar Música com IA Online | DCC Music',
-    description: 'Transforme uma ideia ou letra em música com inteligência artificial no Studio IA da DCC Music.',
-    url: 'https://www.dccmusic.online/criar-musica-com-ia',
-    type: 'website',
-  },
+const pageKey = 'ai'
+const canonical = '/criar-musica-com-ia'
+
+async function getPageI18n() {
+  const country = normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))
+  return createDccI18n(getLocaleForCountry(country))
 }
 
-export default function Page() {
+export async function generateMetadata(): Promise<Metadata> {
+  const i18n = await getPageI18n()
+  const t = i18n.t.bind(i18n)
+  return {
+    title: t(`seoLanding.pages.${pageKey}.metaTitle`),
+    description: t(`seoLanding.pages.${pageKey}.metaDescription`),
+    alternates: { canonical },
+    openGraph: {
+      title: t(`seoLanding.pages.${pageKey}.metaTitle`),
+      description: t(`seoLanding.pages.${pageKey}.metaOgDescription`),
+      url: `https://www.dccmusic.online${canonical}`,
+      type: 'website',
+    },
+  }
+}
+
+export default async function Page() {
+  const i18n = await getPageI18n()
+  const t = i18n.t.bind(i18n)
   return (
     <SeoAiLandingPage
-      eyebrow="Criar música com IA"
-      title="Crie sua música com inteligência artificial"
-      description="Digite sua ideia ou letra, escolha o estilo e transforme seu texto em uma música completa no Studio IA da DCC Music."
-      intro="Você não precisa começar com uma produção pronta. Escreva o tema, a história ou a letra que quer cantar e use a IA para desenvolver uma versão musical com voz e instrumental. Depois, você pode continuar trabalhando no projeto dentro do Studio IA."
-      benefits={[
-        'Criar música a partir de uma ideia, tema ou letra.',
-        'Escolher estilos e direcionar o resultado musical.',
-        'Gerar versões para comparar antes de decidir qual seguir.',
-        'Manter suas criações organizadas no seu projeto.',
-      ]}
-      steps={[
-        'Cadastre-se ou entre na sua conta.',
-        'Escreva a ideia da música ou cole sua letra.',
-        'Escolha o estilo e as preferências da criação.',
-        'Gere sua música e ouça o resultado.',
-      ]}
-      faq={[
-        { question: 'Preciso saber produzir música?', answer: 'Não. A proposta do Studio IA é permitir que você comece pela ideia ou pela letra e use a inteligência artificial para gerar a música.' },
-        { question: 'Posso usar uma letra que eu já escrevi?', answer: 'Sim. Você pode partir de uma letra própria e usá-la como base da criação.' },
-        { question: 'Dá para escolher o estilo musical?', answer: 'Sim. O Studio IA permite direcionar o gênero e outras preferências disponíveis no fluxo de criação.' },
-        { question: 'Tem como experimentar antes?', answer: 'Sim. O cadastro permite experimentar a primeira criação grátis.' },
-      ]}
+      eyebrow={t(`seoLanding.pages.${pageKey}.eyebrow`)}
+      title={t(`seoLanding.pages.${pageKey}.title`)}
+      description={t(`seoLanding.pages.${pageKey}.description`)}
+      intro={t(`seoLanding.pages.${pageKey}.intro`)}
+      benefits={t(`seoLanding.pages.${pageKey}.benefits`, { returnObjects: true }) as string[]}
+      steps={t(`seoLanding.pages.${pageKey}.steps`, { returnObjects: true }) as string[]}
+      faq={t(`seoLanding.pages.${pageKey}.faq`, { returnObjects: true }) as Array<{ question: string; answer: string }>}
     />
   )
 }

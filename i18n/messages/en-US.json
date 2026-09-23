@@ -2021,5 +2021,181 @@
     },
     "credits_one": "{{count}} credit",
     "credits_other": "{{count}} credits"
+  },
+  "seoLanding": {
+    "common": {
+      "create": "Create my song",
+      "login": "Sign in or sign up",
+      "firstFree": "Sign up and try your first song for free.",
+      "ideaTitle": "Turn an idea or lyrics into a song",
+      "benefitsTitle": "What you can do",
+      "stepsTitle": "How it works",
+      "faqTitle": "Frequently asked questions",
+      "relatedTitle": "More ways to create music with AI",
+      "related": {
+        "ai": "Create music with AI",
+        "generator": "AI music generator",
+        "free": "Create music for free",
+        "online": "Create music online"
+      }
+    },
+    "pages": {
+      "ai": {
+        "metaTitle": "Create Music with AI Online | DCC Music",
+        "metaDescription": "Create music with AI from an idea or lyrics. Choose a style, make your song online and try your first creation for free.",
+        "metaOgDescription": "Turn an idea or lyrics into a song with AI in DCC Music AI Studio.",
+        "eyebrow": "Create music with AI",
+        "title": "Create your song with artificial intelligence",
+        "description": "Enter your idea or lyrics, choose a style and turn your words into a complete song in DCC Music AI Studio.",
+        "intro": "You do not need a finished production to begin. Write the theme, story or lyrics you want to sing and use AI to develop a song with vocals and instruments. Then continue working on your project in AI Studio.",
+        "benefits": [
+          "Create a song from an idea, theme or lyrics.",
+          "Choose styles and guide the musical result.",
+          "Generate versions to compare before choosing one.",
+          "Keep your creations organised in your project."
+        ],
+        "steps": [
+          "Sign up or sign in.",
+          "Write your song idea or paste your lyrics.",
+          "Choose the style and your preferences.",
+          "Generate your song and listen to the result."
+        ],
+        "faq": [
+          {
+            "question": "Do I need music production skills?",
+            "answer": "No. AI Studio lets you start with an idea or lyrics and use AI to generate a song."
+          },
+          {
+            "question": "Can I use lyrics I have already written?",
+            "answer": "Yes. You can use your own lyrics as the basis for your song."
+          },
+          {
+            "question": "Can I choose the musical style?",
+            "answer": "Yes. AI Studio lets you choose a genre and other available preferences."
+          },
+          {
+            "question": "Can I try it before paying?",
+            "answer": "Yes. After signing up, you can try your first creation for free."
+          }
+        ]
+      },
+      "generator": {
+        "metaTitle": "AI Music Generator Online | DCC Music",
+        "metaDescription": "Use an AI music generator to turn text or lyrics into a song. Create online in DCC Music AI Studio and try your first song for free.",
+        "metaOgDescription": "Generate music with AI from an idea or lyrics.",
+        "eyebrow": "AI music generator",
+        "title": "Generate music with artificial intelligence",
+        "description": "Use DCC Music AI Studio to turn an idea, text or lyrics into a song with vocals and instruments.",
+        "intro": "An AI music generator helps you turn words into a complete song. Describe what you want, guide the style and receive versions to listen to and compare.",
+        "benefits": [
+          "Generate a song from text, a theme or lyrics.",
+          "Guide the musical style.",
+          "Listen to different versions before choosing one.",
+          "Create online without installing software."
+        ],
+        "steps": [
+          "Open AI Studio.",
+          "Enter your idea or lyrics.",
+          "Set your song preferences.",
+          "Generate and listen to the versions."
+        ],
+        "faq": [
+          {
+            "question": "What is an AI music generator?",
+            "answer": "It is a tool that uses AI to create a song from instructions such as a theme, lyrics and style."
+          },
+          {
+            "question": "Can I start with just an idea?",
+            "answer": "Yes. Describe the subject or concept of your song to get started."
+          },
+          {
+            "question": "Can I use my own lyrics too?",
+            "answer": "Yes. You can use lyrics you have already written as the basis for the song."
+          },
+          {
+            "question": "Do I need to install anything?",
+            "answer": "No. AI Studio works online in your browser."
+          }
+        ]
+      },
+      "free": {
+        "metaTitle": "Create Music with AI for Free | DCC Music",
+        "metaDescription": "Create a song with AI from an idea or lyrics. Sign up for DCC Music and try your first creation in AI Studio for free.",
+        "metaOgDescription": "Try creating your first song with artificial intelligence on DCC Music.",
+        "eyebrow": "Create music for free",
+        "title": "Create your first AI song for free",
+        "description": "Sign up, write your idea or lyrics and try your first creation in DCC Music AI Studio.",
+        "intro": "If you want to see how an idea becomes a song before making more music, sign up and try your first creation for free. The process is online and easy to use.",
+        "benefits": [
+          "Start with your own idea or lyrics.",
+          "Try your first creation for free after signing up.",
+          "Choose the musical style in AI Studio.",
+          "Listen online and keep working on your project."
+        ],
+        "steps": [
+          "Sign up for free.",
+          "Open AI Studio.",
+          "Write your idea or paste your lyrics.",
+          "Generate and listen to your first song."
+        ],
+        "faq": [
+          {
+            "question": "Is the first creation free?",
+            "answer": "Yes. After signing up, you can try your first creation for free in AI Studio."
+          },
+          {
+            "question": "Do I need a card to get started?",
+            "answer": "Sign-up is free. You can choose a paid option when you want to continue after your first creation."
+          },
+          {
+            "question": "Can I create a song with my own lyrics?",
+            "answer": "Yes. Paste your own lyrics and use them as the basis for your song."
+          },
+          {
+            "question": "Does it work on a phone?",
+            "answer": "Yes. AI Studio runs in the browser on compatible devices."
+          }
+        ]
+      },
+      "online": {
+        "metaTitle": "Create Music Online with AI | DCC Music",
+        "metaDescription": "Create music online with AI using your own idea or lyrics. Use DCC Music AI Studio directly in your browser.",
+        "metaOgDescription": "Create music online from an idea or lyrics with AI.",
+        "eyebrow": "Create music online",
+        "title": "Create music online in your browser",
+        "description": "Turn an idea or lyrics into a song with AI without installing software.",
+        "intro": "AI Studio works online and keeps the creation process in your browser. Describe what you want to make, set your available preferences and get versions to listen to and develop further.",
+        "benefits": [
+          "Create music online in your browser.",
+          "Start with an idea, theme or lyrics.",
+          "Guide the musical style.",
+          "Keep your versions in your DCC Music project."
+        ],
+        "steps": [
+          "Open AI Studio in your browser.",
+          "Type your idea or paste your lyrics.",
+          "Choose your song preferences.",
+          "Generate, listen and keep working on your project."
+        ],
+        "faq": [
+          {
+            "question": "Do I need to download software?",
+            "answer": "No. You create your song online in your browser."
+          },
+          {
+            "question": "Can I use it on a phone?",
+            "answer": "Yes. You can use it in a browser on compatible devices."
+          },
+          {
+            "question": "Can I turn text into a song?",
+            "answer": "Yes. Describe your song idea or use your own lyrics as a starting point."
+          },
+          {
+            "question": "Can I try it before buying?",
+            "answer": "Yes. After signing up, you can try your first creation for free."
+          }
+        ]
+      }
+    }
   }
 }

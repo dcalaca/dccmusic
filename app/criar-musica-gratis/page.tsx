@@ -1,43 +1,45 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
+import { createDccI18n } from '@/i18n/i18next'
+import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 import SeoAiLandingPage from '@/components/SeoAiLandingPage'
 
-export const metadata: Metadata = {
-  title: 'Criar Música Grátis com IA | DCC Music',
-  description: 'Crie música grátis com IA a partir de uma ideia ou letra. Cadastre-se na DCC Music e experimente sua primeira criação no Studio IA.',
-  alternates: { canonical: '/criar-musica-gratis' },
-  openGraph: {
-    title: 'Criar Música Grátis com IA | DCC Music',
-    description: 'Experimente criar sua primeira música com inteligência artificial na DCC Music.',
-    url: 'https://www.dccmusic.online/criar-musica-gratis',
-    type: 'website',
-  },
+const pageKey = 'free'
+const canonical = '/criar-musica-gratis'
+
+async function getPageI18n() {
+  const country = normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))
+  return createDccI18n(getLocaleForCountry(country))
 }
 
-export default function Page() {
+export async function generateMetadata(): Promise<Metadata> {
+  const i18n = await getPageI18n()
+  const t = i18n.t.bind(i18n)
+  return {
+    title: t(`seoLanding.pages.${pageKey}.metaTitle`),
+    description: t(`seoLanding.pages.${pageKey}.metaDescription`),
+    alternates: { canonical },
+    openGraph: {
+      title: t(`seoLanding.pages.${pageKey}.metaTitle`),
+      description: t(`seoLanding.pages.${pageKey}.metaOgDescription`),
+      url: `https://www.dccmusic.online${canonical}`,
+      type: 'website',
+    },
+  }
+}
+
+export default async function Page() {
+  const i18n = await getPageI18n()
+  const t = i18n.t.bind(i18n)
   return (
     <SeoAiLandingPage
-      eyebrow="Criar música grátis"
-      title="Crie sua primeira música com IA grátis"
-      description="Cadastre-se, escreva sua ideia ou letra e experimente sua primeira criação no Studio IA da DCC Music."
-      intro="Se você quer testar como uma ideia vira música antes de seguir com novas criações, pode começar pelo cadastro e experimentar a primeira criação grátis. O fluxo acontece online e foi pensado para ser simples."
-      benefits={[
-        'Começar pela sua própria ideia ou letra.',
-        'Experimentar a primeira criação grátis após o cadastro.',
-        'Escolher o estilo da música no Studio IA.',
-        'Ouvir o resultado online e continuar pelo seu projeto.',
-      ]}
-      steps={[
-        'Faça seu cadastro grátis.',
-        'Entre no Studio IA.',
-        'Escreva a ideia ou cole sua letra.',
-        'Gere e ouça sua primeira criação.',
-      ]}
-      faq={[
-        { question: 'A primeira criação é grátis?', answer: 'Sim. Após o cadastro, você pode experimentar a primeira criação grátis no Studio IA.' },
-        { question: 'Preciso colocar cartão para começar?', answer: 'O cadastro é gratuito. As opções de compra aparecem quando você quiser continuar criando além da experiência inicial.' },
-        { question: 'Posso criar com uma letra minha?', answer: 'Sim. Você pode colar uma letra própria e usá-la como base da música.' },
-        { question: 'Funciona no celular?', answer: 'Sim. O Studio IA é acessado pelo navegador e pode ser usado em dispositivos compatíveis.' },
-      ]}
+      eyebrow={t(`seoLanding.pages.${pageKey}.eyebrow`)}
+      title={t(`seoLanding.pages.${pageKey}.title`)}
+      description={t(`seoLanding.pages.${pageKey}.description`)}
+      intro={t(`seoLanding.pages.${pageKey}.intro`)}
+      benefits={t(`seoLanding.pages.${pageKey}.benefits`, { returnObjects: true }) as string[]}
+      steps={t(`seoLanding.pages.${pageKey}.steps`, { returnObjects: true }) as string[]}
+      faq={t(`seoLanding.pages.${pageKey}.faq`, { returnObjects: true }) as Array<{ question: string; answer: string }>}
     />
   )
 }

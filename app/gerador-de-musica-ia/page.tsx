@@ -1,43 +1,45 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
+import { createDccI18n } from '@/i18n/i18next'
+import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 import SeoAiLandingPage from '@/components/SeoAiLandingPage'
 
-export const metadata: Metadata = {
-  title: 'Gerador de Música IA Online | DCC Music',
-  description: 'Use um gerador de música com IA para transformar texto ou letra em música. Crie online no Studio IA da DCC Music e experimente a primeira criação grátis.',
-  alternates: { canonical: '/gerador-de-musica-ia' },
-  openGraph: {
-    title: 'Gerador de Música IA Online | DCC Music',
-    description: 'Gere música com inteligência artificial a partir de uma ideia ou letra.',
-    url: 'https://www.dccmusic.online/gerador-de-musica-ia',
-    type: 'website',
-  },
+const pageKey = 'generator'
+const canonical = '/gerador-de-musica-ia'
+
+async function getPageI18n() {
+  const country = normalizeCountry(headers().get('x-dcc-country') || headers().get('x-vercel-ip-country') || headers().get('cf-ipcountry'))
+  return createDccI18n(getLocaleForCountry(country))
 }
 
-export default function Page() {
+export async function generateMetadata(): Promise<Metadata> {
+  const i18n = await getPageI18n()
+  const t = i18n.t.bind(i18n)
+  return {
+    title: t(`seoLanding.pages.${pageKey}.metaTitle`),
+    description: t(`seoLanding.pages.${pageKey}.metaDescription`),
+    alternates: { canonical },
+    openGraph: {
+      title: t(`seoLanding.pages.${pageKey}.metaTitle`),
+      description: t(`seoLanding.pages.${pageKey}.metaOgDescription`),
+      url: `https://www.dccmusic.online${canonical}`,
+      type: 'website',
+    },
+  }
+}
+
+export default async function Page() {
+  const i18n = await getPageI18n()
+  const t = i18n.t.bind(i18n)
   return (
     <SeoAiLandingPage
-      eyebrow="Gerador de música IA"
-      title="Gerador de música com inteligência artificial"
-      description="Use o Studio IA da DCC Music para transformar uma ideia, texto ou letra em uma música com voz e instrumental."
-      intro="O gerador de música IA ajuda a sair do texto e chegar a uma versão musical completa. Você descreve o que quer, orienta o estilo e recebe versões para ouvir e comparar."
-      benefits={[
-        'Gerar música a partir de texto, tema ou letra.',
-        'Direcionar o estilo musical da criação.',
-        'Ouvir versões diferentes antes de escolher.',
-        'Criar online, sem instalar programa no computador.',
-      ]}
-      steps={[
-        'Abra o Studio IA.',
-        'Informe sua ideia ou letra.',
-        'Defina as preferências da música.',
-        'Gere e ouça as versões criadas.',
-      ]}
-      faq={[
-        { question: 'O que é um gerador de música IA?', answer: 'É uma ferramenta que usa inteligência artificial para criar uma música a partir de instruções como tema, letra e estilo.' },
-        { question: 'Posso começar só com uma ideia?', answer: 'Sim. Você pode descrever o assunto ou conceito da música e usar isso como ponto de partida.' },
-        { question: 'Também posso usar minha própria letra?', answer: 'Sim. Se você já tem a letra, pode usá-la como base da geração.' },
-        { question: 'Preciso instalar alguma coisa?', answer: 'Não. O Studio IA funciona online pelo navegador.' },
-      ]}
+      eyebrow={t(`seoLanding.pages.${pageKey}.eyebrow`)}
+      title={t(`seoLanding.pages.${pageKey}.title`)}
+      description={t(`seoLanding.pages.${pageKey}.description`)}
+      intro={t(`seoLanding.pages.${pageKey}.intro`)}
+      benefits={t(`seoLanding.pages.${pageKey}.benefits`, { returnObjects: true }) as string[]}
+      steps={t(`seoLanding.pages.${pageKey}.steps`, { returnObjects: true }) as string[]}
+      faq={t(`seoLanding.pages.${pageKey}.faq`, { returnObjects: true }) as Array<{ question: string; answer: string }>}
     />
   )
 }

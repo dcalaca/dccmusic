@@ -2021,5 +2021,181 @@
     },
     "credits_one": "{{count}} crédito",
     "credits_other": "{{count}} créditos"
+  },
+  "seoLanding": {
+    "common": {
+      "create": "Criar a minha música",
+      "login": "Iniciar sessão ou registar-me",
+      "firstFree": "Registe-se e experimente a sua primeira criação gratuitamente.",
+      "ideaTitle": "Transforme uma ideia ou letra numa música",
+      "benefitsTitle": "O que pode fazer",
+      "stepsTitle": "Como funciona",
+      "faqTitle": "Dúvidas frequentes",
+      "relatedTitle": "Outras formas de criar música com IA",
+      "related": {
+        "ai": "Criar música com IA",
+        "generator": "Gerador de música com IA",
+        "free": "Criar música gratuitamente",
+        "online": "Criar música online"
+      }
+    },
+    "pages": {
+      "ai": {
+        "metaTitle": "Criar Música com IA Online | DCC Music",
+        "metaDescription": "Crie música com inteligência artificial a partir de uma ideia ou letra. Escolha o estilo, crie online e experimente a primeira criação gratuitamente.",
+        "metaOgDescription": "Transforme uma ideia ou letra em música com inteligência artificial no Studio IA da DCC Music.",
+        "eyebrow": "Criar música com IA",
+        "title": "Crie a sua música com inteligência artificial",
+        "description": "Escreva a sua ideia ou letra, escolha o estilo e transforme o seu texto numa música completa no Studio IA da DCC Music.",
+        "intro": "Não precisa de começar com uma produção pronta. Escreva o tema, a história ou a letra que quer cantar e utilize a IA para desenvolver uma música com voz e instrumentos. Depois, pode continuar a trabalhar no projeto dentro do Studio IA.",
+        "benefits": [
+          "Criar música a partir de uma ideia, tema ou letra.",
+          "Escolher estilos e orientar o resultado musical.",
+          "Gerar versões para comparar antes de decidir qual seguir.",
+          "Manter as criações organizadas no seu projeto."
+        ],
+        "steps": [
+          "Registe-se ou inicie sessão.",
+          "Escreva a ideia da música ou cole a sua letra.",
+          "Escolha o estilo e as preferências da criação.",
+          "Gere a música e ouça o resultado."
+        ],
+        "faq": [
+          {
+            "question": "Preciso de saber produzir música?",
+            "answer": "Não. O Studio IA permite começar por uma ideia ou letra e usar inteligência artificial para gerar a música."
+          },
+          {
+            "question": "Posso utilizar uma letra que já escrevi?",
+            "answer": "Sim. Pode utilizar uma letra sua como base da criação."
+          },
+          {
+            "question": "Posso escolher o estilo musical?",
+            "answer": "Sim. O Studio IA permite orientar o género e outras preferências disponíveis."
+          },
+          {
+            "question": "Posso experimentar antes de pagar?",
+            "answer": "Sim. Ao registar-se, pode experimentar a primeira criação gratuitamente."
+          }
+        ]
+      },
+      "generator": {
+        "metaTitle": "Gerador de Música IA Online | DCC Music",
+        "metaDescription": "Utilize um gerador de música com IA para transformar texto ou letra em música. Crie online no Studio IA e experimente a primeira criação gratuitamente.",
+        "metaOgDescription": "Gere música com inteligência artificial a partir de uma ideia ou letra.",
+        "eyebrow": "Gerador de música IA",
+        "title": "Gerador de música com inteligência artificial",
+        "description": "Utilize o Studio IA da DCC Music para transformar uma ideia, texto ou letra numa música com voz e instrumentos.",
+        "intro": "O gerador de música com IA ajuda a transformar texto numa versão musical completa. Descreva o que pretende, oriente o estilo e receba versões para ouvir e comparar.",
+        "benefits": [
+          "Gerar música a partir de texto, tema ou letra.",
+          "Orientar o estilo musical da criação.",
+          "Ouvir versões diferentes antes de escolher.",
+          "Criar online sem instalar programas."
+        ],
+        "steps": [
+          "Abra o Studio IA.",
+          "Indique a sua ideia ou letra.",
+          "Defina as preferências da música.",
+          "Gere e ouça as versões criadas."
+        ],
+        "faq": [
+          {
+            "question": "O que é um gerador de música com IA?",
+            "answer": "É uma ferramenta que utiliza inteligência artificial para criar uma música a partir de indicações como tema, letra e estilo."
+          },
+          {
+            "question": "Posso começar apenas com uma ideia?",
+            "answer": "Sim. Descreva o assunto ou conceito da música para começar."
+          },
+          {
+            "question": "Posso utilizar a minha própria letra?",
+            "answer": "Sim. Pode utilizar uma letra sua como base da criação."
+          },
+          {
+            "question": "Preciso de instalar alguma coisa?",
+            "answer": "Não. O Studio IA funciona online no navegador."
+          }
+        ]
+      },
+      "free": {
+        "metaTitle": "Criar Música Gratuita com IA | DCC Music",
+        "metaDescription": "Crie música gratuitamente com IA a partir de uma ideia ou letra. Registe-se e experimente a sua primeira criação no Studio IA.",
+        "metaOgDescription": "Experimente criar sua primeira música com inteligência artificial na DCC Music.",
+        "eyebrow": "Criar música gratuitamente",
+        "title": "Crie a sua primeira música com IA gratuitamente",
+        "description": "Registe-se, escreva a sua ideia ou letra e experimente a primeira criação no Studio IA da DCC Music.",
+        "intro": "Se quer descobrir como uma ideia se transforma em música antes de continuar a criar, registe-se e experimente a primeira criação gratuitamente. O processo decorre online e é simples.",
+        "benefits": [
+          "Começar com uma ideia ou letra sua.",
+          "Experimentar a primeira criação gratuitamente após o registo.",
+          "Escolher o estilo da música no Studio IA.",
+          "Ouvir o resultado online e continuar no seu projeto."
+        ],
+        "steps": [
+          "Registe-se gratuitamente.",
+          "Entre no Studio IA.",
+          "Escreva a ideia ou cole a sua letra.",
+          "Gere e ouça a primeira criação."
+        ],
+        "faq": [
+          {
+            "question": "A primeira criação é gratuita?",
+            "answer": "Sim. Após o registo, pode experimentar a primeira criação gratuitamente no Studio IA."
+          },
+          {
+            "question": "Preciso de fornecer um cartão para começar?",
+            "answer": "O registo é gratuito. As opções de compra aparecem quando quiser continuar a criar após a experiência inicial."
+          },
+          {
+            "question": "Posso criar uma música com uma letra minha?",
+            "answer": "Sim. Pode colar uma letra sua e utilizá-la como base da música."
+          },
+          {
+            "question": "Funciona no telemóvel?",
+            "answer": "Sim. O Studio IA funciona no navegador de dispositivos compatíveis."
+          }
+        ]
+      },
+      "online": {
+        "metaTitle": "Criar Música Online com IA | DCC Music",
+        "metaDescription": "Crie música online com inteligência artificial a partir da sua ideia ou letra. Utilize o Studio IA da DCC Music no navegador.",
+        "metaOgDescription": "Crie música online a partir de uma ideia ou letra usando inteligência artificial.",
+        "eyebrow": "Criar música online",
+        "title": "Crie música online diretamente no navegador",
+        "description": "Transforme uma ideia ou letra em música com inteligência artificial sem instalar programas.",
+        "intro": "O Studio IA funciona online e reúne o processo de criação no navegador. Indique o que pretende criar, defina as preferências disponíveis e receba versões para ouvir e continuar a trabalhar.",
+        "benefits": [
+          "Criar música online no navegador.",
+          "Utilizar uma ideia, tema ou letra como ponto de partida.",
+          "Orientar o estilo musical da criação.",
+          "Manter as versões no seu projeto da DCC Music."
+        ],
+        "steps": [
+          "Aceda ao Studio IA no navegador.",
+          "Escreva a sua ideia ou cole a letra.",
+          "Escolha as preferências da música.",
+          "Gere, ouça e continue o projeto."
+        ],
+        "faq": [
+          {
+            "question": "Preciso de descarregar um programa?",
+            "answer": "Não. A criação decorre online no navegador."
+          },
+          {
+            "question": "Posso utilizar no telemóvel?",
+            "answer": "Sim. Pode aceder através do navegador de dispositivos compatíveis."
+          },
+          {
+            "question": "Posso transformar texto em música?",
+            "answer": "Sim. Descreva a ideia da música ou forneça uma letra como base."
+          },
+          {
+            "question": "Posso experimentar antes de comprar?",
+            "answer": "Sim. O registo permite experimentar a primeira criação gratuitamente."
+          }
+        ]
+      }
+    }
   }
 }
