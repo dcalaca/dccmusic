@@ -3,15 +3,16 @@
 import { FormEvent, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { FiArrowLeft, FiCheckCircle, FiLoader, FiMic, FiRefreshCw, FiTrash2, FiUploadCloud } from 'react-icons/fi'
 
-const statusLabels: Record<string, string> = {
-  source_uploaded: 'Áudio recebido',
-  validation_processing: 'Gerando frase de verificação',
-  awaiting_verification: 'Aguardando gravação da frase',
-  voice_processing: 'Criando voz clonada',
-  ready: 'Pronta para usar',
-  failed: 'Falhou',
+const statusLabelKeys: Record<string, string> = {
+  source_uploaded: 'voices.status.sourceUploaded',
+  validation_processing: 'voices.status.validationProcessing',
+  awaiting_verification: 'voices.status.awaitingVerification',
+  voice_processing: 'voices.status.voiceProcessing',
+  ready: 'voices.status.ready',
+  failed: 'voices.status.failed',
 }
 
 const MAX_VOICE_AUDIO_BYTES = 50 * 1024 * 1024
@@ -23,8 +24,8 @@ function getRecordingMimeType() {
   return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || ''
 }
 
-function formatFileSize(bytes: number) {
-  return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`
+function formatFileSize(bytes: number, locale: string) {
+  return `${new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(bytes / (1024 * 1024))} MB`
 }
 
 function formatCountdown(totalSeconds: number) {
@@ -41,7 +42,7 @@ function getValidationSecondsRemaining(voice: any, nowMs: number) {
   return VALIDATION_PHRASE_EXPIRES_SECONDS - elapsedSeconds
 }
 
-async function readResponseJson(response: Response) {
+async function readResponseJson(response: Response, t: (key: string, options?: any) => string) {
   const text = await response.text()
   if (!text) return {}
 
@@ -49,19 +50,19 @@ async function readResponseJson(response: Response) {
     return JSON.parse(text)
   } catch {
     if (text.startsWith('Request En')) {
-      return { error: 'O arquivo é grande demais para envio direto. Tente novamente; o sistema usará upload otimizado.' }
+      return { error: t('voices.errors.fileTooLargeDirect') }
     }
     return { error: text.slice(0, 240) }
   }
 }
 
-async function uploadVoiceFileDirectly(token: string, file: File, kind: 'source' | 'verify') {
+async function uploadVoiceFileDirectly(token: string, file: File, kind: 'source' | 'verify', t: (key: string, options?: any) => string, locale: string) {
   if (!file.type.startsWith('audio/')) {
-    throw new Error('Envie um arquivo de áudio.')
+    throw new Error(t('voices.errors.audioFileRequired'))
   }
 
   if (file.size > MAX_VOICE_AUDIO_BYTES) {
-    throw new Error(`O áudio da voz precisa ter no máximo ${formatFileSize(MAX_VOICE_AUDIO_BYTES)}.`)
+    throw new Error(t('voices.errors.maxFileSize', { size: formatFileSize(MAX_VOICE_AUDIO_BYTES, locale) }))
   }
 
   const prepareResponse = await fetch('/api/compositores/studio/voices/upload-url', {
@@ -76,8 +77,8 @@ async function uploadVoiceFileDirectly(token: string, file: File, kind: 'source'
       kind,
     }),
   })
-  const prepareData = await readResponseJson(prepareResponse)
-  if (!prepareResponse.ok) throw new Error(prepareData.error || 'Erro ao preparar upload do áudio')
+  const prepareData = await readResponseJson(prepareResponse, t)
+  if (!prepareResponse.ok) throw new Error(prepareData.error || t('voices.errors.prepareUpload'))
 
   const upload = prepareData.upload
   const uploadResponse = await fetch(upload.uploadUrl, {
@@ -89,7 +90,7 @@ async function uploadVoiceFileDirectly(token: string, file: File, kind: 'source'
   })
 
   if (!uploadResponse.ok) {
-    throw new Error('Não foi possível enviar o áudio para o armazenamento. Se persistir, avise para configurarmos CORS do R2.')
+    throw new Error(t('voices.errors.storageUpload'))
   }
 
   return {
@@ -101,6 +102,7 @@ async function uploadVoiceFileDirectly(token: string, file: File, kind: 'source'
 }
 
 export default function ComposerVoicesPage() {
+  const { t, i18n } = useTranslation()
   const router = useRouter()
   const [voices, setVoices] = useState<any[]>([])
   const [recoverableVoices, setRecoverableVoices] = useState<any[]>([])
@@ -150,12 +152,12 @@ export default function ComposerVoicesPage() {
         router.push('/compositores/login?redirect=/compositores/admin/minhas-vozes')
         return
       }
-      if (!response.ok) throw new Error(data.error || 'Erro ao carregar vozes')
+      if (!response.ok) throw new Error(data.error || t('voices.errors.load'))
       setVoices(data.voices || [])
       setRecoverableVoices(data.recoverableVoices || [])
       setLimit(data.limit || 5)
     } catch (err: any) {
-      setError(err.message || 'Erro ao carregar vozes')
+      setError(err.message || t('voices.errors.load'))
     } finally {
       setLoading(false)
     }
@@ -201,10 +203,10 @@ export default function ComposerVoicesPage() {
         ? selectedAudioFile
         : sourceRecordedFile
       if (!(audioFile instanceof File) || audioFile.size === 0) {
-        throw new Error('Escolha um áudio pronto ou grave a voz base pelo microfone.')
+        throw new Error(t('voices.errors.chooseOrRecord'))
       }
 
-      const uploadedAsset = await uploadVoiceFileDirectly(token, audioFile, 'source')
+      const uploadedAsset = await uploadVoiceFileDirectly(token, audioFile, 'source', t, i18n.language)
       const response = await fetch('/api/compositores/studio/voices', {
         method: 'POST',
         headers: {
@@ -219,16 +221,16 @@ export default function ComposerVoicesPage() {
           uploadedAsset,
         }),
       })
-      const data = await readResponseJson(response)
-      if (!response.ok) throw new Error(data.error || 'Erro ao enviar voz')
+      const data = await readResponseJson(response, t)
+      if (!response.ok) throw new Error(data.error || t('voices.errors.sendVoice'))
       form.reset()
       setSourceRecordedFile(null)
       if (sourceRecordedUrl) URL.revokeObjectURL(sourceRecordedUrl)
       setSourceRecordedUrl('')
-      setMessage('Voz enviada. Agora aguarde a frase de verificação da nossa IA.')
+      setMessage(t('voices.messages.voiceSent'))
       await loadVoices()
     } catch (err: any) {
-      setError(err.message || 'Erro ao enviar voz')
+      setError(err.message || t('voices.errors.sendVoice'))
     } finally {
       sourceSubmittingRef.current = false
       setSubmitting(false)
@@ -251,12 +253,12 @@ export default function ComposerVoicesPage() {
         },
         body: JSON.stringify({ action: 'refresh' }),
       })
-      const data = await readResponseJson(response)
-      if (!response.ok) throw new Error(data.error || 'Erro ao atualizar voz')
-      setMessage('Status atualizado.')
+      const data = await readResponseJson(response, t)
+      if (!response.ok) throw new Error(data.error || t('voices.errors.refresh'))
+      setMessage(t('voices.messages.statusUpdated'))
       await loadVoices()
     } catch (err: any) {
-      setError(err.message || 'Erro ao atualizar voz')
+      setError(err.message || t('voices.errors.refresh'))
     } finally {
       setRefreshingId('')
     }
@@ -278,12 +280,12 @@ export default function ComposerVoicesPage() {
         },
         body: JSON.stringify({ action: 'regenerate-validation' }),
       })
-      const data = await readResponseJson(response)
-      if (!response.ok) throw new Error(data.error || 'Erro ao gerar nova frase')
-      setMessage('Nova frase solicitada. Aguarde alguns segundos e clique em Atualizar status.')
+      const data = await readResponseJson(response, t)
+      if (!response.ok) throw new Error(data.error || t('voices.errors.regeneratePhrase'))
+      setMessage(t('voices.messages.newPhraseRequested'))
       await loadVoices()
     } catch (err: any) {
-      setError(err.message || 'Erro ao gerar nova frase')
+      setError(err.message || t('voices.errors.regeneratePhrase'))
     } finally {
       setRefreshingId('')
     }
@@ -305,12 +307,12 @@ export default function ComposerVoicesPage() {
         },
         body: JSON.stringify({ action: 'reactivate-expired' }),
       })
-      const data = await readResponseJson(response)
-      if (!response.ok) throw new Error(data.error || 'Erro ao reativar voz')
-      setMessage('Reativação iniciada sem cobrança. O áudio original foi reaproveitado. Aguarde a nova frase e grave-a para voltar a usar sua voz.')
+      const data = await readResponseJson(response, t)
+      if (!response.ok) throw new Error(data.error || t('voices.errors.reactivate'))
+      setMessage(t('voices.messages.reactivationStarted'))
       await loadVoices()
     } catch (err: any) {
-      setError(err.message || 'Erro ao reativar voz')
+      setError(err.message || t('voices.errors.reactivate'))
     } finally {
       setRefreshingId('')
     }
@@ -324,7 +326,7 @@ export default function ComposerVoicesPage() {
     setError('')
     setMessage('')
     try {
-      const uploadedAsset = await uploadVoiceFileDirectly(token, audioFile, 'verify')
+      const uploadedAsset = await uploadVoiceFileDirectly(token, audioFile, 'verify', t, i18n.language)
       const response = await fetch(`/api/compositores/studio/voices/${voiceId}`, {
         method: 'POST',
         headers: {
@@ -333,13 +335,13 @@ export default function ComposerVoicesPage() {
         },
         body: JSON.stringify({ uploadedAsset }),
       })
-      const data = await readResponseJson(response)
-      if (!response.ok) throw new Error(data.error || 'Erro ao enviar verificação')
+      const data = await readResponseJson(response, t)
+      if (!response.ok) throw new Error(data.error || t('voices.errors.sendVerification'))
       form?.reset()
-      setMessage('Verificação enviada. Nossa IA está criando a voz clonada.')
+      setMessage(t('voices.messages.verificationSent'))
       await loadVoices()
     } catch (err: any) {
-      setError(err.message || 'Erro ao enviar verificação')
+      setError(err.message || t('voices.errors.sendVerification'))
     } finally {
       setVerifyingId('')
     }
@@ -352,7 +354,7 @@ export default function ComposerVoicesPage() {
     const audioFile = formData.get('audio')
 
     if (!(audioFile instanceof File) || audioFile.size === 0) {
-      setError('Envie a gravação da frase de verificação.')
+      setError(t('voices.errors.verificationFileRequired'))
       return
     }
 
@@ -361,7 +363,7 @@ export default function ComposerVoicesPage() {
 
   const startRecordingVerification = async (voiceId: string) => {
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-      setError('Este navegador não permite gravação direta. Use a opção de escolher arquivo.')
+      setError(t('voices.errors.recordingUnsupported'))
       return
     }
 
@@ -398,7 +400,7 @@ export default function ComposerVoicesPage() {
         setRecordingSeconds(0)
 
         if (!blob.size) {
-          setError('Não conseguimos capturar o áudio. Tente gravar novamente.')
+          setError(t('voices.errors.captureFailed'))
           return
         }
 
@@ -414,7 +416,7 @@ export default function ComposerVoicesPage() {
       setRecordingVoiceId('')
       recordingStreamRef.current?.getTracks().forEach((track) => track.stop())
       recordingStreamRef.current = null
-      setError('Não foi possível acessar o microfone. Autorize o microfone no navegador ou use a opção de escolher arquivo.')
+      setError(t('voices.errors.microphone'))
     }
   }
 
@@ -426,7 +428,7 @@ export default function ComposerVoicesPage() {
 
   const startRecordingSource = async () => {
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-      setError('Este navegador não permite gravação direta. Use a opção de escolher arquivo.')
+      setError(t('voices.errors.recordingUnsupported'))
       return
     }
 
@@ -466,14 +468,14 @@ export default function ComposerVoicesPage() {
         setSourceRecordingSeconds(0)
 
         if (!blob.size) {
-          setError('Não conseguimos capturar o áudio. Tente gravar novamente.')
+          setError(t('voices.errors.captureFailed'))
           return
         }
 
         const file = new File([blob], `voz-base.${extension}`, { type })
         setSourceRecordedFile(file)
         setSourceRecordedUrl(URL.createObjectURL(blob))
-        setMessage('Gravação da voz base pronta. Confira o áudio e clique em Enviar voz.')
+        setMessage(t('voices.messages.baseRecordingReady'))
       }
 
       recorder.start()
@@ -484,7 +486,7 @@ export default function ComposerVoicesPage() {
       setSourceRecording(false)
       sourceRecordingStreamRef.current?.getTracks().forEach((track) => track.stop())
       sourceRecordingStreamRef.current = null
-      setError('Não foi possível acessar o microfone. Autorize o microfone no navegador ou use a opção de escolher arquivo.')
+      setError(t('voices.errors.microphone'))
     }
   }
 
@@ -501,7 +503,7 @@ export default function ComposerVoicesPage() {
   }
 
   const deleteVoice = async (voiceId: string) => {
-    if (!window.confirm('Excluir esta voz? Ela deixará de aparecer na sua lista e abrirá espaço para cadastrar outra.')) return
+    if (!window.confirm(t('voices.confirmDelete'))) return
     const token = localStorage.getItem('composer_token')
     if (!token) return
 
@@ -514,11 +516,11 @@ export default function ComposerVoicesPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(data.error || 'Erro ao apagar voz')
-      setMessage('Voz excluída. Agora você pode cadastrar outra voz se quiser.')
+      if (!response.ok) throw new Error(data.error || t('voices.errors.delete'))
+      setMessage(t('voices.messages.deleted'))
       await loadVoices()
     } catch (err: any) {
-      setError(err.message || 'Erro ao apagar voz')
+      setError(err.message || t('voices.errors.delete'))
     } finally {
       setDeletingId('')
     }
@@ -529,28 +531,28 @@ export default function ComposerVoicesPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <Link href="/compositores/admin/meus-dados" className="mb-6 inline-flex items-center gap-2 text-primary-400 hover:text-primary-300">
-            <FiArrowLeft /> Voltar para meus dados
+            <FiArrowLeft /> {t('voices.backToProfile')}
           </Link>
 
           <div className="mb-8 rounded-3xl border border-primary-700/50 bg-gradient-to-br from-black via-gray-950 to-purple-950/60 p-5 sm:p-8">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-purple-500/40 bg-purple-950/40 px-3 py-1 text-xs font-bold text-purple-100">
-                  <FiMic /> Voz IA
+                  <FiMic /> {t('voices.badge')}
                 </div>
                 <h1 className="text-3xl font-black sm:text-4xl">
-                  <span className="gradient-text">Minhas vozes</span>
+                  <span className="gradient-text">{t('voices.title')}</span>
                 </h1>
                 <p className="mt-2 max-w-2xl text-gray-300">
-                  Cadastre até {limit} vozes. Envie preferencialmente um áudio limpo da sua voz, sem instrumentos. Depois grave a frase de verificação solicitada pela nossa IA.
+                  {t('voices.subtitle', { count: limit })}
                 </p>
                 <p className="mt-3 max-w-2xl text-sm font-semibold text-purple-100">
-                  A criação da voz só desconta 2 créditos se ela ficar pronta para uso. Tentativas que falharem não são cobradas.
+                  {t('voices.billingHint')}
                 </p>
               </div>
               <div className="rounded-2xl border border-gray-800 bg-black/40 p-4 text-sm text-gray-300">
-                <p className="font-bold text-white">{voices.length}/{limit} vozes cadastradas</p>
-                <p className="mt-1 text-gray-400">Use apenas vozes suas ou autorizadas.</p>
+                <p className="font-bold text-white">{t('voices.registeredCount', { current: voices.length, count: limit })}</p>
+                <p className="mt-1 text-gray-400">{t('voices.authorizedOnly')}</p>
               </div>
             </div>
           </div>
@@ -560,92 +562,92 @@ export default function ComposerVoicesPage() {
 
           {pendingVerificationVoice ? (
             <section className="mb-8 rounded-3xl border border-yellow-800/70 bg-yellow-950/20 p-5 sm:p-6">
-              <h2 className="text-xl font-black text-yellow-100">Finalize a voz que já está em andamento</h2>
+              <h2 className="text-xl font-black text-yellow-100">{t('voices.pending.title')}</h2>
               <p className="mt-2 text-sm text-yellow-50/90">
-                A voz “{pendingVerificationVoice.displayName}” está aguardando a frase de verificação. Use o cartão logo abaixo para gravar a frase; não envie novamente o áudio-base.
+                {t('voices.pending.description', { name: pendingVerificationVoice.displayName })}
               </p>
             </section>
           ) : (
           <section className="mb-8 rounded-3xl border border-gray-800 bg-gray-950/70 p-5 sm:p-6">
-            <h2 className="mb-4 text-xl font-black">Cadastrar nova voz</h2>
+            <h2 className="mb-4 text-xl font-black">{t('voices.newVoice.title')}</h2>
             <div className="mb-5">
               <div className="rounded-2xl border border-green-800/60 bg-green-950/20 p-4">
-                <p className="font-black text-green-100">Melhor opção: áudio limpo da voz</p>
+                <p className="font-black text-green-100">{t('voices.newVoice.bestOption')}</p>
                 <p className="mt-2 text-sm text-green-50/80">
-                  Use um áudio com a voz clara, sem instrumentos, sem backing vocal e com pouco efeito. Assim a clonagem fica mais parecida.
+                  {t('voices.newVoice.bestOptionHint')}
                 </p>
                 <p className="mt-2 text-xs font-bold text-green-100">
-                  Custo: 2 créditos somente quando a voz for aprovada e ficar pronta.
+                  {t('voices.newVoice.costHint')}
                 </p>
               </div>
             </div>
             <form onSubmit={uploadSourceVoice} className="grid gap-4 lg:grid-cols-[1fr_160px_160px]">
               <label className="block">
-                <span className="mb-2 block text-sm font-bold text-gray-300">Nome da voz</span>
-                <input name="displayName" required maxLength={60} placeholder="Ex.: Minha voz sertanejo" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                <span className="mb-2 block text-sm font-bold text-gray-300">{t('voices.newVoice.name')}</span>
+                <input name="displayName" required maxLength={60} placeholder={t('voices.newVoice.namePlaceholder')} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
               </label>
               <label className="block">
-                <span className="mb-2 block text-sm font-bold text-gray-300">Início vocal (s)</span>
+                <span className="mb-2 block text-sm font-bold text-gray-300">{t('voices.newVoice.vocalStart')}</span>
                 <input name="vocalStartS" type="number" min={0} defaultValue={0} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
               </label>
               <label className="block">
-                <span className="mb-2 block text-sm font-bold text-gray-300">Fim vocal (s)</span>
+                <span className="mb-2 block text-sm font-bold text-gray-300">{t('voices.newVoice.vocalEnd')}</span>
                 <input name="vocalEndS" type="number" min={1} defaultValue={20} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
               </label>
               <div className="grid gap-4 lg:col-span-3 lg:grid-cols-2">
                 <div className="rounded-2xl border border-purple-800/70 bg-purple-950/20 p-4">
-                  <p className="text-sm font-bold text-purple-100">Opção 1: gravar a voz agora</p>
+                  <p className="text-sm font-bold text-purple-100">{t('voices.newVoice.recordOption')}</p>
                   <p className="mt-1 text-xs text-purple-100/80">
-                    Ideal no celular: grave 10 a 20 segundos de voz limpa, sem música no fundo.
+                    {t('voices.newVoice.recordHint')}
                   </p>
                   {sourceRecording ? (
                     <button type="button" onClick={stopRecordingSource} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-3 font-bold text-white hover:bg-red-600">
-                      <FiMic /> Parar gravação ({sourceRecordingSeconds}s)
+                      <FiMic /> {t('voices.newVoice.stopRecording', { seconds: sourceRecordingSeconds })}
                     </button>
                   ) : (
                     <button type="button" onClick={startRecordingSource} disabled={Boolean(recordingVoiceId) || submitting} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-3 font-bold text-white disabled:opacity-60">
-                      <FiMic /> Gravar voz base
+                      <FiMic /> {t('voices.newVoice.recordBase')}
                     </button>
                   )}
                   {sourceRecordedUrl && (
                     <div className="mt-4">
-                      <p className="mb-2 text-xs font-bold uppercase text-purple-100/80">Gravação pronta</p>
+                      <p className="mb-2 text-xs font-bold uppercase text-purple-100/80">{t('voices.newVoice.recordingReady')}</p>
                       <audio controls src={sourceRecordedUrl} className="w-full" />
                       <button type="button" onClick={clearSourceRecording} className="mt-2 text-xs font-bold text-red-200 hover:text-red-100">
-                        Descartar gravação
+                        {t('voices.newVoice.discardRecording')}
                       </button>
                     </div>
                   )}
                 </div>
                 <label className="block rounded-2xl border border-gray-800 bg-black/30 p-4">
-                  <span className="mb-2 block text-sm font-bold text-gray-300">Opção 2: escolher áudio pronto</span>
+                  <span className="mb-2 block text-sm font-bold text-gray-300">{t('voices.newVoice.fileOption')}</span>
                   <input name="audio" type="file" accept="audio/*" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white" />
                   <span className="mt-2 block text-xs text-gray-400">
-                    Dica: se o arquivo for uma música pronta com instrumental, a IA pode não conseguir copiar só a voz com qualidade.
+                    {t('voices.newVoice.fileHint')}
                   </span>
                 </label>
               </div>
               <label className="flex items-start gap-3 rounded-2xl border border-gray-800 bg-black/30 p-4 text-sm text-gray-300 lg:col-span-3">
                 <input name="consent" type="checkbox" required className="mt-1" />
-                Confirmo que essa voz é minha ou tenho autorização explícita para usar essa voz em músicas geradas por IA.
+                {t('voices.newVoice.consent')}
               </label>
               {voices.length >= limit && (
                 <div className="rounded-2xl border border-yellow-800 bg-yellow-950/30 p-4 text-sm text-yellow-100 lg:col-span-3">
-                  Você chegou ao limite de {limit} vozes. Exclua uma voz cadastrada abaixo para liberar espaço e enviar outra.
+                  {t('voices.newVoice.limitReachedHint', { count: limit })}
                 </div>
               )}
               <button type="submit" disabled={submitting || voices.length >= limit} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white disabled:opacity-60 lg:col-span-3">
                 {submitting ? <FiLoader className="animate-spin" /> : <FiUploadCloud />}
-                {voices.length >= limit ? 'Limite de 5 vozes atingido' : 'Enviar voz'}
+                {voices.length >= limit ? t('voices.newVoice.limitReached', { count: limit }) : t('voices.newVoice.send')}
               </button>
             </form>
           </section>
           )}
 
           {loading ? (
-            <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">Carregando vozes...</div>
+            <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">{t('voices.loading')}</div>
           ) : voices.length === 0 ? (
-            <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">Nenhuma voz cadastrada ainda.</div>
+            <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">{t('voices.empty')}</div>
           ) : (
             <div className="grid gap-5 lg:grid-cols-2">
               {voices.map((voice) => (
@@ -653,19 +655,19 @@ export default function ComposerVoicesPage() {
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
                       <h3 className="text-xl font-black text-white">{voice.displayName}</h3>
-                      <p className="mt-1 text-sm text-gray-400">{statusLabels[voice.status] || voice.status}</p>
+                      <p className="mt-1 text-sm text-gray-400">{statusLabelKeys[voice.status] ? t(statusLabelKeys[voice.status]) : voice.status}</p>
                     </div>
                     {voice.status === 'ready' && <FiCheckCircle className="h-6 w-6 text-green-300" />}
                   </div>
 
                   {voice.sourceAudioUrl && <audio controls src={voice.sourceAudioUrl} className="mb-4 w-full" />}
-                  {voice.errorMessage && <p className="mb-4 rounded-xl border border-red-800 bg-red-950/40 p-3 text-sm text-red-200">{voice.errorMessage}</p>}
+                  {voice.errorMessage && <p className="mb-4 rounded-xl border border-red-800 bg-red-950/40 p-3 text-sm text-red-200">{i18n.language.startsWith('pt') ? voice.errorMessage : t('voices.errors.voiceFailed')}</p>}
 
                   {voice.validateInfo && (
                     <div className="mb-4 rounded-2xl border border-primary-800 bg-primary-950/30 p-4">
-                      <p className="text-xs font-bold uppercase text-primary-200">Frase para gravar</p>
+                      <p className="text-xs font-bold uppercase text-primary-200">{t('voices.verification.phrase')}</p>
                       <p className="mt-2 text-lg font-black text-white">{voice.validateInfo}</p>
-                      <p className="mt-2 text-sm text-gray-300">Cante exatamente essa frase, com voz clara e sem música de fundo, e envie abaixo.</p>
+                      <p className="mt-2 text-sm text-gray-300">{t('voices.verification.instructions')}</p>
                       {(() => {
                         const secondsRemaining = getValidationSecondsRemaining(voice, nowMs)
                         const expired = secondsRemaining <= 0
@@ -673,13 +675,13 @@ export default function ComposerVoicesPage() {
                           <div className={`mt-3 rounded-xl border p-3 text-sm ${expired ? 'border-yellow-700 bg-yellow-950/30 text-yellow-100' : 'border-purple-700/60 bg-black/30 text-purple-100'}`}>
                             {expired ? (
                               <>
-                                <p className="font-bold">Essa frase pode ter expirado.</p>
+                                <p className="font-bold">{t('voices.verification.expired')}</p>
                                 <button type="button" onClick={() => regenerateValidationPhrase(voice.id)} disabled={refreshingId === voice.id} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-yellow-700 px-3 py-2 font-bold text-white disabled:opacity-60">
-                                  {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />} Gerar nova frase
+                                  {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />} {t('voices.verification.generateNewPhrase')}
                                 </button>
                               </>
                             ) : (
-                              <p><strong>Tempo recomendado para enviar:</strong> {formatCountdown(secondsRemaining)}</p>
+                              <p><strong>{t('voices.verification.recommendedTime')}</strong> {formatCountdown(secondsRemaining)}</p>
                             )}
                           </div>
                         )
@@ -690,25 +692,25 @@ export default function ComposerVoicesPage() {
                   {voice.status === 'awaiting_verification' && (
                     <form onSubmit={(event) => uploadVerification(event, voice.id)} className="mb-4 space-y-3">
                       <div className="rounded-2xl border border-purple-800/70 bg-purple-950/20 p-4">
-                        <p className="text-sm font-bold text-purple-100">Grave a frase direto por aqui</p>
-                        <p className="mt-1 text-xs text-purple-100/80">Clique em gravar, cante a frase acima e depois pare para enviar automaticamente.</p>
+                        <p className="text-sm font-bold text-purple-100">{t('voices.verification.recordHere')}</p>
+                        <p className="mt-1 text-xs text-purple-100/80">{t('voices.verification.recordHereHint')}</p>
                         {recordingVoiceId === voice.id ? (
                           <button type="button" onClick={stopRecordingVerification} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-700 px-4 py-3 font-bold text-white hover:bg-red-600">
-                            <FiMic /> Parar e enviar ({recordingSeconds}s)
+                            <FiMic /> {t('voices.verification.stopAndSend', { seconds: recordingSeconds })}
                           </button>
                         ) : (
                           <button type="button" onClick={() => startRecordingVerification(voice.id)} disabled={Boolean(recordingVoiceId) || verifyingId === voice.id} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-3 font-bold text-white disabled:opacity-60">
-                            <FiMic /> Gravar frase agora
+                            <FiMic /> {t('voices.verification.recordNow')}
                           </button>
                         )}
                       </div>
                       <div>
-                        <p className="mb-2 text-xs font-bold uppercase text-gray-500">Ou envie um arquivo pronto</p>
+                        <p className="mb-2 text-xs font-bold uppercase text-gray-500">{t('voices.verification.orUpload')}</p>
                         <input name="audio" type="file" accept="audio/*" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white" />
                       </div>
                       <button disabled={verifyingId === voice.id} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 font-bold text-white disabled:opacity-60">
                         {verifyingId === voice.id ? <FiLoader className="animate-spin" /> : <FiUploadCloud />}
-                        Enviar arquivo da frase
+                        {t('voices.verification.sendFile')}
                       </button>
                     </form>
                   )}
@@ -721,18 +723,18 @@ export default function ComposerVoicesPage() {
                     ) && (
                       <button onClick={() => reactivateExpiredVoice(voice.id)} disabled={refreshingId === voice.id} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-3 font-bold text-white disabled:opacity-60">
                         {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
-                        Tentar nova frase sem cobrança
+                        {t('voices.actions.retryPhraseFree')}
                       </button>
                     )}
                     {voice.status !== 'ready' && (
                       <button onClick={() => refreshVoice(voice.id)} disabled={refreshingId === voice.id} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-gray-700 bg-black/30 px-4 py-3 font-bold text-gray-100 hover:bg-gray-900 disabled:opacity-60">
                         {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
-                        Atualizar status
+                        {t('voices.actions.refreshStatus')}
                       </button>
                     )}
                     <button onClick={() => deleteVoice(voice.id)} disabled={deletingId === voice.id} className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-900/70 bg-red-950/30 px-4 py-3 font-bold text-red-100 hover:bg-red-950/60 disabled:opacity-60">
                       {deletingId === voice.id ? <FiLoader className="animate-spin" /> : <FiTrash2 />}
-                      Excluir voz
+                      {t('voices.actions.delete')}
                     </button>
                   </div>
                 </article>
@@ -743,13 +745,13 @@ export default function ComposerVoicesPage() {
           {!loading && recoverableVoices.length > 0 && (
             <section className="mt-8 rounded-3xl border border-purple-800/60 bg-purple-950/20 p-5 sm:p-6">
               <div className="mb-5">
-                <h2 className="text-xl font-black text-white">Vozes expiradas que podem ser recuperadas</h2>
+                <h2 className="text-xl font-black text-white">{t('voices.recover.title')}</h2>
                 <p className="mt-2 text-sm text-purple-100/80">
-                  Seu áudio original continua salvo. Reative a voz sem cobrança e grave apenas a nova frase de verificação.
+                  {t('voices.recover.description')}
                 </p>
                 {voices.length >= limit && (
                   <p className="mt-3 rounded-xl border border-yellow-800 bg-yellow-950/30 p-3 text-sm text-yellow-100">
-                    Exclua uma voz cadastrada para liberar espaço antes de recuperar uma voz expirada.
+                    {t('voices.recover.limitHint')}
                   </p>
                 )}
               </div>
@@ -758,7 +760,7 @@ export default function ComposerVoicesPage() {
                 {recoverableVoices.map((voice) => (
                   <article key={voice.id} className="rounded-2xl border border-purple-800/60 bg-black/40 p-4">
                     <h3 className="text-lg font-black text-white">{voice.displayName}</h3>
-                    <p className="mt-1 text-sm text-purple-100/70">Voz expirada · áudio original salvo</p>
+                    <p className="mt-1 text-sm text-purple-100/70">{t('voices.recover.expiredSaved')}</p>
                     {voice.sourceAudioUrl && <audio controls src={voice.sourceAudioUrl} className="mt-4 w-full" />}
                     <button
                       onClick={() => reactivateExpiredVoice(voice.id)}
@@ -766,7 +768,7 @@ export default function ComposerVoicesPage() {
                       className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-3 font-bold text-white disabled:opacity-60"
                     >
                       {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
-                      Reativar voz sem cobrança
+                      {t('voices.recover.reactivateFree')}
                     </button>
                   </article>
                 ))}

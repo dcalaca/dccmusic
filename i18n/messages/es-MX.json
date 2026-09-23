@@ -1048,5 +1048,118 @@
       "declineText": "El rechazo proviene del banco emisor de la tarjeta, no de DCC Music. No se agregan créditos hasta que el pago sea aprobado. Prueba con otra tarjeta o confirma con tu banco que las compras en línea estén habilitadas.",
       "openError": "No se pudo abrir el método de pago alternativo."
     }
+  },
+  "voices": {
+    "backToProfile": "Volver a mis datos",
+    "badge": "Voz IA",
+    "title": "Mis voces",
+    "subtitle": "Registra hasta {{count}} voces. Usa preferiblemente un audio limpio de tu voz, sin instrumentos. Después graba la frase de verificación solicitada por nuestra IA.",
+    "billingHint": "La creación de la voz solo cobra 2 créditos si queda lista para usar. Los intentos fallidos no se cobran.",
+    "registeredCount": "{{current}}/{{count}} voces registradas",
+    "authorizedOnly": "Usa solo voces tuyas o autorizadas.",
+    "loading": "Cargando voces...",
+    "empty": "Todavía no hay voces registradas.",
+    "confirmDelete": "¿Eliminar esta voz? Dejará de aparecer en tu lista y liberará espacio para registrar otra.",
+    "status": {
+      "sourceUploaded": "Audio recibido",
+      "validationProcessing": "Generando frase de verificación",
+      "awaitingVerification": "Esperando la grabación de la frase",
+      "voiceProcessing": "Creando voz clonada",
+      "ready": "Lista para usar",
+      "failed": "Falló"
+    },
+    "errors": {
+      "fileTooLargeDirect": "El archivo es demasiado grande para envío directo. Inténtalo de nuevo; el sistema usará una carga optimizada.",
+      "audioFileRequired": "Envía un archivo de audio.",
+      "maxFileSize": "El audio de la voz debe tener como máximo {{size}}.",
+      "prepareUpload": "Error al preparar la carga del audio.",
+      "storageUpload": "No se pudo enviar el audio al almacenamiento. Inténtalo de nuevo.",
+      "load": "Error al cargar las voces.",
+      "chooseOrRecord": "Elige un audio listo o graba la voz base con el micrófono.",
+      "sendVoice": "Error al enviar la voz.",
+      "refresh": "Error al actualizar la voz.",
+      "regeneratePhrase": "Error al generar una nueva frase.",
+      "reactivate": "Error al reactivar la voz.",
+      "sendVerification": "Error al enviar la verificación.",
+      "verificationFileRequired": "Envía la grabación de la frase de verificación.",
+      "recordingUnsupported": "Este navegador no permite grabación directa. Usa la opción de elegir archivo.",
+      "captureFailed": "No pudimos capturar el audio. Graba de nuevo.",
+      "microphone": "No se pudo acceder al micrófono. Autoriza el micrófono en el navegador o usa la opción de elegir archivo.",
+      "delete": "Error al eliminar la voz.",
+      "voiceFailed": "No se pudo completar esta voz. Actualiza el estado o intenta generar una nueva frase."
+    },
+    "messages": {
+      "voiceSent": "Voz enviada. Ahora espera la frase de verificación de nuestra IA.",
+      "statusUpdated": "Estado actualizado.",
+      "newPhraseRequested": "Nueva frase solicitada. Espera unos segundos y pulsa Actualizar estado.",
+      "reactivationStarted": "Reactivación iniciada sin costo. Se reutilizó el audio original. Espera la nueva frase y grábala para volver a usar tu voz.",
+      "verificationSent": "Verificación enviada. Nuestra IA está creando la voz clonada.",
+      "baseRecordingReady": "La grabación de la voz base está lista. Revisa el audio y pulsa Enviar voz.",
+      "deleted": "Voz eliminada. Ahora puedes registrar otra voz si quieres."
+    },
+    "pending": {
+      "title": "Finaliza la voz que ya está en proceso",
+      "description": "La voz “{{name}}” está esperando la frase de verificación. Usa la tarjeta de abajo para grabarla; no vuelvas a enviar el audio base."
+    },
+    "newVoice": {
+      "title": "Registrar nueva voz",
+      "bestOption": "Mejor opción: audio limpio de la voz",
+      "bestOptionHint": "Usa un audio con la voz clara, sin instrumentos, coros y con pocos efectos. Así la clonación se parecerá más.",
+      "costHint": "Costo: 2 créditos solo cuando la voz sea aprobada y quede lista.",
+      "name": "Nombre de la voz",
+      "namePlaceholder": "Ej.: Mi voz regional",
+      "vocalStart": "Inicio vocal (s)",
+      "vocalEnd": "Fin vocal (s)",
+      "recordOption": "Opción 1: grabar la voz ahora",
+      "recordHint": "Ideal en el móvil: graba entre 10 y 20 segundos de voz limpia, sin música de fondo.",
+      "stopRecording": "Detener grabación ({{seconds}}s)",
+      "recordBase": "Grabar voz base",
+      "recordingReady": "Grabación lista",
+      "discardRecording": "Descartar grabación",
+      "fileOption": "Opción 2: elegir audio listo",
+      "fileHint": "Consejo: si el archivo es una canción terminada con instrumental, la IA puede no conseguir copiar solo la voz con buena calidad.",
+      "consent": "Confirmo que esta voz es mía o tengo autorización explícita para usarla en canciones generadas por IA.",
+      "limitReachedHint": "Llegaste al límite de {{count}} voces. Elimina una voz registrada para liberar espacio y enviar otra.",
+      "limitReached": "Límite de {{count}} voces alcanzado",
+      "send": "Enviar voz"
+    },
+    "verification": {
+      "phrase": "Frase para grabar",
+      "instructions": "Canta exactamente esta frase, con voz clara y sin música de fondo, y envíala abajo.",
+      "expired": "Esta frase puede haber expirado.",
+      "generateNewPhrase": "Generar nueva frase",
+      "recommendedTime": "Tiempo recomendado para enviar:",
+      "recordHere": "Graba la frase aquí",
+      "recordHereHint": "Pulsa grabar, canta la frase de arriba y después detén la grabación para enviarla automáticamente.",
+      "stopAndSend": "Detener y enviar ({{seconds}}s)",
+      "recordNow": "Grabar frase ahora",
+      "orUpload": "O envía un archivo listo",
+      "sendFile": "Enviar archivo de la frase"
+    },
+    "actions": {
+      "retryPhraseFree": "Probar una nueva frase sin costo",
+      "refreshStatus": "Actualizar estado",
+      "delete": "Eliminar voz"
+    },
+    "recover": {
+      "title": "Voces expiradas que pueden recuperarse",
+      "description": "Tu audio original sigue guardado. Reactiva la voz sin costo y graba solo la nueva frase de verificación.",
+      "limitHint": "Elimina una voz registrada para liberar espacio antes de recuperar una voz expirada.",
+      "expiredSaved": "Voz expirada · audio original guardado",
+      "reactivateFree": "Reactivar voz sin costo"
+    },
+    "rerecord": {
+      "back": "Volver a mis voces",
+      "badge": "Regrabar verificación",
+      "title": "Cantar una nueva frase",
+      "description": "Usa esta opción solo cuando la voz ya esté lista, pero el resultado vocal no represente bien tu voz. El audio base se mantendrá; el sistema solicitará una nueva frase para que la cantes.",
+      "confirm": "¿Generar una nueva frase de verificación para “{{name}}”? La voz quedará temporalmente no disponible mientras se procesa la nueva verificación.",
+      "empty": "No se encontraron voces listas.",
+      "generate": "Generar nueva frase para cantar",
+      "errors": {
+        "load": "No se pudieron cargar las voces listas.",
+        "generate": "No se pudo generar la nueva frase."
+      }
+    }
   }
 }

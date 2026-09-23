@@ -1048,5 +1048,118 @@
       "declineText": "The refusal comes from the card issuer, not DCC Music. No credits are added unless the payment is approved. Try another card or check with your bank that online purchases are enabled.",
       "openError": "We couldn't open the alternative payment method."
     }
+  },
+  "voices": {
+    "backToProfile": "Back to my profile",
+    "badge": "AI Voice",
+    "title": "My voices",
+    "subtitle": "Register up to {{count}} voices. Prefer a clean recording of your voice without instruments. Then record the verification phrase requested by our AI.",
+    "billingHint": "Creating a voice only charges 2 credits if it becomes ready to use. Failed attempts are not charged.",
+    "registeredCount": "{{current}}/{{count}} voices registered",
+    "authorizedOnly": "Use only your own voice or voices you are authorized to use.",
+    "loading": "Loading voices...",
+    "empty": "No voices registered yet.",
+    "confirmDelete": "Delete this voice? It will disappear from your list and free a slot for another voice.",
+    "status": {
+      "sourceUploaded": "Audio received",
+      "validationProcessing": "Generating verification phrase",
+      "awaitingVerification": "Waiting for phrase recording",
+      "voiceProcessing": "Creating cloned voice",
+      "ready": "Ready to use",
+      "failed": "Failed"
+    },
+    "errors": {
+      "fileTooLargeDirect": "The file is too large for direct upload. Try again; the system will use optimized upload.",
+      "audioFileRequired": "Upload an audio file.",
+      "maxFileSize": "The voice audio must be no larger than {{size}}.",
+      "prepareUpload": "Could not prepare the audio upload.",
+      "storageUpload": "Could not upload the audio to storage. Please try again.",
+      "load": "Could not load voices.",
+      "chooseOrRecord": "Choose a ready audio file or record the base voice with your microphone.",
+      "sendVoice": "Could not send the voice.",
+      "refresh": "Could not refresh the voice.",
+      "regeneratePhrase": "Could not generate a new phrase.",
+      "reactivate": "Could not reactivate the voice.",
+      "sendVerification": "Could not send verification.",
+      "verificationFileRequired": "Upload the verification phrase recording.",
+      "recordingUnsupported": "This browser does not support direct recording. Use the file upload option.",
+      "captureFailed": "We could not capture the audio. Please record again.",
+      "microphone": "Could not access the microphone. Allow microphone access in your browser or use the file upload option.",
+      "delete": "Could not delete the voice.",
+      "voiceFailed": "This voice could not be completed. Refresh the status or try generating a new phrase."
+    },
+    "messages": {
+      "voiceSent": "Voice sent. Now wait for the verification phrase from our AI.",
+      "statusUpdated": "Status updated.",
+      "newPhraseRequested": "New phrase requested. Wait a few seconds, then click Refresh status.",
+      "reactivationStarted": "Reactivation started at no charge. The original audio was reused. Wait for the new phrase and record it to use your voice again.",
+      "verificationSent": "Verification sent. Our AI is creating the cloned voice.",
+      "baseRecordingReady": "Base voice recording is ready. Review the audio and click Send voice.",
+      "deleted": "Voice deleted. You can now register another voice if you want."
+    },
+    "pending": {
+      "title": "Finish the voice already in progress",
+      "description": "The voice “{{name}}” is waiting for the verification phrase. Use the card below to record the phrase; do not upload the base audio again."
+    },
+    "newVoice": {
+      "title": "Register a new voice",
+      "bestOption": "Best option: clean voice audio",
+      "bestOptionHint": "Use clear voice audio with no instruments, backing vocals, and minimal effects. This helps the clone sound more like the original.",
+      "costHint": "Cost: 2 credits only when the voice is approved and ready.",
+      "name": "Voice name",
+      "namePlaceholder": "Example: My country voice",
+      "vocalStart": "Vocal start (s)",
+      "vocalEnd": "Vocal end (s)",
+      "recordOption": "Option 1: record your voice now",
+      "recordHint": "Ideal on mobile: record 10 to 20 seconds of clean voice with no music in the background.",
+      "stopRecording": "Stop recording ({{seconds}}s)",
+      "recordBase": "Record base voice",
+      "recordingReady": "Recording ready",
+      "discardRecording": "Discard recording",
+      "fileOption": "Option 2: choose a ready audio file",
+      "fileHint": "Tip: if the file is a finished song with instruments, AI may not be able to isolate and copy only the voice accurately.",
+      "consent": "I confirm this voice is mine or I have explicit authorization to use it in AI-generated music.",
+      "limitReachedHint": "You have reached the limit of {{count}} voices. Delete a registered voice below to free a slot and add another.",
+      "limitReached": "{{count}}-voice limit reached",
+      "send": "Send voice"
+    },
+    "verification": {
+      "phrase": "Phrase to record",
+      "instructions": "Sing exactly this phrase with a clear voice and no background music, then send it below.",
+      "expired": "This phrase may have expired.",
+      "generateNewPhrase": "Generate new phrase",
+      "recommendedTime": "Recommended time to send:",
+      "recordHere": "Record the phrase here",
+      "recordHereHint": "Tap record, sing the phrase above, then stop to send it automatically.",
+      "stopAndSend": "Stop and send ({{seconds}}s)",
+      "recordNow": "Record phrase now",
+      "orUpload": "Or upload a ready file",
+      "sendFile": "Send phrase file"
+    },
+    "actions": {
+      "retryPhraseFree": "Try a new phrase at no charge",
+      "refreshStatus": "Refresh status",
+      "delete": "Delete voice"
+    },
+    "recover": {
+      "title": "Expired voices that can be recovered",
+      "description": "Your original audio is still saved. Reactivate the voice at no charge and record only the new verification phrase.",
+      "limitHint": "Delete a registered voice to free a slot before recovering an expired voice.",
+      "expiredSaved": "Expired voice · original audio saved",
+      "reactivateFree": "Reactivate voice at no charge"
+    },
+    "rerecord": {
+      "back": "Back to my voices",
+      "badge": "Redo verification",
+      "title": "Sing a new phrase",
+      "description": "Use this only when the voice is already ready but the vocal result did not represent your voice well. The base audio remains saved; the system will request a new phrase for you to sing.",
+      "confirm": "Generate a new verification phrase for “{{name}}”? The voice will be temporarily unavailable while the new verification is processed.",
+      "empty": "No ready voices found.",
+      "generate": "Generate a new phrase to sing",
+      "errors": {
+        "load": "Could not load ready voices.",
+        "generate": "Could not generate the new phrase."
+      }
+    }
   }
 }
