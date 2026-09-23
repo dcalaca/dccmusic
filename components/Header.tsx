@@ -244,7 +244,7 @@ export default function Header() {
       .map((item) => ({
         ...item,
         label: t(item.labelKey),
-        mobileLabel: t('mobileLabelKey' in item ? item.mobileLabelKey : item.labelKey),
+        mobileLabel: t('mobileLabelKey' in item && typeof item.mobileLabelKey === 'string' ? item.mobileLabelKey : item.labelKey),
       })),
     ...(showBlog ? [{ id: 'blog', href: blogHomeHref, label: t('menu.blog'), mobileLabel: t('menu.blog'), icon: FiBookOpen }] : []),
   ]
