@@ -663,7 +663,7 @@ export default function ComposerVoicesPage() {
                   {voice.sourceAudioUrl && <audio controls src={voice.sourceAudioUrl} className="mb-4 w-full" />}
                   {voice.errorMessage && <p className="mb-4 rounded-xl border border-red-800 bg-red-950/40 p-3 text-sm text-red-200">{i18n.language.startsWith('pt') ? voice.errorMessage : t('voices.errors.voiceFailed')}</p>}
 
-                  {voice.validateInfo && (
+                  {voice.validateInfo && !(voice.status === 'ready' && voice.isAvailable) && (
                     <div className="mb-4 rounded-2xl border border-primary-800 bg-primary-950/30 p-4">
                       <p className="text-xs font-bold uppercase text-primary-200">{t('voices.verification.phrase')}</p>
                       <p className="mt-2 text-lg font-black text-white">{voice.validateInfo}</p>
