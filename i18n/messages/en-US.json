@@ -239,5 +239,191 @@
       "login": "Go to login",
       "entering": "Opening your dashboard..."
     }
+  },
+  "payment": {
+    "plans": {
+      "title": "Subscription Plans",
+      "subtitle": "Choose how you want to create, publish, and promote your music.",
+      "tipLabel": "Tip:",
+      "tip": "DCC AI Studio is for creating music with artificial intelligence. Songwriter plans are for publishing and promoting songs and videos on DCC Music.",
+      "topup": {
+        "noMonthly": "No monthly fee",
+        "title": "One-time song top-up",
+        "description": "If you don't want a subscription right now, choose how many songs you want to buy and the price is calculated automatically.",
+        "one": "1 song",
+        "twoToEight": "2 to 8 songs",
+        "nineToTwentyNine": "9 to 29 songs",
+        "thirtyPlus": "30+ songs",
+        "perSong": "per song",
+        "buy": "Buy One-time Top-up"
+      },
+      "studio": {
+        "title": "DCC AI Studio Plans",
+        "description": "Our main product: create lyrics, songs, covers, and projects with AI.",
+        "empty": "No AI Studio plan is currently active.",
+        "popular": "MOST POPULAR",
+        "subscribe": "Subscribe to AI Studio"
+      },
+      "composer": {
+        "title": "Premium Songwriter Plans",
+        "description": "Publish your songs and videos on DCC Music with your own page.",
+        "empty": "No songwriter plans are available right now.",
+        "gold": "Gold Plan",
+        "subscribe": "Subscribe Now"
+      },
+      "period": {
+        "month": "month",
+        "months": "{{count}} months",
+        "year": "year"
+      },
+      "unavailable": "Unavailable",
+      "checkingPlan": "Checking plan...",
+      "alreadyActiveTitle": "You already have an active plan in this category",
+      "alreadyActive": "Plan already active"
+    },
+    "checkout": {
+      "errors": {
+        "start": "We couldn't start the payment. Try again.",
+        "openStripe": "We couldn't open the alternative payment method.",
+        "preference": "We couldn't prepare the payment.",
+        "noPaymentLink": "The payment provider did not return a payment link.",
+        "processing": "We couldn't process the payment. Try again.",
+        "planMissing": "No plan was selected. Go back to the plans page and choose an option.",
+        "checkPayment": "We couldn't check the payment right now."
+      },
+      "checkingAccess": "Checking your access...",
+      "wait": "Please wait a few seconds",
+      "processingPayment": "Processing payment...",
+      "preparingCheckout": "Please wait while we prepare your checkout",
+      "activePlan": "Active plan",
+      "alreadyStudioTitle": "You already have an AI Studio plan",
+      "currentPlanPrefix": "Your current plan is",
+      "moreSongsHint": "If you clicked another plan because you want more songs, use a one-time top-up instead.",
+      "topupHint": "A one-time top-up adds extra credits without changing your monthly plan.",
+      "goTopup": "Go to one-time top-up",
+      "viewAllPlans": "View all plans",
+      "unlocks": "What this plan includes:",
+      "checkBeforePay": "Check before paying",
+      "redirecting": "Redirecting to Mercado Pago...",
+      "goPayment": "Go to Payment",
+      "redirectFallback": "If you are not redirected automatically, click the button above",
+      "preparing": "Preparing checkout...",
+      "secureProcessed": "Secure payment processed by {{provider}}",
+      "studio": {
+        "badge": "DCC AI Studio",
+        "title": "You're subscribing to DCC AI Studio",
+        "description": "This plan is for creating lyrics, songs, covers, and projects using artificial intelligence.",
+        "includes": [
+          "Create songs with AI inside AI Studio",
+          "Monthly credits based on the selected plan",
+          "Organize your AI-created projects"
+        ],
+        "warning": "If you only want to publish finished songs from Spotify, SoundCloud, or other players, choose Premium Songwriter.",
+        "confirm": "Confirm and pay for AI Studio",
+        "alternative": "I want Premium Songwriter"
+      },
+      "composer": {
+        "badge": "Premium Songwriter",
+        "title": "Important: this is not an AI Studio plan",
+        "description": "You're buying a Premium Songwriter plan to publish and promote songs you already have.",
+        "includes": [
+          "Publish finished songs using external links/players",
+          "Publish videos and organize your songwriter page",
+          "Promotion features inside DCC Music"
+        ],
+        "warning": "This plan does not include monthly credits for creating music with AI. To create new songs with AI, choose a DCC AI Studio plan.",
+        "confirm": "I understand, I want Premium Songwriter",
+        "alternative": "I want AI Studio"
+      }
+    },
+    "status": {
+      "processing": "Processing...",
+      "approvedTitle": "Payment Approved!",
+      "approvedDescription": "Your subscription has been activated successfully. You can now publish your songs and videos!",
+      "goToComposerArea": "Go to Songwriter Area",
+      "pendingTitle": "Payment Pending",
+      "pendingDescription": "Your payment is being processed. You'll receive an email confirmation once it is approved.",
+      "failedTitle": "Payment Not Approved",
+      "failedDescription": "The payment was not processed. Please try again or contact us.",
+      "backToPlans": "Back to Plans"
+    },
+    "topup": {
+      "backToStudio": "Back to AI Studio",
+      "page": {
+        "badge": "One-time top-up",
+        "title": "Buy extra credits to keep creating",
+        "description": "Enter how many songs you want to buy. The price changes automatically based on the price tier.",
+        "balance": "Current balance",
+        "credits": "{{count}} credits",
+        "used": "Used {{used}} of {{limit}}. Each song uses 10 credits.",
+        "quantityQuestion": "How many songs do you want to buy?",
+        "songs": "{{count}} songs",
+        "extraCredits": "{{count}} extra credits",
+        "autoRelease": "Automatically released after approved payment",
+        "securePayment": "Secure payment by card or available local method",
+        "perSong": "per song",
+        "summary": "{{count}} songs x",
+        "buy": "Buy One-time Top-up",
+        "singleTier": "Single song"
+      },
+      "errors": {
+        "loadPackages": "Could not load packages.",
+        "loadBalance": "Could not load balance.",
+        "load": "Could not load the one-time top-up.",
+        "confirm": "Could not confirm the top-up.",
+        "check": "Could not check the top-up."
+      },
+      "success": {
+        "checking": "Checking payment confirmation...",
+        "awaitingConfirmation": "As soon as the payment is confirmed, the credits will appear in your AI Studio balance.",
+        "paid": "Payment confirmed. Your credits are already available in AI Studio.",
+        "received": "Payment received. The top-up will be released automatically when final confirmation arrives.",
+        "webhookFallback": "We could not confirm it automatically right now. The webhook confirmation may still release your credits.",
+        "title": "Top-up approved"
+      },
+      "pending": {
+        "checking": "Checking whether the payment has been confirmed...",
+        "autoRelease": "The top-up will be released automatically when the payment is confirmed.",
+        "received": "Payment received. We're waiting for final confirmation...",
+        "releasedTitle": "Top-up released",
+        "title": "Payment pending"
+      },
+      "failure": {
+        "title": "Payment declined",
+        "description": "This top-up was not completed and no credits were added.",
+        "explanation": "If your card was declined, the decision came from the card issuer, not DCC Music. Try another card or check with your bank that online purchases are enabled.",
+        "action": "Try again"
+      }
+    },
+    "overlay": {
+      "couldNotComplete": "We couldn't complete the payment.",
+      "openError": "We couldn't open the payment on this page.",
+      "approved": "Payment approved",
+      "pixTitle": "Pay with Pix on this device",
+      "pixDescription": "Copy the code, pay in your banking app, then come back here. Once Mercado Pago confirms it, this screen will continue automatically.",
+      "copyError": "We couldn't copy the code automatically. Press and hold the code below and choose Copy.",
+      "codeCopied": "Code copied!",
+      "copyPix": "Copy Pix code",
+      "pixCode": "Pix code",
+      "openPixBank": "Open Pix in banking app",
+      "checkingPix": "Checking whether Mercado Pago has recognized the payment...",
+      "pixRecognized": "Once the payment is recognized, you'll be taken to the success screen.",
+      "notConfirmedYet": "We still couldn't confirm it. Try again in a few seconds.",
+      "checkNow": "I've paid — check now",
+      "payHere": "Pay securely without leaving DCC Music.",
+      "fallbackUnavailable": "Alternative payment method unavailable.",
+      "title": "Payment",
+      "openingStripe": "Opening Stripe...",
+      "useStripe": "Use alternative payment method (Stripe)",
+      "payWithoutLeaving": "Pay here without leaving DCC Music.",
+      "continueMp": "Continue in Mercado Pago"
+    },
+    "stripe": {
+      "title": "Card payment",
+      "loading": "Loading secure payment...",
+      "declineTitle": "If your card is declined",
+      "declineText": "The refusal comes from the card issuer, not DCC Music. No credits are added unless the payment is approved. Try another card or check with your bank that online purchases are enabled.",
+      "openError": "We couldn't open the alternative payment method."
+    }
   }
 }

@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { FiInfo, FiLoader, FiX } from 'react-icons/fi'
 import { useTranslation } from 'react-i18next'
-import { useLocalization } from '@/components/LocalizationProvider'
 
 const STRIPE_SCRIPT = 'https://js.stripe.com/v3/'
 let stripeScriptPromise: Promise<void> | null = null
@@ -35,7 +34,6 @@ export function StripePaymentOverlay({
   onClose: () => void
   onComplete: () => void | Promise<void>
 }) {
-  useLocalization()
   const { t } = useTranslation()
   const containerRef = useRef<HTMLDivElement>(null)
   const checkoutRef = useRef<any>(null)

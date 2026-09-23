@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 import { FiAlertTriangle, FiArrowLeft, FiCheckCircle, FiExternalLink, FiLoader, FiMusic, FiUploadCloud, FiZap } from 'react-icons/fi'
 import { trackTikTokEvent } from '@/components/TikTokEvents'
 import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
@@ -11,6 +12,7 @@ import { StripePaymentOverlay } from '@/components/StripeCheckout'
 import { useLocalization } from '@/components/LocalizationProvider'
 
 function CheckoutContent() {
+  const { t } = useTranslation()
   const router = useRouter()
   const { country, paymentProvider } = useLocalization()
   const searchParams = useSearchParams()
@@ -160,7 +162,7 @@ function CheckoutContent() {
           body: JSON.stringify({ planId: planSlug, provider: paymentProvider, country }),
         })
         const intent = await intentResponse.json()
-        if (!intentResponse.ok) throw new Error(intent.error || 'Erro ao iniciar pagamento')
+        if (!intentResponse.ok) throw new Error(t('payment.checkout.errors.start'))
         trackInitiate(intent)
         if (intent.provider === 'stripe') {
           const stripeResponse = await fetch('/api/compositores/pagamento/stripe/session', {
@@ -172,7 +174,7 @@ function CheckoutContent() {
             body: JSON.stringify({ planId: planSlug, subscriptionId: intent.subscriptionId }),
           })
           const stripe = await stripeResponse.json()
-          if (!stripeResponse.ok) throw new Error(stripe.error || 'Erro ao abrir Stripe')
+          if (!stripeResponse.ok) throw new Error(t('payment.checkout.errors.openStripe'))
           setInSiteCheckout({
             subscriptionId: stripe.subscriptionId,
             amount: Number(stripe.amount || intent.amount || intent.planPrice) || 0,
@@ -204,7 +206,7 @@ function CheckoutContent() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao criar preferência de pagamento')
+        throw new Error(t('payment.checkout.errors.preference'))
       }
 
       setPreferenceId(data.preferenceId)
@@ -212,11 +214,11 @@ function CheckoutContent() {
       setInitPoint(initPointUrl)
       trackInitiate(data)
 
-      if (!initPointUrl) throw new Error('Mercado Pago não retornou o link de pagamento.')
+      if (!initPointUrl) throw new Error(t('payment.checkout.errors.noPaymentLink'))
       window.location.href = initPointUrl
     } catch (err: any) {
       console.error('[CHECKOUT] Erro:', err)
-      const errorMessage = err.message || 'Erro ao processar pagamento. Tente novamente.'
+      const errorMessage = err.message || t('payment.checkout.errors.processing')
       setError(errorMessage)
     } finally {
       setLoading(false)
@@ -236,7 +238,7 @@ function CheckoutContent() {
 
     const startCheckout = async () => {
       if (!planSlug) {
-        setError('Plano não informado. Volte para a página de planos e escolha uma opção.')
+        setError(t('payment.checkout.errors.planMissing'))
         setCheckingAccess(false)
         return
       }
@@ -267,39 +269,39 @@ function CheckoutContent() {
     }
 
     startCheckout()
-  }, [planSlug, router])
+  }, [planSlug, router, t])
 
   const planIsStudio = isStudioPlan(planSlug)
   const confirmationCopy = planIsStudio
     ? {
         icon: FiMusic,
-        badge: 'DCC Studio IA',
-        title: 'Você está assinando o DCC Studio IA',
-        description: 'Este plano é para criar letras, músicas, capas e projetos usando inteligência artificial.',
+        badge: t('payment.checkout.studio.badge'),
+        title: t('payment.checkout.studio.title'),
+        description: t('payment.checkout.studio.description'),
         includes: [
-          'Criação de músicas com IA dentro do Studio IA',
-          'Créditos mensais conforme o plano escolhido',
-          'Organização dos seus projetos criados com IA',
+          t('payment.checkout.studio.includes.0'),
+          t('payment.checkout.studio.includes.1'),
+          t('payment.checkout.studio.includes.2'),
         ],
-        warning: 'Se sua intenção é apenas cadastrar músicas prontas do Spotify, SoundCloud ou outros players, escolha Compositor Premium.',
-        confirmLabel: 'Confirmar e pagar Studio IA',
+        warning: t('payment.checkout.studio.warning'),
+        confirmLabel: t('payment.checkout.studio.confirm'),
         alternativeHref: '/compositores/planos#compositor-premium',
-        alternativeLabel: 'Quero Compositor Premium',
+        alternativeLabel: t('payment.checkout.studio.alternative'),
       }
     : {
         icon: FiUploadCloud,
-        badge: 'Compositor Premium',
-        title: 'Atenção: este não é o plano Studio IA',
-        description: 'Você está comprando um plano de Compositor Premium, feito para publicar e divulgar músicas que você já tem prontas.',
+        badge: t('payment.checkout.composer.badge'),
+        title: t('payment.checkout.composer.title'),
+        description: t('payment.checkout.composer.description'),
         includes: [
-          'Cadastrar músicas prontas com link/player externo',
-          'Cadastrar vídeos e organizar sua página de compositor',
-          'Recursos de divulgação dentro do DCC Music',
+          t('payment.checkout.composer.includes.0'),
+          t('payment.checkout.composer.includes.1'),
+          t('payment.checkout.composer.includes.2'),
         ],
-        warning: 'Este plano não libera créditos mensais para criar músicas com IA. Para criar músicas novas com IA, escolha um plano DCC Studio IA.',
-        confirmLabel: 'Entendi, quero Compositor Premium',
+        warning: t('payment.checkout.composer.warning'),
+        confirmLabel: t('payment.checkout.composer.confirm'),
         alternativeHref: '/compositores/planos',
-        alternativeLabel: 'Quero Studio IA',
+        alternativeLabel: t('payment.checkout.composer.alternative'),
       }
 
   return (
@@ -310,28 +312,28 @@ function CheckoutContent() {
             {checkingAccess ? (
               <div className="text-center py-8">
                 <FiLoader className="w-12 h-12 text-primary-400 animate-spin mx-auto mb-4" />
-                <p className="text-gray-400 mb-2">Verificando seu acesso...</p>
-                <p className="text-gray-500 text-sm">Aguarde alguns segundos</p>
+                <p className="text-gray-400 mb-2">{t('payment.checkout.checkingAccess')}</p>
+                <p className="text-gray-500 text-sm">{t('payment.checkout.wait')}</p>
               </div>
             ) : loading ? (
               <div className="text-center py-8">
                 <FiLoader className="w-12 h-12 text-primary-400 animate-spin mx-auto mb-4" />
-                <p className="text-gray-400 mb-2">Processando pagamento...</p>
-                <p className="text-gray-500 text-sm">Aguarde enquanto preparamos seu checkout</p>
+                <p className="text-gray-400 mb-2">{t('payment.checkout.processingPayment')}</p>
+                <p className="text-gray-500 text-sm">{t('payment.checkout.preparingCheckout')}</p>
               </div>
             ) : alreadyHasStudioPlan ? (
               <div className="py-2">
                 <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-green-400/50 bg-green-500/15 px-3 py-1 text-xs font-bold text-green-100">
                   <FiCheckCircle />
-                  Plano ativo
+                  {t('payment.checkout.activePlan')}
                 </div>
-                <h1 className="mb-3 text-2xl font-black text-white">Você já tem um plano Studio IA</h1>
+                <h1 className="mb-3 text-2xl font-black text-white">{t('payment.checkout.alreadyStudioTitle')}</h1>
                 <p className="mb-5 text-sm leading-relaxed text-gray-300">
-                  Seu plano atual é <strong className="text-white">{currentStudioPlanName}</strong>.
-                  Se clicou em outro plano querendo mais músicas, o caminho certo é a recarga avulsa.
+                  {t('payment.checkout.currentPlanPrefix')} <strong className="text-white">{currentStudioPlanName}</strong>.
+                  {t('payment.checkout.moreSongsHint')}
                 </p>
                 <div className="mb-6 rounded-2xl border border-purple-700/60 bg-purple-950/25 p-4 text-sm text-purple-100">
-                  A recarga avulsa soma créditos extras sem trocar o plano mensal.
+                  {t('payment.checkout.topupHint')}
                 </div>
                 <div className="space-y-3">
                   <Link
@@ -339,19 +341,19 @@ function CheckoutContent() {
                     className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-4 font-bold text-white transition-all hover:from-primary-700 hover:to-purple-700"
                   >
                     <FiZap />
-                    Ir para recarga avulsa
+                    {t('payment.checkout.goTopup')}
                   </Link>
                   <Link
                     href="/compositores/admin/studio-ia/projetos"
                     className="flex w-full items-center justify-center rounded-xl border border-gray-700 px-5 py-3 font-semibold text-gray-200 transition-colors hover:border-primary-500 hover:text-primary-300"
                   >
-                    Voltar ao Studio IA
+                    {t('payment.topup.backToStudio')}
                   </Link>
                   <Link
                     href="/compositores/planos"
                     className="flex w-full items-center justify-center text-sm text-gray-400 hover:text-primary-300"
                   >
-                    Ver todos os planos
+                    {t('payment.checkout.viewAllPlans')}
                   </Link>
                 </div>
               </div>
@@ -365,7 +367,7 @@ function CheckoutContent() {
                   className="inline-flex items-center space-x-2 text-primary-400 hover:text-primary-300"
                 >
                   <FiArrowLeft className="w-4 h-4" />
-                  <span>Voltar para planos</span>
+                  <span>{t('payment.status.backToPlans')}</span>
                 </Link>
               </div>
             ) : readyToConfirm && !preferenceId ? (
@@ -384,7 +386,7 @@ function CheckoutContent() {
                 <div className="mb-5 rounded-2xl border border-gray-800 bg-black/30 p-4">
                   <p className="mb-3 flex items-center gap-2 text-sm font-bold text-gray-100">
                     <FiCheckCircle className="text-green-300" />
-                    O que este plano libera:
+                    {t('payment.checkout.unlocks')}
                   </p>
                   <ul className="space-y-2 text-sm text-gray-300">
                     {confirmationCopy.includes.map((item) => (
@@ -403,7 +405,7 @@ function CheckoutContent() {
                 }`}>
                   <div className="mb-1 flex items-center gap-2 font-bold">
                     <FiAlertTriangle />
-                    Confira antes de pagar
+                    {t('payment.checkout.checkBeforePay')}
                   </div>
                   <p>{confirmationCopy.warning}</p>
                 </div>
@@ -430,7 +432,7 @@ function CheckoutContent() {
                 {preferenceId ? (
                   <div>
                     <p className="text-gray-400 mb-4">
-                      Redirecionando para o Mercado Pago...
+                      {t('payment.checkout.redirecting')}
                     </p>
                     {initPoint && (
                       <div className="space-y-4">
@@ -438,11 +440,11 @@ function CheckoutContent() {
                           href={initPoint}
                           className="inline-flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 rounded-lg transition-all font-medium"
                         >
-                          <span>Ir para Pagamento</span>
+                          <span>{t('payment.checkout.goPayment')}</span>
                           <FiExternalLink className="w-4 h-4" />
                         </a>
                         <p className="text-gray-500 text-xs mt-4">
-                          Se não for redirecionado automaticamente, clique no botão acima
+                          {t('payment.checkout.redirectFallback')}
                         </p>
                       </div>
                     )}
@@ -450,7 +452,7 @@ function CheckoutContent() {
                 ) : (
                   <div>
                     <p className="text-gray-400 mb-4">
-                      Preparando checkout...
+                      {t('payment.checkout.preparing')}
                     </p>
                     <FiLoader className="w-8 h-8 text-primary-400 animate-spin mx-auto" />
                   </div>
@@ -462,7 +464,7 @@ function CheckoutContent() {
           {/* Informações de segurança */}
           <div className="mt-4 text-center">
             <p className="text-gray-500 text-xs">
-              🔒 Pagamento seguro processado pelo {paymentProvider === 'stripe' ? 'Stripe' : 'Mercado Pago'}
+              🔒 {t('payment.checkout.secureProcessed', { provider: paymentProvider === 'stripe' ? 'Stripe' : 'Mercado Pago' })}
             </p>
           </div>
         </div>
@@ -486,7 +488,7 @@ function CheckoutContent() {
               }),
             })
             const result = await response.json()
-            if (!response.ok) throw new Error(result.error || 'Erro ao processar pagamento')
+            if (!response.ok) throw new Error(t('payment.checkout.errors.processing'))
             return result
           }}
           onCheckStatus={async (paymentId) => {
@@ -499,7 +501,7 @@ function CheckoutContent() {
               }
             )
             const result = await response.json()
-            if (!response.ok) throw new Error(result.error || 'Erro ao conferir pagamento')
+            if (!response.ok) throw new Error(t('payment.checkout.errors.checkPayment'))
             if (paymentId && !result.paymentId) result.paymentId = paymentId
             return result
           }}

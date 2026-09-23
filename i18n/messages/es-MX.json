@@ -239,5 +239,191 @@
       "login": "Ir al inicio de sesión",
       "entering": "Entrando a tu panel..."
     }
+  },
+  "payment": {
+    "plans": {
+      "title": "Planes de Suscripción",
+      "subtitle": "Elige cómo quieres crear, publicar y promocionar tus canciones.",
+      "tipLabel": "Consejo:",
+      "tip": "DCC Studio IA sirve para crear música con inteligencia artificial. Los planes de compositor sirven para publicar y promocionar canciones y videos en DCC Music.",
+      "topup": {
+        "noMonthly": "Sin mensualidad",
+        "title": "Recarga de canciones",
+        "description": "Si no quieres suscribirte ahora, elige cuántas canciones quieres comprar y el sistema calcula el valor automáticamente.",
+        "one": "1 canción",
+        "twoToEight": "2 a 8 canciones",
+        "nineToTwentyNine": "9 a 29 canciones",
+        "thirtyPlus": "30 o más",
+        "perSong": "por canción",
+        "buy": "Comprar Recarga"
+      },
+      "studio": {
+        "title": "Planes DCC Studio IA",
+        "description": "Nuestro producto principal: crea letras, canciones, portadas y proyectos con IA.",
+        "empty": "No hay planes de Studio IA activos en este momento.",
+        "popular": "MÁS POPULAR",
+        "subscribe": "Suscribirme a Studio IA"
+      },
+      "composer": {
+        "title": "Planes para Compositor Premium",
+        "description": "Publica tus canciones y videos en DCC Music con una página exclusiva.",
+        "empty": "No hay planes de compositor disponibles en este momento.",
+        "gold": "Plan Oro",
+        "subscribe": "Suscribirme Ahora"
+      },
+      "period": {
+        "month": "mes",
+        "months": "{{count}} meses",
+        "year": "año"
+      },
+      "unavailable": "No disponible",
+      "checkingPlan": "Comprobando plan...",
+      "alreadyActiveTitle": "Ya tienes un plan activo en esta categoría",
+      "alreadyActive": "Plan ya activo"
+    },
+    "checkout": {
+      "errors": {
+        "start": "No se pudo iniciar el pago. Inténtalo de nuevo.",
+        "openStripe": "No se pudo abrir el método de pago alternativo.",
+        "preference": "No se pudo preparar el pago.",
+        "noPaymentLink": "El proveedor de pago no devolvió un enlace de pago.",
+        "processing": "No se pudo procesar el pago. Inténtalo de nuevo.",
+        "planMissing": "No se indicó un plan. Vuelve a la página de planes y elige una opción.",
+        "checkPayment": "No se pudo comprobar el pago en este momento."
+      },
+      "checkingAccess": "Comprobando tu acceso...",
+      "wait": "Espera unos segundos",
+      "processingPayment": "Procesando pago...",
+      "preparingCheckout": "Espera mientras preparamos el checkout",
+      "activePlan": "Plan activo",
+      "alreadyStudioTitle": "Ya tienes un plan Studio IA",
+      "currentPlanPrefix": "Tu plan actual es",
+      "moreSongsHint": "Si elegiste otro plan porque quieres más canciones, la opción correcta es una recarga.",
+      "topupHint": "La recarga añade créditos extra sin cambiar tu plan mensual.",
+      "goTopup": "Ir a la recarga",
+      "viewAllPlans": "Ver todos los planes",
+      "unlocks": "Lo que incluye este plan:",
+      "checkBeforePay": "Revisa antes de pagar",
+      "redirecting": "Redirigiendo a Mercado Pago...",
+      "goPayment": "Ir al Pago",
+      "redirectFallback": "Si no eres redirigido automáticamente, haz clic en el botón de arriba",
+      "preparing": "Preparando checkout...",
+      "secureProcessed": "Pago seguro procesado por {{provider}}",
+      "studio": {
+        "badge": "DCC Studio IA",
+        "title": "Te estás suscribiendo a DCC Studio IA",
+        "description": "Este plan sirve para crear letras, canciones, portadas y proyectos usando inteligencia artificial.",
+        "includes": [
+          "Creación de canciones con IA dentro de Studio IA",
+          "Créditos mensuales según el plan elegido",
+          "Organización de tus proyectos creados con IA"
+        ],
+        "warning": "Si solo quieres publicar canciones ya terminadas de Spotify, SoundCloud u otros reproductores, elige Compositor Premium.",
+        "confirm": "Confirmar y pagar Studio IA",
+        "alternative": "Quiero Compositor Premium"
+      },
+      "composer": {
+        "badge": "Compositor Premium",
+        "title": "Atención: este no es el plan Studio IA",
+        "description": "Estás comprando un plan de Compositor Premium para publicar y promocionar canciones que ya tienes terminadas.",
+        "includes": [
+          "Publicar canciones terminadas con enlace/reproductor externo",
+          "Publicar videos y organizar tu página de compositor",
+          "Recursos de promoción dentro de DCC Music"
+        ],
+        "warning": "Este plan no incluye créditos mensuales para crear música con IA. Para crear nuevas canciones con IA, elige un plan DCC Studio IA.",
+        "confirm": "Entiendo, quiero Compositor Premium",
+        "alternative": "Quiero Studio IA"
+      }
+    },
+    "status": {
+      "processing": "Procesando...",
+      "approvedTitle": "¡Pago Aprobado!",
+      "approvedDescription": "Tu suscripción fue activada correctamente. ¡Ahora puedes publicar tus canciones y videos!",
+      "goToComposerArea": "Ir al Área del Compositor",
+      "pendingTitle": "Pago Pendiente",
+      "pendingDescription": "Tu pago se está procesando. Recibirás una confirmación por correo cuando sea aprobado.",
+      "failedTitle": "Pago No Aprobado",
+      "failedDescription": "El pago no fue procesado. Inténtalo de nuevo o ponte en contacto con nosotros.",
+      "backToPlans": "Volver a Planes"
+    },
+    "topup": {
+      "backToStudio": "Volver a Studio IA",
+      "page": {
+        "badge": "Recarga",
+        "title": "Compra créditos extra para seguir creando",
+        "description": "Escribe cuántas canciones quieres comprar. El valor cambia automáticamente según la franja de precio.",
+        "balance": "Saldo actual",
+        "credits": "{{count}} créditos",
+        "used": "Usados {{used}} de {{limit}}. Cada canción usa 10 créditos.",
+        "quantityQuestion": "¿Cuántas canciones quieres comprar?",
+        "songs": "{{count}} canciones",
+        "extraCredits": "{{count}} créditos extra",
+        "autoRelease": "Liberación automática después del pago aprobado",
+        "securePayment": "Pago seguro con tarjeta o método local disponible",
+        "perSong": "por canción",
+        "summary": "{{count}} canciones x",
+        "buy": "Comprar Recarga",
+        "singleTier": "Canción individual"
+      },
+      "errors": {
+        "loadPackages": "Error al cargar los paquetes.",
+        "loadBalance": "Error al cargar el saldo.",
+        "load": "Error al cargar la recarga.",
+        "confirm": "Error al confirmar la recarga.",
+        "check": "Error al comprobar la recarga."
+      },
+      "success": {
+        "checking": "Comprobando la confirmación del pago...",
+        "awaitingConfirmation": "Cuando el pago sea confirmado, los créditos aparecerán en tu saldo de Studio IA.",
+        "paid": "Pago confirmado. Tus créditos ya están disponibles en Studio IA.",
+        "received": "Pago recibido. La recarga se liberará automáticamente cuando llegue la confirmación final.",
+        "webhookFallback": "No fue posible confirmarlo automáticamente ahora. La confirmación por webhook todavía puede liberar tus créditos.",
+        "title": "Recarga aprobada"
+      },
+      "pending": {
+        "checking": "Comprobando si el pago ya fue confirmado...",
+        "autoRelease": "La recarga se liberará automáticamente cuando el pago sea confirmado.",
+        "received": "Pago recibido. Estamos esperando la confirmación final...",
+        "releasedTitle": "Recarga liberada",
+        "title": "Pago pendiente"
+      },
+      "failure": {
+        "title": "Pago rechazado",
+        "description": "Esta recarga no se completó y no se agregaron créditos.",
+        "explanation": "Si tu tarjeta fue rechazada, la decisión provino del banco emisor, no de DCC Music. Prueba con otra tarjeta o confirma con tu banco que las compras en línea estén habilitadas.",
+        "action": "Intentar de nuevo"
+      }
+    },
+    "overlay": {
+      "couldNotComplete": "No se pudo completar el pago.",
+      "openError": "No se pudo abrir el pago en esta página.",
+      "approved": "Pago aprobado",
+      "pixTitle": "Paga con Pix en este dispositivo",
+      "pixDescription": "Copia el código, paga en tu banco y vuelve aquí. Cuando Mercado Pago lo confirme, esta pantalla continuará automáticamente.",
+      "copyError": "No se pudo copiar el código automáticamente. Mantén presionado el código y elige Copiar.",
+      "codeCopied": "¡Código copiado!",
+      "copyPix": "Copiar código Pix",
+      "pixCode": "Código Pix",
+      "openPixBank": "Abrir Pix en el banco",
+      "checkingPix": "Comprobando si Mercado Pago ya reconoció el pago...",
+      "pixRecognized": "Cuando se reconozca el pago, irás a la pantalla de éxito.",
+      "notConfirmedYet": "Todavía no fue posible confirmarlo. Inténtalo de nuevo en unos segundos.",
+      "checkNow": "Ya pagué — comprobar ahora",
+      "payHere": "Paga de forma segura sin salir de DCC Music.",
+      "fallbackUnavailable": "Método de pago alternativo no disponible.",
+      "title": "Pago",
+      "openingStripe": "Abriendo Stripe...",
+      "useStripe": "Usar método de pago alternativo (Stripe)",
+      "payWithoutLeaving": "Paga aquí sin salir de DCC Music.",
+      "continueMp": "Continuar en Mercado Pago"
+    },
+    "stripe": {
+      "title": "Pago con tarjeta",
+      "loading": "Cargando pago seguro...",
+      "declineTitle": "Si tu tarjeta es rechazada",
+      "declineText": "El rechazo proviene del banco emisor de la tarjeta, no de DCC Music. No se agregan créditos hasta que el pago sea aprobado. Prueba con otra tarjeta o confirma con tu banco que las compras en línea estén habilitadas.",
+      "openError": "No se pudo abrir el método de pago alternativo."
+    }
   }
 }

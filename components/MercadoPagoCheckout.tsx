@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
 import { useEffect, useId, useRef, useState } from 'react'
 import { FiCheckCircle, FiX } from 'react-icons/fi'
 import { getMercadoPagoPublicKey, isMercadoPagoInSiteCheckoutEnabled } from '@/lib/mp-in-site-checkout'
@@ -86,6 +87,7 @@ export function MercadoPagoPaymentBrick({
   onCheckStatus?: (paymentId?: string | null) => Promise<any>
   onPaid: (result: any) => void
 }) {
+  const { t } = useTranslation()
   const reactId = useId().replace(/:/g, '')
   const containerId = `mp-payment-${reactId}`
   const controllerRef = useRef<{ unmount?: () => void } | null>(null)
@@ -162,7 +164,7 @@ export function MercadoPagoPaymentBrick({
                       return
                     }
 
-                    reject(new Error(result?.error || 'Não foi possível concluir o pagamento.'))
+                    reject(new Error(t('payment.overlay.couldNotComplete')))
                   })
                   .catch((submitError) => reject(submitError))
               })
@@ -170,7 +172,7 @@ export function MercadoPagoPaymentBrick({
           },
         })
       } catch (err: any) {
-        if (!cancelled) setError(err.message || 'Não foi possível abrir o pagamento no site.')
+        if (!cancelled) setError(err.message || t('payment.overlay.openError'))
       }
     })()
 
@@ -224,7 +226,7 @@ export function MercadoPagoPaymentBrick({
     return (
       <div className="py-6 text-center">
         <FiCheckCircle className="mx-auto mb-3 h-10 w-10 text-green-400" />
-        <p className="font-bold text-white">Pagamento aprovado</p>
+        <p className="font-bold text-white">{t('payment.overlay.approved')}</p>
       </div>
     )
   }
@@ -232,9 +234,9 @@ export function MercadoPagoPaymentBrick({
   if (pix) {
     return (
       <div className="space-y-3 text-center">
-        <p className="font-bold text-white">Pague com Pix neste celular</p>
+        <p className="font-bold text-white">{t('payment.overlay.pixTitle')}</p>
         <p className="text-sm text-gray-300">
-          Copie o código, pague no banco e volte aqui. Quando o Mercado Pago confirmar, esta tela vai sozinha para o sucesso.
+          {t('payment.overlay.pixDescription')}
         </p>
         {pix.qrCodeBase64 ? (
           <img
@@ -249,7 +251,7 @@ export function MercadoPagoPaymentBrick({
             onClick={async () => {
               const ok = await copyText(pix.qrCode || '')
               if (!ok) {
-                setError('Não deu para copiar sozinho. Segure o código abaixo e toque em Copiar.')
+                setError(t('payment.overlay.copyError'))
                 return
               }
               setError('')
@@ -258,7 +260,7 @@ export function MercadoPagoPaymentBrick({
             }}
             className="w-full rounded-lg bg-primary-600 px-4 py-3 text-sm font-bold text-white"
           >
-            {pixCopied ? 'Código copiado!' : 'Copiar código Pix'}
+            {pixCopied ? t('payment.overlay.codeCopied') : t('payment.overlay.copyPix')}
           </button>
         ) : null}
         {pix.qrCode ? (
@@ -267,18 +269,18 @@ export function MercadoPagoPaymentBrick({
             value={pix.qrCode}
             onFocus={(event) => event.currentTarget.select()}
             className="h-20 w-full resize-none rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-xs text-gray-200"
-            aria-label="Código Pix"
+            aria-label={t('payment.overlay.pixCode')}
           />
         ) : null}
         {pix.ticketUrl ? (
           <a href={pix.ticketUrl} target="_blank" rel="noreferrer" className="block text-sm text-primary-300">
-            Abrir Pix no banco
+            {t('payment.overlay.openPixBank')}
           </a>
         ) : null}
         <p className="text-sm text-primary-200">
           {checkingPayment
-            ? 'Conferindo se o Mercado Pago já reconheceu o pagamento...'
-            : 'Assim que o pagamento for reconhecido, você vai para a tela de recarga com sucesso.'}
+            ? t('payment.overlay.checkingPix')
+            : t('payment.overlay.pixRecognized')}
         </p>
         <button
           type="button"
@@ -294,14 +296,14 @@ export function MercadoPagoPaymentBrick({
               }
               setError('')
             } catch (err: any) {
-              setError(err.message || 'Ainda não deu para confirmar. Tente de novo em alguns segundos.')
+              setError(err.message || t('payment.overlay.notConfirmedYet'))
             } finally {
               setCheckingPayment(false)
             }
           }}
           className="w-full rounded-lg border border-gray-600 px-4 py-3 text-sm font-bold text-white"
         >
-          Já paguei — conferir agora
+          {t('payment.overlay.checkNow')}
         </button>
         {error ? <p className="text-center text-sm text-red-300">{error}</p> : null}
       </div>
@@ -310,7 +312,7 @@ export function MercadoPagoPaymentBrick({
 
   return (
     <div className="space-y-3">
-      <p className="text-center text-sm text-gray-300">Pague com Pix ou cartão, sem sair do DCC Music.</p>
+      <p className="text-center text-sm text-gray-300">{t('payment.overlay.payHere')}</p>
       <div id={containerId} className="min-h-[120px]" />
       {error ? <p className="text-center text-sm text-red-300">{error}</p> : null}
     </div>
@@ -334,6 +336,7 @@ export function MercadoPagoPaymentOverlay({
   onClose: () => void
   onUseFallback?: () => void | Promise<void>
 }) {
+  const { t } = useTranslation()
   const [fallbackLoading, setFallbackLoading] = useState(false)
   const [fallbackError, setFallbackError] = useState('')
 
@@ -344,7 +347,7 @@ export function MercadoPagoPaymentOverlay({
       setFallbackError('')
       await onUseFallback()
     } catch (error: any) {
-      setFallbackError(error?.message || 'Pagamento alternativo indisponível.')
+      setFallbackError(error?.message || t('payment.overlay.fallbackUnavailable'))
     } finally {
       setFallbackLoading(false)
     }
@@ -357,11 +360,11 @@ export function MercadoPagoPaymentOverlay({
           type="button"
           onClick={onClose}
           className="absolute right-4 top-4 text-gray-400 hover:text-white"
-          title="Fechar"
+          title={t('common.actions.close')}
         >
           <FiX className="h-5 w-5" />
         </button>
-        <h2 className="mb-4 pr-8 text-xl font-black text-white">Pagamento</h2>
+        <h2 className="mb-4 pr-8 text-xl font-black text-white">{t('payment.overlay.title')}</h2>
         <MercadoPagoPaymentBrick
           amount={amount}
           email={email}
@@ -376,7 +379,7 @@ export function MercadoPagoPaymentOverlay({
             disabled={fallbackLoading}
             className="mt-4 w-full rounded-xl border border-gray-600 px-4 py-3 text-sm font-bold text-gray-200 hover:border-primary-400 hover:text-white"
           >
-            {fallbackLoading ? 'Abrindo Stripe...' : 'Usar pagamento alternativo (Stripe)'}
+            {fallbackLoading ? t('payment.overlay.openingStripe') : t('payment.overlay.useStripe')}
           </button>
         ) : null}
         {fallbackError ? <p className="mt-2 text-center text-sm text-red-300">{fallbackError}</p> : null}
@@ -392,6 +395,7 @@ export function MercadoPagoWalletBrick({
   preferenceId: string
   initPoint?: string | null
 }) {
+  const { t } = useTranslation()
   const reactId = useId().replace(/:/g, '')
   const containerId = `mp-wallet-${reactId}`
   const controllerRef = useRef<{ unmount?: () => void } | null>(null)
@@ -422,7 +426,7 @@ export function MercadoPagoWalletBrick({
           },
         })
       } catch (err: any) {
-        if (!cancelled) setError(err.message || 'Não foi possível abrir o pagamento no site.')
+        if (!cancelled) setError(err.message || t('payment.overlay.openError'))
       }
     })()
 
@@ -435,7 +439,7 @@ export function MercadoPagoWalletBrick({
 
   return (
     <div className="space-y-3">
-      <p className="text-center text-sm text-gray-300">Pague aqui mesmo, sem sair do DCC Music.</p>
+      <p className="text-center text-sm text-gray-300">{t('payment.overlay.payWithoutLeaving')}</p>
       <div id={containerId} className="min-h-[52px]" />
       {error ? (
         <div className="space-y-2 text-center">
@@ -445,7 +449,7 @@ export function MercadoPagoWalletBrick({
               href={initPoint}
               className="inline-flex rounded-lg bg-primary-600 px-4 py-2 text-sm font-bold text-white hover:bg-primary-700"
             >
-              Continuar no Mercado Pago
+              {t('payment.overlay.continueMp')}
             </a>
           ) : null}
         </div>
@@ -455,6 +459,7 @@ export function MercadoPagoWalletBrick({
 }
 
 export function useMercadoPagoCheckout() {
+  const { t } = useTranslation()
   const [session, setSession] = useState<{ preferenceId: string; initPoint: string | null } | null>(null)
 
   const startCheckout = (input: { preferenceId?: string | null; initPoint?: string | null }) => {
@@ -464,7 +469,7 @@ export function useMercadoPagoCheckout() {
       return
     }
     if (!initPoint) {
-      throw new Error('Mercado Pago não retornou o link de pagamento.')
+      throw new Error(t('payment.checkout.errors.noPaymentLink'))
     }
     window.location.href = initPoint
   }
