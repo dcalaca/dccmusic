@@ -1461,7 +1461,7 @@ export default function StudioProjectDetailPage() {
           )}
 
           {showPublishPlanModal && (
-            <PublishPlanModal message={message} onClose={() => setShowPublishPlanModal(false)} />
+            <PublishPlanModal message={publishPlanRequiredMessage} onClose={() => setShowPublishPlanModal(false)} />
           )}
 
           {videoCreditConfirmation && (
@@ -2720,7 +2720,7 @@ function PublishPlanModal({ message, onClose }: { message: string; onClose: () =
         </div>
         <h2 className="text-2xl font-black text-white">Para publicar, precisa de plano ativo</h2>
         <p className="mt-3 text-sm leading-relaxed text-amber-50/90">
-          {publishPlanRequiredMessage}
+          {message}
         </p>
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-gray-300">
           <p><span className="font-semibold text-white">Recarga / créditos:</span> criar e gerar músicas</p>
