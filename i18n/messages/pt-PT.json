@@ -65,7 +65,9 @@
           "similar": "Parecida com a anterior",
           "sameStyleNewMelody": "Mesmo estilo, mas melodia diferente",
           "creative": "Mais criativa / mais diferente da anterior"
-        }
+        },
+        "using": "Usando inspiração",
+        "ready": "Pronto para criar música"
       },
       "versions": {
         "previous": "Ver versão anterior",
@@ -127,13 +129,24 @@
         "unpublishConfirm": "Quer mesmo despublicar esta música? A página pública sairá do ar, mas o projeto, a letra, a capa e o áudio continuarão salvos.",
         "unpublishing": "Despublicando música...",
         "unpublishError": "Erro ao despublicar.",
-        "unpublished": "Música despublicada. Ela saiu da página pública, mas continua salva no seu projeto."
+        "unpublished": "Música despublicada. Ela saiu da página pública, mas continua salva no seu projeto.",
+        "unpublish": "Despublicar música",
+        "publish": "Publicar música no DCC Music",
+        "viewPublic": "Ver página pública",
+        "afterPublish": "Depois de publicar, a música ganha uma página pública para você enviar para outras pessoas.",
+        "embedHint": "Publique a música para liberar o link público e a opção de colocar em outro site."
       },
       "cover": {
         "proOnly": "A capa profissional está disponível a partir do Studio Pro.",
-        "generating": "Gerando capa profissional...",
+        "generating": "A IA está criando uma imagem mais bonita. Isso pode levar alguns segundos.",
         "error": "Erro ao melhorar capa.",
-        "created": "Capa profissional criada."
+        "created": "Capa profissional criada.",
+        "deleteConfirm": "Excluir esta capa do projeto? As outras capas continuarão salvas.",
+        "primaryUpdated": "Capa principal atualizada.",
+        "deleted": "Capa excluída.",
+        "afterMusic": "A capa aparece aqui depois que a música for criada.",
+        "professionalHint": "A capa profissional é uma imagem mais bonita feita por IA. Ela depende do seu plano.",
+        "loadingPermissions": "Carregando permissões do plano..."
       },
       "lyrics": {
         "title": "Letra da música",
@@ -181,7 +194,40 @@
         "download": "Baixe seu vídeo",
         "browserUnsupported": "Seu navegador não reproduz este vídeo.",
         "previewHint": "Preview para revisão. Use o play e o ícone de som na barra do player.",
-        "detail": "Detalhe: {{detail}}"
+        "detail": "Detalhe: {{detail}}",
+        "selectAudio": "Escolha uma versão com áudio antes de gerar o vídeo com letra.",
+        "generateError": "Erro ao gerar vídeo com letra.",
+        "processing": "Vídeo com letra em produção.",
+        "noStatus": "A solicitação foi enviada, mas o status do vídeo não foi retornado.",
+        "confirmTitle": "Gerar vídeo com letra?",
+        "confirmText": "A geração deste vídeo consome 5 créditos. Deseja continuar?",
+        "transitionHint": "Projetos anteriores à virada e a cortesia de transição são identificados automaticamente e não terão créditos descontados.",
+        "title": "Vídeo com letra"
+      },
+      "messages": {
+        "ready": "Sua música ficou pronta. Atualizamos esta página automaticamente."
+      },
+      "notFound": "Projeto não encontrado",
+      "supportCode": "Código do projeto para suporte",
+      "versionSummary": "Este projeto tem {{count}} versões geradas.",
+      "versionHint": "As versões aparecem abaixo para você ouvir e escolher.",
+      "instructions": {
+        "title": "Outras instruções para a música",
+        "hint": "Opcional. Use para orientar voz, emoção, interpretação, instrumentos ou detalhes da próxima geração."
+      },
+      "processing": {
+        "title": "Sua música está sendo criada",
+        "noRepeat": "Não precisa clicar em criar música novamente. Sua solicitação já foi enviada para produção.",
+        "autoUpdate": "Quando o áudio ficar pronto, esta página atualiza sozinha e também enviamos um e-mail.",
+        "closeHint": "Fechar não cancela a música. Avisaremos por e-mail quando ela ficar pronta.",
+        "preview": "Prévia disponível enquanto finalizamos a música completa."
+      },
+      "upgrade": {
+        "noBalance": "Você já usou sua música grátis ou está sem saldo",
+        "title": "Continue criando músicas",
+        "description": "Escolha um plano mensal ou compre créditos avulsos para continuar criando.",
+        "viewPlans": "Ver planos do DCC Studio IA",
+        "buyTopup": "Comprar recarga avulsa"
       }
     },
     "entry": {
@@ -413,7 +459,7 @@
       "empty": "Nenhum projeto nesta categoria.",
       "createFirst": "Criar minha primeira música",
       "openProject": "Abrir projeto",
-      "useAsInspiration": "Usar como inspiração",
+      "useAsInspiration": "Usar de inspiração",
       "actions": {
         "createTranscription": "Criar cifra",
         "downloadPdf": "Baixar cifra em PDF",
@@ -433,7 +479,233 @@
         "isolatedVoice": "Voz isolada",
         "fileUnavailable": "Arquivo indisponível.",
         "createdFromOriginal": "Criado a partir de música original enviada"
+      },
+      "fileUnavailable": "Arquivo indisponível.",
+      "versionCount": "{{count}} versões",
+      "fromOriginal": "Criado a partir de uma música original enviada",
+      "chooseVersion": "Abra para escolher entre {{count}} versões geradas"
+    },
+    "tools": {
+      "improve": {
+        "back": "Voltar ao Studio IA",
+        "badge": "Melhorar música",
+        "title": "Como você quer enviar sua música?",
+        "subtitle": "Escolha o caminho mais fácil: enviar um áudio pronto ou gravar uma ideia agora pelo microfone.",
+        "uploadTitle": "Enviar música pronta",
+        "uploadDescription": "Use quando você já tem uma gravação, demo, guia, voz e violão ou áudio do celular.",
+        "chooseFile": "Escolher arquivo",
+        "recordTitle": "Gravar agora",
+        "recordDescription": "Use quando você quer cantar no próprio site. Depois a IA mostra a letra que entendeu para você revisar.",
+        "openRecorder": "Abrir gravador",
+        "important": "Importante:",
+        "importantText": "Cantar no microfone ajuda muito quem não gosta de digitar. A IA pode errar algumas palavras, então sempre mostramos a letra antes para você corrigir."
+      },
+      "record": {
+        "back": "Voltar",
+        "badge": "Gravar agora",
+        "title": "Cante sua ideia e deixe a IA transformar em música",
+        "subtitle": "Grave pelo microfone, confira a letra que a IA entendeu e escolha se quer completar a música ou produzir a versão final. A gravação para automaticamente em 4:30.",
+        "step1": "1. Grave sua voz",
+        "step1Hint": "Pode cantar só um trecho ou a música inteira. Máximo: 4 minutos e 30 segundos.",
+        "start": "Começar gravação",
+        "stop": "Parar gravação",
+        "listen": "Ouça antes de continuar",
+        "transcribe": "Entender letra (1 crédito)",
+        "recordAgain": "Gravar de novo",
+        "step2": "2. Revise a letra",
+        "step2Hint": "A IA pode errar palavras cantadas. Corrija antes de produzir.",
+        "songTitle": "Nome da música",
+        "songTitlePlaceholder": "Ex.: Chave Falsa",
+        "style": "Estilo desejado",
+        "stylePlaceholder": "Ex.: sertanejo, arrocha...",
+        "notes": "Observação para a IA",
+        "notesPlaceholder": "Ex.: quero mais sofrida, refrão forte...",
+        "complete": "Completar minha música",
+        "ready": "Minha música já está pronta",
+        "errors": {
+          "recorderUnavailable": "Seu navegador não liberou o gravador. Tente pelo Chrome no celular ou computador.",
+          "microphone": "Não consegui acessar o microfone. Veja se o navegador pediu permissão e tente novamente.",
+          "recordFirst": "Grave um áudio antes de transcrever.",
+          "transcribe": "Não consegui entender o áudio.",
+          "lyricRequired": "Transcreva ou escreva um trecho antes de pedir para completar.",
+          "completeLyric": "Não consegui completar a letra.",
+          "recordBeforeCreate": "Grave um áudio antes de criar a música.",
+          "titleRequired": "Informe o nome da música.",
+          "longerLyric": "Revise a letra e deixe pelo menos um trecho maior antes de criar a música.",
+          "create": "Erro ao criar música."
+        },
+        "messages": {
+          "maxDuration": "A gravação parou automaticamente no limite de 4 minutos e 30 segundos.",
+          "transcribed": "Letra transcrita. Foram debitados {{count}} crédito(s). Revise e corrija se precisar.",
+          "lyricCompleted": "Completei a letra. Revise antes de produzir a música.",
+          "started": "Produção iniciada. Vamos abrir o projeto para você acompanhar."
+        }
+      },
+      "playback": {
+        "errors": {
+          "load": "Erro ao carregar a música.",
+          "versionMismatch": "Essa versão não pertence ao projeto escolhido.",
+          "invalidFile": "Escolha um arquivo de áudio válido.",
+          "maxSize": "O áudio precisa ter no máximo 10 MB.",
+          "prepareUpload": "Não foi possível preparar o envio.",
+          "upload": "Erro ao enviar a música.",
+          "create": "Não foi possível criar o playback.",
+          "refunded": " Seus 10 créditos foram devolvidos."
+        },
+        "loadingVersion": "Carregando a versão escolhida...",
+        "mySong": "Minha música",
+        "version": "Versão",
+        "cost": "Custo",
+        "credits": "créditos",
+        "projectCostHint": "O valor é o mesmo da criação de uma música. Depois de concluído, o playback e a voz ficam salvos neste projeto. Se não for possível concluir, os créditos serão estornados automaticamente.",
+        "processing": "Retirando a voz...",
+        "createForCredits": "Criar playback por {{count}} créditos",
+        "uploadSong": "Enviar minha música",
+        "uploadHint": "MP3, WAV, M4A ou outro áudio · até 10 MB",
+        "chooseDcc": "Escolher música do DCC",
+        "chooseDccHint": "Selecione uma versão já produzida",
+        "uploaded": "Música enviada",
+        "refundHint": "Os créditos só serão debitados quando você iniciar. Se não for possível concluir, o valor será estornado automaticamente.",
+        "wait": "Isso pode levar alguns minutos. Mantenha esta página aberta.",
+        "saved": "Arquivos salvos no projeto",
+        "complete": "Separação concluída!",
+        "savedHint": "Seu playback e a voz isolada ficam disponíveis aqui para você ouvir e baixar novamente quando quiser.",
+        "readyHint": "Seu playback e a voz isolada estão prontos.",
+        "instrumental": "Playback / instrumental",
+        "downloadInstrumental": "Baixar playback",
+        "vocal": "Voz isolada",
+        "downloadVocal": "Baixar voz",
+        "noVocal": "O provedor concluiu o playback, mas não disponibilizou a voz separada.",
+        "another": "Criar uma nova separação"
+      },
+      "coupon": {
+        "errors": {
+          "codeRequired": "Digite o código do cupom.",
+          "invalid": "Cupom inválido.",
+          "check": "Erro ao verificar cupom.",
+          "apply": "Erro ao aplicar cupom.",
+          "payment": "Não foi possível abrir o pagamento."
+        },
+        "successTitle": "Cupom aplicado!",
+        "successText": "Você ganhou {{count}} música(s). Já estão disponíveis no seu saldo.",
+        "createNow": "Criar música agora",
+        "back": "Voltar ao Studio IA",
+        "title": "Tenho um cupom",
+        "subtitle": "Digite o código que você recebeu.",
+        "codeLabel": "Código do cupom",
+        "check": "Verificar cupom",
+        "activeTitle": "Uau, esse cupom está ativo!",
+        "activeSubtitle": "Veja o que você vai receber:",
+        "code": "Código",
+        "songs": "Músicas",
+        "amount": "Valor a pagar",
+        "unitPrice": "Preço por música",
+        "value": "Valor",
+        "free": "GRÁTIS",
+        "validUntil": "Válido até",
+        "alreadyRedeemed": "Você já resgatou este cupom grátis antes. Ele só pode ser usado uma vez por pessoa.",
+        "continuePayment": "Continuar para o pagamento",
+        "redeem": "Resgatar agora",
+        "useAnother": "Usar outro código",
+        "paymentHint": "Você será levado ao pagamento para pagar {{amount}}. As músicas entram automaticamente após a confirmação."
+      },
+      "ready": {
+        "errors": {
+          "chooseAudioTranscribe": "Escolha o áudio da música antes de pedir para entender a letra.",
+          "transcribe": "Não consegui entender o áudio.",
+          "chooseAudio": "Escolha o áudio da música que deseja melhorar.",
+          "translationRequired": "Para adaptar para outro idioma, cole a letra já traduzida ou adaptada no campo “Letra da música”.",
+          "maxDuration": "Esse áudio passou de 4 minutos e 30 segundos. Envie uma versão mais curta para a IA trabalhar melhor.",
+          "improve": "Erro ao melhorar música."
+        },
+        "messages": {
+          "transcribing": "Enviando áudio e entendendo a letra...",
+          "transcribed": "Letra transcrita. Foram debitados {{count}} crédito(s). Revise e corrija se precisar antes de melhorar.",
+          "sending": "Enviando música...",
+          "starting": "Enviando áudio, entendendo a letra e iniciando a melhoria...",
+          "transcribedStarted": "Letra transcrita do áudio e melhoria iniciada. Abrindo o projeto...",
+          "started": "Melhoria iniciada. Vamos abrir o projeto para você acompanhar."
+        },
+        "badge": "Música pronta",
+        "title": "Enviar música pronta",
+        "subtitle": "Envie uma música já gravada (voz e violão, demo, celular...). A IA tenta manter melodia, letra e essência, com produção mais profissional e duração máxima de 4:30.",
+        "transcriptionHint": "Sem letra digitada? Ao clicar em Melhorar, a IA transcreve a letra do áudio incluída nos 10 créditos.",
+        "reviewHint": "Se quiser revisar antes, use “Entender letra” (custa 1 crédito).",
+        "costHint": "Custo: 10 créditos na melhoria. “Entender letra” avulso: 1 crédito.",
+        "songTitle": "Nome da música",
+        "songTitlePlaceholder": "Ex.: Minha canção",
+        "genre": "Gênero/ritmo desejado",
+        "keepGenre": "Manter o ritmo original",
+        "genreHint": "Você pode transformar, por exemplo, reggae em samba.",
+        "genrePlaceholder": "Escreva o gênero ou ritmo",
+        "language": "Idioma e sotaque da nova versão",
+        "languageHint": "Define a pronúncia da voz. Escolha o idioma correspondente ao sotaque desejado.",
+        "audio": "Áudio da música",
+        "audioHint": "Use áudio de até 4 minutos e 30 segundos (máx. 80 MB). Pode ser demo, guia, voz e violão ou gravação do celular.",
+        "whatImprove": "O que você quer melhorar?",
+        "extraInstructions": "Instruções adicionais (opcional)",
+        "extraHint": "Diga o que deseja mudar ou preservar. Essas instruções são enviadas separadas da letra.",
+        "extraPlaceholder": "Ex.: mantenha a melodia, o ritmo e o instrumental e use uma interpretação mais suave.",
+        "details": "Detalhes da nova versão",
+        "mood": "Clima da música",
+        "voiceTone": "Característica da voz",
+        "structure": "Estrutura desejada",
+        "lyricLength": "Tamanho da letra",
+        "instruments": "Instrumentos que você quer (opcional)",
+        "instrumentsPlaceholder": "Ex.: violão, acordeon e bateria",
+        "voiceChoiceHint": "Escolha se quer preservar a voz do áudio ou pedir uma nova interpretação.",
+        "voiceStyle": "Estilo da voz",
+        "voiceChangeHint": "Ao trocar o tipo de voz, a IA recebe um pouco mais de liberdade para mudar a interpretação sem perder a composição original.",
+        "lyrics": "Letra da música",
+        "transcribing": "Entendendo letra...",
+        "transcribe": "Entender letra (1 crédito)",
+        "adapt": "Adaptar minha música",
+        "improve": "Melhorar minha música"
+      },
+      "cover": {
+        "errors": {
+          "load": "Erro ao carregar criação de capa.",
+          "maxPhotos": "Envie no máximo 3 fotos de referência."
+        },
+        "subtitle": "Envie até 3 fotos da pessoa como referência ou crie só pelo texto. A IA interpreta seu pedido e cria uma capa profissional com nome da música e artista.",
+        "credits": "créditos",
+        "qualityHint": "Quanto maior a qualidade, melhor tende a ficar a semelhança com fotos.",
+        "balance": "Seu saldo atual",
+        "buyCredits": "Comprar créditos",
+        "songTitle": "Nome da música",
+        "musicStyle": "Estilo musical",
+        "visualStyle": "Estilo visual",
+        "environment": "Ambiente",
+        "artDirection": "Tipo de arte",
+        "prompt": "O que você quer na capa?",
+        "promptHint": "Pode escrever simples. A IA vai interpretar e transformar em uma direção visual profissional.",
+        "proHint": "Para foto de pessoa e letras mais profissionais, a qualidade pró usa mais esforço na arte e na tipografia.",
+        "referencePhotos": "Fotos de referência da pessoa, até 3",
+        "referenceOptional": "Opcional. Se não enviar foto, a capa será feita só pelo texto.",
+        "optimizeHint": "Fotos grandes do celular serão otimizadas automaticamente antes do envio.",
+        "create": "Criar Capa - {{count}} créditos",
+        "resultPlaceholder": "A capa criada aparecerá aqui.",
+        "history": "Histórico"
       }
+    },
+    "new": {
+      "errors": {
+        "loadGenres": "Erro ao buscar gêneros."
+      },
+      "preview": {
+        "style": "Sertanejo · Sofrência",
+        "title": "Coração em Silêncio",
+        "romanticStyle": "Sertanejo · Romântica",
+        "idea": "Alguém ama em silêncio e não tem coragem de dizer."
+      },
+      "options": {
+        "avoidCliches": "Evitar clichês",
+        "catchyChorus": "Refrão mais chiclete",
+        "everydayLanguage": "Linguagem mais popular",
+        "sophisticatedLanguage": "Linguagem mais sofisticada"
+      },
+      "instruments": "Instrumentos que você quer (opcional)",
+      "freeLyrics": "Letra grátis"
     }
   },
   "footer": {

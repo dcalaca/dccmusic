@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { FiArrowLeft, FiCreditCard, FiDownload, FiImage, FiLoader, FiUploadCloud, FiZap } from 'react-icons/fi'
 import { useLocalization } from '@/components/LocalizationProvider'
+import { useTranslation } from 'react-i18next'
 
 type CoverItem = {
   id: string
@@ -119,6 +120,7 @@ async function compressReferenceImage(file: File, index: number, isEnglish: bool
 }
 
 export default function StudioCoverArtPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const { country } = useLocalization()
   const isUnitedStates = String(country) === 'US' || String(country) === 'GB'
@@ -157,7 +159,7 @@ export default function StudioCoverArtPage() {
         router.push('/compositores/login?redirect=/compositores/admin/studio-ia/criar-capa')
         return
       }
-      if (!response.ok) throw new Error(data.error || (isUnitedStates ? 'Could not load the cover creator' : 'Erro ao carregar criação de capa'))
+      if (!response.ok) throw new Error(data.error || t('studio.tools.cover.errors.load'))
       setCredits(data.credits || credits)
       setOptions(isUnitedStates ? unitedStatesOptions : data.options || fallbackOptions)
       setHistory(data.history || [])
@@ -172,7 +174,7 @@ export default function StudioCoverArtPage() {
   const handleReferenceChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || [])
     if (files.length > 3) {
-      setError(isUnitedStates ? 'Upload no more than 3 reference photos.' : 'Envie no máximo 3 fotos de referência.')
+      setError(t('studio.tools.cover.errors.maxPhotos'))
       event.target.value = ''
       setReferenceCount(0)
       return
@@ -276,17 +278,17 @@ export default function StudioCoverArtPage() {
                   <span className="gradient-text">{isUnitedStates ? 'Create Cover Art' : 'Criar Capa'}</span>
                 </h1>
                 <p className="mt-3 max-w-2xl text-gray-300">
-                  {isUnitedStates ? 'Upload up to 3 reference photos or create your cover using text only. AI interprets your request and creates professional cover art with the song title and artist name.' : 'Envie até 3 fotos da pessoa como referência ou crie só pelo texto. A IA interpreta seu pedido e cria uma capa profissional com nome da música e cantor.'}
+                  {t('studio.tools.cover.subtitle')}
                 </p>
               </div>
               <div className="rounded-2xl border border-gray-800 bg-black/45 p-4 sm:p-5">
                 <p className="text-sm font-bold text-gray-400">{isUnitedStates ? 'Cover cost' : 'Custo da capa'}</p>
-                <p className="mt-1 text-3xl font-black text-green-300">{selectedQualityOption.credits} {isUnitedStates ? 'credits' : 'créditos'}</p>
-                <p className="mt-1 text-sm text-gray-300">{selectedQualityOption.label}. {isUnitedStates ? 'Higher quality usually produces a closer match to your reference photos.' : 'Quanto maior a qualidade, melhor tende a ficar a semelhança com fotos.'}</p>
-                <p className="mt-3 text-sm text-gray-400">{isUnitedStates ? 'Current balance' : 'Seu saldo atual'}: <span className="font-bold text-white">{credits.remaining}</span> {isUnitedStates ? 'credits' : 'créditos'}</p>
+                <p className="mt-1 text-3xl font-black text-green-300">{selectedQualityOption.credits} {t('studio.tools.cover.credits')}</p>
+                <p className="mt-1 text-sm text-gray-300">{selectedQualityOption.label}. {t('studio.tools.cover.qualityHint')}</p>
+                <p className="mt-3 text-sm text-gray-400">{t('studio.tools.cover.balance')}: <span className="font-bold text-white">{credits.remaining}</span> {isUnitedStates ? 'credits' : 'créditos'}</p>
                 {!canCreateSelectedQuality && (
                   <Link href="/compositores/admin/studio-ia/recarga" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 font-bold text-white">
-                    <FiCreditCard /> {isUnitedStates ? 'Buy credits' : 'Comprar créditos'}
+                    <FiCreditCard /> {t('studio.tools.cover.buyCredits')}
                   </Link>
                 )}
               </div>
@@ -301,7 +303,7 @@ export default function StudioCoverArtPage() {
               <h2 className="mb-5 text-2xl font-black">{isUnitedStates ? 'Describe your cover' : 'Descreva sua capa'}</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-gray-300">{isUnitedStates ? 'Song title' : 'Nome da música'}</span>
+                  <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.cover.songTitle')}</span>
                   <input name="songTitle" maxLength={80} placeholder={isUnitedStates ? 'Optional. Example: Midnight Roads' : 'Opcional. Ex.: Saudade do Sertão'} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
                 </label>
                 <label className="block">
@@ -312,25 +314,25 @@ export default function StudioCoverArtPage() {
 
               <div className="mt-4 grid gap-4 sm:grid-cols-4">
                 <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-gray-300">{isUnitedStates ? 'Music style' : 'Estilo musical'}</span>
+                  <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.cover.musicStyle')}</span>
                   <select name="musicStyle" defaultValue={isUnitedStates ? 'Pop' : 'Sertanejo'} className={selectClassName}>
                     {options.musicStyles.map((option) => <option key={option} className={optionClassName}>{option}</option>)}
                   </select>
                 </label>
                 <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-gray-300">{isUnitedStates ? 'Visual style' : 'Estilo visual'}</span>
+                  <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.cover.visualStyle')}</span>
                   <select name="visualStyle" defaultValue={isUnitedStates ? 'Modern' : 'Moderno'} className={selectClassName}>
                     {options.visualStyles.map((option) => <option key={option} className={optionClassName}>{option}</option>)}
                   </select>
                 </label>
                 <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-gray-300">{isUnitedStates ? 'Setting' : 'Ambiente'}</span>
+                  <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.cover.environment')}</span>
                   <select name="environment" defaultValue={isUnitedStates ? 'City' : 'Sertão'} className={selectClassName}>
                     {options.environments.map((option) => <option key={option} className={optionClassName}>{option}</option>)}
                   </select>
                 </label>
                 <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-gray-300">{isUnitedStates ? 'Art direction' : 'Tipo de arte'}</span>
+                  <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.cover.artDirection')}</span>
                   <select name="artDirection" defaultValue={isUnitedStates ? 'Album cover' : 'Capa de álbum'} className={selectClassName}>
                     {options.artDirections.map((option) => <option key={option} className={optionClassName}>{option}</option>)}
                   </select>
@@ -338,7 +340,7 @@ export default function StudioCoverArtPage() {
               </div>
 
               <label className="mt-4 block">
-                <span className="mb-2 block text-sm font-bold text-gray-300">{isUnitedStates ? 'What would you like on the cover?' : 'O que você quer na capa?'}</span>
+                <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.cover.prompt')}</span>
                 <textarea
                   name="userIdea"
                   required
@@ -347,7 +349,7 @@ export default function StudioCoverArtPage() {
                   placeholder={isUnitedStates ? 'Example: The artist looking down an open road at sunset, cinematic and emotional, with a modern country album aesthetic...' : 'Ex.: Quero o cantor de chapéu olhando para uma estrada de terra ao pôr do sol, clima emocionante, capa de música sertaneja...'}
                   className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500"
                 />
-                <p className="mt-2 text-xs text-gray-500">{isUnitedStates ? 'Keep it simple. AI will interpret your description and turn it into professional visual direction.' : 'Pode escrever simples. A IA vai interpretar e transformar em uma direção visual profissional.'}</p>
+                <p className="mt-2 text-xs text-gray-500">{t('studio.tools.cover.promptHint')}</p>
               </label>
 
               <label className="mt-4 block">
@@ -365,22 +367,22 @@ export default function StudioCoverArtPage() {
                   ))}
                 </select>
                 <p className="mt-2 text-xs text-gray-500">
-                  {isUnitedStates ? 'For portraits and more professional typography, Pro quality puts more effort into the artwork and lettering.' : 'Para foto de pessoa e letras mais profissionais, a qualidade pró usa mais esforço na arte e na tipografia.'}
+                  {t('studio.tools.cover.proHint')}
                 </p>
               </label>
 
               <label className="mt-4 block rounded-2xl border border-dashed border-purple-700 bg-purple-950/20 p-4">
                 <span className="mb-2 flex items-center gap-2 text-sm font-bold text-purple-100">
-                  <FiUploadCloud /> {isUnitedStates ? 'Reference photos, up to 3' : 'Fotos de referência da pessoa, até 3'}
+                  <FiUploadCloud /> {t('studio.tools.cover.referencePhotos')}
                 </span>
                 <input name="referenceImages" type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={handleReferenceChange} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white" />
                 <p className="mt-2 text-xs text-purple-100/80">
                   {referenceCount > 0
                     ? (isUnitedStates ? `${referenceCount} photo${referenceCount === 1 ? '' : 's'} selected.` : `${referenceCount} foto(s) selecionada(s).`)
-                    : (isUnitedStates ? 'Optional. Without a photo, the cover will be created from your text only.' : 'Opcional. Se não enviar foto, a capa será feita só pelo texto.')}
+                    : t('studio.tools.cover.referenceOptional')}
                 </p>
                 <p className="mt-1 text-xs text-purple-100/70">
-                  {isUnitedStates ? 'Large phone photos will be optimized automatically before upload.' : 'Fotos grandes do celular serão otimizadas automaticamente antes do envio.'}
+                  {t('studio.tools.cover.optimizeHint')}
                 </p>
               </label>
 
@@ -388,7 +390,7 @@ export default function StudioCoverArtPage() {
                 {generating ? <FiLoader className="animate-spin" /> : <FiZap />}
                 {generating
                   ? (isUnitedStates ? 'Creating cover...' : 'Criando capa...')
-                  : (isUnitedStates ? `Create Cover - ${selectedQualityOption.credits} credits` : `Criar Capa - ${selectedQualityOption.credits} créditos`)}
+                  : t('studio.tools.cover.create', { count: selectedQualityOption.credits })}
               </button>
             </form>
 
@@ -404,14 +406,14 @@ export default function StudioCoverArtPage() {
                   </div>
                 ) : (
                   <div className="flex aspect-square items-center justify-center rounded-2xl border border-gray-800 bg-black/30 text-center text-gray-500">
-                    {isUnitedStates ? 'Your cover will appear here.' : 'A capa criada aparecerá aqui.'}
+                    {t('studio.tools.cover.resultPlaceholder')}
                   </div>
                 )}
               </section>
 
               {history.length > 0 && (
                 <section className="rounded-3xl border border-gray-800 bg-gray-950/70 p-5">
-                  <h2 className="mb-4 text-xl font-black">{isUnitedStates ? 'History' : 'Histórico'}</h2>
+                  <h2 className="mb-4 text-xl font-black">{t('studio.tools.cover.history')}</h2>
                   <div className="grid grid-cols-3 gap-3">
                     {history.slice(0, 9).map((cover) => (
                       <button key={cover.id} type="button" onClick={() => setCurrentCover(cover)} className="overflow-hidden rounded-xl border border-gray-800 hover:border-primary-500">

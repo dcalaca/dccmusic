@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
+import { useLocalization } from '@/components/LocalizationProvider'
 import { FiArrowLeft, FiArrowRight, FiCheck, FiGift, FiLoader, FiSearch } from 'react-icons/fi'
 
 type CouponPreview = {
@@ -16,16 +18,10 @@ type CouponPreview = {
   alreadyRedeemed: boolean
 }
 
-function formatMoney(value: number) {
-  return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-function formatDate(value: string | null) {
-  if (!value) return null
-  return new Date(value).toLocaleDateString('pt-BR')
-}
 
 export default function StudioCouponPage() {
+  const { t, i18n } = useTranslation()
+  const { country } = useLocalization()
   const router = useRouter()
   const [code, setCode] = useState('')
   const [checkingAuth, setCheckingAuth] = useState(true)
@@ -34,6 +30,9 @@ export default function StudioCouponPage() {
   const [error, setError] = useState('')
   const [preview, setPreview] = useState<CouponPreview | null>(null)
   const [freeSuccess, setFreeSuccess] = useState<{ musicQuantity: number } | null>(null)
+  const currency = country === 'PT' || country === 'ES' ? 'EUR' : country === 'PY' ? 'PYG' : country === 'CO' ? 'COP' : country === 'MX' ? 'MXN' : country === 'US' ? 'USD' : country === 'GB' ? 'GBP' : 'BRL'
+  const formatMoney = (value: number) => new Intl.NumberFormat(i18n.language, { style: 'currency', currency }).format(Number(value || 0))
+  const formatDate = (value: string | null) => value ? new Date(value).toLocaleDateString(i18n.language) : null
 
   useEffect(() => {
     const token = localStorage.getItem('composer_token')
@@ -53,7 +52,7 @@ export default function StudioCouponPage() {
       return
     }
     if (code.trim().length < 3) {
-      setError('Digite o código do cupom.')
+      setError(t('studio.tools.coupon.errors.codeRequired'))
       return
     }
 
@@ -68,10 +67,10 @@ export default function StudioCouponPage() {
         body: JSON.stringify({ code: code.trim() }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Cupom inválido')
+      if (!response.ok) throw new Error(t('studio.tools.coupon.errors.invalid'))
       setPreview(data)
     } catch (err: any) {
-      setError(err.message || 'Erro ao verificar cupom')
+      setError(err.message || t('studio.tools.coupon.errors.check'))
     } finally {
       setChecking(false)
     }
@@ -96,7 +95,7 @@ export default function StudioCouponPage() {
         body: JSON.stringify({ code: (preview?.code || code).trim() }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao aplicar cupom')
+      if (!response.ok) throw new Error(t('studio.tools.coupon.errors.apply'))
 
       if (data.type === 'free') {
         setFreeSuccess({ musicQuantity: data.musicQuantity })
@@ -104,10 +103,10 @@ export default function StudioCouponPage() {
       }
 
       const checkoutUrl = data.initPoint || data.sandboxInitPoint
-      if (!checkoutUrl) throw new Error('Não foi possível abrir o pagamento.')
+      if (!checkoutUrl) throw new Error(t('studio.tools.coupon.errors.payment'))
       window.location.href = checkoutUrl
     } catch (err: any) {
-      setError(err.message || 'Erro ao aplicar cupom')
+      setError(err.message || t('studio.tools.coupon.errors.apply'))
       setConfirming(false)
     }
   }
@@ -131,21 +130,21 @@ export default function StudioCouponPage() {
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-xl rounded-3xl border border-green-700/60 bg-gradient-to-br from-green-950/40 via-black to-gray-950 p-8 text-center">
             <FiCheck className="mx-auto mb-4 h-14 w-14 text-green-300" />
-            <h1 className="mb-2 text-3xl font-black">Cupom aplicado!</h1>
+            <h1 className="mb-2 text-3xl font-black">{t('studio.tools.coupon.successTitle')}</h1>
             <p className="mb-6 text-gray-300">
-              Você ganhou <strong className="text-green-300">{freeSuccess.musicQuantity} música(s)</strong>. Já estão disponíveis no seu saldo.
+              {t('studio.tools.coupon.successText', { count: freeSuccess.musicQuantity })}
             </p>
             <Link
               href="/compositores/admin/studio-ia/novo"
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-6 py-3 font-bold text-white hover:from-primary-500 hover:to-purple-500"
             >
-              Criar música agora
+              {t('studio.tools.coupon.createNow')}
             </Link>
             <Link
               href="/compositores/admin/studio-ia"
               className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-gray-700 px-6 py-3 font-semibold text-gray-200 hover:bg-gray-900/50"
             >
-              Voltar ao Studio IA
+              {t('studio.tools.coupon.back')}
             </Link>
           </div>
         </div>
@@ -165,8 +164,8 @@ export default function StudioCouponPage() {
             <div className="mb-6 flex items-center gap-3">
               <FiGift className="h-9 w-9 text-purple-300" />
               <div>
-                <h1 className="text-3xl font-black">Tenho um cupom</h1>
-                <p className="text-sm text-gray-400">Digite o código que você recebeu.</p>
+                <h1 className="text-3xl font-black">{t('studio.tools.coupon.title')}</h1>
+                <p className="text-sm text-gray-400">{t('studio.tools.coupon.subtitle')}</p>
               </div>
             </div>
 
@@ -176,7 +175,7 @@ export default function StudioCouponPage() {
 
             {!preview ? (
               <form onSubmit={handleCheck}>
-                <label className="mb-2 block text-sm font-bold text-gray-200">Código do cupom</label>
+                <label className="mb-2 block text-sm font-bold text-gray-200">{t('studio.tools.coupon.codeLabel')}</label>
                 <input
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
@@ -190,45 +189,45 @@ export default function StudioCouponPage() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-6 py-4 font-bold text-white hover:from-primary-500 hover:to-purple-500 disabled:opacity-60"
                 >
                   {checking ? <FiLoader className="animate-spin" /> : <FiSearch />}
-                  Verificar cupom
+                  {t('studio.tools.coupon.check')}
                 </button>
               </form>
             ) : (
               <div>
                 <div className="mb-5 rounded-2xl border border-green-600/50 bg-green-950/30 p-5 text-center">
-                  <p className="text-lg font-black text-green-300">🎉 Uau, esse cupom está ativo!</p>
-                  <p className="mt-1 text-sm text-gray-300">Veja o que você vai receber:</p>
+                  <p className="text-lg font-black text-green-300">🎉 {t('studio.tools.coupon.activeTitle')}</p>
+                  <p className="mt-1 text-sm text-gray-300">{t('studio.tools.coupon.activeSubtitle')}</p>
                 </div>
 
                 <div className="mb-5 space-y-3 rounded-2xl border border-gray-800 bg-black/40 p-5">
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-400">Código</span>
+                    <span className="text-gray-400">{t('studio.tools.coupon.code')}</span>
                     <span className="font-black tracking-wide text-purple-200">{preview.code}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-400">Músicas</span>
+                    <span className="text-gray-400">{t('studio.tools.coupon.songs')}</span>
                     <span className="text-xl font-black text-white">{preview.musicQuantity}</span>
                   </div>
                   {preview.type === 'paid' ? (
                     <>
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-400">Valor a pagar</span>
+                        <span className="text-gray-400">{t('studio.tools.coupon.amount')}</span>
                         <span className="text-xl font-black text-green-300">{formatMoney(preview.price)}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-500">Preço por música</span>
+                        <span className="text-gray-500">{t('studio.tools.coupon.unitPrice')}</span>
                         <span className="text-gray-300">{formatMoney(preview.unitPrice)}</span>
                       </div>
                     </>
                   ) : (
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-400">Valor</span>
-                      <span className="rounded-md bg-green-900/50 px-3 py-1 text-sm font-black text-green-200">GRÁTIS</span>
+                      <span className="text-gray-400">{t('studio.tools.coupon.value')}</span>
+                      <span className="rounded-md bg-green-900/50 px-3 py-1 text-sm font-black text-green-200">{t('studio.tools.coupon.free')}</span>
                     </div>
                   )}
                   {formatDate(preview.expiresAt) && (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500">Válido até</span>
+                      <span className="text-gray-500">{t('studio.tools.coupon.validUntil')}</span>
                       <span className="text-gray-300">{formatDate(preview.expiresAt)}</span>
                     </div>
                   )}
@@ -236,7 +235,7 @@ export default function StudioCouponPage() {
 
                 {preview.alreadyRedeemed ? (
                   <div className="mb-5 rounded-xl border border-amber-700/60 bg-amber-950/30 p-4 text-sm text-amber-200">
-                    Você já resgatou este cupom grátis antes. Ele só pode ser usado uma vez por pessoa.
+                    {t('studio.tools.coupon.alreadyRedeemed')}
                   </div>
                 ) : null}
 
@@ -250,7 +249,7 @@ export default function StudioCouponPage() {
                     <FiLoader className="animate-spin" />
                   ) : (
                     <>
-                      {preview.type === 'paid' ? 'Continuar para o pagamento' : 'Resgatar agora'}
+                      {preview.type === 'paid' ? t('studio.tools.coupon.continuePayment') : t('studio.tools.coupon.redeem')}
                       <FiArrowRight />
                     </>
                   )}
@@ -262,12 +261,12 @@ export default function StudioCouponPage() {
                   disabled={confirming}
                   className="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-gray-700 px-6 py-3 font-semibold text-gray-300 hover:bg-gray-900/50 disabled:opacity-60"
                 >
-                  Usar outro código
+                  {t('studio.tools.coupon.useAnother')}
                 </button>
 
                 {preview.type === 'paid' && (
                   <p className="mt-4 text-center text-xs text-gray-500">
-                    Você será levado ao Mercado Pago para pagar {formatMoney(preview.price)}. As músicas entram automaticamente após o pagamento.
+                    {t('studio.tools.coupon.paymentHint', { amount: formatMoney(preview.price) })}
                   </p>
                 )}
               </div>

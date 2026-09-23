@@ -65,7 +65,9 @@
           "similar": "Similar to the previous one",
           "sameStyleNewMelody": "Same style, different melody",
           "creative": "More creative / more different from the previous one"
-        }
+        },
+        "using": "Using inspiration",
+        "ready": "Ready to create music"
       },
       "versions": {
         "previous": "View previous version",
@@ -127,13 +129,24 @@
         "unpublishConfirm": "Unpublish this song? The public page will go offline, but the project, lyrics, cover, and audio will remain saved.",
         "unpublishing": "Unpublishing song...",
         "unpublishError": "Could not unpublish.",
-        "unpublished": "Song unpublished. It is no longer public, but remains saved in your project."
+        "unpublished": "Song unpublished. It is no longer public, but remains saved in your project.",
+        "unpublish": "Unpublish song",
+        "publish": "Publish song on DCC Music",
+        "viewPublic": "View public page",
+        "afterPublish": "After publishing, the song gets a public page you can share.",
+        "embedHint": "Publish the song to unlock the public link and embed option."
       },
       "cover": {
         "proOnly": "Professional covers are available from Studio Pro.",
-        "generating": "Generating professional cover...",
+        "generating": "AI is creating a better image. This may take a few seconds.",
         "error": "Could not improve the cover.",
-        "created": "Professional cover created."
+        "created": "Professional cover created.",
+        "deleteConfirm": "Delete this cover from the project? Other covers will remain saved.",
+        "primaryUpdated": "Main cover updated.",
+        "deleted": "Cover deleted.",
+        "afterMusic": "The cover will appear here after the song is created.",
+        "professionalHint": "The professional cover is a higher-quality AI image and depends on your plan.",
+        "loadingPermissions": "Loading plan permissions..."
       },
       "lyrics": {
         "title": "Song lyrics",
@@ -181,7 +194,40 @@
         "download": "Download your video",
         "browserUnsupported": "Your browser cannot play this video.",
         "previewHint": "Preview for review. Use play and the sound icon in the player controls.",
-        "detail": "Detail: {{detail}}"
+        "detail": "Detail: {{detail}}",
+        "selectAudio": "Choose a version with audio before generating the lyric video.",
+        "generateError": "Could not generate the lyric video.",
+        "processing": "Lyric video is being produced.",
+        "noStatus": "The request was sent, but the video status was not returned.",
+        "confirmTitle": "Generate lyric video?",
+        "confirmText": "Generating this video uses 5 credits. Do you want to continue?",
+        "transitionHint": "Projects created before the change and transition courtesy videos are identified automatically and will not be charged.",
+        "title": "Lyric video"
+      },
+      "messages": {
+        "ready": "Your song is ready. This page was updated automatically."
+      },
+      "notFound": "Project not found",
+      "supportCode": "Project code for support",
+      "versionSummary": "This project has {{count}} generated versions.",
+      "versionHint": "The versions appear below so you can listen and choose without repeating the song above.",
+      "instructions": {
+        "title": "Additional song instructions",
+        "hint": "Optional. Use this to guide voice, emotion, performance, instruments, or details for the next generation."
+      },
+      "processing": {
+        "title": "Your song is being created",
+        "noRepeat": "You don't need to click create again. Your request is already in production.",
+        "autoUpdate": "When the audio is ready, this page updates automatically and we also send an email.",
+        "closeHint": "Closing this page does not cancel the song. We'll email you when it is ready.",
+        "preview": "Preview available while we finish the full song."
+      },
+      "upgrade": {
+        "noBalance": "You've used your free song or have no balance",
+        "title": "Keep creating music",
+        "description": "Choose a monthly plan or buy one-time credits to keep creating.",
+        "viewPlans": "View DCC AI Studio plans",
+        "buyTopup": "Buy one-time top-up"
       }
     },
     "entry": {
@@ -433,7 +479,233 @@
         "isolatedVoice": "Isolated vocal",
         "fileUnavailable": "File unavailable.",
         "createdFromOriginal": "Created from an uploaded original song"
+      },
+      "fileUnavailable": "File unavailable.",
+      "versionCount": "{{count}} versions",
+      "fromOriginal": "Created from an uploaded original song",
+      "chooseVersion": "Open to choose from {{count}} generated versions"
+    },
+    "tools": {
+      "improve": {
+        "back": "Back to AI Studio",
+        "badge": "Improve song",
+        "title": "How would you like to submit your song?",
+        "subtitle": "Choose the easiest option: upload an audio file or record your idea now with your microphone.",
+        "uploadTitle": "Upload a recorded song",
+        "uploadDescription": "Choose this if you already have a recording, demo, guide track, voice-and-guitar take, or phone audio.",
+        "chooseFile": "Choose file",
+        "recordTitle": "Record now",
+        "recordDescription": "Sing directly on the website. AI will show the lyrics it recognized so you can review them.",
+        "openRecorder": "Open recorder",
+        "important": "Important:",
+        "importantText": "Singing into the microphone is useful if you prefer not to type. AI may mishear a few words, so we always show the lyrics for review before continuing."
+      },
+      "record": {
+        "back": "Back",
+        "badge": "Record now",
+        "title": "Sing your idea and let AI turn it into a song",
+        "subtitle": "Record with your microphone, review the lyrics AI understood, and choose whether to complete the song or produce the final version. Recording stops automatically at 4:30.",
+        "step1": "1. Record your voice",
+        "step1Hint": "You can sing a short section or the whole song. Maximum: 4 minutes 30 seconds.",
+        "start": "Start recording",
+        "stop": "Stop recording",
+        "listen": "Listen before continuing",
+        "transcribe": "Transcribe lyrics (1 credit)",
+        "recordAgain": "Record again",
+        "step2": "2. Review the lyrics",
+        "step2Hint": "AI may mishear sung words. Correct them before producing.",
+        "songTitle": "Song title",
+        "songTitlePlaceholder": "Example: False Key",
+        "style": "Desired style",
+        "stylePlaceholder": "Example: country, pop...",
+        "notes": "Notes for AI",
+        "notesPlaceholder": "Example: make it more emotional, stronger chorus...",
+        "complete": "Complete my song",
+        "ready": "My song is already complete",
+        "errors": {
+          "recorderUnavailable": "Your browser could not start the recorder. Try Chrome on your phone or computer.",
+          "microphone": "We could not access your microphone. Check browser permission and try again.",
+          "recordFirst": "Record audio before transcribing.",
+          "transcribe": "We could not understand the audio.",
+          "lyricRequired": "Transcribe or write a section before asking AI to complete it.",
+          "completeLyric": "We could not complete the lyrics.",
+          "recordBeforeCreate": "Record audio before creating the song.",
+          "titleRequired": "Enter the song title.",
+          "longerLyric": "Review the lyrics and leave a longer section before creating the song.",
+          "create": "Could not create the song."
+        },
+        "messages": {
+          "maxDuration": "Recording stopped automatically at the 4 minute 30 second limit.",
+          "transcribed": "Lyrics transcribed. {{count}} credit(s) were charged. Review and correct them if needed.",
+          "lyricCompleted": "Lyrics completed. Review them before producing the song.",
+          "started": "Production started. We'll open the project so you can follow progress."
+        }
+      },
+      "playback": {
+        "errors": {
+          "load": "Could not load the song.",
+          "versionMismatch": "This version does not belong to the selected project.",
+          "invalidFile": "Choose a valid audio file.",
+          "maxSize": "The audio file must be no larger than 10 MB.",
+          "prepareUpload": "Could not prepare the upload.",
+          "upload": "Could not upload the song.",
+          "create": "Could not create the instrumental.",
+          "refunded": " Your 10 credits were refunded."
+        },
+        "loadingVersion": "Loading the selected version...",
+        "mySong": "My song",
+        "version": "Version",
+        "cost": "Cost",
+        "credits": "credits",
+        "projectCostHint": "The cost is the same as creating a song. When finished, the instrumental and isolated vocal will be saved to this project. If processing cannot be completed, your credits will be refunded automatically.",
+        "processing": "Removing vocals...",
+        "createForCredits": "Create instrumental for {{count}} credits",
+        "uploadSong": "Upload my song",
+        "uploadHint": "MP3, WAV, M4A, or another audio format · up to 10 MB",
+        "chooseDcc": "Choose a DCC song",
+        "chooseDccHint": "Select a version you already created",
+        "uploaded": "Song uploaded",
+        "refundHint": "Credits are charged only when you start. If processing cannot be completed, they will be refunded automatically.",
+        "wait": "This may take a few minutes. Keep this page open.",
+        "saved": "Files saved to the project",
+        "complete": "Separation complete!",
+        "savedHint": "Your instrumental and isolated vocal are available here to listen to or download again anytime.",
+        "readyHint": "Your instrumental and isolated vocal are ready.",
+        "instrumental": "Instrumental",
+        "downloadInstrumental": "Download instrumental",
+        "vocal": "Isolated vocal",
+        "downloadVocal": "Download vocal",
+        "noVocal": "The provider completed the instrumental but did not return a separate vocal track.",
+        "another": "Create another separation"
+      },
+      "coupon": {
+        "errors": {
+          "codeRequired": "Enter the coupon code.",
+          "invalid": "Invalid coupon.",
+          "check": "Could not check the coupon.",
+          "apply": "Could not apply the coupon.",
+          "payment": "Could not open the payment."
+        },
+        "successTitle": "Coupon applied!",
+        "successText": "You received {{count}} song(s). They are already available in your balance.",
+        "createNow": "Create a song now",
+        "back": "Back to AI Studio",
+        "title": "I have a coupon",
+        "subtitle": "Enter the code you received.",
+        "codeLabel": "Coupon code",
+        "check": "Check coupon",
+        "activeTitle": "This coupon is active!",
+        "activeSubtitle": "Here's what you'll receive:",
+        "code": "Code",
+        "songs": "Songs",
+        "amount": "Amount to pay",
+        "unitPrice": "Price per song",
+        "value": "Value",
+        "free": "FREE",
+        "validUntil": "Valid until",
+        "alreadyRedeemed": "You've already redeemed this free coupon. It can only be used once per person.",
+        "continuePayment": "Continue to payment",
+        "redeem": "Redeem now",
+        "useAnother": "Use another code",
+        "paymentHint": "You'll be taken to payment to pay {{amount}}. The songs are added automatically after confirmation."
+      },
+      "ready": {
+        "errors": {
+          "chooseAudioTranscribe": "Choose the song audio before asking AI to transcribe it.",
+          "transcribe": "We could not understand the audio.",
+          "chooseAudio": "Choose the song audio you want to improve.",
+          "translationRequired": "To adapt to another language, paste the translated or adapted lyrics into the Song lyrics field.",
+          "maxDuration": "This audio is longer than 4 minutes 30 seconds. Upload a shorter version.",
+          "improve": "Could not improve the song."
+        },
+        "messages": {
+          "transcribing": "Uploading audio and transcribing lyrics...",
+          "transcribed": "Lyrics transcribed. {{count}} credit(s) were charged. Review them before improving.",
+          "sending": "Uploading song...",
+          "starting": "Uploading audio, transcribing lyrics, and starting the improvement...",
+          "transcribedStarted": "Lyrics transcribed and improvement started. Opening the project...",
+          "started": "Improvement started. We'll open the project so you can follow progress."
+        },
+        "badge": "Recorded song",
+        "title": "Upload a recorded song",
+        "subtitle": "Upload a song you already recorded. AI tries to preserve the melody, lyrics, and essence while producing a more professional version up to 4:30.",
+        "transcriptionHint": "No typed lyrics? When you click Improve, AI transcribes the audio as part of the 10-credit process.",
+        "reviewHint": "If you want to review first, use “Transcribe lyrics” (1 credit).",
+        "costHint": "Cost: 10 credits for improvement. Standalone transcription: 1 credit.",
+        "songTitle": "Song title",
+        "songTitlePlaceholder": "Example: My Song",
+        "genre": "Desired genre/style",
+        "keepGenre": "Keep original style",
+        "genreHint": "You can transform one style into another.",
+        "genrePlaceholder": "Enter the genre or style",
+        "language": "Language and accent of the new version",
+        "languageHint": "Defines vocal pronunciation. Choose the language that matches the desired accent.",
+        "audio": "Song audio",
+        "audioHint": "Use audio up to 4 minutes 30 seconds (max. 80 MB). It can be a demo, guide track, acoustic take, or phone recording.",
+        "whatImprove": "What do you want to improve?",
+        "extraInstructions": "Additional instructions (optional)",
+        "extraHint": "Describe what you want to change or preserve. These instructions are kept separate from the lyrics.",
+        "extraPlaceholder": "Example: keep the melody and rhythm, but use a softer interpretation.",
+        "details": "New version details",
+        "mood": "Song mood",
+        "voiceTone": "Voice characteristic",
+        "structure": "Desired structure",
+        "lyricLength": "Lyrics length",
+        "instruments": "Instruments you want (optional)",
+        "instrumentsPlaceholder": "Example: acoustic guitar, accordion, drums",
+        "voiceChoiceHint": "Choose whether to preserve the original voice or request a new interpretation.",
+        "voiceStyle": "Voice style",
+        "voiceChangeHint": "Changing the voice type gives AI more freedom to change the performance while preserving the composition.",
+        "lyrics": "Song lyrics",
+        "transcribing": "Transcribing lyrics...",
+        "transcribe": "Transcribe lyrics (1 credit)",
+        "adapt": "Adapt my song",
+        "improve": "Improve my song"
+      },
+      "cover": {
+        "errors": {
+          "load": "Could not load the cover creator.",
+          "maxPhotos": "Upload no more than 3 reference photos."
+        },
+        "subtitle": "Upload up to 3 reference photos or create your cover using text only. AI interprets your request and creates professional cover art with the song title and artist name.",
+        "credits": "credits",
+        "qualityHint": "Higher quality usually produces a closer match to your reference photos.",
+        "balance": "Current balance",
+        "buyCredits": "Buy credits",
+        "songTitle": "Song title",
+        "musicStyle": "Music style",
+        "visualStyle": "Visual style",
+        "environment": "Setting",
+        "artDirection": "Art direction",
+        "prompt": "What would you like on the cover?",
+        "promptHint": "Keep it simple. AI will turn your description into professional visual direction.",
+        "proHint": "For portraits and more professional typography, Pro quality puts more effort into the artwork and lettering.",
+        "referencePhotos": "Reference photos, up to 3",
+        "referenceOptional": "Optional. Without a photo, the cover will be created from your text only.",
+        "optimizeHint": "Large phone photos will be optimized automatically before upload.",
+        "create": "Create Cover - {{count}} credits",
+        "resultPlaceholder": "Your cover will appear here.",
+        "history": "History"
       }
+    },
+    "new": {
+      "errors": {
+        "loadGenres": "Could not load genres."
+      },
+      "preview": {
+        "style": "Country · Heartbreak",
+        "title": "A Heart in Silence",
+        "romanticStyle": "Country · Romantic",
+        "idea": "Someone loves in silence but is afraid to say it."
+      },
+      "options": {
+        "avoidCliches": "Avoid clichés",
+        "catchyChorus": "Make the chorus catchier",
+        "everydayLanguage": "Use everyday language",
+        "sophisticatedLanguage": "Use sophisticated language"
+      },
+      "instruments": "Instruments you want (optional)",
+      "freeLyrics": "Free lyrics"
     }
   },
   "footer": {

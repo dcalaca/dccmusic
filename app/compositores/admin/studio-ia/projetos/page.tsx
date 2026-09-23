@@ -892,7 +892,7 @@ function StudioProjectsContent() {
                           </div>
                           <div className="rounded-2xl border border-purple-900/50 bg-black/30 p-4">
                             <p className="mb-3 flex items-center gap-2 font-black text-purple-200"><FiMic /> {t('studio.projects.labels.isolatedVoice')}</p>
-                            {asset.vocalUrl ? <audio controls src={asset.vocalUrl} className="w-full" /> : <p className="text-sm text-gray-500">Arquivo indisponível.</p>}
+                            {asset.vocalUrl ? <audio controls src={asset.vocalUrl} className="w-full" /> : <p className="text-sm text-gray-500">{t('studio.projects.fileUnavailable')}</p>}
                             {asset.vocalUrl && <a href={asset.vocalUrl} download className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-700 px-4 py-3 text-sm font-bold text-white hover:bg-purple-600"><FiDownload /> {t('studio.projects.actions.downloadVoice')}</a>}
                           </div>
                         </div>
@@ -929,7 +929,7 @@ function StudioProjectsContent() {
                               className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-bold text-gray-100 hover:bg-gray-900 disabled:opacity-60"
                             >
                               <FiZap />
-                              Usar de inspiração
+                              {t('studio.projects.useAsInspiration')}
                             </button>
                             {canTransferProjects && (
                               <button
@@ -979,7 +979,7 @@ function StudioProjectsContent() {
                           )}
                           {project.versionCount > 1 && (
                             <span className="absolute bottom-3 left-3 rounded-full bg-black/80 px-3 py-1 text-xs font-bold text-green-200">
-                              {project.versionCount} versões
+                              {t('studio.projects.versionCount', { count: project.versionCount })}
                             </span>
                           )}
                         </div>
@@ -991,10 +991,10 @@ function StudioProjectsContent() {
                             </span>
                           </div>
                           <p className={viewMode === 'small' ? 'truncate text-xs text-gray-400' : 'text-sm text-gray-400'}>{project.style || 'Livre'} · {project.mood || 'Sem clima'}</p>
-                          {project.createdFromOriginal && <p className="mt-2 text-[11px] font-semibold text-emerald-300">★ Criado a partir de uma música original enviada</p>}
+                          {project.createdFromOriginal && <p className="mt-2 text-[11px] font-semibold text-emerald-300">★ {t('studio.projects.fromOriginal')}</p>}
                           {project.versionCount > 1 && (
                             <p className="mt-2 rounded-lg border border-green-900/50 bg-green-950/20 px-2 py-1 text-xs font-bold text-green-200">
-                              Abra para escolher entre {project.versionCount} versões geradas
+                              {t('studio.projects.chooseVersion', { count: project.versionCount })}
                             </p>
                           )}
                           <p className="mt-2 text-xs text-gray-500">

@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocalization } from '@/components/LocalizationProvider'
+import { useTranslation } from 'react-i18next'
 import { FiArrowLeft, FiEdit3, FiGlobe, FiLoader, FiMusic, FiUploadCloud, FiZap } from 'react-icons/fi'
 
 const improvementOptions = [
@@ -114,6 +115,7 @@ async function uploadAudioDirectToStorage(token: string, file: File, kind: 'enha
 }
 
 export default function ImproveReadyMusicPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const searchParams = useSearchParams()
   const { country } = useLocalization()
@@ -183,13 +185,13 @@ export default function ImproveReadyMusicPage() {
     const token = ensureToken()
     if (!token) return
     if (!audioFile && !savedOriginal) {
-      setError('Escolha o áudio da música antes de pedir para entender a letra.')
+      setError(t('studio.tools.ready.errors.chooseAudioTranscribe'))
       return
     }
 
     setTranscribing(true)
     setError('')
-    setMessage('Enviando áudio e entendendo a letra...')
+    setMessage(t('studio.tools.ready.messages.transcribing'))
     try {
       const uploaded = audioFile ? await uploadAudioDirectToStorage(token, audioFile, 'transcribe') : savedOriginal
       const response = await fetch('/api/compositores/studio/transcribe', {
@@ -201,16 +203,16 @@ export default function ImproveReadyMusicPage() {
         body: JSON.stringify(uploaded),
       })
       const data = await readApiResponse(response)
-      if (!response.ok) throw new Error(data.error || 'Não consegui entender o áudio.')
+      if (!response.ok) throw new Error(t('studio.tools.ready.errors.transcribe'))
       setLyric(data.text || '')
       window.dispatchEvent(new Event('studioBalanceChange'))
       const charged = Number(data.creditsCharged) || 1
       setMessage(
         data.message ||
-          `Letra transcrita. Foram debitados ${charged} crédito. Revise e corrija se precisar antes de melhorar.`
+          t('studio.tools.ready.messages.transcribed', { count: charged })
       )
     } catch (err: any) {
-      setError(err.message || 'Erro ao transcrever áudio.')
+      setError(err.message || t('studio.tools.ready.errors.transcribe'))
       setMessage('')
     } finally {
       setTranscribing(false)
@@ -227,24 +229,24 @@ export default function ImproveReadyMusicPage() {
     const style = (selectedGenre === 'Outro / escrever meu estilo' ? customGenre : selectedGenre).trim()
 
     if ((!audioFile || audioFile.size <= 0) && !savedOriginal) {
-      setError('Escolha o áudio da música que deseja melhorar.')
+      setError(t('studio.tools.ready.errors.chooseAudio'))
       return
     }
     if (isLanguageAdaptation && !lyric.trim()) {
-      setError('Para adaptar para outro idioma, cole a letra já traduzida ou adaptada no campo “Letra da música”.')
+      setError(t('studio.tools.ready.errors.translationRequired'))
       return
     }
     const duration = audioFile ? await getAudioDurationSeconds(audioFile) : null
     if (duration && duration > MAX_AUDIO_DURATION_SECONDS) {
-      setError('Esse áudio passou de 4 minutos e 30 segundos. Envie uma versão mais curta para a IA trabalhar melhor.')
+      setError(t('studio.tools.ready.errors.maxDuration'))
       return
     }
 
     setSubmitting(true)
     setError('')
     setMessage(lyric.trim()
-      ? 'Enviando música...'
-      : 'Enviando áudio, entendendo a letra e iniciando a melhoria...')
+      ? t('studio.tools.ready.messages.sending')
+      : t('studio.tools.ready.messages.starting'))
     try {
       const uploaded = audioFile ? await uploadAudioDirectToStorage(token, audioFile, 'enhance-source') : savedOriginal
       const response = await fetch('/api/compositores/studio/enhance', {
@@ -272,19 +274,19 @@ export default function ImproveReadyMusicPage() {
         }),
       })
       const data = await readApiResponse(response)
-      if (!response.ok) throw new Error(data.error || 'Erro ao melhorar música')
+      if (!response.ok) throw new Error(t('studio.tools.ready.errors.improve'))
 
       window.dispatchEvent(new Event('studioBalanceChange'))
       setMessage(
         data.lyricTranscribed
-          ? 'Letra transcrita do áudio e melhoria iniciada. Abrindo o projeto...'
-          : 'Melhoria iniciada. Vamos abrir o projeto para você acompanhar.'
+          ? t('studio.tools.ready.messages.transcribedStarted')
+          : t('studio.tools.ready.messages.started')
       )
       window.setTimeout(() => {
         router.push(`/compositores/admin/studio-ia/projetos/${data.projectId}`)
       }, 900)
     } catch (err: any) {
-      setError(err.message || 'Erro ao melhorar música')
+      setError(err.message || t('studio.tools.ready.errors.improve'))
       setMessage('')
     } finally {
       setSubmitting(false)
@@ -301,20 +303,20 @@ export default function ImproveReadyMusicPage() {
 
           <section className="mb-6 rounded-3xl border border-purple-700/60 bg-gradient-to-br from-black via-gray-950 to-purple-950/60 p-5 sm:p-8">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-500/40 bg-purple-950/40 px-3 py-1 text-xs font-bold text-purple-100">
-              <FiZap /> Música pronta
+              <FiZap /> {t('studio.tools.ready.badge')}
             </div>
             <h1 className="text-3xl font-black sm:text-5xl">
-              <span className="gradient-text">Enviar música pronta</span>
+              <span className="gradient-text">{t('studio.tools.ready.title')}</span>
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
-              Envie uma música já gravada (voz e violão, demo, celular...). A IA tenta manter melodia, letra e essência, com produção mais profissional e duração máxima de 4:30.
+              {t('studio.tools.ready.subtitle')}
             </p>
             <p className="mt-3 rounded-2xl border border-emerald-700/60 bg-emerald-950/20 p-3 text-sm text-emerald-100">
-              Sem letra digitada? Ao clicar em <strong>Melhorar</strong>, a IA transcreve a letra do áudio <strong>incluída nos 10 créditos</strong>.
-              Se quiser revisar antes, use “Entender letra” (custa <strong>1 crédito</strong>).
+              {t('studio.tools.ready.transcriptionHint')}
+              {t('studio.tools.ready.reviewHint')}
             </p>
             <p className="mt-3 rounded-2xl border border-yellow-700/60 bg-yellow-950/20 p-3 text-sm text-yellow-100">
-              Custo: 10 créditos na melhoria. “Entender letra” avulso: 1 crédito (só se você clicar nesse botão).
+              {t('studio.tools.ready.costHint')}
             </p>
           </section>
 
@@ -324,31 +326,31 @@ export default function ImproveReadyMusicPage() {
           <form onSubmit={submit} className="rounded-3xl border border-gray-800 bg-gray-950/70 p-5 sm:p-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-2 block text-sm font-bold text-gray-300">Nome da música</span>
-                <input name="title" required maxLength={30} placeholder="Ex.: Minha canção" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.ready.songTitle')}</span>
+                <input name="title" required maxLength={30} placeholder={t('studio.tools.ready.songTitlePlaceholder')} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
               </label>
               <label className="block">
-                <span className="mb-2 block text-sm font-bold text-gray-300">Gênero/ritmo desejado</span>
+                <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.ready.genre')}</span>
                 <select value={selectedGenre} onChange={(event) => setSelectedGenre(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
-                  <option value="">Manter o ritmo original</option>
+                  <option value="">{t('studio.tools.ready.keepGenre')}</option>
                   {genreOptions.map((option) => <option key={option} value={option}>{option}</option>)}
                 </select>
-                <span className="mt-2 block text-xs text-gray-500">Você pode transformar, por exemplo, reggae em samba.</span>
+                <span className="mt-2 block text-xs text-gray-500">{t('studio.tools.ready.genreHint')}</span>
                 {selectedGenre === 'Outro / escrever meu estilo' && (
-                  <input value={customGenre} onChange={(event) => setCustomGenre(event.target.value)} placeholder="Escreva o gênero ou ritmo" className="mt-2 w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                  <input value={customGenre} onChange={(event) => setCustomGenre(event.target.value)} placeholder={t('studio.tools.ready.genrePlaceholder')} className="mt-2 w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
                 )}
               </label>
               <label className="block">
-                <span className="mb-2 block text-sm font-bold text-gray-300">Idioma e sotaque da nova versão</span>
+                <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.ready.language')}</span>
                 <select value={songLanguage} onChange={(event) => setSongLanguage(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
                   {songLanguageOptions.map((option) => <option key={option} value={option}>{option}</option>)}
                 </select>
-                <span className="mt-2 block text-xs text-gray-500">Define a pronúncia da voz. Ex.: escolha Português (Brasil) para não cantar com sotaque de Portugal.</span>
+                <span className="mt-2 block text-xs text-gray-500">{t('studio.tools.ready.languageHint')}</span>
               </label>
             </div>
 
             <label className="mt-4 block rounded-2xl border border-purple-800/70 bg-purple-950/20 p-4">
-              <span className="mb-2 flex items-center gap-2 text-sm font-bold text-purple-100"><FiUploadCloud /> Áudio da música</span>
+              <span className="mb-2 flex items-center gap-2 text-sm font-bold text-purple-100"><FiUploadCloud /> {t('studio.tools.ready.audio')}</span>
               {savedOriginal && (
                 <div className="mb-3 rounded-xl border border-emerald-700/60 bg-emerald-950/30 p-3 text-sm text-emerald-100">
                   Usando a música original salva: <strong>{savedOriginal.title}</strong>. Você não precisa enviar o arquivo novamente.
@@ -368,12 +370,12 @@ export default function ImproveReadyMusicPage() {
                 className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white"
               />
               <span className="mt-2 block text-xs text-purple-100/80">
-                Use áudio de até 4 minutos e 30 segundos (máx. 80 MB). Pode ser demo, guia, voz e violão ou gravação do celular.
+                {t('studio.tools.ready.audioHint')}
               </span>
             </label>
 
             <div className="mt-5">
-              <p className="mb-3 text-sm font-bold text-gray-300">O que você quer melhorar?</p>
+              <p className="mb-3 text-sm font-bold text-gray-300">{t('studio.tools.ready.whatImprove')}</p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {improvementOptions.map((option) => (
                   <button
@@ -396,9 +398,9 @@ export default function ImproveReadyMusicPage() {
             </div>
 
             <div className="mt-5 rounded-2xl border border-gray-800 bg-black/20 p-4">
-              <p className="mb-2 text-sm font-bold text-gray-200">Instruções adicionais <span className="font-normal text-gray-500">(opcional)</span></p>
+              <p className="mb-2 text-sm font-bold text-gray-200">{t('studio.tools.ready.extraInstructions')}</p>
               <p className="mb-3 text-xs leading-relaxed text-gray-400">
-                Diga o que deseja mudar ou preservar. Essas instruções são enviadas separadas da letra e não serão tratadas como parte da música.
+                {t('studio.tools.ready.extraHint')}
               </p>
               <textarea
                 name="additionalInstructions"
@@ -406,35 +408,35 @@ export default function ImproveReadyMusicPage() {
                 onChange={(event) => setAdditionalInstructions(event.target.value)}
                 rows={3}
                 maxLength={500}
-                placeholder="Ex.: mantenha a melodia, o ritmo e o instrumental da música original e use uma interpretação mais suave."
+                placeholder={t('studio.tools.ready.extraPlaceholder')}
                 className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500"
               />
               <div className="mt-2 flex justify-end text-xs text-gray-500">{additionalInstructions.length}/500</div>
             </div>
 
             <div className="mt-5 rounded-2xl border border-gray-800 bg-black/20 p-4">
-              <p className="mb-3 text-sm font-bold text-gray-200">Detalhes da nova versão</p>
+              <p className="mb-3 text-sm font-bold text-gray-200">{t('studio.tools.ready.details')}</p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <label>
-                  <span className="mb-1.5 block text-xs font-bold text-gray-300">Clima da música</span>
+                  <span className="mb-1.5 block text-xs font-bold text-gray-300">{t('studio.tools.ready.mood')}</span>
                   <select value={mood} onChange={(event) => setMood(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
                     {moodOptions.map((option) => <option key={option}>{option}</option>)}
                   </select>
                 </label>
                 <label>
-                  <span className="mb-1.5 block text-xs font-bold text-gray-300">Característica da voz</span>
+                  <span className="mb-1.5 block text-xs font-bold text-gray-300">{t('studio.tools.ready.voiceTone')}</span>
                   <select value={voiceTone} onChange={(event) => setVoiceTone(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
                     {voiceToneOptions.map((option) => <option key={option}>{option}</option>)}
                   </select>
                 </label>
                 <label>
-                  <span className="mb-1.5 block text-xs font-bold text-gray-300">Estrutura desejada</span>
+                  <span className="mb-1.5 block text-xs font-bold text-gray-300">{t('studio.tools.ready.structure')}</span>
                   <select value={structure} onChange={(event) => setStructure(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
                     {structureOptions.map((option) => <option key={option}>{option}</option>)}
                   </select>
                 </label>
                 <label>
-                  <span className="mb-1.5 block text-xs font-bold text-gray-300">Tamanho da letra</span>
+                  <span className="mb-1.5 block text-xs font-bold text-gray-300">{t('studio.tools.ready.lyricLength')}</span>
                   <select value={lineCount} onChange={(event) => setLineCount(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
                     <option value="curta">Curta</option><option value="média">Média</option><option value="longa">Longa</option>
                   </select>
@@ -442,8 +444,8 @@ export default function ImproveReadyMusicPage() {
               </div>
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 <label>
-                  <span className="mb-1.5 block text-xs font-bold text-gray-300">Instrumentos que você quer <span className="font-normal text-gray-500">(opcional)</span></span>
-                  <input value={wantInstruments} onChange={(event) => setWantInstruments(event.target.value)} placeholder="Ex.: violão, acordeon e bateria" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                  <span className="mb-1.5 block text-xs font-bold text-gray-300">{t('studio.tools.ready.instruments')}</span>
+                  <input value={wantInstruments} onChange={(event) => setWantInstruments(event.target.value)} placeholder={t('studio.tools.ready.instrumentsPlaceholder')} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
                 </label>
                 <label>
                   <span className="mb-1.5 block text-xs font-bold text-gray-300">Instrumentos para evitar <span className="font-normal text-gray-500">(opcional)</span></span>
@@ -454,7 +456,7 @@ export default function ImproveReadyMusicPage() {
 
             <div className="mt-5 rounded-2xl border border-gray-800 bg-black/20 p-4">
               <p className="mb-1 text-sm font-bold text-gray-200">Voz principal</p>
-              <p className="mb-3 text-xs text-gray-400">Escolha se quer preservar a voz do áudio ou pedir uma nova interpretação.</p>
+              <p className="mb-3 text-xs text-gray-400">{t('studio.tools.ready.voiceChoiceHint')}</p>
               <div className="grid gap-3 sm:grid-cols-3">
                 {voiceOptions.map((option) => (
                   <button
@@ -469,7 +471,7 @@ export default function ImproveReadyMusicPage() {
                 ))}
               </div>
 
-              <p className="mb-3 mt-5 text-sm font-bold text-gray-300">Estilo da voz</p>
+              <p className="mb-3 mt-5 text-sm font-bold text-gray-300">{t('studio.tools.ready.voiceStyle')}</p>
               <div className="flex flex-wrap gap-2">
                 {voiceStyleOptions.map((option) => (
                   <button
@@ -484,14 +486,14 @@ export default function ImproveReadyMusicPage() {
               </div>
               {selectedVoice !== 'same' && (
                 <p className="mt-3 text-xs text-amber-200">
-                  Ao trocar o tipo de voz, a IA recebe um pouco mais de liberdade para mudar a interpretação sem perder a composição original.
+                  {t('studio.tools.ready.voiceChangeHint')}
                 </p>
               )}
             </div>
 
             <div className="mt-5">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-sm font-bold text-gray-300">Letra da música {isLanguageAdaptation && <span className="text-amber-300">*</span>}</span>
+                <span className="text-sm font-bold text-gray-300">{t('studio.tools.ready.lyrics')} {isLanguageAdaptation && <span className="text-amber-300">*</span>}</span>
                 {!isLanguageAdaptation && (
                   <button
                     type="button"
@@ -500,7 +502,7 @@ export default function ImproveReadyMusicPage() {
                     className="inline-flex items-center gap-2 rounded-xl border border-emerald-600/50 bg-emerald-950/40 px-3 py-2 text-xs font-bold text-emerald-100 transition hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {transcribing ? <FiLoader className="animate-spin" /> : <FiEdit3 />}
-                    {transcribing ? 'Entendendo letra...' : 'Entender letra (1 crédito)'}
+                    {transcribing ? t('studio.tools.ready.transcribing') : t('studio.tools.ready.transcribe')}
                   </button>
                 )}
               </div>
@@ -526,7 +528,7 @@ export default function ImproveReadyMusicPage() {
 
             <button type="submit" disabled={submitting || transcribing} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-4 font-black text-white transition hover:scale-[1.01] disabled:opacity-60">
               {submitting ? <FiLoader className="animate-spin" /> : <FiMusic />}
-              {submitting ? 'Enviando música...' : isLanguageAdaptation ? 'Adaptar minha música' : 'Melhorar minha música'}
+              {submitting ? t('studio.tools.ready.messages.sending') : isLanguageAdaptation ? t('studio.tools.ready.adapt') : t('studio.tools.ready.improve')}
             </button>
           </form>
         </div>

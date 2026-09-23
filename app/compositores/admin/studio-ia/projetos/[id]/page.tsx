@@ -1084,7 +1084,7 @@ export default function StudioProjectDetailPage() {
       setGenerationBackgroundMode(false)
       setPreviewAudioUrl('')
       await loadProject({ silent: true, notifyReady: true })
-      setMessage('Sua música ficou pronta. Atualizamos esta página automaticamente.')
+      setMessage(t('studio.project.messages.ready'))
     }
   }
 
@@ -1249,7 +1249,7 @@ export default function StudioProjectDetailPage() {
     const token = localStorage.getItem('composer_token')
     if (!token) return
 
-    if (action === 'delete' && !window.confirm('Excluir esta capa do projeto? As outras capas continuarão salvas.')) {
+    if (action === 'delete' && !window.confirm(t('studio.project.cover.deleteConfirm'))) {
       return
     }
 
@@ -1270,7 +1270,7 @@ export default function StudioProjectDetailPage() {
       if (!response.ok) throw new Error(data.error || 'Erro ao gerenciar capa')
 
       await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
-      setMessage(action === 'select' ? 'Capa principal atualizada.' : 'Capa excluída.')
+      setMessage(action === 'select' ? t('studio.project.cover.primaryUpdated') : t('studio.project.cover.deleted'))
     } catch (err: any) {
       setError(err.message || 'Erro ao gerenciar capa')
     } finally {
@@ -1309,7 +1309,7 @@ export default function StudioProjectDetailPage() {
     )
 
     if (!versionId) {
-      setError('Escolha uma versão com áudio antes de gerar o vídeo com letra.')
+      setError(t('studio.project.video.selectAudio'))
       return
     }
 
@@ -1327,7 +1327,7 @@ export default function StudioProjectDetailPage() {
         body: JSON.stringify({ projectId, versionId, replaceExisting }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao gerar vídeo com letra')
+      if (!response.ok) throw new Error(t('studio.project.video.generateError'))
 
       const mappedVideoRequest = normalizeStudioVideoRequest(data.videoRequest)
       if (mappedVideoRequest) {
@@ -1343,14 +1343,14 @@ export default function StudioProjectDetailPage() {
             ],
           }
         })
-        setMessage(data.message || 'Vídeo com letra em produção.')
+        setMessage(data.message || t('studio.project.video.processing'))
         setVideoCheckoutLoading(false)
         return
       }
 
-      throw new Error('A solicitação foi enviada, mas o status do vídeo não foi retornado.')
+      throw new Error(t('studio.project.video.noStatus'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao gerar vídeo com letra')
+      setError(err.message || t('studio.project.video.generateError'))
       setVideoCheckoutLoading(false)
     }
   }
@@ -1371,7 +1371,7 @@ export default function StudioProjectDetailPage() {
   }
 
   if (!project) {
-    return <div className="min-h-screen py-10 text-center text-gray-400">{error || 'Projeto não encontrado'}</div>
+    return <div className="min-h-screen py-10 text-center text-gray-400">{error || t('studio.project.notFound')}</div>
   }
 
   const audioUrl = project.version?.audioUrl || project.version?.streamAudioUrl
@@ -1474,12 +1474,12 @@ export default function StudioProjectDetailPage() {
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-500/20 text-fuchsia-200">
                   <FiVideo className="h-6 w-6" />
                 </div>
-                <h2 className="mt-4 text-xl font-black text-white">Gerar vídeo com letra?</h2>
+                <h2 className="mt-4 text-xl font-black text-white">{t('studio.project.video.confirmTitle')}</h2>
                 <p className="mt-2 text-sm leading-relaxed text-gray-300">
-                  A geração deste vídeo consome <strong className="text-white">5 créditos</strong>. Deseja continuar?
+                  {t('studio.project.video.confirmText')}
                 </p>
                 <p className="mt-2 text-xs leading-relaxed text-fuchsia-100/80">
-                  Projetos anteriores à virada e a cortesia de transição são identificados automaticamente e não terão créditos descontados.
+                  {t('studio.project.video.transitionHint')}
                 </p>
                 <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                   <button
@@ -1487,7 +1487,7 @@ export default function StudioProjectDetailPage() {
                     onClick={() => setVideoCreditConfirmation(null)}
                     className="rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-gray-200 transition hover:bg-white/[0.06]"
                   >
-                    Agora não
+                    {t('common.actions.cancel')}
                   </button>
                   <button
                     type="button"
@@ -1723,7 +1723,7 @@ export default function StudioProjectDetailPage() {
                         <FiMusic className="h-10 w-10" />
                       </div>
                       <p className="mt-4 max-w-xs text-sm leading-relaxed">
-                        A capa aparece aqui depois que a música for criada.
+                        {t('studio.project.cover.afterMusic')}
                       </p>
                     </div>
                   )}
@@ -1733,7 +1733,7 @@ export default function StudioProjectDetailPage() {
                       <FiLoader className="mb-4 h-12 w-12 animate-spin text-purple-300" />
                       <p className="text-xl font-black text-white">Gerando capa...</p>
                       <p className="mt-2 text-sm text-gray-300">
-                        A IA está criando uma imagem mais bonita. Isso pode levar alguns segundos.
+                        {t('studio.project.cover.generating')}
                       </p>
                     </div>
                   )}
@@ -1786,7 +1786,7 @@ export default function StudioProjectDetailPage() {
 
                   <details className="mt-4 rounded-2xl border border-primary-300/15 bg-primary-950/15 p-3">
                     <summary className="cursor-pointer text-[11px] font-black uppercase tracking-wide text-primary-200">
-                      Código do projeto para suporte
+                      {t('studio.project.supportCode')}
                     </summary>
                     <p className="mt-3 break-all font-mono text-xs text-gray-200">
                       {projectId}
@@ -1819,10 +1819,10 @@ export default function StudioProjectDetailPage() {
                   {projectVersions.length > 1 && (
                     <div className="mt-5 rounded-2xl border border-green-900/50 bg-green-950/15 p-4">
                       <p className="text-sm font-bold text-green-100">
-                        Este projeto tem {projectVersions.length} versões geradas.
+                        {t('studio.project.versionSummary', { count: projectVersions.length })}
                       </p>
                       <p className="mt-1 text-xs text-gray-400">
-                        As versões aparecem abaixo para você ouvir e escolher sem repetir a música aqui em cima.
+                        {t('studio.project.versionHint')}
                       </p>
                     </div>
                   )}
@@ -1830,7 +1830,7 @@ export default function StudioProjectDetailPage() {
                   {inspiration && (
                     <div className="mt-5 overflow-hidden rounded-2xl border border-yellow-500/50 bg-gradient-to-br from-yellow-950/35 via-purple-950/25 to-black p-4 sm:p-5">
                       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-yellow-400/50 bg-yellow-500/15 px-3 py-1 text-xs font-bold text-yellow-100">
-                        <FiZap /> Usando inspiração
+                        <FiZap /> {t('studio.project.inspiration.using')}
                       </div>
                       <h2 className="text-lg font-black text-white">
                         Este projeto está usando “{inspiration.sourceTitle}” como inspiração.
@@ -1842,7 +1842,7 @@ export default function StudioProjectDetailPage() {
                         {inspiration.sourceStyle && <span className="rounded-full bg-black/40 px-3 py-1 text-yellow-100">Estilo original: {inspiration.sourceStyle}</span>}
                         {inspiration.sourceMood && <span className="rounded-full bg-black/40 px-3 py-1 text-yellow-100">Clima original: {inspiration.sourceMood}</span>}
                         {inspiration.variationLabel && <span className="rounded-full bg-black/40 px-3 py-1 text-yellow-100">Direção: {inspiration.variationLabel}</span>}
-                        <span className="rounded-full bg-black/40 px-3 py-1 text-yellow-100">Pronto para criar música</span>
+                        <span className="rounded-full bg-black/40 px-3 py-1 text-yellow-100">{t('studio.project.inspiration.ready')}</span>
                       </div>
                     </div>
                   )}
@@ -1948,7 +1948,7 @@ export default function StudioProjectDetailPage() {
                   {hasProjectReadyAudio && (
                     <div className="mt-4 overflow-hidden rounded-2xl border border-fuchsia-400/30 bg-gradient-to-br from-fuchsia-950/25 via-purple-950/25 to-black p-4">
                       <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-fuchsia-400/50 bg-fuchsia-500/20 px-3 py-1 text-xs font-bold text-fuchsia-100">
-                        <FiVideo /> Vídeo com letra
+                        <FiVideo /> {t('studio.project.video.title')}
                       </div>
                       <h2 className="text-lg font-black text-white">{t('studio.project.video.createTitle')}</h2>
                       <p className="mt-2 text-sm leading-relaxed text-gray-300">
@@ -2213,13 +2213,13 @@ export default function StudioProjectDetailPage() {
                             ?
                           </button>
                           <div className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden w-64 rounded-xl border border-purple-700/60 bg-gray-950 px-4 py-3 text-xs leading-relaxed text-purple-100 shadow-xl shadow-black/40 group-hover:block">
-                            A capa profissional é uma imagem mais bonita feita por IA. Ela depende do seu plano.
+                            {t('studio.project.cover.professionalHint')}
                           </div>
                         </div>
                       </div>
                       {!studioStatus ? (
                         <p className="text-center text-xs text-gray-500">
-                          Carregando permissões do plano...
+                          {t('studio.project.cover.loadingPermissions')}
                         </p>
                       ) : (
                         premiumCoverLimit > 0 && <p className="text-center text-xs text-gray-500">
@@ -2228,7 +2228,7 @@ export default function StudioProjectDetailPage() {
                       )}
                       {project.status === 'published' ? (
                         <button onClick={unpublishProject} disabled={Boolean(processing)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-yellow-500/40 bg-yellow-950/30 px-4 py-3 font-bold text-yellow-100 transition hover:bg-yellow-900/40 disabled:opacity-60">
-                          <FiEyeOff /> Despublicar música
+                          <FiEyeOff /> {t('studio.project.publish.unpublish')}
                         </button>
                       ) : (
                         <div className="flex items-center gap-2">
@@ -2244,7 +2244,7 @@ export default function StudioProjectDetailPage() {
                             }`}
                           >
                             {canPublishOnDcc ? <FiZap /> : <FiLock />}
-                            Publicar música no DCC Music
+                            {t('studio.project.publish.publish')}
                           </button>
                           <div className="group relative">
                             <button
@@ -2266,7 +2266,7 @@ export default function StudioProjectDetailPage() {
                     )}
                     {project.status === 'published' && project.publicSlug && (
                       <Link href={`/studio/${project.publicSlug}`} target="_blank" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100">
-                        <FiExternalLink /> Ver página pública
+                        <FiExternalLink /> {t('studio.project.publish.viewPublic')}
                       </Link>
                     )}
                     {project.cover?.imageUrl && (
@@ -2334,10 +2334,10 @@ export default function StudioProjectDetailPage() {
 
                   <div className="rounded-2xl border border-purple-300/15 bg-black/25 p-3">
                     <label className="block text-sm font-bold text-purple-100" htmlFor="studio-extra-instructions">
-                      Outras instruções para a música
+                      {t('studio.project.instructions.title')}
                     </label>
                     <p className="mt-1 text-xs leading-relaxed text-purple-100/70">
-                      Opcional. Use para orientar voz, emoção, interpretação, instrumentos ou detalhes da próxima geração.
+                      {t('studio.project.instructions.hint')}
                     </p>
                     <textarea
                       id="studio-extra-instructions"
@@ -2358,7 +2358,7 @@ export default function StudioProjectDetailPage() {
               <section className="rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-4 sm:rounded-[1.75rem] sm:p-5">
                 <h2 className="mb-2 text-lg font-black text-white">Link para compartilhar</h2>
                 <p className="mb-4 text-sm leading-relaxed text-gray-400">
-                  Depois de publicar, a música ganha uma página pública para você enviar para outras pessoas.
+                  {t('studio.project.publish.afterPublish')}
                 </p>
                 {project.publicSlug ? (
                   <div className="space-y-4">
@@ -2390,7 +2390,7 @@ export default function StudioProjectDetailPage() {
                   </div>
                 ) : (
                   <p className="rounded-2xl border border-white/10 bg-black/25 p-3 text-sm text-gray-400">
-                    Publique a música para liberar o link público e a opção de colocar em outro site.
+                    {t('studio.project.publish.embedHint')}
                   </p>
                 )}
               </section>
@@ -2503,7 +2503,7 @@ function PendingMusicRequestSummary({
             <FiClock /> Pedido recebido
           </div>
           <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-black text-white outline-none sm:text-4xl">
-            Sua música está sendo criada
+            {t('studio.project.processing.title')}
           </h1>
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
             {message}
@@ -2546,8 +2546,8 @@ function PendingMusicRequestSummary({
             </div>
             <h2 className="mt-4 text-xl font-black text-white">O que acontece agora?</h2>
             <p className="mt-2 text-sm leading-relaxed text-gray-300">
-              Não precisa clicar em criar música novamente. Sua solicitação já foi enviada para produção.
-              Quando o áudio ficar pronto, esta página atualiza sozinha e também enviamos um e-mail.
+              {t('studio.project.processing.noRepeat')}
+              {t('studio.project.processing.autoUpdate')}
             </p>
             <div className="mt-5 space-y-2 rounded-2xl border border-white/10 bg-black/25 p-3 text-xs leading-relaxed text-gray-300">
               <p><strong className="text-white">Código do projeto:</strong> {projectId}</p>
@@ -2629,12 +2629,12 @@ function StudioProcessing({
         )}
         {onClose && (
           <p className="relative mx-auto mt-4 max-w-sm rounded-2xl border border-purple-700/50 bg-purple-950/30 px-3 py-3 text-xs leading-relaxed text-purple-100 sm:px-4">
-            Fechar não cancela a música. Avisaremos por e-mail quando ela ficar pronta.
+            {t('studio.project.processing.closeHint')}
           </p>
         )}
         {previewAudioUrl && (
           <div className="relative mt-5 rounded-2xl border border-green-700/60 bg-green-950/30 p-4 text-left">
-            <p className="mb-3 text-sm font-bold text-green-100">Prévia disponível enquanto finalizamos a música completa.</p>
+            <p className="mb-3 text-sm font-bold text-green-100">{t('studio.project.processing.preview')}</p>
             <StudioAudioPlayer src={previewAudioUrl} label="Prévia da música" />
           </div>
         )}
@@ -2670,30 +2670,30 @@ function UpgradeModal({ message, onClose }: { message: string; onClose: () => vo
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-purple-600/20 text-purple-200">
           <FiZap className="h-7 w-7" />
         </div>
-        <h2 className="text-2xl font-black text-white">{hasNoBalance ? 'Você já usou sua música grátis ou está sem saldo' : 'Continue criando músicas'}</h2>
+        <h2 className="text-2xl font-black text-white">{hasNoBalance ? '{t('studio.project.upgrade.noBalance')}' : '{t('studio.project.upgrade.title')}'}</h2>
         <p className="mt-3 text-sm text-purple-100/90">{message}</p>
         <p className="mt-3 text-sm text-gray-300">
-          Escolha um plano mensal ou compre créditos avulsos para continuar criando.
+          {t('studio.project.upgrade.description')}
         </p>
         <div className="mt-6 grid gap-3">
           <Link
             href="/studio-ia#planos"
             className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white hover:from-primary-500 hover:to-purple-500"
           >
-            Ver planos do DCC Studio IA
+            {t('studio.project.upgrade.viewPlans')}
           </Link>
           <Link
             href="/compositores/admin/studio-ia/recarga"
             className="inline-flex items-center justify-center rounded-xl border border-purple-600 px-5 py-3 font-bold text-purple-100 hover:bg-purple-950/50"
           >
-            Comprar recarga avulsa
+            {t('studio.project.upgrade.buyTopup')}
           </Link>
           <button
             type="button"
             onClick={onClose}
             className="rounded-xl border border-gray-700 px-5 py-3 font-bold text-gray-200 hover:bg-gray-900"
           >
-            Agora não
+            {t('common.actions.cancel')}
           </button>
         </div>
       </motion.div>

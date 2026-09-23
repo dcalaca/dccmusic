@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from 'react-i18next'
 import { FiArrowLeft, FiCheckCircle, FiEdit3, FiLoader, FiMic, FiMusic, FiPause, FiPlay, FiRefreshCw, FiZap } from 'react-icons/fi'
 
 const MAX_RECORDING_MS = 4.5 * 60 * 1000
@@ -29,6 +30,7 @@ function getSupportedMimeType() {
 }
 
 export default function RecordMusicPage() {
+  const { t } = useTranslation()
   const router = useRouter()
   const recorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -69,7 +71,7 @@ export default function RecordMusicPage() {
     setMessage('')
     if (!ensureLoggedIn()) return
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-      setError('Seu navegador não liberou o gravador. Tente pelo Chrome no celular ou computador.')
+      setError(t('studio.tools.record.errors.recorderUnavailable'))
       return
     }
 
@@ -103,11 +105,11 @@ export default function RecordMusicPage() {
         if (recorder.state !== 'inactive') {
           recorder.stop()
           setRecording(false)
-          setMessage('A gravação parou automaticamente no limite de 4 minutos e 30 segundos.')
+          setMessage(t('studio.tools.record.messages.maxDuration'))
         }
       }, MAX_RECORDING_MS)
     } catch {
-      setError('Não consegui acessar o microfone. Veja se o navegador pediu permissão e tente novamente.')
+      setError(t('studio.tools.record.errors.microphone'))
     }
   }
 
@@ -142,7 +144,7 @@ export default function RecordMusicPage() {
     if (!token) return
     const audioFile = createAudioFile()
     if (!audioFile) {
-      setError('Grave um áudio antes de transcrever.')
+      setError(t('studio.tools.record.errors.recordFirst'))
       return
     }
 
@@ -158,16 +160,16 @@ export default function RecordMusicPage() {
         body: formData,
       })
       const data = await readApiResponse(response)
-      if (!response.ok) throw new Error(data.error || 'Não consegui entender o áudio.')
+      if (!response.ok) throw new Error(t('studio.tools.record.errors.transcribe'))
       setLyric(data.text || '')
       window.dispatchEvent(new Event('studioBalanceChange'))
       const charged = Number(data.creditsCharged) || 1
       setMessage(
         data.message ||
-          `Letra transcrita. Foram debitados ${charged} crédito. Revise e corrija se precisar.`
+          t('studio.tools.record.messages.transcribed', { count: charged })
       )
     } catch (err: any) {
-      setError(err.message || 'Erro ao transcrever áudio.')
+      setError(err.message || t('studio.tools.record.errors.transcribe'))
     } finally {
       setBusy('')
     }
@@ -177,7 +179,7 @@ export default function RecordMusicPage() {
     const token = ensureLoggedIn()
     if (!token) return
     if (lyric.trim().length < 10) {
-      setError('Transcreva ou escreva um trecho antes de pedir para completar.')
+      setError(t('studio.tools.record.errors.lyricRequired'))
       return
     }
 
@@ -194,11 +196,11 @@ export default function RecordMusicPage() {
         body: JSON.stringify({ title, style, lyric, notes }),
       })
       const data = await readApiResponse(response)
-      if (!response.ok) throw new Error(data.error || 'Não consegui completar a letra.')
+      if (!response.ok) throw new Error(t('studio.tools.record.errors.completeLyric'))
       setLyric(data.lyric || lyric)
-      setMessage('Completei a letra. Revise antes de produzir a música.')
+      setMessage(t('studio.tools.record.messages.lyricCompleted'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao completar letra.')
+      setError(err.message || t('studio.tools.record.errors.completeLyric'))
     } finally {
       setBusy('')
     }
@@ -209,15 +211,15 @@ export default function RecordMusicPage() {
     if (!token) return
     const audioFile = createAudioFile()
     if (!audioFile) {
-      setError('Grave um áudio antes de criar a música.')
+      setError(t('studio.tools.record.errors.recordBeforeCreate'))
       return
     }
     if (!title.trim()) {
-      setError('Informe o nome da música.')
+      setError(t('studio.tools.record.errors.titleRequired'))
       return
     }
     if (lyric.trim().length < 40) {
-      setError('Revise a letra e deixe pelo menos um trecho maior antes de criar a música.')
+      setError(t('studio.tools.record.errors.longerLyric'))
       return
     }
 
@@ -238,15 +240,15 @@ export default function RecordMusicPage() {
         body: formData,
       })
       const data = await readApiResponse(response)
-      if (!response.ok) throw new Error(data.error || 'Erro ao criar música.')
+      if (!response.ok) throw new Error(t('studio.tools.record.errors.create'))
 
       window.dispatchEvent(new Event('studioBalanceChange'))
-      setMessage('Produção iniciada. Vamos abrir o projeto para você acompanhar.')
+      setMessage(t('studio.tools.record.messages.started'))
       window.setTimeout(() => {
         router.push(`/compositores/admin/studio-ia/projetos/${data.projectId}`)
       }, 900)
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar música.')
+      setError(err.message || t('studio.tools.record.errors.create'))
     } finally {
       setBusy('')
     }
@@ -262,13 +264,13 @@ export default function RecordMusicPage() {
 
           <section className="relative mb-5 overflow-hidden rounded-[1.75rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(217,70,239,0.28),transparent_34%),linear-gradient(135deg,rgba(8,8,12,0.98),rgba(17,24,39,0.94),rgba(49,15,80,0.68))] p-4 shadow-2xl shadow-purple-950/25 sm:p-6">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-fuchsia-300/20 bg-white/5 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-fuchsia-100">
-              <FiMic /> Gravar agora
+              <FiMic /> {t('studio.tools.record.badge')}
             </div>
             <h1 className="max-w-3xl text-2xl font-black leading-tight text-white sm:text-4xl">
-              Cante sua ideia e deixe a IA transformar em música
+              {t('studio.tools.record.title')}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-gray-300 sm:text-base">
-              Grave pelo microfone, confira a letra que a IA entendeu e escolha se quer completar a música ou produzir a versão final. A gravação para automaticamente em 4:30.
+              {t('studio.tools.record.subtitle')}
             </p>
           </section>
 
@@ -277,8 +279,8 @@ export default function RecordMusicPage() {
 
           <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
             <section className="rounded-[1.75rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:p-5">
-              <h2 className="text-xl font-black text-white">1. Grave sua voz</h2>
-              <p className="mt-1 text-sm text-gray-400">Pode cantar só um trecho ou a música inteira. Máximo: 4 minutos e 30 segundos.</p>
+              <h2 className="text-xl font-black text-white">{t('studio.tools.record.step1')}</h2>
+              <p className="mt-1 text-sm text-gray-400">{t('studio.tools.record.step1Hint')}</p>
 
               <div className="mt-5 grid gap-3">
                 {!recording ? (
@@ -288,7 +290,7 @@ export default function RecordMusicPage() {
                     disabled={Boolean(busy)}
                     className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-5 py-4 font-black text-white disabled:opacity-60"
                   >
-                    <FiMic /> Começar gravação
+                    <FiMic /> {t('studio.tools.record.start')}
                   </button>
                 ) : (
                   <button
@@ -296,14 +298,14 @@ export default function RecordMusicPage() {
                     onClick={stopRecording}
                     className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-700 px-5 py-4 font-black text-white"
                   >
-                    <FiPause /> Parar gravação
+                    <FiPause /> {t('studio.tools.record.stop')}
                   </button>
                 )}
 
                 {audioUrl && (
                   <div className="rounded-2xl border border-purple-300/15 bg-black/30 p-3">
                     <p className="mb-2 flex items-center gap-2 text-sm font-bold text-purple-100">
-                      <FiPlay /> Ouça antes de continuar
+                      <FiPlay /> {t('studio.tools.record.listen')}
                     </p>
                     <audio controls src={audioUrl} className="w-full" />
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -314,7 +316,7 @@ export default function RecordMusicPage() {
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-700 px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
                       >
                         {busy === 'transcribing' ? <FiLoader className="animate-spin" /> : <FiEdit3 />}
-                        Entender letra (1 crédito)
+                        {t('studio.tools.record.transcribe')}
                       </button>
                       <button
                         type="button"
@@ -322,7 +324,7 @@ export default function RecordMusicPage() {
                         disabled={Boolean(busy)}
                         className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-bold text-gray-100 disabled:opacity-60"
                       >
-                        <FiRefreshCw /> Gravar de novo
+                        <FiRefreshCw /> {t('studio.tools.record.recordAgain')}
                       </button>
                     </div>
                   </div>
@@ -331,17 +333,17 @@ export default function RecordMusicPage() {
             </section>
 
             <section className="rounded-[1.75rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:p-5">
-              <h2 className="text-xl font-black text-white">2. Revise a letra</h2>
-              <p className="mt-1 text-sm text-gray-400">A IA pode errar palavras cantadas. Corrija antes de produzir.</p>
+              <h2 className="text-xl font-black text-white">{t('studio.tools.record.step2')}</h2>
+              <p className="mt-1 text-sm text-gray-400">{t('studio.tools.record.step2Hint')}</p>
 
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <label>
-                  <span className="mb-1.5 block text-sm font-bold text-gray-300">Nome da música</span>
-                  <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={30} placeholder="Ex.: Chave Falsa" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                  <span className="mb-1.5 block text-sm font-bold text-gray-300">{t('studio.tools.record.songTitle')}</span>
+                  <input value={title} onChange={(event) => setTitle(event.target.value)} maxLength={30} placeholder={t('studio.tools.record.songTitlePlaceholder')} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
                 </label>
                 <label>
-                  <span className="mb-1.5 block text-sm font-bold text-gray-300">Estilo desejado</span>
-                  <input value={style} onChange={(event) => setStyle(event.target.value)} placeholder="Ex.: sertanejo, arrocha..." className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                  <span className="mb-1.5 block text-sm font-bold text-gray-300">{t('studio.tools.record.style')}</span>
+                  <input value={style} onChange={(event) => setStyle(event.target.value)} placeholder={t('studio.tools.record.stylePlaceholder')} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
                 </label>
               </div>
 
@@ -351,8 +353,8 @@ export default function RecordMusicPage() {
               </label>
 
               <label className="mt-3 block">
-                <span className="mb-1.5 block text-sm font-bold text-gray-300">Observação para a IA</span>
-                <input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Ex.: quero mais sofrida, refrão forte..." className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                <span className="mb-1.5 block text-sm font-bold text-gray-300">{t('studio.tools.record.notes')}</span>
+                <input value={notes} onChange={(event) => setNotes(event.target.value)} placeholder={t('studio.tools.record.notesPlaceholder')} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
               </label>
             </section>
           </div>
@@ -368,7 +370,7 @@ export default function RecordMusicPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 font-black text-white hover:bg-white/[0.09] disabled:opacity-60"
               >
                 {busy === 'completing' ? <FiLoader className="animate-spin" /> : <FiEdit3 />}
-                Completar minha música
+                {t('studio.tools.record.complete')}
               </button>
               <button
                 type="button"
@@ -377,7 +379,7 @@ export default function RecordMusicPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-4 font-black text-white disabled:opacity-60"
               >
                 {busy === 'creating' ? <FiLoader className="animate-spin" /> : <FiCheckCircle />}
-                Minha música já está pronta
+                {t('studio.tools.record.ready')}
               </button>
               <button
                 type="button"

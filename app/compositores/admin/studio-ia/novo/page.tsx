@@ -382,7 +382,7 @@ export default function NewStudioMusicPage() {
     const fetchGenres = async () => {
       try {
         const response = await fetch('/api/generos/list', { cache: 'no-store' })
-        if (!response.ok) throw new Error('Erro ao buscar gêneros')
+        if (!response.ok) throw new Error(t('studio.new.errors.loadGenres'))
 
         const data = await response.json()
         const genreNames = (data || [])
@@ -694,7 +694,7 @@ export default function NewStudioMusicPage() {
                         </div>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-black text-white">{isEnglish ? 'False Key' : 'Chave Falsa'}</p>
-                          <p className="truncate text-xs text-purple-200/70">{isEnglish ? 'Country · Heartbreak' : 'Sertanejo · Sofrência'}</p>
+                          <p className="truncate text-xs text-purple-200/70">{t('studio.new.preview.style')}</p>
                         </div>
                       </div>
                       <div className="mt-4 flex items-end gap-1 px-1">
@@ -927,7 +927,7 @@ export default function NewStudioMusicPage() {
 
                         <div className="grid gap-3 md:grid-cols-2">
                           <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
-                            <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{isEnglish ? 'Instruments you want (optional)' : isSpanish ? 'Instrumentos que quieres (opcional)' : 'Instrumentos que você quer (opcional)'}</label>
+                            <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{t('studio.new.instruments')}</label>
                             <input
                               value={form.wantInstruments}
                               onChange={(e) => setForm({ ...form, wantInstruments: e.target.value })}
@@ -1019,7 +1019,7 @@ export default function NewStudioMusicPage() {
                         : (hasOwnLyric ? (isEnglish ? 'Save and Create Project' : 'Salvar e Criar Projeto') : (isEnglish ? 'Create my song' : 'Criar minha música'))}
                       {!loading && !hasOwnLyric && (
                         <span className="rounded-full bg-black/25 px-2.5 py-1 text-[11px] font-bold text-purple-50">
-                          {isEnglish ? 'Free lyrics' : 'Letra grátis'}
+                          {t('studio.new.freeLyrics')}
                         </span>
                       )}
                     </button>
@@ -1073,13 +1073,13 @@ export default function NewStudioMusicPage() {
                   <h2 className="text-base font-black text-white">{t('studio.create.sample.title')}</h2>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
-                  <p className="text-sm font-black text-white">{isEnglish ? 'A Heart in Silence' : 'Coração em Silêncio'}</p>
-                  <p className="mt-1 text-xs text-gray-400">{isEnglish ? 'Country · Romantic' : 'Sertanejo · Romântica'}</p>
+                  <p className="text-sm font-black text-white">{t('studio.new.preview.title')}</p>
+                  <p className="mt-1 text-xs text-gray-400">{t('studio.new.preview.romanticStyle')}</p>
                   <div className="mt-4 grid gap-3">
                     <div>
                       <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500">{t('studio.create.sample.youWrite')}</p>
                       <p className="mt-1 text-xs leading-relaxed text-gray-400">
-                        {isEnglish ? 'Someone loves in silence but is afraid to say it.' : 'Alguém ama em silêncio e não tem coragem de dizer.'}
+                        {t('studio.new.preview.idea')}
                       </p>
                     </div>
                     <div>

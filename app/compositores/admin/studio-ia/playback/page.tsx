@@ -4,14 +4,13 @@ import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiArrowLeft, FiCheckCircle, FiDownload, FiFolder, FiHeadphones, FiLoader, FiMusic, FiRefreshCw, FiUploadCloud } from 'react-icons/fi'
-import { useLocalization } from '@/components/LocalizationProvider'
+import { useTranslation } from 'react-i18next'
 
 const PLAYBACK_CREDITS = 10
 
 function PlaybackCreator() {
+  const { t } = useTranslation()
   const router = useRouter()
-  const { country } = useLocalization()
-  const isUnitedStates = String(country) === 'US' || String(country) === 'GB'
   const searchParams = useSearchParams()
   const projectId = searchParams.get('projectId') || ''
   const versionId = searchParams.get('versionId') || ''
@@ -44,9 +43,9 @@ function PlaybackCreator() {
           cache: 'no-store',
         })
         const data = await response.json()
-        if (!response.ok) throw new Error(data.error || (isUnitedStates ? 'Could not load the song.' : 'Erro ao carregar a música.'))
+        if (!response.ok) throw new Error(data.error || t('studio.tools.playback.errors.load'))
         const exists = (data.project?.versions || []).some((item: any) => item.id === versionId)
-        if (!exists) throw new Error(isUnitedStates ? 'This version does not belong to the selected project.' : 'Essa versão não pertence ao projeto escolhido.')
+        if (!exists) throw new Error(t('studio.tools.playback.errors.versionMismatch'))
         setProject(data.project)
 
         const savedResponse = await fetch(`/api/compositores/studio/playback?projectId=${encodeURIComponent(projectId)}&versionId=${encodeURIComponent(versionId)}`, {
@@ -75,11 +74,11 @@ function PlaybackCreator() {
     const token = localStorage.getItem('composer_token')
     if (!token) return
     if (!file.type.startsWith('audio/')) {
-      setError(isUnitedStates ? 'Choose a valid audio file.' : 'Escolha um arquivo de áudio válido.')
+      setError(t('studio.tools.playback.errors.invalidFile'))
       return
     }
     if (file.size > 10 * 1024 * 1024) {
-      setError(isUnitedStates ? 'The audio file must be no larger than 10 MB.' : 'O áudio precisa ter no máximo 10 MB.')
+      setError(t('studio.tools.playback.errors.maxSize'))
       return
     }
 
@@ -98,7 +97,7 @@ function PlaybackCreator() {
         }),
       })
       const prepareData = await prepareResponse.json()
-      if (!prepareResponse.ok) throw new Error(prepareData.error || (isUnitedStates ? 'Could not prepare the upload.' : 'Não foi possível preparar o envio.'))
+      if (!prepareResponse.ok) throw new Error(prepareData.error || (t('studio.tools.playback.errors.prepareUpload')))
 
       const upload = prepareData.upload
       const putResponse = await fetch(upload.uploadUrl, {
@@ -106,11 +105,11 @@ function PlaybackCreator() {
         headers: { 'Content-Type': upload.contentType || file.type || 'audio/mpeg' },
         body: file,
       })
-      if (!putResponse.ok) throw new Error(isUnitedStates ? 'Audio upload failed. Please try again.' : 'Falha ao enviar o áudio. Tente novamente.')
+      if (!putResponse.ok) throw new Error(t('studio.tools.playback.errors.upload'))
       setUploadedAudio(upload)
       setUploadedFileName(file.name)
     } catch (uploadError: any) {
-      setError(uploadError?.message || (isUnitedStates ? 'Could not upload the song.' : 'Erro ao enviar a música.'))
+      setError(uploadError?.message || (t('studio.tools.playback.errors.upload')))
     } finally {
       setUploading(false)
     }
@@ -133,9 +132,9 @@ function PlaybackCreator() {
       const data = await response.json()
       if (!response.ok) {
         const refund = Number(data.creditsRefunded) > 0
-          ? (isUnitedStates ? ' Your 10 credits were refunded.' : ' Seus 10 créditos foram devolvidos.')
+          ? (t('studio.tools.playback.errors.refunded'))
           : ''
-        throw new Error((data.error || (isUnitedStates ? 'Could not create the instrumental.' : 'Não foi possível criar o playback.')) + refund)
+        throw new Error((data.error || (t('studio.tools.playback.errors.create'))) + refund)
       }
       setResult(data)
       window.dispatchEvent(new Event('studioBalanceChange'))
@@ -163,25 +162,25 @@ function PlaybackCreator() {
 
           <div className="space-y-5 p-5 sm:p-8">
             {loading ? (
-              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 p-5 text-gray-300"><FiLoader className="animate-spin" /> {isUnitedStates ? 'Loading the selected version...' : 'Carregando a versão escolhida...'}</div>
+              <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/40 p-5 text-gray-300"><FiLoader className="animate-spin" /> {t('studio.tools.playback.loadingVersion')}</div>
             ) : project && version ? (
               <>
                 <div className="rounded-2xl border border-white/10 bg-black/40 p-5">
                   <p className="text-xs font-black uppercase tracking-wider text-cyan-300">{isUnitedStates ? 'Selected version' : 'Versão escolhida'}</p>
-                  <h2 className="mt-1 text-xl font-black">{project.title || (isUnitedStates ? 'My song' : 'Minha música')}</h2>
-                  <p className="mt-1 text-sm text-gray-400">{isUnitedStates ? 'Version' : 'Versão'} {versionNumber}{version.versionName ? ` · ${version.versionName}` : ''}</p>
+                  <h2 className="mt-1 text-xl font-black">{project.title || t('studio.tools.playback.mySong')}</h2>
+                  <p className="mt-1 text-sm text-gray-400">{t('studio.tools.playback.version')} {versionNumber}{version.versionName ? ` · ${version.versionName}` : ''}</p>
                   {(version.audioUrl || version.streamAudioUrl) && <audio className="mt-4 w-full" controls src={version.audioUrl || version.streamAudioUrl} />}
                 </div>
 
                 {!result && (
                   <div className="rounded-2xl border border-amber-400/30 bg-amber-950/20 p-5">
-                    <p className="font-black text-amber-100">{isUnitedStates ? 'Cost' : 'Custo'}: {PLAYBACK_CREDITS} {isUnitedStates ? 'credits' : 'créditos'}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-amber-100/75">{isUnitedStates ? 'The cost is the same as creating a song. When finished, the instrumental and isolated vocal will be saved to this project. If processing cannot be completed, your credits will be refunded automatically.' : 'O valor é o mesmo da criação de uma música. Depois de concluído, o playback e a voz ficam salvos neste projeto. Se não for possível concluir, os créditos serão estornados automaticamente.'}</p>
+                    <p className="font-black text-amber-100">{t('studio.tools.playback.cost')}: {PLAYBACK_CREDITS} {t('studio.tools.playback.credits')}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-amber-100/75">{t('studio.tools.playback.projectCostHint')}</p>
                   </div>
                 )}
 
                 {!result && <button type="button" onClick={createPlayback} disabled={processing} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-600 via-primary-600 to-purple-600 px-6 py-4 text-lg font-black shadow-xl transition hover:scale-[1.01] disabled:cursor-wait disabled:opacity-70">
-                  {processing ? <><FiLoader className="animate-spin" /> {isUnitedStates ? 'Removing vocals...' : 'Retirando a voz...'}</> : <><FiHeadphones /> {isUnitedStates ? 'Create instrumental for 10 credits' : 'Criar playback por 10 créditos'}</>}
+                  {processing ? <><FiLoader className="animate-spin" /> {t('studio.tools.playback.processing')}</> : <><FiHeadphones /> {t('studio.tools.playback.createForCredits', { count: PLAYBACK_CREDITS })}</>}
                 </button>}
               </>
             ) : (
@@ -194,16 +193,16 @@ function PlaybackCreator() {
                     className="flex min-h-36 flex-col items-center justify-center rounded-2xl border border-cyan-400/35 bg-cyan-950/20 p-5 text-center transition hover:border-cyan-300 hover:bg-cyan-950/35 disabled:opacity-60"
                   >
                     {uploading ? <FiLoader className="mb-3 h-8 w-8 animate-spin text-cyan-300" /> : <FiUploadCloud className="mb-3 h-8 w-8 text-cyan-300" />}
-                    <span className="font-black">{isUnitedStates ? 'Upload my song' : 'Enviar minha música'}</span>
-                    <span className="mt-1 text-xs text-gray-400">{isUnitedStates ? 'MP3, WAV, M4A, or another audio format · up to 10 MB' : 'MP3, WAV, M4A ou outro áudio · até 10 MB'}</span>
+                    <span className="font-black">{t('studio.tools.playback.uploadSong')}</span>
+                    <span className="mt-1 text-xs text-gray-400">{t('studio.tools.playback.uploadHint')}</span>
                   </button>
                   <Link
                     href="/compositores/admin/studio-ia/projetos?acao=playback"
                     className="flex min-h-36 flex-col items-center justify-center rounded-2xl border border-purple-400/35 bg-purple-950/20 p-5 text-center transition hover:border-purple-300 hover:bg-purple-950/35"
                   >
                     <FiFolder className="mb-3 h-8 w-8 text-purple-300" />
-                    <span className="font-black">{isUnitedStates ? 'Choose a DCC song' : 'Escolher música do DCC'}</span>
-                    <span className="mt-1 text-xs text-gray-400">{isUnitedStates ? 'Select a version you already created' : 'Selecione uma versão já produzida'}</span>
+                    <span className="font-black">{t('studio.tools.playback.chooseDcc')}</span>
+                    <span className="mt-1 text-xs text-gray-400">{t('studio.tools.playback.chooseDccHint')}</span>
                   </Link>
                 </div>
                 <input
@@ -223,7 +222,7 @@ function PlaybackCreator() {
                     <div className="flex items-center gap-3">
                       <FiMusic className="h-6 w-6 text-green-300" />
                       <div className="min-w-0">
-                        <p className="font-black text-green-100">{isUnitedStates ? 'Song uploaded' : 'Música enviada'}</p>
+                        <p className="font-black text-green-100">{t('studio.tools.playback.uploaded')}</p>
                         <p className="truncate text-sm text-green-100/70">{uploadedFileName}</p>
                       </div>
                     </div>
@@ -232,7 +231,7 @@ function PlaybackCreator() {
 
                 <div className="rounded-2xl border border-amber-400/30 bg-amber-950/20 p-5">
                   <p className="font-black text-amber-100">{isUnitedStates ? 'Cost' : 'Custo'}: {PLAYBACK_CREDITS} {isUnitedStates ? 'credits' : 'créditos'}</p>
-                  <p className="mt-1 text-sm leading-relaxed text-amber-100/75">{isUnitedStates ? 'Credits are charged only when you start. If processing cannot be completed, they will be refunded automatically.' : 'Os créditos só serão debitados quando você iniciar. Se não for possível concluir, o valor será estornado automaticamente.'}</p>
+                  <p className="mt-1 text-sm leading-relaxed text-amber-100/75">{t('studio.tools.playback.refundHint')}</p>
                 </div>
 
                 {!result && (
@@ -243,32 +242,32 @@ function PlaybackCreator() {
               </>
             )}
 
-            {processing && <p className="text-center text-sm text-gray-400">{isUnitedStates ? 'This may take a few minutes. Keep this page open.' : 'Isso pode levar alguns minutos. Mantenha esta página aberta.'}</p>}
+            {processing && <p className="text-center text-sm text-gray-400">{t('studio.tools.playback.wait')}</p>}
             {error && <div className="rounded-2xl border border-red-500/40 bg-red-950/30 p-4 text-sm text-red-100">{error}</div>}
             {result?.playbackUrl && (
               <div className="rounded-2xl border border-green-400/35 bg-green-950/20 p-5">
-                <div className="flex items-center gap-2 text-lg font-black text-green-200"><FiCheckCircle /> {result.saved ? (isUnitedStates ? 'Files saved to the project' : 'Arquivos salvos no projeto') : (isUnitedStates ? 'Separation complete!' : 'Separação concluída!')}</div>
-                <p className="mt-1 text-sm text-green-100/70">{result.saved ? (isUnitedStates ? 'Your instrumental and isolated vocal are available here to listen to or download again anytime.' : 'Seu playback e a voz isolada ficam disponíveis aqui para você ouvir e baixar novamente quando quiser.') : (isUnitedStates ? 'Your instrumental and isolated vocal are ready.' : 'Seu playback e a voz isolada estão prontos.')}</p>
+                <div className="flex items-center gap-2 text-lg font-black text-green-200"><FiCheckCircle /> {result.saved ? t('studio.tools.playback.saved') : t('studio.tools.playback.complete')}</div>
+                <p className="mt-1 text-sm text-green-100/70">{result.saved ? t('studio.tools.playback.savedHint') : t('studio.tools.playback.readyHint')}</p>
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
                   <div className="rounded-2xl border border-cyan-400/25 bg-black/30 p-4">
-                    <p className="font-black text-cyan-200">{isUnitedStates ? 'Instrumental' : 'Playback / instrumental'}</p>
+                    <p className="font-black text-cyan-200">{t('studio.tools.playback.instrumental')}</p>
                     <audio className="mt-3 w-full" controls src={result.playbackUrl} />
-                    <a href={result.playbackUrl} download={`${project?.title || uploadedFileName.replace(/\.[^.]+$/, '') || 'song'} - Instrumental.mp3`} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 font-black text-white hover:bg-cyan-500"><FiDownload /> {isUnitedStates ? 'Download instrumental' : 'Baixar playback'}</a>
+                    <a href={result.playbackUrl} download={`${project?.title || uploadedFileName.replace(/\.[^.]+$/, '') || 'song'} - Instrumental.mp3`} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 font-black text-white hover:bg-cyan-500"><FiDownload /> {t('studio.tools.playback.downloadInstrumental')}</a>
                   </div>
                   <div className="rounded-2xl border border-purple-400/25 bg-black/30 p-4">
-                    <p className="font-black text-purple-200">{isUnitedStates ? 'Isolated vocal' : 'Voz isolada'}</p>
+                    <p className="font-black text-purple-200">{t('studio.tools.playback.vocal')}</p>
                     {result.vocalUrl ? (
                       <>
                         <audio className="mt-3 w-full" controls src={result.vocalUrl} />
-                        <a href={result.vocalUrl} download={`${project?.title || uploadedFileName.replace(/\.[^.]+$/, '') || 'song'} - Vocal.mp3`} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 font-black text-white hover:bg-purple-500"><FiDownload /> {isUnitedStates ? 'Download vocal' : 'Baixar voz'}</a>
+                        <a href={result.vocalUrl} download={`${project?.title || uploadedFileName.replace(/\.[^.]+$/, '') || 'song'} - Vocal.mp3`} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 font-black text-white hover:bg-purple-500"><FiDownload /> {t('studio.tools.playback.downloadVocal')}</a>
                       </>
                     ) : (
-                      <p className="mt-3 rounded-xl bg-black/30 p-3 text-sm text-gray-400">{isUnitedStates ? 'The provider completed the instrumental but did not return a separate vocal track.' : 'O provedor concluiu o playback, mas não disponibilizou a voz separada.'}</p>
+                      <p className="mt-3 rounded-xl bg-black/30 p-3 text-sm text-gray-400">{t('studio.tools.playback.noVocal')}</p>
                     )}
                   </div>
                 </div>
                 <div className="mt-4">
-                  <button type="button" onClick={() => setResult(null)} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3 font-bold hover:bg-white/5"><FiRefreshCw /> {isUnitedStates ? 'Create another separation' : 'Criar uma nova separação'}</button>
+                  <button type="button" onClick={() => setResult(null)} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/15 px-5 py-3 font-bold hover:bg-white/5"><FiRefreshCw /> {t('studio.tools.playback.another')}</button>
                 </div>
               </div>
             )}
@@ -280,7 +279,6 @@ function PlaybackCreator() {
 }
 
 export default function PlaybackPage() {
-  const { country } = useLocalization()
-  const isUnitedStates = String(country) === 'US'
-  return <Suspense fallback={<main className="min-h-screen bg-black p-8 text-white">{isUnitedStates ? 'Loading...' : 'Carregando...'}</main>}><PlaybackCreator /></Suspense>
+  const { t } = useTranslation()
+  return <Suspense fallback={<main className="min-h-screen bg-black p-8 text-white">{t('common.status.loading')}</main>}><PlaybackCreator /></Suspense>
 }
