@@ -2535,7 +2535,7 @@ function PendingMusicRequestSummary({
             <div className="grid gap-2 sm:grid-cols-2">
               {summaryItems.map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-white/10 bg-gray-950/70 p-3">
-                  <p className="text-[11px] font-black uppercase tracking-wide text-gray-500">{resolvedLabel}</p>
+                  <p className="text-[11px] font-black uppercase tracking-wide text-gray-500">{label}</p>
                   <p className="mt-1 text-sm font-bold text-gray-100">{value}</p>
                 </div>
               ))}
