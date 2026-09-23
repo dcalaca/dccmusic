@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { FiFileText, FiLoader, FiMusic, FiUpload } from 'react-icons/fi'
 import { readClientApiError } from '@/lib/music-transcription-errors'
+import { useTranslation } from 'react-i18next'
 
 type Source = {
   id: string
@@ -30,7 +31,6 @@ type Transcription = {
 }
 
 const COST = 10
-const DISPLAY_PRICE = '10 créditos'
 
 function safeFileName(value: string, extension: string) {
   const base = value
@@ -44,17 +44,17 @@ function safeFileName(value: string, extension: string) {
   return `${base}.${extension}`
 }
 
-function formatMusicTitle(value: string) {
+function formatMusicTitle(value: string, locale: string) {
   return value
-    .toLocaleLowerCase('pt-BR')
-    .replace(/(^|[\s([{'"-])(\p{L})/gu, (_, prefix: string, letter: string) => `${prefix}${letter.toLocaleUpperCase('pt-BR')}`)
+    .toLocaleLowerCase(locale)
+    .replace(/(^|[\s([{'"-])(\p{L})/gu, (_, prefix: string, letter: string) => `${prefix}${letter.toLocaleUpperCase(locale)}`)
 }
 
-function formatSourceOption(source: Source) {
+function formatSourceOption(source: Source, locale: string, optionLabel: string) {
   const dateSource = source.projectUpdatedAt || source.createdAt
-  const date = dateSource ? new Date(dateSource).toLocaleDateString('pt-BR') : ''
+  const date = dateSource ? new Date(dateSource).toLocaleDateString(locale) : ''
   const versionHint = /^Música gerada #\d+$/.test(source.versionName)
-    ? source.versionName.replace('Música gerada', 'Opção')
+    ? source.versionName.replace('Música gerada', optionLabel)
     : ''
   const parts = [source.title, versionHint, date].filter(Boolean)
   return parts.join(' · ')
@@ -71,6 +71,38 @@ function sortSourcesNewestFirst(sources: Source[]) {
 }
 
 function TranscricaoMusicalContent() {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language
+  const localizedError = useCallback((payload: unknown, fallbackKey: string) => {
+    const fallback = t(fallbackKey)
+    const message = readClientApiError(payload, fallback)
+    const knownErrors: Record<string, string> = {
+      'Não autorizado': 'unauthorized',
+      'Erro ao carregar suas músicas.': 'loadSongs',
+      'Erro ao carregar cifras.': 'loadSongs',
+      'Escolha uma música do Studio IA.': 'chooseSong',
+      'Selecione uma música.': 'chooseSong',
+      'Música não encontrada.': 'songNotFound',
+      'Essa música não tem letra disponível para criar a cifra.': 'missingLyrics',
+      'Escolha um arquivo de áudio.': 'chooseFile',
+      'Envie MP3, WAV, M4A, AAC, FLAC ou OGG.': 'invalidFormat',
+      'Envie um áudio de até 50 MB.': 'fileTooLarge',
+      'Não foi possível gerar a cifra porque a música precisa ser uma criação original sua do Studio IA.': 'originalOnly',
+      'Esta música já está sendo processada para gerar a cifra. Aguarde alguns minutos e tente novamente.': 'alreadyProcessing',
+      'Esta música já foi enviada para gerar cifra. Se a geração anterior falhou, tente novamente em alguns minutos.': 'alreadySubmitted',
+      'Não foi possível processar a resposta do servidor. Tente novamente em alguns minutos.': 'serverResponse',
+      'Erro ao gerar a cifra.': 'generate',
+      'Erro ao baixar arquivo.': 'download',
+      'id obrigatório.': 'invalidRequest',
+      'Transcrição não encontrada.': 'resultNotFound',
+      'Prévia de letra e cifra não encontrada.': 'previewNotFound',
+      'Arquivo não encontrado para esta transcrição.': 'fileNotFound',
+      'Erro ao gerar PDF da prévia.': 'download',
+    }
+    const key = knownErrors[message]
+    if (key) return t(`musicTranscription.errors.${key}`)
+    return locale === 'pt-BR' ? message : fallback
+  }, [t, locale])
   const router = useRouter()
   const searchParams = useSearchParams()
   const preferredStudioVersionId = searchParams.get('studioVersionId') || ''
@@ -125,7 +157,7 @@ function TranscricaoMusicalContent() {
         sourcesResponse.json(),
       ])
 
-      if (!sourcesResponse.ok) throw new Error(sourcesData.error || 'Erro ao carregar suas músicas.')
+      if (!sourcesResponse.ok) throw new Error(readClientApiError(sourcesData, t('musicTranscription.errors.loadSongs')))
 
       const nextSources = sortSourcesNewestFirst(sourcesData.sources || [])
       const nextBalance = Number(meData?.statement?.summary?.currentCreditBalance) || 0
@@ -147,11 +179,11 @@ function TranscricaoMusicalContent() {
       localStorage.setItem('composer_studio_balance', String(nextBalance))
       window.dispatchEvent(new CustomEvent('studioBalanceChange', { detail: { balance: nextBalance } }))
     } catch (err: any) {
-      setError(err.message || 'Erro ao carregar cifras.')
+      setError(localizedError(err, 'musicTranscription.errors.loadSongs'))
     } finally {
       setLoading(false)
     }
-  }, [router, preferredStudioVersionId, preferredStudioProjectId])
+  }, [router, preferredStudioVersionId, preferredStudioProjectId, localizedError])
 
   useEffect(() => {
     loadData()
@@ -159,7 +191,7 @@ function TranscricaoMusicalContent() {
 
   const handleTranscribeStudio = async () => {
     if (!selectedSourceId) {
-      setError('Escolha uma música do Studio IA.')
+      setError(t('musicTranscription.errors.chooseSong'))
       return
     }
 
@@ -182,13 +214,13 @@ function TranscricaoMusicalContent() {
         body: JSON.stringify({ studioVersionId: selectedSourceId }),
       })
       const data = await response.json().catch(() => null)
-      if (!response.ok) throw new Error(readClientApiError(data, 'Erro ao gerar a cifra.'))
+      if (!response.ok) throw new Error(readClientApiError(data, t('musicTranscription.errors.generate')))
 
       setSelectedTranscription(data.transcription)
-      setSuccess(data.cached ? 'A cifra já estava salva. Nenhum crédito foi descontado.' : `Cifra gerada. Debitamos ${COST} créditos do seu saldo DCC.`)
+      setSuccess(data.cached ? t('musicTranscription.cached') : t('musicTranscription.created', { count: COST }))
       await loadData()
     } catch (err: any) {
-      setError(readClientApiError(err, 'Erro ao gerar a cifra.'))
+      setError(localizedError(err, 'musicTranscription.errors.generate'))
     } finally {
       setProcessing(false)
     }
@@ -197,7 +229,7 @@ function TranscricaoMusicalContent() {
   const handleUploadSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!manualFile) {
-      setError('Escolha o arquivo de áudio.')
+      setError(t('musicTranscription.errors.chooseFile'))
       return
     }
 
@@ -213,7 +245,7 @@ function TranscricaoMusicalContent() {
       setSuccess('')
       const formData = new FormData()
       formData.append('audio', manualFile)
-      formData.append('title', formatMusicTitle(manualTitle.trim()) || manualFile.name)
+      formData.append('title', formatMusicTitle(manualTitle.trim(), locale) || manualFile.name)
 
       const response = await fetch('/api/compositores/music-transcription', {
         method: 'POST',
@@ -221,13 +253,13 @@ function TranscricaoMusicalContent() {
         body: formData,
       })
       const data = await response.json().catch(() => null)
-      if (!response.ok) throw new Error(readClientApiError(data, 'Erro ao gerar a cifra.'))
+      if (!response.ok) throw new Error(readClientApiError(data, t('musicTranscription.errors.generate')))
 
       setSelectedTranscription(data.transcription)
-      setSuccess(data.cached ? 'A cifra já estava salva. Nenhum crédito foi descontado.' : `Cifra gerada. Debitamos ${COST} créditos do seu saldo DCC.`)
+      setSuccess(data.cached ? t('musicTranscription.cached') : t('musicTranscription.created', { count: COST }))
       await loadData()
     } catch (err: any) {
-      setError(readClientApiError(err, 'Erro ao gerar a cifra.'))
+      setError(localizedError(err, 'musicTranscription.errors.generate'))
     } finally {
       setProcessing(false)
     }
@@ -250,7 +282,7 @@ function TranscricaoMusicalContent() {
         } catch {
           parsed = null
         }
-        throw new Error(readClientApiError(parsed || { error: text }, 'Erro ao baixar arquivo.'))
+        throw new Error(readClientApiError(parsed || { error: text }, t('musicTranscription.errors.download')))
       }
 
       const extension = kind === 'musicxml' ? 'musicxml' : kind === 'zip' ? 'zip' : 'pdf'
@@ -264,7 +296,7 @@ function TranscricaoMusicalContent() {
       anchor.remove()
       URL.revokeObjectURL(url)
     } catch (err: any) {
-      setError(err.message || 'Erro ao baixar arquivo.')
+      setError(localizedError(err, 'musicTranscription.errors.download'))
     }
   }
 
@@ -284,17 +316,17 @@ function TranscricaoMusicalContent() {
         <div className="mb-6 flex flex-col gap-4 sm:mb-8 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-800 bg-cyan-950/40 px-3 py-1 text-xs font-bold text-cyan-200">
-              <FiMusic /> Cifra da Música
+              <FiMusic /> {t('musicTranscription.badge')}
             </div>
-            <h1 className="text-2xl font-black leading-tight sm:text-3xl">Cifra da música</h1>
+            <h1 className="text-2xl font-black leading-tight sm:text-3xl">{t('musicTranscription.title')}</h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
-              Para músicas do Studio IA, a DCC organiza a letra e os acordes em uma cifra limpa, pronta para tocar e imprimir.
-              <span className="block text-xs text-gray-500">Custa {COST} créditos do saldo DCC.</span>
+              {t('musicTranscription.intro')}
+              <span className="block text-xs text-gray-500">{t('musicTranscription.cost', { count: COST })}</span>
             </p>
           </div>
           <div className="w-full shrink-0 rounded-2xl border border-gray-800 bg-gray-950/70 px-4 py-3 text-sm sm:w-auto sm:px-5 sm:py-4">
-            <p className="text-gray-400">Seu saldo</p>
-            <p className={`text-2xl font-black ${canAfford ? 'text-green-300' : 'text-yellow-300'}`}>{balance ?? 0} créditos</p>
+            <p className="text-gray-400">{t('musicTranscription.balance')}</p>
+            <p className={`text-2xl font-black ${canAfford ? 'text-green-300' : 'text-yellow-300'}`}>{t('musicTranscription.credits', { count: balance ?? 0 })}</p>
           </div>
         </div>
 
@@ -302,15 +334,11 @@ function TranscricaoMusicalContent() {
         {success && <div className="mb-5 break-words rounded-xl border border-green-800 bg-green-950/40 p-4 text-sm text-green-200">{success}</div>}
         {!canAfford && (
           <div className="mb-5 flex flex-col gap-3 rounded-xl border border-yellow-800 bg-yellow-950/40 p-4 text-sm text-yellow-100 sm:flex-row sm:items-center sm:justify-between">
-            <span className="min-w-0 break-words">
-              Saldo insuficiente para gerar a cifra.
-            </span>
+            <span className="min-w-0 break-words">{t('musicTranscription.insufficient')}</span>
             <Link
               href="/compositores/admin/studio-ia/recarga"
               className="inline-flex w-full shrink-0 items-center justify-center rounded-lg bg-yellow-400 px-4 py-2 text-sm font-black text-black hover:bg-yellow-300 sm:w-auto"
-            >
-              Comprar créditos para gerar cifra
-            </Link>
+            >{t('musicTranscription.buyCredits')}</Link>
           </div>
         )}
 
@@ -322,26 +350,20 @@ function TranscricaoMusicalContent() {
                   type="button"
                   onClick={() => setMode('studio')}
                   className={`rounded-xl px-3 py-3 text-xs font-black sm:px-4 sm:text-sm ${mode === 'studio' ? 'bg-primary-600 text-white' : 'border border-gray-700 text-gray-300'}`}
-                >
-                  Música do Studio IA
-                </button>
+                >{t('musicTranscription.studioSong')}</button>
                 <button
                   type="button"
                   disabled
-                  title="Disponível em breve"
+                  title={t('musicTranscription.comingSoon')}
                   className="cursor-not-allowed rounded-xl border border-gray-700 px-3 py-3 text-xs font-black text-gray-500 opacity-50 sm:px-4 sm:text-sm"
-                >
-                  Enviar áudio (em breve)
-                </button>
+                >{t('musicTranscription.uploadSoon')}</button>
               </div>
 
               {mode === 'studio' ? (
                 <div>
-                  <h2 className="mb-4 text-xl font-bold">Escolha uma música sua</h2>
+                  <h2 className="mb-4 text-xl font-bold">{t('musicTranscription.selectSong')}</h2>
                   {sources.length === 0 ? (
-                    <div className="rounded-xl border border-gray-800 bg-black/40 p-4 text-sm text-gray-300">
-                      Nenhuma música com áudio foi encontrada no seu Studio IA.
-                    </div>
+                    <div className="rounded-xl border border-gray-800 bg-black/40 p-4 text-sm text-gray-300">{t('musicTranscription.noSongs')}</div>
                   ) : (
                     <>
                       <select
@@ -351,7 +373,7 @@ function TranscricaoMusicalContent() {
                       >
                         {sources.map((source) => (
                           <option key={source.id} value={source.id}>
-                            {formatSourceOption(source)}
+                            {formatSourceOption(source, locale, t('musicTranscription.option'))}
                           </option>
                         ))}
                       </select>
@@ -362,36 +384,36 @@ function TranscricaoMusicalContent() {
                         className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-black text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {processing ? <FiLoader className="animate-spin" /> : <FiFileText />}
-                        {processing ? 'Gerando...' : `Gerar cifra - ${DISPLAY_PRICE}`}
+                        {processing ? t('musicTranscription.generating') : t('musicTranscription.generate', { count: COST })}
                       </button>
                     </>
                   )}
                 </div>
               ) : (
                 <form onSubmit={handleUploadSubmit}>
-                  <h2 className="mb-4 text-xl font-bold">Enviar arquivo de áudio</h2>
-                  <label className="mb-1.5 block text-sm font-bold text-gray-200">Nome da música</label>
+                  <h2 className="mb-4 text-xl font-bold">{t('musicTranscription.uploadAudio')}</h2>
+                  <label className="mb-1.5 block text-sm font-bold text-gray-200">{t('musicTranscription.songTitle')}</label>
                   <input
                     value={manualTitle}
-                    onChange={(event) => setManualTitle(formatMusicTitle(event.target.value))}
-                    placeholder="Ex: Minha música"
+                    onChange={(event) => setManualTitle(formatMusicTitle(event.target.value, locale))}
+                    placeholder={t('musicTranscription.titlePlaceholder')}
                     className="mb-4 w-full rounded-xl border border-gray-700 bg-black px-4 py-3 text-white outline-none focus:border-primary-500"
                   />
-                  <label className="mb-1.5 block text-sm font-bold text-gray-200">Arquivo</label>
+                  <label className="mb-1.5 block text-sm font-bold text-gray-200">{t('musicTranscription.file')}</label>
                   <input
                     type="file"
                     accept="audio/*,.mp3,.wav,.m4a,.aac,.flac,.ogg"
                     onChange={(event) => setManualFile(event.target.files?.[0] || null)}
                     className="mb-2 w-full rounded-xl border border-gray-700 bg-black px-4 py-3 text-sm text-gray-200 file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-3 file:py-2 file:text-sm file:font-bold file:text-white"
                   />
-                  <p className="mb-4 text-xs text-gray-500">Formatos aceitos: MP3, WAV, M4A, AAC, FLAC ou OGG. Limite: 50 MB.</p>
+                  <p className="mb-4 text-xs text-gray-500">{t('musicTranscription.formats')}</p>
                   <button
                     type="submit"
                     disabled={processing || !manualFile || !canAfford}
                     className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-black text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {processing ? <FiLoader className="animate-spin" /> : <FiUpload />}
-                    {processing ? 'Enviando...' : `Enviar e gerar - ${DISPLAY_PRICE}`}
+                    {processing ? t('musicTranscription.uploading') : t('musicTranscription.uploadAndGenerate', { count: COST })}
                   </button>
                 </form>
               )}
@@ -399,23 +421,20 @@ function TranscricaoMusicalContent() {
           </div>
 
           <section className="min-w-0 rounded-3xl border border-gray-800 bg-gray-950/70 p-4 sm:p-6">
-            <h2 className="mb-4 text-xl font-bold">Resultado</h2>
+            <h2 className="mb-4 text-xl font-bold">{t('musicTranscription.result')}</h2>
             {!selectedTranscription ? (
-              <div className="rounded-xl border border-gray-800 bg-black/40 p-4 text-sm text-gray-400">
-                Gere uma cifra para ver o resultado e baixar o PDF. O histórico fica em Meus Projetos.
-              </div>
+              <div className="rounded-xl border border-gray-800 bg-black/40 p-4 text-sm text-gray-400">{t('musicTranscription.emptyResult')}</div>
             ) : (
               <div className="min-w-0 space-y-5">
                 <div className="flex flex-col gap-3">
                   <button onClick={() => downloadFile('pdf')} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 text-sm font-black text-white hover:bg-primary-700">
-                    <FiFileText /> Baixar cifra em PDF
-                  </button>
+                    <FiFileText /> {t('musicTranscription.downloadPdf')}</button>
                 </div>
 
                 <div className="min-w-0 overflow-hidden rounded-2xl border border-gray-800 bg-white p-3 text-gray-950 sm:p-5">
-                  <h3 className="mb-3 text-lg font-black">Letra e cifra</h3>
+                  <h3 className="mb-3 text-lg font-black">{t('musicTranscription.lyricsAndChords')}</h3>
                   <pre className="max-h-[720px] max-w-full overflow-x-auto overflow-y-auto whitespace-pre-wrap break-words rounded-xl border border-gray-200 bg-gray-50 p-3 font-mono text-xs leading-6 text-gray-950 sm:p-4 sm:text-sm sm:leading-7">
-                    {selectedTranscription.previewText || 'Prévia não disponível.'}
+                    {selectedTranscription.previewText || t('musicTranscription.previewUnavailable')}
                   </pre>
                 </div>
               </div>
