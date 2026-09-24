@@ -1036,6 +1036,8 @@
   },
   "global": {
     "country": {
+      "names": {"BR": "Brasil", "PY": "Paraguai", "CO": "Colômbia", "PT": "Portugal", "MX": "México", "ES": "Espanha", "US": "Estados Unidos", "GB": "Reino Unido"},
+      "languages": {"pt": "Português", "es": "Espanhol", "en": "Inglês"},
       "change": "Mudar país",
       "prefix": "País:",
       "choose": "Escolha o seu país"

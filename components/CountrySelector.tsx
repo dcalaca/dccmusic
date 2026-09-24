@@ -6,11 +6,11 @@ import { FiChevronDown, FiGlobe } from 'react-icons/fi'
 import { COUNTRY_CONFIG, type DccCountry } from '@/lib/localization'
 import { useLocalization } from '@/components/LocalizationProvider'
 
-function selectorLanguage(country: DccCountry) {
+function selectorLanguageCode(country: DccCountry) {
   const code = String(country)
-  if (code === 'PY' || code === 'CO' || code === 'MX' || code === 'ES') return 'Español'
-  if (code === 'US' || code === 'GB') return 'English'
-  return 'Português'
+  if (code === 'PY' || code === 'CO' || code === 'MX' || code === 'ES') return 'es'
+  if (code === 'US' || code === 'GB') return 'en'
+  return 'pt'
 }
 
 function selectorCurrency(country: DccCountry) {
@@ -37,7 +37,7 @@ export default function CountrySelector({ compact = false }: { compact?: boolean
         {compact ? null : <FiGlobe className="h-4 w-4 text-primary-300" />}
         {compact ? null : <span className="text-xs font-medium text-gray-400">{t('global.country.prefix')}</span>}
         <span>{current.flag}</span>
-        {compact ? null : <span>{current.label}</span>}
+        {compact ? null : <span>{t(`global.country.names.${code}`)}</span>}
         {compact ? null : <FiChevronDown className="h-3.5 w-3.5" />}
       </button>
 
@@ -61,8 +61,8 @@ export default function CountrySelector({ compact = false }: { compact?: boolean
               >
                 <span className="text-xl">{item.flag}</span>
                 <span>
-                  <strong className="block">{item.label}</strong>
-                  <span className="text-xs opacity-70">{selectorLanguage(typedCode)} · {selectorCurrency(typedCode)}</span>
+                  <strong className="block">{t(`global.country.names.${rawCode}`)}</strong>
+                  <span className="text-xs opacity-70">{t(`global.country.languages.${selectorLanguageCode(typedCode)}`)} · {selectorCurrency(typedCode)}</span>
                 </span>
               </button>
             )
