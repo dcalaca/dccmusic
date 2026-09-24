@@ -8,14 +8,7 @@ import { motion } from 'framer-motion'
 import { FiArrowLeft, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiCloud, FiCode, FiCreditCard, FiDownload, FiExternalLink, FiEyeOff, FiFileText, FiHeadphones, FiHeart, FiLoader, FiLock, FiMic, FiMusic, FiPause, FiPlay, FiSave, FiShield, FiVideo, FiX, FiZap } from 'react-icons/fi'
 import CopyButton from '@/components/CopyButton'
 
-const refineActions = [
-  ['improve_chorus', 'melhorar refrão'],
-  ['sticky', 'deixar mais chiclete'],
-  ['sadder', 'deixar mais sofrida'],
-  ['modern', 'deixar mais moderna'],
-  ['romantic', 'deixar mais romântica'],
-  ['commercial', 'deixar mais comercial'],
-]
+const refineActions = ['improve_chorus', 'sticky', 'sadder', 'modern', 'romantic', 'commercial'] as const
 
 const MUSIC_GENERATION_TIMEOUT_SECONDS = 10 * 60
 const MUSIC_GENERATION_BACKGROUND_SECONDS = 20
@@ -348,36 +341,7 @@ function normalizeStudioVideoRequest(videoRequest: any) {
   }
 }
 
-const videoRequestStatus: Record<string, { label: string; description: string }> = {
-  payment_pending: {
-    label: 'Aguardando confirmação',
-    description: 'A solicitação foi registrada e será enviada para produção.',
-  },
-  requested: {
-    label: 'Solicitado',
-    description: 'Recebemos sua solicitação. O vídeo com letra será enviado para produção.',
-  },
-  in_production: {
-    label: 'Em produção',
-    description: 'Seu vídeo com capa, nome e letra está sendo produzido. Assim que finalizar, o link aparecerá aqui.',
-  },
-  retry_pending: {
-    label: 'Tentando novamente',
-    description: 'A geradora apresentou uma instabilidade. Seu vídeo continua na fila e será reenviado automaticamente, sem cobrança.',
-  },
-  completed: {
-    label: 'Concluído',
-    description: 'Seu vídeo com letra foi finalizado.',
-  },
-  cancelled: {
-    label: 'Cancelado',
-    description: 'Esta solicitação foi cancelada.',
-  },
-  failed: {
-    label: 'Não confirmado',
-    description: 'Não conseguimos confirmar esta solicitação. Entre em contato com o suporte se necessário.',
-  },
-}
+const videoRequestStatus = new Set(['payment_pending', 'requested', 'in_production', 'retry_pending', 'completed', 'cancelled', 'failed'])
 
 export default function StudioProjectDetailPage() {
   const router = useRouter()
@@ -593,7 +557,7 @@ export default function StudioProjectDetailPage() {
         cache: 'no-store',
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao carregar projeto')
+      if (!response.ok) throw new Error(t('studio.project.detail.loadError'))
       const projectVersions = dedupeStudioVersions(data.project.versions)
       const normalizedProject = {
         ...data.project,
@@ -657,7 +621,7 @@ export default function StudioProjectDetailPage() {
       return { ...data, project: normalizedProject }
     } catch (err: any) {
       if (!options?.suppressError) {
-        setError(err.message || 'Erro ao carregar projeto')
+        setError(err.message || t('studio.project.detail.loadError'))
       }
       return null
     } finally {
@@ -710,7 +674,7 @@ export default function StudioProjectDetailPage() {
 
   const saveLyric = async () => {
     const token = localStorage.getItem('composer_token')
-    setProcessing('Salvando letra...')
+    setProcessing(t('studio.project.detail.savingLyrics'))
     try {
       const response = await fetch(`/api/compositores/studio/projects/${projectId}`, {
         method: 'PUT',
@@ -721,10 +685,10 @@ export default function StudioProjectDetailPage() {
         body: JSON.stringify({ lyric }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao salvar letra')
-      setMessage('Letra salva com sucesso.')
+      if (!response.ok) throw new Error(t('studio.project.detail.saveLyricsError'))
+      setMessage(t('studio.project.detail.lyricsSaved'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao salvar letra')
+      setError(err.message || t('studio.project.detail.saveLyricsError'))
     } finally {
       setProcessing('')
     }
@@ -772,7 +736,7 @@ export default function StudioProjectDetailPage() {
 
   const refineLyric = async (action: string) => {
     const token = localStorage.getItem('composer_token')
-    setProcessing('Reescrevendo letra...')
+    setProcessing(t('studio.project.detail.refiningLyrics'))
     try {
       const response = await fetch('/api/compositores/studio/lyrics', {
         method: 'POST',
@@ -793,11 +757,11 @@ export default function StudioProjectDetailPage() {
         }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao melhorar letra')
+      if (!response.ok) throw new Error(t('studio.project.detail.refineLyricsError'))
       setLyric(data.lyric)
-      setMessage('Letra atualizada.')
+      setMessage(t('studio.project.detail.lyricsUpdated'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao melhorar letra')
+      setError(err.message || t('studio.project.detail.refineLyricsError'))
     } finally {
       setProcessing('')
     }
@@ -1261,7 +1225,7 @@ export default function StudioProjectDetailPage() {
 
     setError('')
     setMessage('')
-    setProcessing(action === 'select' ? 'Alterando capa principal...' : 'Excluindo capa...')
+    setProcessing(action === 'select' ? t('studio.project.detail.selectingCover') : t('studio.project.detail.deletingCover'))
 
     try {
       const response = await fetch('/api/compositores/studio/covers/manage', {
@@ -1273,12 +1237,12 @@ export default function StudioProjectDetailPage() {
         body: JSON.stringify({ projectId, coverId, action }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Erro ao gerenciar capa')
+      if (!response.ok) throw new Error(t('studio.project.detail.manageCoverError'))
 
       await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
       setMessage(action === 'select' ? t('studio.project.cover.primaryUpdated') : t('studio.project.cover.deleted'))
     } catch (err: any) {
-      setError(err.message || 'Erro ao gerenciar capa')
+      setError(err.message || t('studio.project.detail.manageCoverError'))
     } finally {
       setProcessing('')
     }
@@ -1390,7 +1354,7 @@ export default function StudioProjectDetailPage() {
         : []
   ).sort((a: any, b: any) => Number(Boolean(b.isCurrent)) - Number(Boolean(a.isCurrent)))
   const shouldShowVersionList = projectVersions.length > 0
-  const isGeneratingCover = processing.toLowerCase().includes('capa')
+  const isGeneratingCover = processing === t('studio.project.cover.generating')
   const generationMessage = musicGenerationMessages[generationMessageIndex % musicGenerationMessages.length]
   const premiumCoverLimit = studioStatus?.stats?.premiumCoverLimit || 0
   const premiumCoverGenerations = studioStatus?.stats?.premiumCoverGenerations || 0
@@ -1452,7 +1416,7 @@ export default function StudioProjectDetailPage() {
           {(processing || (generationId && !generationBackgroundMode)) && (
             <StudioProcessing
               message={processing || generationMessage}
-              description={generationId && !processing ? 'A geração continua em segundo plano. Você pode aguardar aqui ou fechar esta janela.' : undefined}
+              description={generationId && !processing ? t('studio.project.detail.backgroundHint') : undefined}
               elapsedTime={generationId && !processing ? formatGenerationTime(generationElapsedSeconds) : undefined}
               previewAudioUrl={generationId && !processing ? previewAudioUrl : undefined}
               onClose={generationId && !processing ? closeGenerationModal : undefined}
@@ -1526,7 +1490,7 @@ export default function StudioProjectDetailPage() {
                     type="button"
                     onClick={closeInspirationPicker}
                     className="absolute right-4 top-4 rounded-full border border-white/10 bg-black/35 p-2 text-gray-300 transition hover:text-white sm:static"
-                    aria-label="Fechar"
+                    aria-label={t('common.actions.close')}
                   >
                     <FiX />
                   </button>
@@ -1652,10 +1616,10 @@ export default function StudioProjectDetailPage() {
                       <div ref={coverCarouselRef} className="flex h-full snap-x snap-mandatory overflow-x-auto scroll-smooth sm:hidden">
                         {projectCovers.map((cover: any, index: number) => (
                           <div key={cover.id || cover.imageUrl} className="relative h-full min-w-full snap-center">
-                            <img src={cover.imageUrl} alt={`${project.title} - capa ${index + 1}`} className="h-full w-full object-cover" />
+                            <img src={cover.imageUrl} alt={t('studio.project.detail.coverAlt', { title: project.title, number: index + 1 })} className="h-full w-full object-cover" />
                             <div className="absolute left-3 top-3 flex gap-2">
-                              {cover.isCurrent && <span className="rounded-full bg-green-600/90 px-3 py-1 text-[11px] font-black text-white">PRINCIPAL</span>}
-                              {cover.isPremium && <span className="rounded-full bg-purple-600/90 px-3 py-1 text-[11px] font-black text-white">PRO</span>}
+                              {cover.isCurrent && <span className="rounded-full bg-green-600/90 px-3 py-1 text-[11px] font-black text-white">{t('studio.project.detail.coverPrimary')}</span>}
+                              {cover.isPremium && <span className="rounded-full bg-purple-600/90 px-3 py-1 text-[11px] font-black text-white">{t('studio.project.detail.coverPro')}</span>}
                             </div>
                             <span className="absolute right-3 top-3 rounded-full bg-black/65 px-3 py-1 text-xs font-bold text-white">
                               {index + 1}/{projectCovers.length}
@@ -1698,7 +1662,7 @@ export default function StudioProjectDetailPage() {
                           <button
                             type="button"
                             onClick={() => scrollCoverCarousel('left')}
-                            aria-label="Ver capa anterior"
+                            aria-label={t('studio.project.detail.previousCover')}
                             className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/55 text-xl text-white shadow-lg backdrop-blur sm:hidden"
                           >
                             <FiChevronLeft />
@@ -1706,7 +1670,7 @@ export default function StudioProjectDetailPage() {
                           <button
                             type="button"
                             onClick={() => scrollCoverCarousel('right')}
-                            aria-label="Ver próxima capa"
+                            aria-label={t('studio.project.detail.nextCover')}
                             className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/55 text-xl text-white shadow-lg backdrop-blur sm:hidden"
                           >
                             <FiChevronRight />
@@ -1737,7 +1701,7 @@ export default function StudioProjectDetailPage() {
                   {isGeneratingCover && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 px-8 text-center backdrop-blur-sm">
                       <FiLoader className="mb-4 h-12 w-12 animate-spin text-purple-300" />
-                      <p className="text-xl font-black text-white">Gerando capa...</p>
+                      <p className="text-xl font-black text-white">{t('studio.project.detail.generatingCover')}</p>
                       <p className="mt-2 text-sm text-gray-300">
                         {t('studio.project.cover.generating')}
                       </p>
@@ -1747,15 +1711,15 @@ export default function StudioProjectDetailPage() {
                 {projectCovers.length > 1 && (
                   <div className="hidden border-t border-white/10 bg-black/30 p-3 sm:block">
                     <div className="mb-2 flex items-center justify-between">
-                      <p className="text-xs font-black uppercase tracking-wide text-purple-200">Suas capas</p>
-                      <p className="text-xs text-gray-500">{projectCovers.length} versões</p>
+                      <p className="text-xs font-black uppercase tracking-wide text-purple-200">{t('studio.project.detail.yourCovers')}</p>
+                      <p className="text-xs text-gray-500">{t('studio.project.detail.coverCount', { count: projectCovers.length })}</p>
                     </div>
                     <div className="grid grid-cols-3 gap-2 lg:grid-cols-5">
                       {projectCovers.map((cover: any, index: number) => (
                         <div key={cover.id || cover.imageUrl} className={`overflow-hidden rounded-xl border ${cover.isCurrent ? 'border-green-400 ring-1 ring-green-400/40' : 'border-white/10'}`}>
                           <div className="relative aspect-square">
-                            <img src={cover.imageUrl} alt={`${project.title} - capa ${index + 1}`} className="h-full w-full object-cover" />
-                            {cover.isCurrent && <span className="absolute left-1.5 top-1.5 rounded-full bg-green-600 px-2 py-0.5 text-[9px] font-black text-white">PRINCIPAL</span>}
+                            <img src={cover.imageUrl} alt={t('studio.project.detail.coverAlt', { title: project.title, number: index + 1 })} className="h-full w-full object-cover" />
+                            {cover.isCurrent && <span className="absolute left-1.5 top-1.5 rounded-full bg-green-600 px-2 py-0.5 text-[9px] font-black text-white">{t('studio.project.detail.coverPrimary')}</span>}
                           </div>
                           <div className="grid gap-1 bg-gray-950 p-1.5">
                             {!cover.isCurrent && (
@@ -1783,9 +1747,9 @@ export default function StudioProjectDetailPage() {
                 <div className="p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="mb-1 text-xs font-black uppercase tracking-[0.18em] text-purple-200">Projeto da música</p>
+                      <p className="mb-1 text-xs font-black uppercase tracking-[0.18em] text-purple-200">{t('studio.project.detail.songProject')}</p>
                       <h1 className="text-2xl font-black leading-tight text-white sm:text-3xl">{project.title}</h1>
-                      <p className="mt-1 text-sm text-gray-400">{project.style || 'Livre'} · {project.mood || 'Sem clima'}</p>
+                      <p className="mt-1 text-sm text-gray-400">{project.style || t('studio.project.detail.free')} · {project.mood || t('studio.project.detail.noMood')}</p>
                     </div>
                     <FiHeart className={`h-6 w-6 ${project.favorite ? 'fill-red-400 text-red-400' : 'text-gray-500'}`} />
                   </div>
@@ -1798,7 +1762,7 @@ export default function StudioProjectDetailPage() {
                       {projectId}
                     </p>
                     <div className="mt-3">
-                      <CopyButton text={projectId} label="Copiar código do projeto" />
+                      <CopyButton text={projectId} label={t('studio.project.detail.copyProjectCode')} />
                     </div>
                   </details>
 
@@ -1807,17 +1771,17 @@ export default function StudioProjectDetailPage() {
                       Detalhes do pedido
                     </summary>
                     <div className="flex flex-wrap gap-2 text-xs">
-                      <span className="rounded-full border border-primary-400/20 bg-primary-950/50 px-3 py-1 font-semibold text-primary-100">Estilo: {project.style || 'Livre'}</span>
-                      <span className="rounded-full border border-purple-400/20 bg-purple-950/50 px-3 py-1 font-semibold text-purple-100">Clima: {project.mood || 'Livre'}</span>
-                      {project.structure && <span className="rounded-full border border-white/10 bg-gray-900 px-3 py-1 font-semibold text-gray-200">Formato: {project.structure}</span>}
-                      {project.lineCount && <span className="rounded-full border border-white/10 bg-gray-900 px-3 py-1 font-semibold text-gray-200">Tamanho: {project.lineCount}</span>}
-                      {voicePreferences && <span className="rounded-full border border-fuchsia-400/20 bg-fuchsia-950/50 px-3 py-1 font-semibold text-fuchsia-100">Voz: {voicePreferences}</span>}
+                      <span className="rounded-full border border-primary-400/20 bg-primary-950/50 px-3 py-1 font-semibold text-primary-100">{t('studio.project.detail.style')}: {project.style || t('studio.project.detail.free')}</span>
+                      <span className="rounded-full border border-purple-400/20 bg-purple-950/50 px-3 py-1 font-semibold text-purple-100">{t('studio.project.detail.mood')}: {project.mood || t('studio.project.detail.free')}</span>
+                      {project.structure && <span className="rounded-full border border-white/10 bg-gray-900 px-3 py-1 font-semibold text-gray-200">{t('studio.project.detail.format')}: {project.structure}</span>}
+                      {project.lineCount && <span className="rounded-full border border-white/10 bg-gray-900 px-3 py-1 font-semibold text-gray-200">{t('studio.project.detail.length')}: {project.lineCount}</span>}
+                      {voicePreferences && <span className="rounded-full border border-fuchsia-400/20 bg-fuchsia-950/50 px-3 py-1 font-semibold text-fuchsia-100">{t('studio.project.detail.voice')}: {voicePreferences}</span>}
                     </div>
                   </details>
 
                   {audioUrl && !shouldShowVersionList && (
                     <div className="mt-4">
-                      <StudioAudioPlayer src={audioUrl} label={project.title || 'Música gerada'} />
+                      <StudioAudioPlayer src={audioUrl} label={project.title || t('studio.project.detail.generatedSong')} />
                       <LearnYourMusicAd studioVersionId={currentStudioVersionId} studioProjectId={project.id} />
                     </div>
                   )}
@@ -1839,15 +1803,15 @@ export default function StudioProjectDetailPage() {
                         <FiZap /> {t('studio.project.inspiration.using')}
                       </div>
                       <h2 className="text-lg font-black text-white">
-                        Este projeto está usando “{inspiration.sourceTitle}” como inspiração.
+                        {t('studio.project.detail.inspirationTitle', { title: inspiration.sourceTitle })}
                       </h2>
                       <p className="mt-2 text-sm leading-relaxed text-yellow-50/90">
-                        Quando você clicar em criar música, nossa IA vai usar o áudio dessa música original como referência para seguir a melodia, pegada e estilo. A letra aqui pode ser editada livremente.
+                        {t('studio.project.detail.inspirationHint')}
                       </p>
                       <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                        {inspiration.sourceStyle && <span className="rounded-full bg-black/40 px-3 py-1 text-yellow-100">Estilo original: {inspiration.sourceStyle}</span>}
-                        {inspiration.sourceMood && <span className="rounded-full bg-black/40 px-3 py-1 text-yellow-100">Clima original: {inspiration.sourceMood}</span>}
-                        {inspiration.variationLabel && <span className="rounded-full bg-black/40 px-3 py-1 text-yellow-100">Direção: {inspiration.variationLabel}</span>}
+                        {inspiration.sourceStyle && <span className="rounded-full bg-black/40 px-3 py-1 text-yellow-100">{t('studio.project.detail.originalStyle', { value: inspiration.sourceStyle })}</span>}
+                        {inspiration.sourceMood && <span className="rounded-full bg-black/40 px-3 py-1 text-yellow-100">{t('studio.project.detail.originalMood', { value: inspiration.sourceMood })}</span>}
+                        {inspiration.variationLabel && <span className="rounded-full bg-black/40 px-3 py-1 text-yellow-100">{t('studio.project.detail.direction', { value: inspiration.variationLabel })}</span>}
                         <span className="rounded-full bg-black/40 px-3 py-1 text-yellow-100">{t('studio.project.inspiration.ready')}</span>
                       </div>
                     </div>
@@ -2016,7 +1980,7 @@ export default function StudioProjectDetailPage() {
                             </>
                           ) : (
                             <>
-                              <FiVideo /> {selectedVideoVersionNumber ? `Gerar vídeo da Versão ${selectedVideoVersionNumber} · 5 créditos` : 'Gerar vídeo com letra · 5 créditos'}
+                              <FiVideo /> {selectedVideoVersionNumber ? t('studio.project.detail.videoVersionCredits', { number: selectedVideoVersionNumber }) : t('studio.project.detail.videoCredits')}
                             </>
                           )}
                         </button>
@@ -2047,8 +2011,8 @@ export default function StudioProjectDetailPage() {
                       {hasActiveVideoRequest && !selectedVideoIsReady && (
                         <p className="mt-2 text-center text-xs text-purple-100/80">
                           {selectedVideoIsActive
-                            ? 'Aguarde a finalização desta versão antes de gerar outro vídeo.'
-                            : 'Aguarde a finalização da solicitação atual antes de gerar o vídeo de outra versão.'}
+                            ? t('studio.project.detail.waitVideoVersion')
+                            : t('studio.project.detail.waitVideoRequest')}
                         </p>
                       )}
                     </div>
@@ -2060,8 +2024,8 @@ export default function StudioProjectDetailPage() {
                       {allVideoRequests.map((video: any) => {
                         const versionNumber = getStudioVersionNumber(projectVersions, video.versionId)
                         const versionLabel = video.versionName
-                          || (versionNumber > 0 ? `Versão ${versionNumber}` : 'Versão não identificada')
-                        const status = videoRequestStatus[video.status] || videoRequestStatus.requested
+                          || (versionNumber > 0 ? t('studio.project.versions.versionNumber', { number: versionNumber }) : t('studio.project.detail.unknownVersion'))
+                        const status = videoRequestStatus.has(video.status) ? video.status : 'requested'
                         const videoUrl = video.videoUrl || null
                         return (
                           <article key={video.id} className="rounded-2xl border border-purple-700/60 bg-purple-950/25 p-4 sm:p-5">
@@ -2071,14 +2035,14 @@ export default function StudioProjectDetailPage() {
                                   {video.status === 'completed' ? <FiCheckCircle className="text-green-300" /> : <FiClock className="text-purple-300" />}
                                   {versionLabel}
                                 </div>
-                                <p className="text-sm text-purple-100/90">{status.description}</p>
+                                <p className="text-sm text-purple-100/90">{t(`studio.project.video.status.${status}.description`)}</p>
                                 <p className="mt-2 text-xs text-purple-200/70">
                                   {t('studio.project.video.requestedAt', { date: new Date(video.createdAt || video.completedAt).toLocaleString(i18n.language) })}
                                 </p>
                               </div>
                               <div className="flex flex-wrap gap-2">
                                 <span className="rounded-full border border-purple-500/50 bg-black/30 px-3 py-1 text-xs font-bold text-purple-100">
-                                  {status.label}
+                                  {t(`studio.project.video.status.${status}.label`)}
                                 </span>
                                 {videoUrl && (
                                   <a
@@ -2213,7 +2177,7 @@ export default function StudioProjectDetailPage() {
                         <div className="group relative">
                           <button
                             type="button"
-                            aria-label="Informação sobre capas"
+                            aria-label={t('studio.project.detail.coverInfo')}
                             className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-gray-900 text-sm font-black text-gray-300 hover:border-purple-500 hover:text-white"
                           >
                             ?
@@ -2229,7 +2193,7 @@ export default function StudioProjectDetailPage() {
                         </p>
                       ) : (
                         premiumCoverLimit > 0 && <p className="text-center text-xs text-gray-500">
-                          Capas profissionais usadas neste mês: {premiumCoverGenerations} / {premiumCoverLimit}
+                          {t('studio.project.detail.premiumCoverUsage', { used: premiumCoverGenerations, limit: premiumCoverLimit })}
                         </p>
                       )}
                       {project.status === 'published' ? (
@@ -2255,14 +2219,14 @@ export default function StudioProjectDetailPage() {
                           <div className="group relative">
                             <button
                               type="button"
-                              aria-label="Informação sobre publicação"
+                              aria-label={t('studio.project.detail.publishInfo')}
                               onClick={() => setShowPublishPlanModal(true)}
                               className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-gray-900 text-sm font-black text-gray-300 hover:border-amber-500 hover:text-white"
                             >
                               ?
                             </button>
                             <div className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden w-64 rounded-xl border border-amber-500/50 bg-gray-950 px-4 py-3 text-xs leading-relaxed text-amber-50 shadow-xl shadow-black/40 group-hover:block">
-                              <p className="font-bold text-amber-200">Sobre publicar</p>
+                              <p className="font-bold text-amber-200">{t('studio.project.detail.aboutPublish')}</p>
                               <p className="mt-1.5">{publishPlanRequiredMessage}</p>
                             </div>
                           </div>
@@ -2310,9 +2274,9 @@ export default function StudioProjectDetailPage() {
                 <summary className="cursor-pointer list-none">
                   <div className="flex items-center justify-between gap-3">
                     <div>
-                      <h2 className="text-lg font-black text-white">Ajustes finos da letra</h2>
+                      <h2 className="text-lg font-black text-white">{t('studio.project.detail.refineTitle')}</h2>
                       <p className="mt-1 text-xs text-gray-400">
-                        Abra se quiser melhorar a letra ou passar instruções extras para a próxima geração.
+                        {t('studio.project.detail.refineHint')}
                       </p>
                     </div>
                     <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs font-bold text-gray-300">
@@ -2323,16 +2287,16 @@ export default function StudioProjectDetailPage() {
 
                 <div className="mt-4 space-y-5">
                   <div>
-                    <p className="mb-2 text-sm font-bold text-white">Melhorar letra com IA</p>
+                    <p className="mb-2 text-sm font-bold text-white">{t('studio.project.detail.refineLyrics')}</p>
                     <div className="flex flex-wrap gap-2">
-                      {refineActions.map(([action, label]) => (
+                      {refineActions.map((action) => (
                         <button
                           key={action}
                           onClick={() => refineLyric(action)}
                           disabled={Boolean(processing)}
                           className="rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm font-semibold text-gray-200 transition hover:border-primary-400/60 hover:bg-primary-950/30 disabled:opacity-60"
                         >
-                          {label}
+                          {t(`studio.project.refine.actions.${action}`)}
                         </button>
                       ))}
                     </div>
@@ -2351,7 +2315,7 @@ export default function StudioProjectDetailPage() {
                       onChange={(event) => handleExtraInstructionsChange(event.target.value)}
                       rows={4}
                       maxLength={700}
-                      placeholder="Ex.: usar minha voz cadastrada com interpretação masculina calma e expressiva, cantando de forma inspiradora, suave, quente e serena. Ideal para sertanejo motivacional, música emocional e narrativa."
+                      placeholder={t('studio.project.detail.extraPlaceholder')}
                       className="mt-3 w-full resize-none rounded-2xl border border-purple-300/20 bg-gray-950 px-4 py-3 text-sm leading-relaxed text-white outline-none transition focus:border-primary-400"
                     />
                     <p className="mt-2 text-right text-[11px] text-gray-500">
@@ -2362,7 +2326,7 @@ export default function StudioProjectDetailPage() {
               </details>
 
               <section className="rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-4 sm:rounded-[1.75rem] sm:p-5">
-                <h2 className="mb-2 text-lg font-black text-white">Link para compartilhar</h2>
+                <h2 className="mb-2 text-lg font-black text-white">{t('studio.project.detail.shareLink')}</h2>
                 <p className="mb-4 text-sm leading-relaxed text-gray-400">
                   {t('studio.project.publish.afterPublish')}
                 </p>
@@ -2380,7 +2344,7 @@ export default function StudioProjectDetailPage() {
                     {showIncorporateCode && (
                       <div className="rounded-2xl border border-primary-900/60 bg-gray-900 p-4">
                         <p className="mb-3 text-sm text-gray-300">
-                          Copie o código abaixo e cole no site onde a música deve aparecer.
+                          {t('studio.project.detail.embedHint')}
                         </p>
                         <textarea
                           readOnly
@@ -2389,7 +2353,7 @@ export default function StudioProjectDetailPage() {
                           className="w-full resize-none rounded-xl border border-gray-700 bg-black/60 p-3 font-mono text-xs text-gray-200 outline-none"
                         />
                         <div className="mt-3">
-                          <CopyButton text={incorporateCode} label="Copiar código" />
+                          <CopyButton text={incorporateCode} label={t('studio.project.detail.copyCode')} />
                         </div>
                       </div>
                     )}
@@ -2405,29 +2369,29 @@ export default function StudioProjectDetailPage() {
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 xl:gap-0">
                   {[
                     {
-                      title: 'Gerado com IA',
-                      subtitle: 'Tecnologia avançada',
+                      title: t('studio.project.detail.aiGenerated'),
+                      subtitle: t('studio.project.detail.advancedTechnology'),
                       Icon: FiZap,
                       color: 'text-orange-400',
                       glow: 'bg-orange-500/15 shadow-[0_0_24px_rgba(251,146,60,0.35)]',
                     },
                     {
-                      title: 'Seus direitos',
-                      subtitle: '100% garantidos',
+                      title: t('studio.project.detail.yourRights'),
+                      subtitle: t('studio.project.detail.guaranteedRights'),
                       Icon: FiShield,
                       color: 'text-emerald-400',
                       glow: 'bg-emerald-500/15 shadow-[0_0_24px_rgba(52,211,153,0.35)]',
                     },
                     {
-                      title: 'Alta qualidade',
-                      subtitle: 'Áudio profissional',
+                      title: t('studio.project.detail.highQuality'),
+                      subtitle: t('studio.project.detail.professionalAudio'),
                       Icon: FiCloud,
                       color: 'text-sky-400',
                       glow: 'bg-sky-500/15 shadow-[0_0_24px_rgba(56,189,248,0.35)]',
                     },
                     {
-                      title: 'Seus projetos',
-                      subtitle: 'Sempre salvos',
+                      title: t('studio.project.detail.yourProjects'),
+                      subtitle: t('studio.project.detail.alwaysSaved'),
                       Icon: FiLock,
                       color: 'text-amber-300',
                       glow: 'bg-amber-400/15 shadow-[0_0_24px_rgba(251,191,36,0.35)]',
@@ -2478,12 +2442,12 @@ function PendingMusicRequestSummary({
   const [refreshing, setRefreshing] = useState(false)
   const headingRef = useRef<HTMLHeadingElement | null>(null)
   const summaryItems = [
-    ['Nome', project.title || 'Sua música'],
-    ['Estilo', project.style || 'Livre'],
-    ['Clima', project.mood || 'Livre'],
-    ['Formato', project.structure || 'Livre'],
-    ['Tamanho', project.lineCount || 'Não informado'],
-    ['Voz', voicePreferences || 'A IA vai escolher'],
+    [t('studio.project.detail.name'), project.title || t('studio.project.detail.yourSong')],
+    [t('studio.project.detail.style'), project.style || t('studio.project.detail.free')],
+    [t('studio.project.detail.mood'), project.mood || t('studio.project.detail.free')],
+    [t('studio.project.detail.format'), project.structure || t('studio.project.detail.free')],
+    [t('studio.project.detail.length'), project.lineCount || t('studio.project.detail.notProvided')],
+    [t('studio.project.detail.voice'), voicePreferences || t('studio.project.detail.aiChooses')],
   ].filter(([, value]) => Boolean(value))
 
   const handleRefresh = async () => {
@@ -2521,14 +2485,14 @@ function PendingMusicRequestSummary({
               Gerando em segundo plano
             </div>
             <div className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm font-bold text-gray-200">
-              Tempo decorrido: <span className="font-mono text-white">{elapsedTime}</span>
+              {t('studio.project.detail.elapsed')}: <span className="font-mono text-white">{elapsedTime}</span>
             </div>
           </div>
         </div>
 
         <div className="grid gap-5 p-5 sm:p-7 lg:grid-cols-[1.1fr_0.9fr]">
           <section className="rounded-3xl border border-white/10 bg-black/25 p-4 sm:p-5">
-            <h2 className="mb-4 text-lg font-black text-white">Resumo do seu pedido</h2>
+            <h2 className="mb-4 text-lg font-black text-white">{t('studio.project.detail.requestSummary')}</h2>
             <div className="grid gap-2 sm:grid-cols-2">
               {summaryItems.map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-white/10 bg-gray-950/70 p-3">
@@ -2539,7 +2503,7 @@ function PendingMusicRequestSummary({
             </div>
             {project.description && (
               <div className="mt-3 rounded-2xl border border-purple-400/20 bg-purple-950/20 p-3">
-                <p className="text-[11px] font-black uppercase tracking-wide text-purple-200">Ideia enviada</p>
+                <p className="text-[11px] font-black uppercase tracking-wide text-purple-200">{t('studio.project.detail.submittedIdea')}</p>
                 <p className="mt-2 max-h-28 overflow-y-auto text-sm leading-relaxed text-purple-50/90">
                   {project.description}
                 </p>
@@ -2551,14 +2515,14 @@ function PendingMusicRequestSummary({
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-green-400/30 bg-green-500/10 text-green-200">
               <FiCheckCircle className="h-7 w-7" />
             </div>
-            <h2 className="mt-4 text-xl font-black text-white">O que acontece agora?</h2>
+            <h2 className="mt-4 text-xl font-black text-white">{t('studio.project.detail.whatNext')}</h2>
             <p className="mt-2 text-sm leading-relaxed text-gray-300">
               {t('studio.project.processing.noRepeat')}
               {t('studio.project.processing.autoUpdate')}
             </p>
             <div className="mt-5 space-y-2 rounded-2xl border border-white/10 bg-black/25 p-3 text-xs leading-relaxed text-gray-300">
-              <p><strong className="text-white">Código do projeto:</strong> {projectId}</p>
-              <p>Você pode fechar esta tela e voltar em “Meus Projetos” mais tarde.</p>
+              <p><strong className="text-white">{t('studio.project.detail.projectCode')}:</strong> {projectId}</p>
+              <p>{t('studio.project.detail.returnLater')}</p>
             </div>
             <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
               <button
@@ -2599,10 +2563,10 @@ function StudioProcessing({
   onClose?: () => void
 }) {
   const { t } = useTranslation()
-  const isCover = message.toLowerCase().includes('capa')
+  const isCover = [t('studio.project.cover.generating'), t('studio.project.detail.selectingCover'), t('studio.project.detail.deletingCover')].includes(message)
   const steps = isCover
-    ? ['Interpretando a letra', 'Criando direção visual', 'Gerando imagem', 'Salvando capa no projeto']
-    : ['Criando letra', 'Compondo melodia', 'Produzindo instrumental', 'Gerando capa', 'Finalizando masterização']
+    ? [1, 2, 3, 4].map((index) => t(`studio.project.detail.coverSteps.${index}`))
+    : [1, 2, 3, 4, 5].map((index) => t(`studio.project.detail.musicSteps.${index}`))
 
   return (
     <motion.div
@@ -2616,7 +2580,7 @@ function StudioProcessing({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Fechar acompanhamento"
+            aria-label={t('studio.project.detail.closeTracking')}
             className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-700 bg-black/50 text-gray-300 transition hover:border-purple-400 hover:text-white"
           >
             <FiX className="h-5 w-5" />
@@ -2631,7 +2595,7 @@ function StudioProcessing({
         )}
         {elapsedTime && (
           <div className="relative mx-auto mt-4 inline-flex max-w-full flex-wrap items-center justify-center gap-2 rounded-full border border-purple-500/50 bg-purple-950/40 px-3 py-2 text-sm font-bold text-purple-100 sm:mt-5 sm:px-4">
-            <span>Tempo decorrido</span>
+            <span>{t('studio.project.detail.elapsed')}</span>
             <span className="font-mono text-white">{elapsedTime}</span>
           </div>
         )}
@@ -2643,7 +2607,7 @@ function StudioProcessing({
         {previewAudioUrl && (
           <div className="relative mt-5 rounded-2xl border border-green-700/60 bg-green-950/30 p-4 text-left">
             <p className="mb-3 text-sm font-bold text-green-100">{t('studio.project.processing.preview')}</p>
-            <StudioAudioPlayer src={previewAudioUrl} label="Prévia da música" />
+            <StudioAudioPlayer src={previewAudioUrl} label={t('studio.project.detail.musicPreview')} />
           </div>
         )}
         <div className="relative mt-5 space-y-2 text-left sm:mt-6 sm:space-y-3">
@@ -2663,7 +2627,7 @@ function StudioProcessing({
 
 function UpgradeModal({ message, onClose }: { message: string; onClose: () => void }) {
   const { t } = useTranslation()
-  const hasNoBalance = message.toLowerCase().includes('créditos suficientes') || message.toLowerCase().includes('recarga')
+  const hasNoBalance = message === t('studio.project.generation.noCredits') || message === t('studio.project.generation.retryNeedsCredits') || message === t('studio.project.generation.reuseNoCredits')
 
   return (
     <motion.div
@@ -2729,13 +2693,13 @@ function PublishPlanModal({ message, onClose }: { message: string; onClose: () =
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/15 text-amber-200">
           <FiLock className="h-7 w-7" />
         </div>
-        <h2 className="text-2xl font-black text-white">Para publicar, precisa de plano ativo</h2>
+        <h2 className="text-2xl font-black text-white">{t('studio.project.detail.planRequiredTitle')}</h2>
         <p className="mt-3 text-sm leading-relaxed text-amber-50/90">
           {message}
         </p>
         <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-gray-300">
-          <p><span className="font-semibold text-white">Recarga / créditos:</span> criar e gerar músicas</p>
-          <p className="mt-1"><span className="font-semibold text-white">Plano ativo:</span> publicar no DCC Music</p>
+          <p><span className="font-semibold text-white">{t('studio.project.detail.topupLabel')}:</span> {t('studio.project.detail.topupPurpose')}</p>
+          <p className="mt-1"><span className="font-semibold text-white">{t('studio.project.detail.activePlanLabel')}:</span> {t('studio.project.detail.activePlanPurpose')}</p>
         </div>
         <div className="mt-6 grid gap-3">
           <Link

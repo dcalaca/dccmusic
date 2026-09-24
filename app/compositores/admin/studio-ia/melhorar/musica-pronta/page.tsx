@@ -334,21 +334,10 @@ export default function ImproveReadyMusicPage() {
           {error && <div className="mb-5 rounded-xl border border-red-800 bg-red-950/50 p-4 text-red-200">{error}</div>}
 
           <form onSubmit={submit} className="rounded-3xl border border-gray-800 bg-gray-950/70 p-5 sm:p-6">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.ready.songTitle')}</span>
                 <input name="title" required maxLength={30} placeholder={t('studio.tools.ready.songTitlePlaceholder')} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.ready.genre')}</span>
-                <select value={selectedGenre} onChange={(event) => setSelectedGenre(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
-                  <option value="">{t('studio.tools.ready.keepGenre')}</option>
-                  {genreOptions.map((option) => <option key={option} value={option}>{genreLabel(option)}</option>)}
-                </select>
-                <span className="mt-2 block text-xs text-gray-500">{t('studio.tools.ready.genreHint')}</span>
-                {selectedGenre === 'Outro / escrever meu estilo' && (
-                  <input value={customGenre} onChange={(event) => setCustomGenre(event.target.value)} placeholder={t('studio.tools.ready.genrePlaceholder')} className="mt-2 w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
-                )}
               </label>
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.ready.language')}</span>
@@ -407,6 +396,31 @@ export default function ImproveReadyMusicPage() {
               </div>
             </div>
 
+            <div className="mt-5 rounded-2xl border border-purple-800/50 bg-purple-950/15 p-4">
+              <div className="mb-3">
+                <p className="text-sm font-black text-white">{t('studio.tools.ready.genre')}</p>
+                <p className="mt-1 text-xs text-gray-400">{t('studio.tools.ready.genreHint')}</p>
+              </div>
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.ready.genre')}</span>
+                <select value={selectedGenre} onChange={(event) => setSelectedGenre(event.target.value)} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500">
+                  <option value="">{t('studio.tools.ready.keepGenre')}</option>
+                  {genreOptions.map((option) => <option key={option} value={option}>{genreLabel(option)}</option>)}
+                </select>
+                <span className="mt-2 block text-xs text-gray-500">{t('studio.tools.ready.genreHint')}</span>
+                {selectedGenre === 'Outro / escrever meu estilo' && (
+                  <input value={customGenre} onChange={(event) => setCustomGenre(event.target.value)} placeholder={t('studio.tools.ready.genrePlaceholder')} className="mt-2 w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white outline-none focus:border-primary-500" />
+                )}
+              </label>
+            </div>
+
+            <details data-feature="enhance-compact-layout" className="group mt-5 rounded-2xl border border-gray-800 bg-black/20">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 text-sm font-black text-white [&::-webkit-details-marker]:hidden">
+                <span>{t('studio.tools.ready.moreOptions')}</span>
+                <span className="text-xs font-semibold text-primary-300 group-open:hidden">{t('studio.tools.ready.show')}</span>
+                <span className="hidden text-xs font-semibold text-primary-300 group-open:inline">{t('studio.tools.ready.hide')}</span>
+              </summary>
+              <div className="border-t border-gray-800 px-4 pb-4">
             <div className="mt-5 rounded-2xl border border-gray-800 bg-black/20 p-4">
               <p className="mb-2 text-sm font-bold text-gray-200">{t('studio.tools.ready.extraInstructions')}</p>
               <p className="mb-3 text-xs leading-relaxed text-gray-400">
@@ -501,6 +515,9 @@ export default function ImproveReadyMusicPage() {
               )}
             </div>
 
+              </div>
+            </details>
+
             <div className="mt-5">
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-bold text-gray-300">{t('studio.tools.ready.lyrics')} {isLanguageAdaptation && <span className="text-amber-300">*</span>}</span>
@@ -527,7 +544,7 @@ export default function ImproveReadyMusicPage() {
                 name="lyric"
                 value={lyric}
                 onChange={(event) => setLyric(event.target.value)}
-                rows={8}
+                rows={5}
                 required={isLanguageAdaptation}
                 placeholder={isLanguageAdaptation
                   ? t('studio.tools.ready.translatedLyricsPlaceholder')
