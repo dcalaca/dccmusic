@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { FiStar, FiCheckCircle, FiClock } from 'react-icons/fi'
 import { useTranslation } from 'react-i18next'
+import { featuredPaymentError, featuredPrice } from '@/lib/featured-payment-ui'
 
 interface FeaturedButtonProps {
   contentType: 'music' | 'video'
@@ -59,6 +60,7 @@ export default function FeaturedButton({
   const handlePayFeatured = async () => {
     if (loading) return
 
+    let paymentError = t('featured.errors.processPayment')
     setLoading(true)
     try {
       const token = localStorage.getItem('composer_token')
@@ -79,20 +81,24 @@ export default function FeaturedButton({
         }),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        throw new Error(i18n.language.startsWith('pt') && data.error ? data.error : t('featured.errors.createPayment'))
+        paymentError = featuredPaymentError(t, data, response.status)
+        throw new Error(paymentError)
       }
 
       // Redirecionar para Mercado Pago
       const initPoint = data.initPoint || data.sandboxInitPoint
       if (initPoint) {
         window.location.href = initPoint
+      } else {
+        paymentError = t('featured.errors.missingCheckout')
+        throw new Error(paymentError)
       }
     } catch (error: any) {
       console.error('Erro ao pagar destaque:', error)
-      alert(i18n.language.startsWith('pt') ? (error.message || t('featured.errors.processPayment')) : t('featured.errors.processPayment'))
+      alert(paymentError)
     } finally {
       setLoading(false)
     }
@@ -142,10 +148,10 @@ export default function FeaturedButton({
       onClick={handlePayFeatured}
       disabled={loading}
       className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-700 hover:to-yellow-600 rounded-lg transition-all font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-      title={t('featured.buttonTitle')}
+      title={t('featured.buttonTitle', { price: featuredPrice(i18n.language) })}
     >
       <FiStar className="w-4 h-4" />
-      <span>{loading ? t('featured.processing') : t('featured.highlightPrice')}</span>
+      <span>{loading ? t('featured.processing') : t('featured.highlightPrice', { price: featuredPrice(i18n.language) })}</span>
     </button>
   )
 }

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     const composer = getComposerFromRequest(request)
     if (!composer) {
       return NextResponse.json(
-        { error: 'Não autorizado' },
+        { error: 'Não autorizado', errorCode: 'unauthorized' },
         { status: 401 }
       )
     }
@@ -34,14 +34,14 @@ export async function POST(request: NextRequest) {
 
     if (!contentType || !contentId) {
       return NextResponse.json(
-        { error: 'contentType e contentId são obrigatórios' },
+        { error: 'contentType e contentId são obrigatórios', errorCode: 'missingFields' },
         { status: 400 }
       )
     }
 
     if (contentType !== 'music' && contentType !== 'video') {
       return NextResponse.json(
-        { error: 'contentType deve ser "music" ou "video"' },
+        { error: 'contentType deve ser "music" ou "video"', errorCode: 'invalidType' },
         { status: 400 }
       )
     }
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     if (!content) {
       return NextResponse.json(
-        { error: 'Conteúdo não encontrado' },
+        { error: 'Conteúdo não encontrado', errorCode: 'notFound' },
         { status: 404 }
       )
     }
@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     const hasActive = await db.hasActiveFeatured(contentType, contentId)
     if (hasActive) {
       return NextResponse.json(
-        { error: 'Este conteúdo já possui destaque ativo' },
+        { error: 'Este conteúdo já possui destaque ativo', errorCode: 'alreadyActive' },
         { status: 400 }
       )
     }
@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[FEATURED PREFERENCE] Erro:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao criar preferência de pagamento' },
+      { error: error.message || 'Erro ao criar preferência de pagamento', errorCode: 'createPayment' },
       { status: 500 }
     )
   }

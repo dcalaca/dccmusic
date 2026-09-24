@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FiStar, FiX, FiCheckCircle } from 'react-icons/fi'
 import { useTranslation } from 'react-i18next'
+import { featuredPaymentError, featuredPrice } from '@/lib/featured-payment-ui'
 
 interface FeaturedOfferModalProps {
   contentType: 'music' | 'video'
@@ -25,6 +26,7 @@ export default function FeaturedOfferModal({
   const [loading, setLoading] = useState(false)
 
   const handlePayFeatured = async () => {
+    let paymentError = t('featured.errors.processPayment')
     setLoading(true)
     try {
       const token = localStorage.getItem('composer_token')
@@ -45,20 +47,25 @@ export default function FeaturedOfferModal({
         }),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        throw new Error(i18n.language.startsWith('pt') && data.error ? data.error : t('featured.errors.createPayment'))
+        paymentError = featuredPaymentError(t, data, response.status)
+        throw new Error(paymentError)
       }
 
       // Redirecionar para Mercado Pago
       const initPoint = data.initPoint || data.sandboxInitPoint
       if (initPoint) {
         window.location.href = initPoint
+      } else {
+        paymentError = t('featured.errors.missingCheckout')
+        throw new Error(paymentError)
       }
     } catch (error: any) {
       console.error('Erro ao pagar destaque:', error)
-      alert(i18n.language.startsWith('pt') ? (error.message || t('featured.errors.processPayment')) : t('featured.errors.processPayment'))
+      alert(paymentError)
+    } finally {
       setLoading(false)
     }
   }
@@ -95,7 +102,7 @@ export default function FeaturedOfferModal({
             {contentType === 'music' ? t('featured.modal.descriptionMusic') : t('featured.modal.descriptionVideo')}
           </p>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-yellow-400">R$ 9,90</span>
+            <span className="text-3xl font-bold text-yellow-400">{featuredPrice(i18n.language)}</span>
             <span className="text-gray-400 text-sm">{t('featured.modal.pricePeriod')}</span>
           </div>
         </div>
