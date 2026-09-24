@@ -343,8 +343,10 @@
     "entry": {
       "back": "Volver",
       "errors": {
-        "load": "Error al cargar Studio IA."
+        "load": "Error al cargar Studio IA.",
+        "projectsLoad": "No se pudieron cargar los proyectos recientes."
       },
+      "retry": "Intentar de nuevo",
       "lockedDescription": "Estudio musical con IA para quienes tienen una canción gratis, un plan activo o créditos de recarga.",
       "freeTrialTitle": "Tienes 1 canción gratis para probar. Haz clic aquí.",
       "freeTrialDescription": "Crea tu primera canción completa con IA y descubre cómo funciona DCC Studio IA.",
@@ -372,7 +374,16 @@
       "viewAll": "Ver todos",
       "noProjects": "Todavía no has creado proyectos en Studio.",
       "createFirst": "Crear primera canción",
-      "freeStyle": "Libre"
+      "freeStyle": "Libre",
+      "projectStatus": {
+        "draft": "Borrador",
+        "generating": "Generando música",
+        "ready": "Música lista",
+        "published": "Publicado",
+        "archived": "Archivado",
+        "failed": "Falló",
+        "unknown": "Estado no disponible"
+      }
     },
     "create": {
       "backToPlans": "Volver a planes",

@@ -343,8 +343,10 @@
     "entry": {
       "back": "Back",
       "errors": {
-        "load": "Could not load AI Studio."
+        "load": "Could not load AI Studio.",
+        "projectsLoad": "Could not load recent projects."
       },
+      "retry": "Try again",
       "lockedDescription": "AI music studio for users with a free song, an active plan, or one-time credits.",
       "freeTrialTitle": "You have 1 free song to try. Click here.",
       "freeTrialDescription": "Create your first complete AI song and see how DCC AI Studio works.",
@@ -372,7 +374,16 @@
       "viewAll": "View all",
       "noProjects": "You haven't created any Studio projects yet.",
       "createFirst": "Create first song",
-      "freeStyle": "Free"
+      "freeStyle": "Free",
+      "projectStatus": {
+        "draft": "Draft",
+        "generating": "Generating music",
+        "ready": "Music ready",
+        "published": "Published",
+        "archived": "Archived",
+        "failed": "Failed",
+        "unknown": "Status unavailable"
+      }
     },
     "create": {
       "backToPlans": "Back to plans",

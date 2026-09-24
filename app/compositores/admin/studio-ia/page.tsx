@@ -17,6 +17,19 @@ type Project = {
   cover?: { imageUrl: string | null } | null
 }
 
+const projectStatusKeys: Record<string, string> = {
+  draft: 'studio.entry.projectStatus.draft',
+  generating: 'studio.entry.projectStatus.generating',
+  ready: 'studio.entry.projectStatus.ready',
+  published: 'studio.entry.projectStatus.published',
+  archived: 'studio.entry.projectStatus.archived',
+  failed: 'studio.entry.projectStatus.failed',
+}
+
+async function readJson(response: Response) {
+  return response.json().catch(() => ({}))
+}
+
 export default function StudioDashboardPage() {
   const { t } = useTranslation()
   const router = useRouter()
@@ -25,6 +38,7 @@ export default function StudioDashboardPage() {
   const [status, setStatus] = useState<any>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [error, setError] = useState('')
+  const [projectsError, setProjectsError] = useState('')
 
   const loadDashboard = useCallback(async (options?: { silent?: boolean }) => {
     const token = localStorage.getItem('composer_token')
@@ -38,6 +52,8 @@ export default function StudioDashboardPage() {
     }
 
     try {
+      setError('')
+      setProjectsError('')
       const [statusResponse, projectsResponse] = await Promise.all([
         fetch('/api/compositores/studio/status', {
           headers: { Authorization: `Bearer ${token}` },
@@ -49,22 +65,33 @@ export default function StudioDashboardPage() {
         }),
       ])
 
-      const statusData = await statusResponse.json()
+      const statusData = await readJson(statusResponse)
       if (statusResponse.status === 401) {
+        localStorage.removeItem('composer_token')
         router.push('/compositores/login')
+        return
+      }
+      if (!statusResponse.ok) {
+        setError(t('studio.entry.errors.load'))
         return
       }
 
       setAllowed(Boolean(statusData.allowed || statusData.canCreateMusic))
       setStatus(statusData)
-      setError('')
-
-      if (projectsResponse.ok) {
-        const projectsData = await projectsResponse.json()
-        setProjects(projectsData.projects || [])
+      if (projectsResponse.status === 401) {
+        localStorage.removeItem('composer_token')
+        router.push('/compositores/login')
+        return
       }
-    } catch (err: any) {
-      setError(err.message || t('studio.entry.errors.load'))
+      if (projectsResponse.ok) {
+        const projectsData = await readJson(projectsResponse)
+        setProjects(projectsData.projects || [])
+      } else {
+        setProjects([])
+        setProjectsError(t('studio.entry.errors.projectsLoad'))
+      }
+    } catch {
+      setError(t('studio.entry.errors.load'))
     } finally {
       if (!options?.silent) {
         setLoading(false)
@@ -94,6 +121,26 @@ export default function StudioDashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="h-14 w-14 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (error && !status) {
+    return (
+      <div className="min-h-screen py-6 sm:py-8">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-3xl">
+            <Link href="/compositores/admin" className="mb-6 inline-flex items-center gap-2 text-primary-400">
+              <FiArrowLeft /> {t('studio.entry.back')}
+            </Link>
+            <div role="alert" className="rounded-2xl border border-red-800 bg-red-950/40 p-6 text-center text-red-100">
+              <p>{error}</p>
+              <button type="button" onClick={() => loadDashboard()} className="mt-5 rounded-xl bg-primary-600 px-5 py-3 font-semibold text-white">
+                {t('studio.entry.retry')}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -262,7 +309,14 @@ export default function StudioDashboardPage() {
             </Link>
           </div>
 
-          {recentProjects.length === 0 ? (
+          {projectsError ? (
+            <div role="alert" className="rounded-3xl border border-red-800 bg-red-950/40 p-6 text-center text-red-100">
+              <p>{projectsError}</p>
+              <button type="button" onClick={() => loadDashboard()} className="mt-4 rounded-xl bg-primary-600 px-5 py-3 font-semibold text-white">
+                {t('studio.entry.retry')}
+              </button>
+            </div>
+          ) : recentProjects.length === 0 ? (
             <div className="rounded-3xl border border-gray-800 bg-gray-950/60 p-10 text-center">
               <p className="text-gray-400 mb-4">{t('studio.entry.noProjects')}</p>
               <Link href="/compositores/admin/studio-ia/novo" className="inline-flex rounded-xl bg-primary-600 px-5 py-3 font-semibold">
@@ -278,7 +332,9 @@ export default function StudioDashboardPage() {
                   </div>
                   <div className="p-3 sm:p-4">
                     <h3 className="font-bold group-hover:text-primary-300 transition">{project.title}</h3>
-                    <p className="text-sm text-gray-400">{project.style || t('studio.entry.freeStyle')} · {project.status}</p>
+                    <p className="text-sm text-gray-400">
+                      {project.style || t('studio.entry.freeStyle')} · {projectStatusKeys[project.status] ? t(projectStatusKeys[project.status]) : t('studio.entry.projectStatus.unknown')}
+                    </p>
                   </div>
                 </Link>
               ))}

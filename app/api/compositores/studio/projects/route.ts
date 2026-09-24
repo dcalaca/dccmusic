@@ -63,7 +63,7 @@ function buildProjectDescription(body: any) {
 export async function GET(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const filter = searchParams.get('filter') || 'all'
@@ -212,7 +212,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ projects })
   } catch (error: any) {
     console.error('[Studio IA] Erro listar projetos:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao listar projetos' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Erro ao listar projetos', errorCode: 'load' }, { status: 500 })
   }
 }
 

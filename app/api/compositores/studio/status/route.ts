@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
     if (!composer) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+      return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
     }
 
     const { plan, hasAccess, limits } = await getStudioAccess(composer.composerId)
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Studio IA] Erro status:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao carregar Studio IA' },
+      { error: error.message || 'Erro ao carregar Studio IA', errorCode: 'load' },
       { status: 500 }
     )
   }
