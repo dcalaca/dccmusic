@@ -26,9 +26,9 @@ export function extractYoutubeId(url: string): string | null {
 /** Fuso fixo para datas no site — evita divergência SSR (UTC na Vercel) vs navegador (Brasil). */
 const BRAZIL_TZ = 'America/Sao_Paulo'
 
-export function formatDate(date: Date | string): string {
+export function formatDate(date: Date | string, locale = 'pt-BR'): string {
   const d = typeof date === 'string' ? new Date(date) : date
-  return new Intl.DateTimeFormat('pt-BR', {
+  return new Intl.DateTimeFormat(locale, {
     timeZone: BRAZIL_TZ,
     day: '2-digit',
     month: 'long',

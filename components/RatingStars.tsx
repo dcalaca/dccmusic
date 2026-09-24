@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface RatingStarsProps {
   averageRating: number
@@ -41,6 +42,7 @@ export default function RatingStars({
   onLoginRequired,
   size = 'md',
 }: RatingStarsProps) {
+  const { t, i18n } = useTranslation()
   const [hoveredRating, setHoveredRating] = useState<number | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -96,7 +98,8 @@ export default function RatingStars({
                     ? 'hover:scale-110 cursor-pointer'
                     : 'cursor-not-allowed opacity-50'
                 }`}
-                title={isAuthenticated ? `Avaliar com ${star} estrela${star > 1 ? 's' : ''}` : 'Faça login para avaliar'}
+                title={isAuthenticated ? t('ratings.stars.rateTitle', { count: star }) : t('ratings.stars.loginToRate')}
+                aria-label={isAuthenticated ? t('ratings.stars.rateTitle', { count: star }) : t('ratings.stars.loginToRate')}
               >
                 <StarIcon filled={isFilled} size="w-full h-full" />
               </button>
@@ -108,20 +111,20 @@ export default function RatingStars({
         <div className="flex flex-col gap-1 text-sm">
           {userRating ? (
             <div className="text-gray-300">
-              <span className="font-medium">Sua avaliação: </span>
-              <span className="text-yellow-400 font-semibold">{userRating} estrela{userRating > 1 ? 's' : ''}</span>
+              <span className="font-medium">{t('ratings.stars.yourRating')} </span>
+              <span className="text-yellow-400 font-semibold">{t('ratings.stars.stars', { count: userRating })}</span>
             </div>
           ) : (
             <div className="text-gray-400">
-              {isAuthenticated ? 'Clique nas estrelas para avaliar' : 'Faça login para avaliar'}
+              {isAuthenticated ? t('ratings.stars.clickToRate') : t('ratings.stars.loginToRate')}
             </div>
           )}
           
           {averageRating > 0 && (
             <div className="text-gray-400">
-              <span className="font-semibold text-white">{averageRating.toFixed(1)}</span>
+              <span className="font-semibold text-white">{new Intl.NumberFormat(i18n.language, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(averageRating)}</span>
               <span className="mx-1">•</span>
-              <span>{totalRatings} avaliação{totalRatings !== 1 ? 'ões' : ''}</span>
+              <span>{t('ratings.stars.ratings', { count: totalRatings })}</span>
             </div>
           )}
         </div>
