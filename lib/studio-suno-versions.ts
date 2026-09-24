@@ -118,7 +118,8 @@ function findMatchingVersion(
   ))
   if (byAudio) return byAudio
 
-  if (available[index]) return available[index]
+  // A posição só é confiável quando a faixa anterior ainda não a reivindicou.
+  if (available[index] && !track?.id && !available[index].provider_payload?.id) return available[index]
 
   // Já temos 2: reutiliza sobra em vez de criar a 3ª.
   if (existingVersions.length >= SUNO_TRACKS_PER_GENERATION && available[0]) {
@@ -173,6 +174,7 @@ export async function saveSunoGenerationTracks(input: {
 
   const claimedIds = new Set<string>()
   const savedVersions: Array<{ id: string | null; track: any; audioUrl: string | null; streamAudioUrl: string | null }> = []
+  const pendingBackups: Array<{ versionId: string; audioUrl: string | null; streamAudioUrl: string | null }> = []
 
   for (const [index, track] of validTracks.entries()) {
     const rawAudioUrl = getTrackAudioUrl(track)
@@ -206,22 +208,24 @@ export async function saveSunoGenerationTracks(input: {
     }
 
     if (existingVersion) {
-      await supabaseAdmin
+      const { error } = await supabaseAdmin
         .from('studio_versions')
         .update(versionPayload)
         .eq('id', existingVersion.id)
+      if (error) throw error
     } else if ((existingVersions?.length || 0) >= SUNO_TRACKS_PER_GENERATION) {
       const fallback = (existingVersions || []).find((version: any) => !claimedIds.has(version.id))
       if (fallback) {
         savedVersionId = fallback.id
         claimedIds.add(fallback.id)
-        await supabaseAdmin
+        const { error } = await supabaseAdmin
           .from('studio_versions')
           .update(versionPayload)
           .eq('id', fallback.id)
+        if (error) throw error
       }
     } else {
-      const { data: insertedVersion } = await supabaseAdmin
+      const { data: insertedVersion, error } = await supabaseAdmin
         .from('studio_versions')
         .insert({
           project_id: input.generation.project_id,
@@ -231,20 +235,13 @@ export async function saveSunoGenerationTracks(input: {
         })
         .select('id')
         .maybeSingle()
+      if (error) throw error
       savedVersionId = insertedVersion?.id || savedVersionId
       if (savedVersionId) claimedIds.add(savedVersionId)
     }
 
     if (savedVersionId) {
-      await backupStudioVersionAudio({
-        versionId: savedVersionId,
-        composerId: input.generation.composer_id,
-        audioUrl: audioUrl || (input.isComplete ? versionPayload.audio_url : null),
-        streamAudioUrl: playableStreamUrl,
-        forceFullAudioUpgrade: input.isComplete && Boolean(audioUrl || versionPayload.audio_url),
-      }).catch((backupError) => {
-        console.error('[Studio IA] Erro no backup interno do áudio:', backupError)
-      })
+      pendingBackups.push({ versionId: savedVersionId, audioUrl: audioUrl || (input.isComplete ? versionPayload.audio_url : null), streamAudioUrl: playableStreamUrl })
     }
 
     savedVersions.push({
@@ -254,6 +251,19 @@ export async function saveSunoGenerationTracks(input: {
       streamAudioUrl: playableStreamUrl,
     })
   }
+
+  // Primeiro persiste as duas versões; um download lento não pode impedir a segunda.
+  await Promise.all(pendingBackups.map(({ versionId, audioUrl, streamAudioUrl }) =>
+    backupStudioVersionAudio({
+      versionId,
+      composerId: input.generation.composer_id,
+      audioUrl,
+      streamAudioUrl,
+      forceFullAudioUpgrade: input.isComplete && Boolean(audioUrl),
+    }).catch((backupError) => {
+      console.error('[Studio IA] Erro no backup interno do áudio:', backupError)
+    })
+  ))
 
   const keepIds = savedVersions.map((item) => item.id).filter(Boolean) as string[]
   const versionCount = await countGenerationVersions(input.generation.id)
