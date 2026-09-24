@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { chargeStudioVoiceCreationOnce } from '@/lib/studio'
 import { createStudioVoiceAssetUrl, uploadStudioVoiceAsset, validateStudioVoiceUploadedAsset } from '@/lib/studio-voice-assets'
 import { checkSunoVoiceAvailability, createSunoCustomVoice, createSunoVoiceValidation, extractSunoVoiceId, getSunoVoiceRecordInfo, getSunoVoiceValidationInfo, regenerateSunoVoiceValidation } from '@/lib/suno-voice'
-import { isStudioVoiceExpiredError, translateStudioVoiceError, VOICE_PROCESSING_ERROR_MESSAGE } from '@/lib/studio-voice-errors'
+import { isStudioVoiceExpiredError, studioVoiceErrorCode, translateStudioVoiceError, VOICE_PROCESSING_ERROR_MESSAGE } from '@/lib/studio-voice-errors'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -80,6 +80,7 @@ async function mapVoice(row: any) {
     voiceId: row.voice_id,
     isAvailable: Boolean(row.is_available),
     errorMessage: translateStudioVoiceError(row.error_message),
+    errorCode: studioVoiceErrorCode(row.error_message),
     sourceAudioUrl,
     verifyAudioUrl,
     createdAt: row.created_at,
@@ -93,15 +94,15 @@ export async function PATCH(
 ) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
 
     const { action } = await request.json().catch(() => ({ action: 'refresh' }))
     if (!['refresh', 'regenerate-validation', 'reactivate-expired'].includes(action)) {
-      return NextResponse.json({ error: 'Ação inválida' }, { status: 400 })
+      return NextResponse.json({ error: 'Ação inválida', errorCode: 'invalidAction' }, { status: 400 })
     }
 
     const voice = await getVoice(params.id, composer.composerId, action === 'reactivate-expired')
-    if (!voice) return NextResponse.json({ error: 'Voz não encontrada' }, { status: 404 })
+    if (!voice) return NextResponse.json({ error: 'Voz não encontrada', errorCode: 'voiceNotFound' }, { status: 404 })
 
     let updatePayload: any = {
       updated_at: new Date().toISOString(),
@@ -112,15 +113,15 @@ export async function PATCH(
         String(voice.error_message || '').toLowerCase().includes('expir')
       const canRetryFailedReactivation = voice.status === 'failed' && voice.source_audio_path && Boolean(voice.provider_payload?.reactivationFree)
       if (!expiredVoiceError && !canRetryFailedReactivation) {
-        return NextResponse.json({ error: 'Essa ação só está disponível quando a voz estiver expirada ou tiver falhado.' }, { status: 400 })
+        return NextResponse.json({ error: 'Essa ação só está disponível quando a voz estiver expirada ou tiver falhado.', errorCode: 'reactivationUnavailable' }, { status: 400 })
       }
       if (!voice.source_audio_path) {
-        return NextResponse.json({ error: 'Áudio base não encontrado para reativar essa voz.' }, { status: 400 })
+        return NextResponse.json({ error: 'Áudio base não encontrado para reativar essa voz.', errorCode: 'sourceAudioMissing' }, { status: 400 })
       }
 
       if (voice.status === 'archived') {
         if (!voice.voice_id || !expiredVoiceError) {
-          return NextResponse.json({ error: 'Somente vozes expiradas já criadas podem ser recuperadas.' }, { status: 400 })
+          return NextResponse.json({ error: 'Somente vozes expiradas já criadas podem ser recuperadas.', errorCode: 'recoverExpiredOnly' }, { status: 400 })
         }
 
         const { data: activeVoices, error: activeVoicesError } = await supabaseAdmin
@@ -131,7 +132,7 @@ export async function PATCH(
 
         if (activeVoicesError) throw activeVoicesError
         if ((activeVoices || []).length >= MAX_ACTIVE_VOICES) {
-          return NextResponse.json({ error: 'Você já tem 5 vozes cadastradas. Exclua uma voz antes de recuperar esta.' }, { status: 400 })
+          return NextResponse.json({ error: 'Você já tem 5 vozes cadastradas. Exclua uma voz antes de recuperar esta.', errorCode: 'voiceLimitReached', limit: MAX_ACTIVE_VOICES }, { status: 400 })
         }
 
         const duplicateVoice = (activeVoices || []).find((activeVoice: any) => (
@@ -141,7 +142,7 @@ export async function PATCH(
 
         if (duplicateVoice) {
           return NextResponse.json(
-            { error: `Você já tem uma voz ativa chamada "${voice.display_name}". Exclua a voz ativa antes de recuperar a arquivada.` },
+            { error: `Você já tem uma voz ativa chamada "${voice.display_name}". Exclua a voz ativa antes de recuperar a arquivada.`, errorCode: 'duplicateActiveVoice', voiceName: voice.display_name },
             { status: 409 }
           )
         }
@@ -174,7 +175,7 @@ export async function PATCH(
       }
     } else if (action === 'regenerate-validation') {
       if (!voice.source_audio_path) {
-        return NextResponse.json({ error: 'Áudio base não encontrado para gerar nova frase.' }, { status: 400 })
+        return NextResponse.json({ error: 'Áudio base não encontrado para gerar nova frase.', errorCode: 'sourceAudioMissing' }, { status: 400 })
       }
 
       const voiceUrl = await createStudioVoiceAssetUrl(voice.source_audio_path, voice.source_audio_storage_provider)
@@ -300,7 +301,7 @@ export async function PATCH(
     return NextResponse.json({ voice: await mapVoice(updatedVoice) })
   } catch (error: any) {
     console.error('[Studio Voice] Erro atualizar voz:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao atualizar voz' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Erro ao atualizar voz', errorCode: 'refresh' }, { status: 500 })
   }
 }
 
@@ -310,12 +311,12 @@ export async function POST(
 ) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
 
     const voice = await getVoice(params.id, composer.composerId)
-    if (!voice) return NextResponse.json({ error: 'Voz não encontrada' }, { status: 404 })
+    if (!voice) return NextResponse.json({ error: 'Voz não encontrada', errorCode: 'voiceNotFound' }, { status: 404 })
     if (!voice.validation_task_id || !voice.validate_info) {
-      return NextResponse.json({ error: 'A frase de verificação ainda não está pronta. Clique em atualizar status.' }, { status: 400 })
+      return NextResponse.json({ error: 'A frase de verificação ainda não está pronta. Clique em atualizar status.', errorCode: 'validationPhraseNotReady' }, { status: 400 })
     }
 
     let file: FormDataEntryValue | null = null
@@ -344,7 +345,7 @@ export async function POST(
     }
 
     if (!uploaded && !(file instanceof File)) {
-      return NextResponse.json({ error: 'Envie a gravação da frase de verificação.' }, { status: 400 })
+      return NextResponse.json({ error: 'Envie a gravação da frase de verificação.', errorCode: 'verificationAudioRequired' }, { status: 400 })
     }
 
     if (!uploaded && file instanceof File) {
@@ -356,7 +357,7 @@ export async function POST(
     }
 
     if (!uploaded) {
-      return NextResponse.json({ error: 'Envie a gravação da frase de verificação.' }, { status: 400 })
+      return NextResponse.json({ error: 'Envie a gravação da frase de verificação.', errorCode: 'verificationAudioRequired' }, { status: 400 })
     }
     const verifyUrl = await createStudioVoiceAssetUrl(uploaded.path, uploaded.provider)
     if (!verifyUrl) throw new Error('Não foi possível preparar o áudio de verificação.')
@@ -391,7 +392,7 @@ export async function POST(
     return NextResponse.json({ voice: await mapVoice(updatedVoice) })
   } catch (error: any) {
     console.error('[Studio Voice] Erro enviar verificação:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao enviar verificação da voz' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Erro ao enviar verificação da voz', errorCode: 'sendVerification' }, { status: 500 })
   }
 }
 
@@ -401,7 +402,7 @@ export async function DELETE(
 ) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
 
     const { error } = await supabaseAdmin
       .from('studio_voice_profiles')
@@ -413,6 +414,6 @@ export async function DELETE(
     return NextResponse.json({ ok: true })
   } catch (error: any) {
     console.error('[Studio Voice] Erro remover voz:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao remover voz' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Erro ao remover voz', errorCode: 'delete' }, { status: 500 })
   }
 }

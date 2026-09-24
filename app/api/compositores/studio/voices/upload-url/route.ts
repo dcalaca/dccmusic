@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const contentType = String(body?.contentType || '').trim()
@@ -28,6 +28,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio Voice] Erro ao criar URL de upload:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao preparar upload da voz' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Erro ao preparar upload da voz', errorCode: 'prepareUpload' }, { status: 500 })
   }
 }

@@ -3,7 +3,7 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { supabaseAdmin } from '@/lib/supabase'
 import { createStudioVoiceAssetUrl, uploadStudioVoiceAsset, validateStudioVoiceUploadedAsset } from '@/lib/studio-voice-assets'
 import { createSunoVoiceValidation } from '@/lib/suno-voice'
-import { translateStudioVoiceError, VOICE_PROCESSING_ERROR_MESSAGE } from '@/lib/studio-voice-errors'
+import { studioVoiceErrorCode, translateStudioVoiceError, VOICE_PROCESSING_ERROR_MESSAGE } from '@/lib/studio-voice-errors'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -26,6 +26,7 @@ async function mapVoice(row: any) {
     voiceId: row.voice_id,
     isAvailable: Boolean(row.is_available),
     errorMessage: translateStudioVoiceError(row.error_message),
+    errorCode: studioVoiceErrorCode(row.error_message),
     sourceAudioUrl,
     verifyAudioUrl,
     createdAt: row.created_at,
@@ -47,7 +48,7 @@ async function getVoiceById(id: string) {
 export async function GET(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
     const includeRecoverable = request.nextUrl.searchParams.get('includeRecoverable') === 'true'
 
     const { data, error } = await supabaseAdmin
@@ -81,7 +82,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ voices, recoverableVoices, limit: MAX_ACTIVE_VOICES })
   } catch (error: any) {
     console.error('[Studio Voice] Erro listar vozes:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao listar vozes' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Erro ao listar vozes', errorCode: 'load' }, { status: 500 })
   }
 }
 
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
 
     const { count, error: countError } = await supabaseAdmin
       .from('studio_voice_profiles')
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     if (countError) throw countError
     if ((count || 0) >= MAX_ACTIVE_VOICES) {
-      return NextResponse.json({ error: 'Você já tem 5 vozes cadastradas. Apague uma voz antes de enviar outra.' }, { status: 400 })
+      return NextResponse.json({ error: 'Você já tem 5 vozes cadastradas. Apague uma voz antes de enviar outra.', errorCode: 'voiceLimitReached', limit: MAX_ACTIVE_VOICES }, { status: 400 })
     }
 
     let file: FormDataEntryValue | null = null
@@ -141,13 +142,13 @@ export async function POST(request: NextRequest) {
     }
 
     if (!displayName) {
-      return NextResponse.json({ error: 'Dê um nome para essa voz.' }, { status: 400 })
+      return NextResponse.json({ error: 'Dê um nome para essa voz.', errorCode: 'displayNameRequired' }, { status: 400 })
     }
     if (!consent) {
-      return NextResponse.json({ error: 'Confirme que você tem autorização para usar essa voz.' }, { status: 400 })
+      return NextResponse.json({ error: 'Confirme que você tem autorização para usar essa voz.', errorCode: 'consentRequired' }, { status: 400 })
     }
     if (!uploaded && !(file instanceof File)) {
-      return NextResponse.json({ error: 'Envie o áudio base da voz.' }, { status: 400 })
+      return NextResponse.json({ error: 'Envie o áudio base da voz.', errorCode: 'sourceAudioRequired' }, { status: 400 })
     }
 
     if (!uploaded && file instanceof File) {
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!uploaded) {
-      return NextResponse.json({ error: 'Envie o áudio base da voz.' }, { status: 400 })
+      return NextResponse.json({ error: 'Envie o áudio base da voz.', errorCode: 'sourceAudioRequired' }, { status: 400 })
     }
 
     const { data: existingVoice, error: existingVoiceError } = await supabaseAdmin
@@ -178,6 +179,8 @@ export async function POST(request: NextRequest) {
           error: pendingVerification
             ? `A voz "${existingVoice.display_name}" já está aguardando a frase de verificação. Role a página até o cartão dela e grave a frase por lá — não é necessário enviar o áudio-base novamente.`
             : `Você já tem uma voz cadastrada chamada "${existingVoice.display_name}". Exclua a voz antiga ou use outro nome antes de enviar novamente.`,
+          errorCode: pendingVerification ? 'duplicateAwaitingVerification' : 'duplicateVoiceName',
+          voiceName: existingVoice.display_name,
         },
         { status: 409 }
       )
@@ -249,6 +252,6 @@ export async function POST(request: NextRequest) {
         // Evita mascarar o erro principal retornado para a tela.
       }
     }
-    return NextResponse.json({ error: error.message || 'Erro ao criar voz' }, { status: 500 })
+    return NextResponse.json({ error: error.message || 'Erro ao criar voz', errorCode: 'sendVoice' }, { status: 500 })
   }
 }

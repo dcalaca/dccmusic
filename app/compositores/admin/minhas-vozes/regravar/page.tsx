@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { FiArrowLeft, FiLoader, FiMic, FiRefreshCw } from 'react-icons/fi'
+import { composerVoiceApiError } from '@/lib/composer-voice-error'
 
 async function readJson(response: Response) {
   const text = await response.text()
@@ -12,7 +13,7 @@ async function readJson(response: Response) {
   try {
     return JSON.parse(text)
   } catch {
-    return { error: text.slice(0, 240) }
+    return {}
   }
 }
 
@@ -31,14 +32,31 @@ export default function RegravarFraseVozPage() {
       return
     }
 
-    fetch('/api/compositores/studio/voices', {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: 'no-store',
-    })
-      .then(readJson)
-      .then((data) => setVoices((data.voices || []).filter((voice: any) => voice.status === 'ready')))
-      .catch(() => setError(t('voices.rerecord.errors.load')))
-      .finally(() => setLoading(false))
+    const loadReadyVoices = async () => {
+      try {
+        const response = await fetch('/api/compositores/studio/voices', {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: 'no-store',
+        })
+        const data = await readJson(response)
+        if (response.status === 401) {
+          localStorage.removeItem('composer_token')
+          router.push('/compositores/login?redirect=/compositores/admin/minhas-vozes/regravar')
+          return
+        }
+        if (!response.ok) {
+          setError(data.errorCode ? composerVoiceApiError(t, data, 'load') : t('voices.rerecord.errors.load'))
+          return
+        }
+        setVoices((data.voices || []).filter((voice: any) => voice.status === 'ready'))
+      } catch {
+        setError(t('voices.rerecord.errors.load'))
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadReadyVoices()
   }, [router, t])
 
   const regenerate = async (voice: any) => {
@@ -59,10 +77,14 @@ export default function RegravarFraseVozPage() {
         body: JSON.stringify({ action: 'regenerate-validation' }),
       })
       const data = await readJson(response)
-      if (!response.ok) throw new Error(data.error || t('voices.rerecord.errors.generate'))
+      if (!response.ok) {
+        setError(data.errorCode ? composerVoiceApiError(t, data, 'regeneratePhrase') : t('voices.rerecord.errors.generate'))
+        setWorkingId('')
+        return
+      }
       router.push('/compositores/admin/minhas-vozes')
-    } catch (err: any) {
-      setError(err.message || t('voices.rerecord.errors.generate'))
+    } catch {
+      setError(t('voices.rerecord.errors.generate'))
       setWorkingId('')
     }
   }

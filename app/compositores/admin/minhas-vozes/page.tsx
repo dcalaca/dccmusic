@@ -4,7 +4,9 @@ import { FormEvent, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { FiArrowLeft, FiCheckCircle, FiLoader, FiMic, FiRefreshCw, FiTrash2, FiUploadCloud } from 'react-icons/fi'
+import { ComposerVoiceUiError, composerVoiceApiError, composerVoiceUiError } from '@/lib/composer-voice-error'
 
 const statusLabelKeys: Record<string, string> = {
   source_uploaded: 'voices.status.sourceUploaded',
@@ -14,6 +16,15 @@ const statusLabelKeys: Record<string, string> = {
   ready: 'voices.status.ready',
   failed: 'voices.status.failed',
 }
+
+const voiceFailureCodes = new Set([
+  'voiceExpired',
+  'audioCatalogMatch',
+  'voiceMismatch',
+  'phraseUnrecognized',
+  'verificationPhraseExpired',
+  'voiceFailed',
+])
 
 const MAX_VOICE_AUDIO_BYTES = 50 * 1024 * 1024
 const VALIDATION_PHRASE_EXPIRES_SECONDS = 10 * 60
@@ -42,7 +53,7 @@ function getValidationSecondsRemaining(voice: any, nowMs: number) {
   return VALIDATION_PHRASE_EXPIRES_SECONDS - elapsedSeconds
 }
 
-async function readResponseJson(response: Response, t: (key: string, options?: any) => string) {
+async function readResponseJson(response: Response) {
   const text = await response.text()
   if (!text) return {}
 
@@ -50,19 +61,19 @@ async function readResponseJson(response: Response, t: (key: string, options?: a
     return JSON.parse(text)
   } catch {
     if (text.startsWith('Request En')) {
-      return { error: t('voices.errors.fileTooLargeDirect') }
+      return { errorCode: 'fileTooLargeDirect' }
     }
-    return { error: text.slice(0, 240) }
+    return {}
   }
 }
 
-async function uploadVoiceFileDirectly(token: string, file: File, kind: 'source' | 'verify', t: (key: string, options?: any) => string, locale: string) {
+async function uploadVoiceFileDirectly(token: string, file: File, kind: 'source' | 'verify', t: TFunction, locale: string) {
   if (!file.type.startsWith('audio/')) {
-    throw new Error(t('voices.errors.audioFileRequired'))
+    throw new ComposerVoiceUiError(t('voices.errors.audioFileRequired'))
   }
 
   if (file.size > MAX_VOICE_AUDIO_BYTES) {
-    throw new Error(t('voices.errors.maxFileSize', { size: formatFileSize(MAX_VOICE_AUDIO_BYTES, locale) }))
+    throw new ComposerVoiceUiError(t('voices.errors.maxFileSize', { size: formatFileSize(MAX_VOICE_AUDIO_BYTES, locale) }))
   }
 
   const prepareResponse = await fetch('/api/compositores/studio/voices/upload-url', {
@@ -77,8 +88,8 @@ async function uploadVoiceFileDirectly(token: string, file: File, kind: 'source'
       kind,
     }),
   })
-  const prepareData = await readResponseJson(prepareResponse, t)
-  if (!prepareResponse.ok) throw new Error(prepareData.error || t('voices.errors.prepareUpload'))
+  const prepareData = await readResponseJson(prepareResponse)
+  if (!prepareResponse.ok) throw new ComposerVoiceUiError(composerVoiceApiError(t, prepareData, 'prepareUpload'))
 
   const upload = prepareData.upload
   const uploadResponse = await fetch(upload.uploadUrl, {
@@ -90,7 +101,7 @@ async function uploadVoiceFileDirectly(token: string, file: File, kind: 'source'
   })
 
   if (!uploadResponse.ok) {
-    throw new Error(t('voices.errors.storageUpload'))
+    throw new ComposerVoiceUiError(t('voices.errors.storageUpload'))
   }
 
   return {
@@ -131,6 +142,11 @@ export default function ComposerVoicesPage() {
   const sourceRecordingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const sourceSubmittingRef = useRef(false)
   const pendingVerificationVoice = voices.find((voice) => voice.status === 'awaiting_verification')
+  const voiceFailureMessage = (voice: any) => (
+    voiceFailureCodes.has(voice.errorCode)
+      ? t(`voices.errors.${voice.errorCode}`)
+      : t('voices.errors.voiceFailed')
+  )
 
   const loadVoices = async () => {
     const token = localStorage.getItem('composer_token')
@@ -146,18 +162,21 @@ export default function ComposerVoicesPage() {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
       })
-      const data = await response.json()
+      const data = await readResponseJson(response)
       if (response.status === 401) {
         localStorage.removeItem('composer_token')
         router.push('/compositores/login?redirect=/compositores/admin/minhas-vozes')
         return
       }
-      if (!response.ok) throw new Error(data.error || t('voices.errors.load'))
+      if (!response.ok) {
+        setError(composerVoiceApiError(t, data, 'load'))
+        return
+      }
       setVoices(data.voices || [])
       setRecoverableVoices(data.recoverableVoices || [])
       setLimit(data.limit || 5)
-    } catch (err: any) {
-      setError(err.message || t('voices.errors.load'))
+    } catch {
+      setError(t('voices.errors.load'))
     } finally {
       setLoading(false)
     }
@@ -203,7 +222,7 @@ export default function ComposerVoicesPage() {
         ? selectedAudioFile
         : sourceRecordedFile
       if (!(audioFile instanceof File) || audioFile.size === 0) {
-        throw new Error(t('voices.errors.chooseOrRecord'))
+        throw new ComposerVoiceUiError(t('voices.errors.chooseOrRecord'))
       }
 
       const uploadedAsset = await uploadVoiceFileDirectly(token, audioFile, 'source', t, i18n.language)
@@ -221,16 +240,16 @@ export default function ComposerVoicesPage() {
           uploadedAsset,
         }),
       })
-      const data = await readResponseJson(response, t)
-      if (!response.ok) throw new Error(data.error || t('voices.errors.sendVoice'))
+      const data = await readResponseJson(response)
+      if (!response.ok) throw new ComposerVoiceUiError(composerVoiceApiError(t, data, 'sendVoice'))
       form.reset()
       setSourceRecordedFile(null)
       if (sourceRecordedUrl) URL.revokeObjectURL(sourceRecordedUrl)
       setSourceRecordedUrl('')
       setMessage(t('voices.messages.voiceSent'))
       await loadVoices()
-    } catch (err: any) {
-      setError(err.message || t('voices.errors.sendVoice'))
+    } catch (err) {
+      setError(composerVoiceUiError(err, t, 'sendVoice'))
     } finally {
       sourceSubmittingRef.current = false
       setSubmitting(false)
@@ -253,12 +272,12 @@ export default function ComposerVoicesPage() {
         },
         body: JSON.stringify({ action: 'refresh' }),
       })
-      const data = await readResponseJson(response, t)
-      if (!response.ok) throw new Error(data.error || t('voices.errors.refresh'))
+      const data = await readResponseJson(response)
+      if (!response.ok) throw new ComposerVoiceUiError(composerVoiceApiError(t, data, 'refresh'))
       setMessage(t('voices.messages.statusUpdated'))
       await loadVoices()
-    } catch (err: any) {
-      setError(err.message || t('voices.errors.refresh'))
+    } catch (err) {
+      setError(composerVoiceUiError(err, t, 'refresh'))
     } finally {
       setRefreshingId('')
     }
@@ -280,12 +299,12 @@ export default function ComposerVoicesPage() {
         },
         body: JSON.stringify({ action: 'regenerate-validation' }),
       })
-      const data = await readResponseJson(response, t)
-      if (!response.ok) throw new Error(data.error || t('voices.errors.regeneratePhrase'))
+      const data = await readResponseJson(response)
+      if (!response.ok) throw new ComposerVoiceUiError(composerVoiceApiError(t, data, 'regeneratePhrase'))
       setMessage(t('voices.messages.newPhraseRequested'))
       await loadVoices()
-    } catch (err: any) {
-      setError(err.message || t('voices.errors.regeneratePhrase'))
+    } catch (err) {
+      setError(composerVoiceUiError(err, t, 'regeneratePhrase'))
     } finally {
       setRefreshingId('')
     }
@@ -307,12 +326,12 @@ export default function ComposerVoicesPage() {
         },
         body: JSON.stringify({ action: 'reactivate-expired' }),
       })
-      const data = await readResponseJson(response, t)
-      if (!response.ok) throw new Error(data.error || t('voices.errors.reactivate'))
+      const data = await readResponseJson(response)
+      if (!response.ok) throw new ComposerVoiceUiError(composerVoiceApiError(t, data, 'reactivate'))
       setMessage(t('voices.messages.reactivationStarted'))
       await loadVoices()
-    } catch (err: any) {
-      setError(err.message || t('voices.errors.reactivate'))
+    } catch (err) {
+      setError(composerVoiceUiError(err, t, 'reactivate'))
     } finally {
       setRefreshingId('')
     }
@@ -335,13 +354,13 @@ export default function ComposerVoicesPage() {
         },
         body: JSON.stringify({ uploadedAsset }),
       })
-      const data = await readResponseJson(response, t)
-      if (!response.ok) throw new Error(data.error || t('voices.errors.sendVerification'))
+      const data = await readResponseJson(response)
+      if (!response.ok) throw new ComposerVoiceUiError(composerVoiceApiError(t, data, 'sendVerification'))
       form?.reset()
       setMessage(t('voices.messages.verificationSent'))
       await loadVoices()
-    } catch (err: any) {
-      setError(err.message || t('voices.errors.sendVerification'))
+    } catch (err) {
+      setError(composerVoiceUiError(err, t, 'sendVerification'))
     } finally {
       setVerifyingId('')
     }
@@ -516,11 +535,11 @@ export default function ComposerVoicesPage() {
         headers: { Authorization: `Bearer ${token}` },
       })
       const data = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error(data.error || t('voices.errors.delete'))
+      if (!response.ok) throw new ComposerVoiceUiError(composerVoiceApiError(t, data, 'delete'))
       setMessage(t('voices.messages.deleted'))
       await loadVoices()
-    } catch (err: any) {
-      setError(err.message || t('voices.errors.delete'))
+    } catch (err) {
+      setError(composerVoiceUiError(err, t, 'delete'))
     } finally {
       setDeletingId('')
     }
@@ -612,7 +631,7 @@ export default function ComposerVoicesPage() {
                   {sourceRecordedUrl && (
                     <div className="mt-4">
                       <p className="mb-2 text-xs font-bold uppercase text-purple-100/80">{t('voices.newVoice.recordingReady')}</p>
-                      <audio controls src={sourceRecordedUrl} className="w-full" />
+                      <audio controls src={sourceRecordedUrl} aria-label={t('voices.newVoice.recordingReady')} className="w-full" />
                       <button type="button" onClick={clearSourceRecording} className="mt-2 text-xs font-bold text-red-200 hover:text-red-100">
                         {t('voices.newVoice.discardRecording')}
                       </button>
@@ -621,7 +640,7 @@ export default function ComposerVoicesPage() {
                 </div>
                 <label className="block rounded-2xl border border-gray-800 bg-black/30 p-4">
                   <span className="mb-2 block text-sm font-bold text-gray-300">{t('voices.newVoice.fileOption')}</span>
-                  <input name="audio" type="file" accept="audio/*" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white" />
+                  <input name="audio" type="file" accept="audio/*" aria-label={t('voices.newVoice.fileOption')} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white" />
                   <span className="mt-2 block text-xs text-gray-400">
                     {t('voices.newVoice.fileHint')}
                   </span>
@@ -655,13 +674,13 @@ export default function ComposerVoicesPage() {
                   <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
                       <h3 className="text-xl font-black text-white">{voice.displayName}</h3>
-                      <p className="mt-1 text-sm text-gray-400">{statusLabelKeys[voice.status] ? t(statusLabelKeys[voice.status]) : voice.status}</p>
+                      <p className="mt-1 text-sm text-gray-400">{statusLabelKeys[voice.status] ? t(statusLabelKeys[voice.status]) : t('voices.status.unknown')}</p>
                     </div>
                     {voice.status === 'ready' && <FiCheckCircle className="h-6 w-6 text-green-300" />}
                   </div>
 
-                  {voice.sourceAudioUrl && <audio controls src={voice.sourceAudioUrl} className="mb-4 w-full" />}
-                  {voice.errorMessage && <p className="mb-4 rounded-xl border border-red-800 bg-red-950/40 p-3 text-sm text-red-200">{i18n.language.startsWith('pt') ? voice.errorMessage : t('voices.errors.voiceFailed')}</p>}
+                  {voice.sourceAudioUrl && <audio controls src={voice.sourceAudioUrl} aria-label={t('voices.audioPreview', { name: voice.displayName })} className="mb-4 w-full" />}
+                  {voice.errorCode && <p className="mb-4 rounded-xl border border-red-800 bg-red-950/40 p-3 text-sm text-red-200">{voiceFailureMessage(voice)}</p>}
 
                   {voice.validateInfo && !(voice.status === 'ready' && voice.isAvailable) && (
                     <div className="mb-4 rounded-2xl border border-primary-800 bg-primary-950/30 p-4">
@@ -706,7 +725,7 @@ export default function ComposerVoicesPage() {
                       </div>
                       <div>
                         <p className="mb-2 text-xs font-bold uppercase text-gray-500">{t('voices.verification.orUpload')}</p>
-                        <input name="audio" type="file" accept="audio/*" className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white" />
+                        <input name="audio" type="file" accept="audio/*" aria-label={t('voices.verification.orUpload')} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white" />
                       </div>
                       <button disabled={verifyingId === voice.id} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-3 font-bold text-white disabled:opacity-60">
                         {verifyingId === voice.id ? <FiLoader className="animate-spin" /> : <FiUploadCloud />}
@@ -717,9 +736,8 @@ export default function ComposerVoicesPage() {
 
                   <div className="flex flex-col gap-3 sm:flex-row">
                     {voice.status === 'failed' && voice.sourceAudioUrl && (
-                      String(voice.errorMessage || '').toLowerCase().includes('expir') ||
-                      String(voice.errorMessage || '').toLowerCase().includes('phrase') ||
-                      String(voice.errorMessage || '').toLowerCase().includes('frase')
+                      voice.errorCode === 'voiceExpired' ||
+                      voice.errorCode === 'verificationPhraseExpired'
                     ) && (
                       <button onClick={() => reactivateExpiredVoice(voice.id)} disabled={refreshingId === voice.id} className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-3 font-bold text-white disabled:opacity-60">
                         {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
@@ -761,7 +779,7 @@ export default function ComposerVoicesPage() {
                   <article key={voice.id} className="rounded-2xl border border-purple-800/60 bg-black/40 p-4">
                     <h3 className="text-lg font-black text-white">{voice.displayName}</h3>
                     <p className="mt-1 text-sm text-purple-100/70">{t('voices.recover.expiredSaved')}</p>
-                    {voice.sourceAudioUrl && <audio controls src={voice.sourceAudioUrl} className="mt-4 w-full" />}
+                    {voice.sourceAudioUrl && <audio controls src={voice.sourceAudioUrl} aria-label={t('voices.audioPreview', { name: voice.displayName })} className="mt-4 w-full" />}
                     <button
                       onClick={() => reactivateExpiredVoice(voice.id)}
                       disabled={refreshingId === voice.id || voices.length >= limit}

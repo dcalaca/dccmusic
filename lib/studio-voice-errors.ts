@@ -12,6 +12,17 @@ export function isStudioVoiceExpiredError(value?: string | null) {
     normalized.includes('voz expirou')
 }
 
+export function studioVoiceErrorCode(value?: string | null) {
+  const normalized = String(value || '').toLowerCase()
+  if (!normalized) return null
+  if (isStudioVoiceExpiredError(value)) return 'voiceExpired'
+  if (normalized.includes('existing recording') && normalized.includes('catalog') || normalized.includes('gravação') && normalized.includes('catálogo')) return 'audioCatalogMatch'
+  if (normalized.includes('voices sound different') || normalized.includes('voice sound different') || normalized.includes('different voice') || normalized.includes('não parece ser a mesma') || normalized.includes('mesma da voz base')) return 'voiceMismatch'
+  if (normalized.includes("didn't sound like you said the phrase") || normalized.includes('did not sound like you said the phrase') || normalized.includes('try reading it more clearly') || normalized.includes('não conseguimos reconhecer a frase')) return 'phraseUnrecognized'
+  if (normalized.includes('verification phrase expired') || normalized.includes('verification phrase') && normalized.includes('not found') || normalized.includes('request a new phrase') || normalized.includes('expired or not found') || normalized.includes('frase de verificação expirou') || normalized.includes('frase de verificação') && normalized.includes('não foi encontrada')) return 'verificationPhraseExpired'
+  return 'voiceFailed'
+}
+
 export function translateStudioVoiceError(value?: string | null) {
   const message = String(value || '').trim()
   if (!message) return null

@@ -1397,13 +1397,15 @@
     "loading": "Loading voices...",
     "empty": "No voices registered yet.",
     "confirmDelete": "Delete this voice? It will disappear from your list and free a slot for another voice.",
+    "audioPreview": "Audio for voice {{name}}",
     "status": {
       "sourceUploaded": "Audio received",
       "validationProcessing": "Generating verification phrase",
       "awaitingVerification": "Waiting for phrase recording",
       "voiceProcessing": "Creating cloned voice",
       "ready": "Ready to use",
-      "failed": "Failed"
+      "failed": "Failed",
+      "unknown": "Status unavailable"
     },
     "errors": {
       "fileTooLargeDirect": "The file is too large for direct upload. Try again; the system will use optimized upload.",
@@ -1423,7 +1425,29 @@
       "captureFailed": "We could not capture the audio. Please record again.",
       "microphone": "Could not access the microphone. Allow microphone access in your browser or use the file upload option.",
       "delete": "Could not delete the voice.",
-      "voiceFailed": "This voice could not be completed. Refresh the status or try generating a new phrase."
+      "voiceFailed": "This voice could not be completed. Refresh the status or try generating a new phrase.",
+      "voiceExpired": "This voice has expired. Reactivate it at no charge and record a new verification phrase.",
+      "audioCatalogMatch": "The provider detected a match with an existing recording. Upload different, clean, original audio.",
+      "voiceMismatch": "The recording does not appear to use the same voice as the base audio. Record it again with the same person.",
+      "phraseUnrecognized": "The verification phrase was not recognised. Sing the exact phrase shown with a clear voice and no music.",
+      "verificationPhraseExpired": "The verification phrase expired or was not found. Generate a new phrase and record it again."
+    },
+    "apiErrors": {
+      "unauthorized": "Your session has expired. Please sign in again.",
+      "voiceLimitReached": "You already have {{count}} registered voices. Delete one before adding or recovering another.",
+      "displayNameRequired": "Enter a name for this voice.",
+      "consentRequired": "Confirm that you are authorised to use this voice.",
+      "sourceAudioRequired": "Upload or record the base voice audio.",
+      "duplicateAwaitingVerification": "The voice “{{name}}” is already waiting for verification. Use its card below; do not upload the base audio again.",
+      "duplicateVoiceName": "A voice named “{{name}}” already exists. Delete the old one or choose another name.",
+      "invalidAction": "This action is not available.",
+      "voiceNotFound": "Voice not found.",
+      "reactivationUnavailable": "This voice cannot be reactivated right now.",
+      "sourceAudioMissing": "The saved base audio could not be found.",
+      "recoverExpiredOnly": "Only previously created voices that have expired can be recovered.",
+      "duplicateActiveVoice": "An active voice named “{{name}}” already exists. Delete it before recovering the archived voice.",
+      "validationPhraseNotReady": "The verification phrase is not ready yet. Refresh the status and try again.",
+      "verificationAudioRequired": "Upload or record the verification phrase."
     },
     "messages": {
       "voiceSent": "Voice sent. Now wait for the verification phrase from our AI.",

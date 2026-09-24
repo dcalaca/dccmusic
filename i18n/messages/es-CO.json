@@ -1365,13 +1365,15 @@
     "loading": "Cargando voces...",
     "empty": "Todavía no hay voces registradas.",
     "confirmDelete": "¿Eliminar esta voz? Dejará de aparecer en tu lista y liberará espacio para registrar otra.",
+    "audioPreview": "Audio de la voz {{name}}",
     "status": {
       "sourceUploaded": "Audio recibido",
       "validationProcessing": "Generando frase de verificación",
       "awaitingVerification": "Esperando la grabación de la frase",
       "voiceProcessing": "Creando voz clonada",
       "ready": "Lista para usar",
-      "failed": "Falló"
+      "failed": "Falló",
+      "unknown": "Estado no disponible"
     },
     "errors": {
       "fileTooLargeDirect": "El archivo es demasiado grande para envío directo. Inténtalo de nuevo; el sistema usará una carga optimizada.",
@@ -1391,7 +1393,29 @@
       "captureFailed": "No pudimos capturar el audio. Graba de nuevo.",
       "microphone": "No se pudo acceder al micrófono. Autoriza el micrófono en el navegador o usa la opción de elegir archivo.",
       "delete": "Error al eliminar la voz.",
-      "voiceFailed": "No se pudo completar esta voz. Actualiza el estado o intenta generar una nueva frase."
+      "voiceFailed": "No se pudo completar esta voz. Actualiza el estado o intenta generar una nueva frase.",
+      "voiceExpired": "Esta voz expiró. Reactívala sin costo y graba una nueva frase de verificación.",
+      "audioCatalogMatch": "El proveedor detectó una coincidencia con una grabación existente. Envía otro audio original y limpio.",
+      "voiceMismatch": "La grabación no parece tener la misma voz que el audio base. Grábala de nuevo con la misma persona.",
+      "phraseUnrecognized": "No se reconoció la frase de verificación. Canta exactamente la frase mostrada, con voz clara y sin música.",
+      "verificationPhraseExpired": "La frase de verificación expiró o no se encontró. Genera una nueva frase y vuelve a grabarla."
+    },
+    "apiErrors": {
+      "unauthorized": "Tu sesión expiró. Inicia sesión de nuevo.",
+      "voiceLimitReached": "Ya tienes {{count}} voces registradas. Elimina una antes de agregar o recuperar otra.",
+      "displayNameRequired": "Ponle un nombre a esta voz.",
+      "consentRequired": "Confirma que tienes autorización para usar esta voz.",
+      "sourceAudioRequired": "Envía o graba el audio base de la voz.",
+      "duplicateAwaitingVerification": "La voz “{{name}}” ya espera la verificación. Usa su tarjeta de abajo; no vuelvas a enviar el audio base.",
+      "duplicateVoiceName": "Ya existe una voz llamada “{{name}}”. Elimina la anterior o elige otro nombre.",
+      "invalidAction": "Esta acción no está disponible.",
+      "voiceNotFound": "No se encontró la voz.",
+      "reactivationUnavailable": "Esta voz no se puede reactivar ahora.",
+      "sourceAudioMissing": "No se encontró el audio base guardado.",
+      "recoverExpiredOnly": "Solo se pueden recuperar voces creadas anteriormente que hayan expirado.",
+      "duplicateActiveVoice": "Ya existe una voz activa llamada “{{name}}”. Elimínala antes de recuperar la voz archivada.",
+      "validationPhraseNotReady": "La frase de verificación aún no está lista. Actualiza el estado e inténtalo de nuevo.",
+      "verificationAudioRequired": "Envía o graba la frase de verificación."
     },
     "messages": {
       "voiceSent": "Voz enviada. Ahora espera la frase de verificación de nuestra IA.",
