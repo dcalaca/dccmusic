@@ -50,6 +50,7 @@ const textColors = [
   { id: 'red', labelKey: 'red', value: '#f87171', previewClass: 'text-red-400' },
   { id: 'black', labelKey: 'black', value: '#111827', previewClass: 'text-gray-950' },
 ]
+const variationInstruction = 'Crie uma nova variação visual mantendo a mesma emoção central.'
 
 type CoverHistoryItem = {
   id: string
@@ -89,6 +90,10 @@ export default function AICoverGeneratorPage() {
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [currentCover, setCurrentCover] = useState<CoverHistoryItem | null>(null)
+
+  const getApiError = (data: { errorCode?: string; waitSeconds?: number }, fallback: string) => (
+    data.errorCode ? t(`covers.errors.${data.errorCode}`, { count: data.waitSeconds }) : t(fallback)
+  )
 
   useEffect(() => {
     const token = localStorage.getItem('composer_token')
@@ -146,19 +151,19 @@ export default function AICoverGeneratorPage() {
       }
 
       if (response.status === 403) {
-        setAccessError(i18n.language.startsWith('pt') && data.error ? data.error : t('covers.errors.goldOnly'))
+        setAccessError(getApiError(data, 'covers.errors.goldOnly'))
         setStatus(null)
         return
       }
 
       if (!response.ok) {
-        throw new Error(i18n.language.startsWith('pt') && data.error ? data.error : t('covers.errors.load'))
+        throw new Error(getApiError(data, 'covers.errors.load'))
       }
 
       setStatus(data)
       setCurrentCover(data.history?.[0] || null)
     } catch (err: any) {
-      setAccessError(i18n.language.startsWith('pt') ? (err.message || t('covers.errors.load')) : t('covers.errors.load'))
+      setAccessError(err.message || t('covers.errors.load'))
     } finally {
       setLoadingStatus(false)
     }
@@ -186,7 +191,7 @@ export default function AICoverGeneratorPage() {
         body: JSON.stringify({
           title,
           inputText: variation
-            ? `${inputText}\n\n${t('covers.variationInstruction')}`
+            ? `${inputText}\n\n${variationInstruction}`
             : inputText,
           coverDescription,
           musicStyle,
@@ -197,7 +202,7 @@ export default function AICoverGeneratorPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(i18n.language.startsWith('pt') && data.error ? data.error : t('covers.errors.generate'))
+        throw new Error(getApiError(data, 'covers.errors.generate'))
       }
 
       setCurrentCover(data.cover)
@@ -212,7 +217,7 @@ export default function AICoverGeneratorPage() {
       )
       setSuccessMessage(variation ? t('covers.messages.variationCreated') : t('covers.messages.created'))
     } catch (err: any) {
-      setError(i18n.language.startsWith('pt') ? (err.message || t('covers.errors.generate')) : t('covers.errors.generate'))
+      setError(err.message || t('covers.errors.generate'))
     } finally {
       setGenerating(false)
     }

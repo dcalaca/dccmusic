@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
     if (!composer) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+      return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
     }
 
     const { plan, hasAccess } = await getGoldAccess(composer.composerId)
@@ -236,7 +236,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         {
           allowed: false,
-          error: 'O Gerador de Capas IA é exclusivo para assinantes ativos do Plano Ouro.',
+          errorCode: 'goldOnly',
           planName: plan?.name || null,
         },
         { status: 403 }
@@ -261,7 +261,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Capas IA] Erro no status:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao carregar Gerador de Capas IA' },
+      { errorCode: 'load' },
       { status: 500 }
     )
   }
@@ -271,13 +271,13 @@ export async function POST(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
     if (!composer) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+      return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
     }
 
     const { hasAccess } = await getGoldAccess(composer.composerId)
     if (!hasAccess) {
       return NextResponse.json(
-        { error: 'O Gerador de Capas IA é exclusivo para assinantes ativos do Plano Ouro.' },
+        { errorCode: 'goldOnly' },
         { status: 403 }
       )
     }
@@ -291,14 +291,14 @@ export async function POST(request: NextRequest) {
 
     if (inputText.length < 20) {
       return NextResponse.json(
-        { error: 'Escreva pelo menos uma descrição ou trecho da letra com 20 caracteres.' },
+        { errorCode: 'inputTooShort' },
         { status: 400 }
       )
     }
 
     if (inputText.length > 6000) {
       return NextResponse.json(
-        { error: 'O texto está muito grande. Use até 6000 caracteres.' },
+        { errorCode: 'inputTooLong' },
         { status: 400 }
       )
     }
@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
     const waitSeconds = await checkCooldown(composer.composerId)
     if (waitSeconds > 0) {
       return NextResponse.json(
-        { error: `Aguarde ${waitSeconds}s para gerar uma nova capa.`, waitSeconds },
+        { errorCode: 'cooldown', waitSeconds },
         { status: 429 }
       )
     }
@@ -316,7 +316,7 @@ export async function POST(request: NextRequest) {
     if (used >= MONTHLY_LIMIT) {
       return NextResponse.json(
         {
-          error: 'Você atingiu o limite mensal de 100 capas do Plano Ouro. O contador será renovado automaticamente no próximo mês.',
+          errorCode: 'monthlyLimitReached',
           used,
           limit: MONTHLY_LIMIT,
         },
@@ -381,7 +381,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[Capas IA] Erro ao gerar capa:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao gerar capa' },
+      { errorCode: 'generate' },
       { status: 500 }
     )
   }

@@ -1456,7 +1456,7 @@
       "goldOnly": "Recurso exclusivo para assinantes ativos do Plano Ouro.",
       "load": "Erro ao carregar Gerador de Capas IA.",
       "inputRequired": "Cole a letra da música ou descreva sua ideia antes de gerar.",
-      "generate": "Erro ao gerar capa."
+      "generate": "Erro ao gerar capa.", "unauthorized": "A sua sessão expirou. Inicie sessão novamente.", "inputTooShort": "Escreva pelo menos uma descrição ou trecho da letra com 20 caracteres.", "inputTooLong": "O texto é demasiado grande. Use até 6000 caracteres.", "cooldown": "Aguarde {{count}} s para criar uma nova capa.", "monthlyLimitReached": "Atingiu o limite mensal de 100 capas do Plano Ouro. O contador será renovado automaticamente no próximo mês."
     }
   },
   "videos": {

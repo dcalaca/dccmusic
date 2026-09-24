@@ -1483,7 +1483,7 @@
       "goldOnly": "This feature is exclusive to active Gold Plan subscribers.",
       "load": "Could not load the AI Cover Generator.",
       "inputRequired": "Paste the song lyrics or describe your idea before generating.",
-      "generate": "Could not generate the cover."
+      "generate": "Could not generate the cover.", "unauthorized": "Your session has expired. Please sign in again.", "inputTooShort": "Write at least 20 characters of a description or lyric excerpt.", "inputTooLong": "The text is too long. Use up to 6,000 characters.", "cooldown": "Wait {{count}}s before creating another cover.", "monthlyLimitReached": "You reached the monthly limit of 100 Gold Plan covers. The counter will renew automatically next month."
     }
   },
   "videos": {
