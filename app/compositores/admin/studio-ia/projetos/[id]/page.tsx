@@ -619,9 +619,9 @@ export default function StudioProjectDetailPage() {
       await refreshStudioStatus(token)
 
       return { ...data, project: normalizedProject }
-    } catch (err: any) {
+    } catch {
       if (!options?.suppressError) {
-        setError(err.message || t('studio.project.detail.loadError'))
+        setError(t('studio.project.detail.loadError'))
       }
       return null
     } finally {
@@ -687,8 +687,8 @@ export default function StudioProjectDetailPage() {
       const data = await response.json()
       if (!response.ok) throw new Error(t('studio.project.detail.saveLyricsError'))
       setMessage(t('studio.project.detail.lyricsSaved'))
-    } catch (err: any) {
-      setError(err.message || t('studio.project.detail.saveLyricsError'))
+    } catch {
+      setError(t('studio.project.detail.saveLyricsError'))
     } finally {
       setProcessing('')
     }
@@ -760,8 +760,8 @@ export default function StudioProjectDetailPage() {
       if (!response.ok) throw new Error(t('studio.project.detail.refineLyricsError'))
       setLyric(data.lyric)
       setMessage(t('studio.project.detail.lyricsUpdated'))
-    } catch (err: any) {
-      setError(err.message || t('studio.project.detail.refineLyricsError'))
+    } catch {
+      setError(t('studio.project.detail.refineLyricsError'))
     } finally {
       setProcessing('')
     }
@@ -832,17 +832,7 @@ export default function StudioProjectDetailPage() {
         return
       }
 
-      const rawErrorMessage = err.message || t('studio.project.generation.createError')
-      if (rawErrorMessage === studioVoiceInvalidMessage && selectedVoiceId) {
-        setInvalidVoiceIds((current) => current.includes(selectedVoiceId) ? current : [...current, selectedVoiceId])
-      }
-      const errorMessage = rawErrorMessage.toLowerCase().includes('fetch failed')
-        ? musicCreationUnavailableMessage
-        : rawErrorMessage
-      setError(errorMessage)
-      if (errorMessage.toLowerCase().includes('música grátis') || errorMessage.toLowerCase().includes('assine um plano')) {
-        setUpgradeModalMessage(errorMessage)
-      }
+      setError(err instanceof TypeError ? musicCreationUnavailableMessage : t('studio.project.generation.createError'))
     } finally {
       musicGenerationLockRef.current = false
       setProcessing('')
@@ -897,7 +887,7 @@ export default function StudioProjectDetailPage() {
       setGenerationElapsedSeconds(0)
       setMessage('')
       checkGeneration(data.generationId)
-    } catch (err: any) {
+    } catch {
       const recoveredProject = await loadProject({
         silent: true,
         notifyReady: true,
@@ -909,11 +899,7 @@ export default function StudioProjectDetailPage() {
         return
       }
 
-      const errorMessage = err.message || t('studio.project.generation.retryError')
-      setError(errorMessage)
-      if (errorMessage.toLowerCase().includes('música grátis') || errorMessage.toLowerCase().includes('créditos')) {
-        setUpgradeModalMessage(errorMessage)
-      }
+      setError(t('studio.project.generation.retryError'))
     } finally {
       setProcessing('')
     }
@@ -961,8 +947,8 @@ export default function StudioProjectDetailPage() {
       if (!response.ok) throw new Error(t('studio.project.generation.newProjectError'))
 
       router.push(`/compositores/admin/studio-ia/projetos/${data.project.id}`)
-    } catch (err: any) {
-      setError(err.message || t('studio.project.generation.reuseError'))
+    } catch {
+      setError(t('studio.project.generation.reuseError'))
       setProcessing('')
     }
   }
@@ -1005,56 +991,59 @@ export default function StudioProjectDetailPage() {
 
   const checkGeneration = async (id: string) => {
     const token = localStorage.getItem('composer_token')
-    const response = await fetch(`/api/compositores/studio/music/status?generationId=${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: 'no-store',
-    })
-    const data = await response.json()
-    if (!response.ok) {
-      setGenerationId(null)
-      setPreviewAudioUrl('')
-      setError(data.error || t('studio.project.generation.statusError'))
-      return
-    }
+    try {
+      const response = await fetch(`/api/compositores/studio/music/status?generationId=${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store',
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        setGenerationId(null)
+        setPreviewAudioUrl('')
+        setError(t('studio.project.generation.statusError'))
+        return
+      }
 
-    if (data.generation?.status === 'failed') {
-      setGenerationId(null)
-      setPreviewAudioUrl('')
-      setGenerationBackgroundMode(false)
-      setMessage('')
-      const generationError = String(data.generation?.error_message || '')
-      const normalizedGenerationError = generationError.toLowerCase()
-      const isExpiredVoiceError =
-        normalizedGenerationError.includes('voice has expired') ||
-        normalizedGenerationError.includes('voz cadastrada') ||
-        normalizedGenerationError.includes('voz personalizada') && normalizedGenerationError.includes('expir')
-      setError(isExpiredVoiceError ? studioVoiceInvalidMessage : (generationError || musicGenerationCommunicationError))
-      await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
-      return
-    }
+      if (data.generation?.status === 'failed') {
+        setGenerationId(null)
+        setPreviewAudioUrl('')
+        setGenerationBackgroundMode(false)
+        setMessage('')
+        const generationError = String(data.generation?.error_message || '')
+        const normalizedGenerationError = generationError.toLowerCase()
+        const isExpiredVoiceError =
+          normalizedGenerationError.includes('voice has expired') ||
+          (normalizedGenerationError.includes('voz') && normalizedGenerationError.includes('expir'))
+        setError(isExpiredVoiceError ? studioVoiceInvalidMessage : t('studio.project.generation.failed'))
+        await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
+        return
+      }
 
-    if (data.version?.streamAudioUrl && !data.version?.audioUrl) {
-      setPreviewAudioUrl(data.version.streamAudioUrl)
-    }
+      if (data.version?.streamAudioUrl && !data.version?.audioUrl) {
+        setPreviewAudioUrl(data.version.streamAudioUrl)
+      }
 
-    if (data.awaitingAudioSync) {
-      setGenerationBackgroundMode(true)
-      setMessage(t('studio.project.generation.syncingAudio'))
-    }
+      if (data.awaitingAudioSync) {
+        setGenerationBackgroundMode(true)
+        setMessage(t('studio.project.generation.syncingAudio'))
+      }
 
-    if (data.cover?.imageUrl) {
-      setProject((currentProject: any) => currentProject ? ({
-        ...currentProject,
-        cover: data.cover,
-      }) : currentProject)
-    }
+      if (data.cover?.imageUrl) {
+        setProject((currentProject: any) => currentProject ? ({
+          ...currentProject,
+          cover: data.cover,
+        }) : currentProject)
+      }
 
-    if (data.version?.audioUrl || data.version?.streamAudioUrl) {
-      setGenerationId(null)
-      setGenerationBackgroundMode(false)
-      setPreviewAudioUrl('')
-      await loadProject({ silent: true, notifyReady: true })
-      setMessage(t('studio.project.messages.ready'))
+      if (data.version?.audioUrl || data.version?.streamAudioUrl) {
+        setGenerationId(null)
+        setGenerationBackgroundMode(false)
+        setPreviewAudioUrl('')
+        await loadProject({ silent: true, notifyReady: true })
+        setMessage(t('studio.project.messages.ready'))
+      }
+    } catch {
+      setError(t('studio.project.generation.statusError'))
     }
   }
 
@@ -1110,8 +1099,8 @@ export default function StudioProjectDetailPage() {
         },
       }) : currentStatus)
       setMessage(t('studio.project.cover.created'))
-    } catch (err: any) {
-      setError(err.message || t('studio.project.cover.error'))
+    } catch {
+      setError(t('studio.project.cover.error'))
     } finally {
       setProcessing('')
     }
@@ -1153,8 +1142,8 @@ export default function StudioProjectDetailPage() {
       }
       setProject((currentProject: any) => ({ ...currentProject, status: 'published', publicSlug: data.publicSlug }))
       setMessage(t('studio.project.publish.published'))
-    } catch (err: any) {
-      setError(err.message || t('studio.project.publish.error'))
+    } catch {
+      setError(t('studio.project.publish.error'))
     } finally {
       setProcessing('')
     }
@@ -1187,8 +1176,8 @@ export default function StudioProjectDetailPage() {
         publicSlug: null,
       }))
       setMessage(t('studio.project.publish.unpublished'))
-    } catch (err: any) {
-      setError(err.message || t('studio.project.publish.unpublishError'))
+    } catch {
+      setError(t('studio.project.publish.unpublishError'))
     } finally {
       setProcessing('')
     }
@@ -1241,8 +1230,8 @@ export default function StudioProjectDetailPage() {
 
       await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
       setMessage(action === 'select' ? t('studio.project.cover.primaryUpdated') : t('studio.project.cover.deleted'))
-    } catch (err: any) {
-      setError(err.message || t('studio.project.detail.manageCoverError'))
+    } catch {
+      setError(t('studio.project.detail.manageCoverError'))
     } finally {
       setProcessing('')
     }
@@ -1313,14 +1302,14 @@ export default function StudioProjectDetailPage() {
             ],
           }
         })
-        setMessage(data.message || t('studio.project.video.processing'))
+        setMessage(mappedVideoRequest.status === 'completed' ? t('studio.project.video.status.completed.description') : t('studio.project.video.processing'))
         setVideoCheckoutLoading(false)
         return
       }
 
       throw new Error(t('studio.project.video.noStatus'))
-    } catch (err: any) {
-      setError(err.message || t('studio.project.video.generateError'))
+    } catch {
+      setError(t('studio.project.video.generateError'))
       setVideoCheckoutLoading(false)
     }
   }
@@ -1410,7 +1399,7 @@ export default function StudioProjectDetailPage() {
       <div className="mx-auto w-full max-w-[100vw] px-3 sm:max-w-7xl sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-full sm:max-w-7xl">
           <Link href="/compositores/admin/studio-ia/projetos" className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-primary-300 transition hover:text-primary-200">
-            <FiArrowLeft /> Meus Projetos
+            <FiArrowLeft /> {t('studio.project.detail.myProjects')}
           </Link>
 
           {(processing || (generationId && !generationBackgroundMode)) && (
@@ -1464,7 +1453,7 @@ export default function StudioProjectDetailPage() {
                     onClick={confirmVideoCredit}
                     className="rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-3 text-sm font-black text-white transition hover:from-fuchsia-500 hover:to-purple-500"
                   >
-                    Continuar
+                    {t('common.actions.continue')}
                   </button>
                 </div>
               </motion.div>
@@ -1632,7 +1621,7 @@ export default function StudioProjectDetailPage() {
                                   disabled={Boolean(processing)}
                                   className="flex-1 rounded-xl bg-green-600 px-3 py-2 text-xs font-black text-white disabled:opacity-60"
                                 >
-                                  Usar como principal
+                                  {t('studio.project.detail.usePrimary')}
                                 </button>
                               )}
                               <button
@@ -1649,7 +1638,7 @@ export default function StudioProjectDetailPage() {
                                   disabled={Boolean(processing)}
                                   className="rounded-xl border border-red-500/40 bg-red-950/70 px-3 py-2 text-xs font-bold text-red-100 disabled:opacity-60"
                                 >
-                                  Excluir
+                                  {t('studio.project.detail.deleteCover')}
                                 </button>
                               )}
                             </div>
@@ -1676,7 +1665,7 @@ export default function StudioProjectDetailPage() {
                             <FiChevronRight />
                           </button>
                           <div className="pointer-events-none absolute bottom-[5.6rem] left-1/2 z-20 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[11px] font-bold text-white backdrop-blur sm:hidden">
-                            Deslize para ver outras capas
+                            {t('studio.project.detail.swipeCovers')}
                           </div>
                         </>
                       )}
@@ -1724,16 +1713,16 @@ export default function StudioProjectDetailPage() {
                           <div className="grid gap-1 bg-gray-950 p-1.5">
                             {!cover.isCurrent && (
                               <button type="button" onClick={() => manageProjectCover('select', cover.id)} disabled={Boolean(processing)} className="rounded-lg bg-green-700 px-2 py-1.5 text-[10px] font-black text-white disabled:opacity-60">
-                                Tornar principal
+                                {t('studio.project.detail.makePrimary')}
                               </button>
                             )}
                             <div className="grid grid-cols-2 gap-1">
                               <button type="button" onClick={() => downloadCoverImage(cover.imageUrl)} className="rounded-lg border border-white/10 px-2 py-1.5 text-[10px] font-bold text-gray-200">
-                                Baixar
+                                {t('studio.project.detail.download')}
                               </button>
                               {projectCovers.length > 1 && (
                                 <button type="button" onClick={() => manageProjectCover('delete', cover.id)} disabled={Boolean(processing)} className="rounded-lg border border-red-800 px-2 py-1.5 text-[10px] font-bold text-red-200 disabled:opacity-60">
-                                  Excluir
+                                  {t('studio.project.detail.deleteCover')}
                                 </button>
                               )}
                             </div>
@@ -1768,7 +1757,7 @@ export default function StudioProjectDetailPage() {
 
                   <details className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                     <summary className="cursor-pointer text-xs font-black uppercase tracking-wide text-gray-400">
-                      Detalhes do pedido
+                      {t('studio.project.detail.orderDetails')}
                     </summary>
                     <div className="flex flex-wrap gap-2 text-xs">
                       <span className="rounded-full border border-primary-400/20 bg-primary-950/50 px-3 py-1 font-semibold text-primary-100">{t('studio.project.detail.style')}: {project.style || t('studio.project.detail.free')}</span>
@@ -2073,13 +2062,7 @@ export default function StudioProjectDetailPage() {
                                   {t('studio.project.video.previewHint')}
                                 </p>
                               </div>
-                            ) : (
-                              video.errorMessage && (
-                                <p className="text-xs text-red-200">
-                                  {t('studio.project.video.detail', { detail: video.errorMessage })}
-                                </p>
-                              )
-                            )}
+                            ) : null}
                           </article>
                         )
                       })}
@@ -2166,11 +2149,11 @@ export default function StudioProjectDetailPage() {
                         <button onClick={improveCover} disabled={Boolean(processing) || !canGeneratePremiumCover} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100 transition hover:border-purple-400/40 hover:bg-white/[0.09] disabled:opacity-60">
                           {isGeneratingCover ? (
                             <>
-                              <FiLoader className="animate-spin" /> Gerando capa...
+                              <FiLoader className="animate-spin" /> {t('studio.project.detail.generatingCover')}
                             </>
                           ) : (
                             <>
-                              <FiZap /> Criar capa profissional
+                              <FiZap /> {t('studio.project.detail.createProfessionalCover')}
                             </>
                           )}
                         </button>
@@ -2241,12 +2224,12 @@ export default function StudioProjectDetailPage() {
                     )}
                     {project.cover?.imageUrl && (
                       <button type="button" onClick={() => downloadCoverImage()} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100">
-                        <FiDownload /> Baixar capa
+                        <FiDownload /> {t('studio.project.detail.downloadCover')}
                       </button>
                     )}
                     {audioUrl && (
                       <a href={audioUrl} download className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100">
-                        <FiDownload /> Baixar MP3
+                        <FiDownload /> {t('studio.project.detail.downloadMp3')}
                       </a>
                     )}
                   </div>
@@ -2280,7 +2263,7 @@ export default function StudioProjectDetailPage() {
                       </p>
                     </div>
                     <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-xs font-bold text-gray-300">
-                      opcional
+                      {t('studio.project.detail.optional')}
                     </span>
                   </div>
                 </summary>
@@ -2338,7 +2321,7 @@ export default function StudioProjectDetailPage() {
                       className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary-600 px-4 py-3 font-bold text-white transition hover:bg-primary-700"
                     >
                       <FiCode />
-                      Colocar em outro site
+                      {t('studio.project.detail.embed')}
                     </button>
 
                     {showIncorporateCode && (
@@ -2471,7 +2454,7 @@ function PendingMusicRequestSummary({
       <div className="w-full overflow-hidden rounded-[2rem] border border-purple-500/30 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.25),transparent_36%),linear-gradient(135deg,#050816,#090b16,#160728)] shadow-2xl shadow-purple-950/40">
         <div className="border-b border-white/10 p-5 sm:p-7">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-green-400/30 bg-green-500/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-green-200">
-            <FiClock /> Pedido recebido
+            <FiClock /> {t('studio.project.detail.requestReceived')}
           </div>
           <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-black text-white outline-none sm:text-4xl">
             {t('studio.project.processing.title')}
@@ -2482,7 +2465,7 @@ function PendingMusicRequestSummary({
           <div className="mt-5 flex max-w-full flex-wrap gap-3">
             <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-purple-500/40 bg-purple-950/35 px-4 py-2 text-sm font-bold text-purple-100">
               <FiLoader className="animate-spin" />
-              Gerando em segundo plano
+              {t('studio.project.detail.backgroundGeneration')}
             </div>
             <div className="inline-flex max-w-full flex-wrap items-center gap-2 rounded-full border border-white/10 bg-black/25 px-4 py-2 text-sm font-bold text-gray-200">
               {t('studio.project.detail.elapsed')}: <span className="font-mono text-white">{elapsedTime}</span>
@@ -2517,7 +2500,7 @@ function PendingMusicRequestSummary({
             </div>
             <h2 className="mt-4 text-xl font-black text-white">{t('studio.project.detail.whatNext')}</h2>
             <p className="mt-2 text-sm leading-relaxed text-gray-300">
-              {t('studio.project.processing.noRepeat')}
+              {t('studio.project.processing.noRepeat')}{' '}
               {t('studio.project.processing.autoUpdate')}
             </p>
             <div className="mt-5 space-y-2 rounded-2xl border border-white/10 bg-black/25 p-3 text-xs leading-relaxed text-gray-300">
@@ -2532,14 +2515,14 @@ function PendingMusicRequestSummary({
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary-600 px-4 py-3 text-sm font-black text-white hover:bg-primary-500 disabled:opacity-60"
               >
                 {refreshing ? <FiLoader className="animate-spin" /> : <FiClock />}
-                Atualizar status
+                {t('studio.project.detail.refreshStatus')}
               </button>
               <Link
                 href="/compositores/admin/studio-ia/projetos"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-bold text-gray-100 hover:bg-white/[0.09]"
               >
                 <FiArrowLeft />
-                Meus Projetos
+                {t('studio.project.detail.myProjects')}
               </Link>
             </div>
           </aside>
@@ -2706,20 +2689,20 @@ function PublishPlanModal({ message, onClose }: { message: string; onClose: () =
             href="/studio-ia#planos"
             className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white hover:from-primary-500 hover:to-purple-500"
           >
-            Ver planos do Studio IA
+            {t('studio.project.detail.viewStudioPlans')}
           </Link>
           <Link
             href="/compositores/planos#compositor-premium"
             className="inline-flex items-center justify-center rounded-xl border border-amber-500/50 px-5 py-3 font-bold text-amber-100 hover:bg-amber-950/40"
           >
-            Ver Compositor Premium
+            {t('studio.project.detail.viewComposerPremium')}
           </Link>
           <button
             type="button"
             onClick={onClose}
             className="rounded-xl border border-gray-700 px-5 py-3 font-bold text-gray-200 hover:bg-gray-900"
           >
-            Entendi
+            {t('studio.project.detail.understood')}
           </button>
         </div>
       </motion.div>

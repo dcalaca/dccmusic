@@ -59,6 +59,7 @@
               "yourCovers": "Your covers",
               "makePrimary": "Set as main",
               "downloadCover": "Download cover",
+              "download": "Download",
               "songProject": "Song project",
               "myProjects": "My Projects",
               "orderDetails": "Request details",
@@ -227,6 +228,7 @@
         "newProjectError": "Could not create the new project.",
         "reuseError": "Could not reuse the lyrics.",
         "statusError": "We couldn't check the song generation right now.",
+        "failed": "We couldn't complete the song generation. Review your request and try again.",
         "syncingAudio": "The song has been created. We're syncing the audio to DCC Music and you can keep using this page.",
         "readyUpdated": "Your song is ready. This page was updated automatically."
       },

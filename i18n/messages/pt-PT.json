@@ -59,6 +59,7 @@
               "yourCovers": "Suas capas",
               "makePrimary": "Tornar principal",
               "downloadCover": "Baixar capa",
+              "download": "Descarregar",
               "songProject": "Projeto da música",
               "myProjects": "Meus Projetos",
               "orderDetails": "Detalhes do pedido",
@@ -227,6 +228,7 @@
         "newProjectError": "Erro ao criar novo projeto.",
         "reuseError": "Erro ao reaproveitar letra.",
         "statusError": "Não consegui consultar a geração da música agora.",
+        "failed": "Não foi possível concluir a geração da música. Reveja o pedido e tente novamente.",
         "syncingAudio": "A música já foi criada. Estamos sincronizando o áudio no DCC Music e você pode continuar usando a página.",
         "readyUpdated": "Sua música ficou pronta. Atualizamos esta página automaticamente."
       },
