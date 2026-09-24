@@ -50,7 +50,16 @@ const textColors = [
   { id: 'red', labelKey: 'red', value: '#f87171', previewClass: 'text-red-400' },
   { id: 'black', labelKey: 'black', value: '#111827', previewClass: 'text-gray-950' },
 ]
-const variationInstruction = 'Crie uma nova variação visual mantendo a mesma emoção central.'
+const knownCoverErrors = new Set([
+  'unauthorized',
+  'goldOnly',
+  'load',
+  'inputTooShort',
+  'inputTooLong',
+  'cooldown',
+  'monthlyLimitReached',
+  'generate',
+])
 
 type CoverHistoryItem = {
   id: string
@@ -92,8 +101,20 @@ export default function AICoverGeneratorPage() {
   const [currentCover, setCurrentCover] = useState<CoverHistoryItem | null>(null)
 
   const getApiError = (data: { errorCode?: string; waitSeconds?: number }, fallback: string) => (
-    data.errorCode ? t(`covers.errors.${data.errorCode}`, { count: data.waitSeconds }) : t(fallback)
+    data.errorCode && knownCoverErrors.has(data.errorCode)
+      ? t(`covers.errors.${data.errorCode}`, { count: data.waitSeconds })
+      : t(fallback)
   )
+
+  const displayMusicStyle = (value: string) => {
+    const style = musicStyles.find((item) => item.value === value)
+    return style ? t(`covers.musicStyles.${style.key}`) : value
+  }
+
+  const displayVisualStyle = (value: string) => {
+    const style = visualStyles.find((item) => item.value === value)
+    return style ? t(`covers.visualStyles.${style.key}`) : value
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('composer_token')
@@ -141,7 +162,7 @@ export default function AICoverGeneratorPage() {
         },
         cache: 'no-store',
       })
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
 
       if (response.status === 401) {
         localStorage.removeItem('composer_token')
@@ -157,13 +178,15 @@ export default function AICoverGeneratorPage() {
       }
 
       if (!response.ok) {
-        throw new Error(getApiError(data, 'covers.errors.load'))
+        setAccessError(getApiError(data, 'covers.errors.load'))
+        setStatus(null)
+        return
       }
 
       setStatus(data)
       setCurrentCover(data.history?.[0] || null)
-    } catch (err: any) {
-      setAccessError(err.message || t('covers.errors.load'))
+    } catch {
+      setAccessError(t('covers.errors.load'))
     } finally {
       setLoadingStatus(false)
     }
@@ -191,7 +214,7 @@ export default function AICoverGeneratorPage() {
         body: JSON.stringify({
           title,
           inputText: variation
-            ? `${inputText}\n\n${variationInstruction}`
+            ? `${inputText}\n\n${t('covers.variationInstruction')}`
             : inputText,
           coverDescription,
           musicStyle,
@@ -199,10 +222,11 @@ export default function AICoverGeneratorPage() {
         }),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
-        throw new Error(getApiError(data, 'covers.errors.generate'))
+        setError(getApiError(data, 'covers.errors.generate'))
+        return
       }
 
       setCurrentCover(data.cover)
@@ -216,8 +240,8 @@ export default function AICoverGeneratorPage() {
         : previous
       )
       setSuccessMessage(variation ? t('covers.messages.variationCreated') : t('covers.messages.created'))
-    } catch (err: any) {
-      setError(err.message || t('covers.errors.generate'))
+    } catch {
+      setError(t('covers.errors.generate'))
     } finally {
       setGenerating(false)
     }
@@ -226,15 +250,18 @@ export default function AICoverGeneratorPage() {
   const handleDownload = async (cover: CoverHistoryItem | null) => {
     if (!cover?.imageUrl) return
 
-    const textToApply = showTextOnCover ? (coverText.trim() || cover.title || title).trim() : ''
-    const response = await fetch(cover.imageUrl)
-    const blob = await response.blob()
-    const imageObjectUrl = URL.createObjectURL(blob)
+    setError('')
+    try {
+      const textToApply = showTextOnCover ? (coverText.trim() || cover.title || title).trim() : ''
+      const response = await fetch(cover.imageUrl)
+      if (!response.ok) throw new Error('download')
+      const blob = await response.blob()
+      const imageObjectUrl = URL.createObjectURL(blob)
 
-    if (textToApply) {
-      const image = new Image()
-      image.src = imageObjectUrl
-      await image.decode()
+      if (textToApply) {
+        const image = new Image()
+        image.src = imageObjectUrl
+        await image.decode()
 
       const canvas = document.createElement('canvas')
       canvas.width = 1024
@@ -288,38 +315,46 @@ export default function AICoverGeneratorPage() {
           const pngUrl = URL.createObjectURL(pngBlob)
           const anchor = document.createElement('a')
           anchor.href = pngUrl
-          anchor.download = `${textToApply || cover.title || title || 'capa-dccmusic'}.png`
+          anchor.download = `${textToApply || cover.title || title || t('covers.downloadFilename')}.png`
           anchor.click()
           URL.revokeObjectURL(pngUrl)
         }, 'image/png')
       }
 
-      URL.revokeObjectURL(imageObjectUrl)
-      return
-    }
+        URL.revokeObjectURL(imageObjectUrl)
+        return
+      }
 
-    const url = imageObjectUrl
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = `${cover.title || title || 'capa-dccmusic'}.png`
-    anchor.click()
-    URL.revokeObjectURL(url)
+      const anchor = document.createElement('a')
+      anchor.href = imageObjectUrl
+      anchor.download = `${cover.title || title || t('covers.downloadFilename')}.png`
+      anchor.click()
+      URL.revokeObjectURL(imageObjectUrl)
+    } catch {
+      setError(t('covers.errors.download'))
+    }
   }
 
   const handleShare = async (cover: CoverHistoryItem | null) => {
     if (!cover?.imageUrl) return
 
-    if (navigator.share) {
-      await navigator.share({
-        title: cover.title || t('covers.share.title'),
-        text: t('covers.share.text'),
-        url: cover.imageUrl,
-      })
-      return
-    }
+    setError('')
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: cover.title || t('covers.share.title'),
+          text: t('covers.share.text'),
+          url: cover.imageUrl,
+        })
+        return
+      }
 
-    await navigator.clipboard.writeText(cover.imageUrl)
-    setSuccessMessage(t('covers.messages.linkCopied'))
+      await navigator.clipboard.writeText(cover.imageUrl)
+      setSuccessMessage(t('covers.messages.linkCopied'))
+    } catch (shareError) {
+      if (shareError instanceof DOMException && shareError.name === 'AbortError') return
+      setError(t('covers.errors.share'))
+    }
   }
 
   if (loadingStatus) {
@@ -535,6 +570,7 @@ export default function AICoverGeneratorPage() {
                       key={style.value}
                       type="button"
                       onClick={() => setMusicStyle(style.value)}
+                      aria-pressed={musicStyle === style.value}
                       className={`rounded-full border px-4 py-2 text-sm transition-all ${
                         musicStyle === style.value
                           ? 'border-primary-400 bg-primary-600 text-white shadow-lg shadow-primary-900/40'
@@ -555,6 +591,7 @@ export default function AICoverGeneratorPage() {
                       key={style.value}
                       type="button"
                       onClick={() => setVisualStyle(style.value)}
+                      aria-pressed={visualStyle === style.value}
                       className={`rounded-full border px-4 py-2 text-sm transition-all ${
                         visualStyle === style.value
                           ? 'border-purple-300 bg-purple-600 text-white shadow-lg shadow-purple-900/40'
@@ -615,7 +652,7 @@ export default function AICoverGeneratorPage() {
                     <div className="mt-5">
                       <h3 className="text-xl font-bold">{currentCover.title || title || t('covers.generatedTitle')}</h3>
                       <p className="text-sm text-gray-400">
-                        {currentCover.musicStyle} · {currentCover.visualStyle}
+                        {displayMusicStyle(currentCover.musicStyle)} · {displayVisualStyle(currentCover.visualStyle)}
                       </p>
                     </div>
                     <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -668,6 +705,8 @@ export default function AICoverGeneratorPage() {
                         key={cover.id}
                         type="button"
                         onClick={() => setCurrentCover(cover)}
+                        aria-pressed={currentCover?.id === cover.id}
+                        aria-label={t('covers.library.select', { title: cover.title || t('covers.library.untitled') })}
                         className="group text-left"
                       >
                         {cover.imageUrl ? (

@@ -1548,6 +1548,7 @@
     "generating": "Criando sua arte...",
     "generatingHint": "Interpretando emoção, clima e identidade musical.",
     "generatedTitle": "Capa gerada",
+    "downloadFilename": "capa-dccmusic",
     "limitReached": "Você atingiu o limite mensal. Em breve teremos upgrades para ampliar gerações.",
     "actions": {
       "download": "Baixar PNG",
@@ -1561,6 +1562,7 @@
     "library": {
       "title": "Biblioteca de capas",
       "untitled": "Sem título",
+      "select": "Selecionar capa {{title}}",
       "empty": "As capas geradas ficarão salvas aqui para baixar novamente."
     },
     "alt": {
@@ -1580,7 +1582,9 @@
       "goldOnly": "Recurso exclusivo para assinantes ativos do Plano Ouro.",
       "load": "Erro ao carregar Gerador de Capas IA.",
       "inputRequired": "Cole a letra da música ou descreva sua ideia antes de gerar.",
-      "generate": "Erro ao gerar capa.", "unauthorized": "A sua sessão expirou. Inicie sessão novamente.", "inputTooShort": "Escreva pelo menos uma descrição ou trecho da letra com 20 caracteres.", "inputTooLong": "O texto é demasiado grande. Use até 6000 caracteres.", "cooldown": "Aguarde {{count}} s para criar uma nova capa.", "monthlyLimitReached": "Atingiu o limite mensal de 100 capas do Plano Ouro. O contador será renovado automaticamente no próximo mês."
+      "generate": "Erro ao gerar capa.", "unauthorized": "A sua sessão expirou. Inicie sessão novamente.", "inputTooShort": "Escreva pelo menos uma descrição ou trecho da letra com 20 caracteres.", "inputTooLong": "O texto é demasiado grande. Use até 6000 caracteres.", "cooldown": "Aguarde {{count}} s para criar uma nova capa.", "monthlyLimitReached": "Atingiu o limite mensal de 100 capas do Plano Ouro. O contador será renovado automaticamente no próximo mês.",
+      "download": "Não foi possível descarregar a capa. Tente novamente.",
+      "share": "Não foi possível partilhar a capa. Tente novamente."
     }
   },
   "videos": {

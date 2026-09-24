@@ -1543,6 +1543,7 @@
     "generating": "Creando tu arte...",
     "generatingHint": "Interpretando emoción, clima e identidad musical.",
     "generatedTitle": "Portada generada",
+    "downloadFilename": "portada-dccmusic",
     "limitReached": "Alcanzaste el límite mensual. Próximamente habrá opciones para ampliar las generaciones.",
     "actions": {
       "download": "Descargar PNG",
@@ -1556,6 +1557,7 @@
     "library": {
       "title": "Biblioteca de portadas",
       "untitled": "Sin título",
+      "select": "Seleccionar portada {{title}}",
       "empty": "Las portadas generadas quedarán guardadas aquí para volver a descargarlas."
     },
     "alt": {
@@ -1575,7 +1577,9 @@
       "goldOnly": "Recurso exclusivo para suscriptores activos del Plan Oro.",
       "load": "Error al cargar el Generador de Portadas con IA.",
       "inputRequired": "Pega la letra de la canción o describe tu idea antes de generar.",
-      "generate": "Error al generar la portada.", "unauthorized": "Tu sesión expiró. Inicia sesión nuevamente.", "inputTooShort": "Escribe al menos 20 caracteres de una descripción o fragmento de letra.", "inputTooLong": "El texto es demasiado largo. Usa hasta 6000 caracteres.", "cooldown": "Espera {{count}} s antes de crear otra portada.", "monthlyLimitReached": "Alcanzaste el límite mensual de 100 portadas del Plan Oro. El contador se renovará automáticamente el próximo mes."
+      "generate": "Error al generar la portada.", "unauthorized": "Tu sesión expiró. Inicia sesión nuevamente.", "inputTooShort": "Escribe al menos 20 caracteres de una descripción o fragmento de letra.", "inputTooLong": "El texto es demasiado largo. Usa hasta 6000 caracteres.", "cooldown": "Espera {{count}} s antes de crear otra portada.", "monthlyLimitReached": "Alcanzaste el límite mensual de 100 portadas del Plan Oro. El contador se renovará automáticamente el próximo mes.",
+      "download": "No se pudo descargar la portada. Inténtalo de nuevo.",
+      "share": "No se pudo compartir la portada. Inténtalo de nuevo."
     }
   },
   "videos": {
