@@ -633,6 +633,7 @@
         "sendTitle": "Enviar “{{title}}”",
         "description": "El compositor recibirá el proyecto, letra, versiones, portada, videos y acordes ya generados. Los créditos y el historial de cobros no se transfieren.",
         "emailLabel": "Correo del compositor que recibirá el proyecto",
+        "emailPlaceholder": "destinatario@ejemplo.com",
         "confirm": "Confirmar transferencia",
         "action": "Transferir"
       },
@@ -688,7 +689,8 @@
         "improveAgain": "Usar para mejorar otra vez",
         "downloadPlayback": "Descargar playback",
         "downloadVoice": "Descargar voz",
-        "songOptions": "Opciones de la canción"
+        "songOptions": "Opciones de la canción",
+        "discardDraft": "Descartar borrador"
       },
       "labels": {
         "transcription": "Acordes de la Canción",
@@ -700,7 +702,13 @@
         "playbackInstrumental": "Playback / instrumental",
         "isolatedVoice": "Voz aislada",
         "fileUnavailable": "Archivo no disponible.",
-        "createdFromOriginal": "Creado a partir de una canción original enviada"
+        "createdFromOriginal": "Creado a partir de una canción original enviada",
+        "freeStyle": "Estilo libre",
+        "noMood": "Sin ambiente"
+      },
+      "fileNames": {
+        "transcription": "acordes-de-la-cancion",
+        "lyricsAndChords": "letra-y-acordes"
       },
       "fileUnavailable": "Archivo no disponible.",
       "versionCount": "{{count}} versiones",

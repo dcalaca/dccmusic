@@ -633,6 +633,7 @@
         "sendTitle": "Enviar “{{title}}”",
         "description": "O compositor receberá o projeto, letra, versões, capa, vídeos e cifras já geradas. Créditos e histórico de cobrança não são transferidos.",
         "emailLabel": "E-mail do compositor que vai receber",
+        "emailPlaceholder": "destinatario@email.pt",
         "confirm": "Confirmar transferência",
         "action": "Transferir"
       },
@@ -688,7 +689,8 @@
         "improveAgain": "Usar para melhorar novamente",
         "downloadPlayback": "Baixar playback",
         "downloadVoice": "Baixar voz",
-        "songOptions": "Opções da música"
+        "songOptions": "Opções da música",
+        "discardDraft": "Descartar rascunho"
       },
       "labels": {
         "transcription": "Cifra da Música",
@@ -700,7 +702,13 @@
         "playbackInstrumental": "Playback / instrumental",
         "isolatedVoice": "Voz isolada",
         "fileUnavailable": "Arquivo indisponível.",
-        "createdFromOriginal": "Criado a partir de música original enviada"
+        "createdFromOriginal": "Criado a partir de música original enviada",
+        "freeStyle": "Estilo livre",
+        "noMood": "Sem ambiente"
+      },
+      "fileNames": {
+        "transcription": "cifra-da-musica",
+        "lyricsAndChords": "letra-e-cifra"
       },
       "fileUnavailable": "Arquivo indisponível.",
       "versionCount": "{{count}} versões",

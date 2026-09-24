@@ -633,6 +633,7 @@
         "sendTitle": "Send “{{title}}”",
         "description": "The songwriter will receive the project, lyrics, versions, cover, videos, and generated chords. Credits and billing history are not transferred.",
         "emailLabel": "Recipient songwriter email",
+        "emailPlaceholder": "recipient@example.com",
         "confirm": "Confirm transfer",
         "action": "Transfer"
       },
@@ -688,7 +689,8 @@
         "improveAgain": "Use to improve again",
         "downloadPlayback": "Download playback",
         "downloadVoice": "Download vocal",
-        "songOptions": "Song options"
+        "songOptions": "Song options",
+        "discardDraft": "Discard draft"
       },
       "labels": {
         "transcription": "Song Chords",
@@ -700,7 +702,13 @@
         "playbackInstrumental": "Playback / instrumental",
         "isolatedVoice": "Isolated vocal",
         "fileUnavailable": "File unavailable.",
-        "createdFromOriginal": "Created from an uploaded original song"
+        "createdFromOriginal": "Created from an uploaded original song",
+        "freeStyle": "Free style",
+        "noMood": "No mood"
+      },
+      "fileNames": {
+        "transcription": "song-chords",
+        "lyricsAndChords": "lyrics-and-chords"
       },
       "fileUnavailable": "File unavailable.",
       "versionCount": "{{count}} versions",
