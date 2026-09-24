@@ -1728,6 +1728,22 @@
     "totalMusics": "Total de canciones",
     "views": "Visualizaciones: {{count}}"
   },
+  "composerSignupLanding": {
+    "metaTitle": "Para compositores — regístrate",
+    "metaDescription": "Comparte tu música con oyentes de todo el mundo. Publica tus canciones, recibe opiniones reales y encuentra nuevos seguidores en DCC Music.",
+    "title": "Comparte tu música con el mundo",
+    "description": "Publica tus canciones, recibe opiniones reales y llega a nuevos oyentes.",
+    "signup": "👉 Regístrate como compositor (gratis)",
+    "platformNumbers": "Cifras de la plataforma",
+    "publishedSongs": "canciones publicadas",
+    "registeredComposers": "compositores registrados",
+    "startNow": "👉 Empezar ahora",
+    "benefits": {
+      "listeners": "Personas reales escuchando tu música",
+      "feedback": "Opiniones reales del público",
+      "visibility": "Más visibilidad para tu trabajo"
+    }
+  },
   "composerCta": {
     "addMusic": "Registrar canción",
     "viewPremiumPlans": "Ver planes de Compositor Premium"

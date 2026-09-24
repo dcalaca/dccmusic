@@ -1733,6 +1733,22 @@
     "totalMusics": "Total de músicas",
     "views": "Visualizações: {{count}}"
   },
+  "composerSignupLanding": {
+    "metaTitle": "Para compositor — cadastre-se",
+    "metaDescription": "Divulgue suas músicas para o Brasil inteiro. Publique composições, receba avaliações reais e conquiste ouvintes na DCC Music.",
+    "title": "Divulgue suas músicas para o Brasil inteiro",
+    "description": "Publique suas composições, receba avaliações reais e conquiste novos ouvintes.",
+    "signup": "👉 Cadastrar como compositor (grátis)",
+    "platformNumbers": "Números da plataforma",
+    "publishedSongs": "músicas publicadas",
+    "registeredComposers": "compositores cadastrados",
+    "startNow": "👉 Começar agora",
+    "benefits": {
+      "listeners": "Suas músicas sendo ouvidas de verdade",
+      "feedback": "Feedback real do público",
+      "visibility": "Mais visibilidade para seu trabalho"
+    }
+  },
   "composerCta": {
     "addMusic": "Cadastrar música",
     "viewPremiumPlans": "Ver planos de Compositor Premium"

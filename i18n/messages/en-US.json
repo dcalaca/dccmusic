@@ -1760,6 +1760,22 @@
     "totalMusics": "Total songs",
     "views": "Views: {{count}}"
   },
+  "composerSignupLanding": {
+    "metaTitle": "For songwriters — sign up",
+    "metaDescription": "Share your music with listeners around the world. Publish your songs, get real feedback, and find new fans on DCC Music.",
+    "title": "Share your music with the world",
+    "description": "Publish your songs, get real feedback, and find new listeners.",
+    "signup": "👉 Sign up as a songwriter (free)",
+    "platformNumbers": "Platform numbers",
+    "publishedSongs": "songs published",
+    "registeredComposers": "songwriters registered",
+    "startNow": "👉 Get started",
+    "benefits": {
+      "listeners": "Real people listening to your music",
+      "feedback": "Real feedback from listeners",
+      "visibility": "More visibility for your work"
+    }
+  },
   "composerCta": {
     "addMusic": "Add song",
     "viewPremiumPlans": "View Premium Songwriter plans"
