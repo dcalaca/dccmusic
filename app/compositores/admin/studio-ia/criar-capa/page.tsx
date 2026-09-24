@@ -117,7 +117,8 @@ const REFERENCE_IMAGE_QUALITIES = [0.9, 0.84, 0.76]
 
 function getOptionLabel(t: TFunction, group: 'musicStyles' | 'visualStyles' | 'environments' | 'artDirections', value: string) {
   const key = coverOptionTranslationKeys[value]
-  return key ? t(`studio.tools.cover.options.${group}.${key}`) : value
+  const translationKey = `studio.tools.cover.options.${group}.${key}`
+  return key ? t(translationKey, { defaultValue: t('studio.tools.cover.options.other') }) : t('studio.tools.cover.options.other')
 }
 
 function getQualityLabel(t: TFunction, qualityId: string) {
@@ -125,22 +126,19 @@ function getQualityLabel(t: TFunction, qualityId: string) {
 }
 
 function getApiError(t: TFunction, data: { errorCode?: string; creditCost?: number }, fallbackKey: string) {
-  return data.errorCode
-    ? t(`studio.tools.cover.errors.${data.errorCode}`, { count: data.creditCost })
-    : t(fallbackKey)
+  const key = `studio.tools.cover.errors.${data.errorCode}`
+  return data.errorCode ? t(key, { count: data.creditCost, defaultValue: t(fallbackKey) }) : t(fallbackKey)
 }
 
 async function readApiResponse(response: Response, t: TFunction) {
-  const text = await response.text()
-  if (!text) return {}
+  const responseText = await response.text()
+  if (!responseText) return {}
 
   try {
-    return JSON.parse(text)
+    return JSON.parse(responseText)
   } catch {
     return {
-      error: response.status === 413
-        ? t('studio.tools.cover.errors.photosTooLarge')
-        : text,
+      errorCode: response.status === 413 ? 'photosTooLarge' : undefined,
     }
   }
 }
@@ -330,16 +328,21 @@ export default function StudioCoverArtPage() {
 
   const downloadCover = async (cover: CoverItem | null) => {
     if (!cover?.imageUrl) return
-    const response = await fetch(cover.imageUrl)
-    const blob = await response.blob()
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${(cover.title || 'capa-dccmusic').replace(/[^\w-]+/g, '-').toLowerCase()}.png`
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    URL.revokeObjectURL(url)
+    try {
+      const response = await fetch(cover.imageUrl)
+      if (!response.ok) throw new Error()
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `${(cover.title || 'capa-dccmusic').replace(/[^\w-]+/g, '-').toLowerCase()}.png`
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      setError(t('studio.tools.cover.errors.download'))
+    }
   }
 
   if (loading) {
@@ -465,7 +468,8 @@ export default function StudioCoverArtPage() {
                 <span className="mb-2 flex items-center gap-2 text-sm font-bold text-purple-100">
                   <FiUploadCloud /> {t('studio.tools.cover.referencePhotos')}
                 </span>
-                <input name="referenceImages" type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={handleReferenceChange} className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white" />
+                <input name="referenceImages" type="file" accept="image/png,image/jpeg,image/webp" multiple onChange={handleReferenceChange} className="peer sr-only" />
+                <span className="inline-flex rounded-lg bg-primary-600 px-4 py-2 font-bold text-white peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-white">{t('studio.tools.cover.choosePhotos')}</span>
                 <p className="mt-2 text-xs text-purple-100/80">
                   {referenceCount > 0
                     ? t('studio.tools.cover.photosSelected', { count: referenceCount })

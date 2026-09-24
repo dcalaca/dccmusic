@@ -866,7 +866,9 @@
         "download": "Download cover",
         "createdCoverAlt": "Created cover",
         "coverAlt": "Cover",
+        "choosePhotos": "Choose photos",
         "errors": {
+          "download": "Could not download the cover. Please try again.",
           "load": "Could not load the cover creator.",
           "create": "Could not create the cover.",
           "unauthorized": "Your session has expired. Please sign in again.",
@@ -880,6 +882,7 @@
           "photoPrepare": "Your browser could not prepare the photo."
         },
         "options": {
+          "other": "Other option",
           "musicStyles": { "sertanejo": "Sertanejo", "romantic": "Romantic", "gospel": "Gospel", "funk": "Funk", "popularRomanticBrega": "Popular romantic brega", "pagode": "Pagode", "pop": "Pop", "trap": "Trap", "rock": "Rock", "free": "Free", "hipHopRap": "Hip-Hop / Rap", "rnb": "R&B", "country": "Country", "alternativeIndie": "Alternative / Indie", "edmDance": "EDM / Dance", "jazz": "Jazz", "blues": "Blues", "folk": "Folk", "soul": "Soul", "metal": "Metal", "punk": "Punk", "latinPopReggaeton": "Latin Pop / Reggaeton" },
           "visualStyles": { "modern": "Modern", "vintage": "Vintage", "cinematic": "Cinematic", "luxury": "Luxury", "romantic": "Romantic", "dark": "Dark", "colorful": "Colorful", "minimalist": "Minimalist" },
           "environments": { "backlands": "Brazilian countryside", "city": "City", "beach": "Beach", "stage": "Stage", "farm": "Farm", "countryside": "Countryside", "nightStreet": "Night street", "musicStudio": "Music studio", "desert": "Desert", "starrySky": "Starry sky" },
