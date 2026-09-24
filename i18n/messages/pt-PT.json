@@ -847,9 +847,16 @@
         }
       },
       "cover": {
+        "eyebrow": "Capa com IA", "title": "Criar capa", "cost": "Custo da capa", "describe": "Descreva a sua capa", "artist": "Cantor ou artista", "songTitlePlaceholder": "Opcional. Ex.: Saudade do Sertão", "artistPlaceholder": "Opcional. Ex.: João Silva", "promptPlaceholder": "Ex.: Quero o cantor de chapéu a olhar para uma estrada de terra ao pôr do sol, ambiente emocionante, capa de música sertaneja...", "quality": "Qualidade da capa", "qualities": { "low": "Qualidade baixa", "medium": "Qualidade média", "pro": "Qualidade profissional" }, "photosSelected_one": "{{count}} fotografia selecionada.", "photosSelected_other": "{{count}} fotografias selecionadas.", "optimizingPhotos": "A otimizar fotografias antes de enviar...", "creating": "A criar capa...", "created": "Capa criada com sucesso.", "result": "Resultado", "download": "Descarregar capa", "createdCoverAlt": "Capa criada", "coverAlt": "Capa",
         "errors": {
           "load": "Erro ao carregar criação de capa.",
-          "maxPhotos": "Envie no máximo 3 fotos de referência."
+          "create": "Erro ao criar capa.", "unauthorized": "A sua sessão expirou. Inicie sessão novamente.", "maxPhotos": "Envie no máximo 3 fotografias de referência.", "ideaRequired": "Descreva o que pretende na capa com pelo menos 10 caracteres.", "insufficientCredits": "Precisa de {{count}} créditos para criar esta capa. Faça um carregamento para continuar.", "photosTooLarge": "As fotografias enviadas são demasiado grandes. Tente novamente com fotografias menores ou mais nítidas do rosto.", "photoUnreadable": "Não foi possível ler uma das fotografias enviadas. Tente enviar JPG ou PNG.", "photoOptimize": "Não foi possível otimizar uma das fotografias enviadas.", "unsupportedImage": "Envie apenas imagens em PNG, JPG ou WEBP.", "photoPrepare": "O seu navegador não conseguiu preparar a fotografia."
+        },
+        "options": {
+          "musicStyles": { "sertanejo": "Sertanejo", "romantic": "Romântico", "gospel": "Gospel", "funk": "Funk", "popularRomanticBrega": "Brega romântico popular", "pagode": "Pagode", "pop": "Pop", "trap": "Trap", "rock": "Rock", "free": "Livre", "hipHopRap": "Hip-Hop / Rap", "rnb": "R&B", "country": "Country", "alternativeIndie": "Alternativo / Indie", "edmDance": "EDM / Dance", "jazz": "Jazz", "blues": "Blues", "folk": "Folk", "soul": "Soul", "metal": "Metal", "punk": "Punk", "latinPopReggaeton": "Pop latino / Reggaeton" },
+          "visualStyles": { "modern": "Moderno", "vintage": "Antigo", "cinematic": "Cinematográfico", "luxury": "Luxo", "romantic": "Romântico", "dark": "Sombrio", "colorful": "Colorido", "minimalist": "Minimalista" },
+          "environments": { "backlands": "Sertão", "city": "Cidade", "beach": "Praia", "stage": "Palco", "farm": "Quinta", "countryside": "Campo", "nightStreet": "Rua à noite", "musicStudio": "Estúdio musical", "desert": "Deserto", "starrySky": "Céu estrelado" },
+          "artDirections": { "realistic": "Realista", "illustration": "Ilustração", "movieScene": "Cena de filme", "musicPoster": "Cartaz musical", "albumCover": "Capa de álbum", "vintage": "Vintage", "neon": "Néon", "editorial": "Editorial" }
         },
         "subtitle": "Envie até 3 fotos da pessoa como referência ou crie só pelo texto. A IA interpreta seu pedido e cria uma capa profissional com nome da música e artista.",
         "credits": "créditos",

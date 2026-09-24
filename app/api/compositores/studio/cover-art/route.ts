@@ -653,7 +653,7 @@ async function generateImage(input: {
 export async function GET(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
     const { limits } = await getStudioAccess(composer.composerId)
     const usage = await getStudioCreditUsage(composer.composerId, limits)
@@ -676,14 +676,14 @@ export async function GET(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio Cover Art] Erro status:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao carregar criação de capa' }, { status: 500 })
+    return NextResponse.json({ errorCode: 'load' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
     const { limits } = await getStudioAccess(composer.composerId)
     const usage = await getStudioCreditUsage(composer.composerId, limits)
@@ -693,7 +693,7 @@ export async function POST(request: NextRequest) {
 
     if (usage.remaining < creditCost) {
       return NextResponse.json(
-        { error: `Você precisa de ${creditCost} créditos para criar essa capa. Faça uma recarga para continuar.` },
+        { errorCode: 'insufficientCredits', creditCost },
         { status: 429 }
       )
     }
@@ -710,7 +710,7 @@ export async function POST(request: NextRequest) {
       .filter((item): item is File => item instanceof File && item.size > 0)
       .slice(0, MAX_REFERENCE_IMAGES)
 
-    if (userIdea.length < 10) return NextResponse.json({ error: 'Escreva o que você quer na capa.' }, { status: 400 })
+    if (userIdea.length < 10) return NextResponse.json({ errorCode: 'ideaRequired' }, { status: 400 })
 
     await ensureBucket()
 
@@ -823,6 +823,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio Cover Art] Erro gerar capa:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao criar capa' }, { status: 500 })
+    return NextResponse.json({ errorCode: 'create' }, { status: 500 })
   }
 }
