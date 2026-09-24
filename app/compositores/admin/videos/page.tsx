@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 import VideoCard from '@/components/VideoCard'
 import FeaturedButton from '@/components/FeaturedButton'
+import { composerVideoError } from '@/lib/composer-video-error'
 import { FiPlus, FiEdit, FiTrash2, FiArrowLeft } from 'react-icons/fi'
 
 export default function ComposerVideosPage() {
@@ -14,6 +15,7 @@ export default function ComposerVideosPage() {
   const [composer, setComposer] = useState<any>(null)
   const [videos, setVideos] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
     const token = localStorage.getItem('composer_token')
@@ -34,6 +36,7 @@ export default function ComposerVideosPage() {
   }, [router])
 
   const loadVideos = async (composerId: string) => {
+    setLoadError('')
     try {
       console.log('[PAGE] Carregando vídeos para compositor:', composerId)
       const response = await fetch(`/api/compositores/${composerId}/videos`, {
@@ -46,9 +49,11 @@ export default function ComposerVideosPage() {
       } else {
         const errorData = await response.json()
         console.error('[PAGE] Erro na resposta:', errorData)
+        setLoadError(t('videos.list.loadError'))
       }
     } catch (error) {
       console.error('[PAGE] Erro ao carregar vídeos:', error)
+      setLoadError(t('videos.list.loadError'))
     } finally {
       setLoading(false)
     }
@@ -71,7 +76,8 @@ export default function ComposerVideosPage() {
       if (response.ok) {
         setVideos(videos.filter(v => v.id !== videoId))
       } else {
-        alert(t('videos.list.deleteError'))
+        const data = await response.json().catch(() => ({}))
+        alert(composerVideoError(t, data, response.status, 'delete'))
       }
     } catch (error) {
       console.error('Erro ao excluir:', error)
@@ -163,7 +169,8 @@ export default function ComposerVideosPage() {
             </div>
           </div>
 
-          {videos.length === 0 ? (
+          {loadError && <p role="alert" className="mb-6 text-red-300">{loadError}</p>}
+          {loadError ? null : videos.length === 0 ? (
             <div className="text-center py-16 bg-gray-900/50 border border-gray-800 rounded-lg">
               <p className="text-gray-400 mb-6">{t('videos.list.empty')}</p>
               <Link

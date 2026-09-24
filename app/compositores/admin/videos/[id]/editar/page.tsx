@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useTranslation } from 'react-i18next'
 import { FiArrowLeft } from 'react-icons/fi'
+import { composerVideoError } from '@/lib/composer-video-error'
 
 export default function EditComposerVideoPage({ params }: { params: { id: string } }) {
   const { t } = useTranslation()
@@ -12,6 +13,7 @@ export default function EditComposerVideoPage({ params }: { params: { id: string
   const [composer, setComposer] = useState<any>(null)
   const [video, setVideo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => {
     const token = localStorage.getItem('composer_token')
@@ -58,14 +60,18 @@ export default function EditComposerVideoPage({ params }: { params: { id: string
           })
           setVideo(data.video)
         } else {
-          console.error('[PAGE] Video not found in response')
+          setLoadError(t('videos.form.errors.load'))
         }
       } else {
-        const errorData = await response.json()
-        console.error('Erro ao carregar vídeo:', errorData)
+        if (response.status === 401) {
+          router.push('/compositores/login')
+          return
+        }
+        setLoadError(response.status === 404 ? t('videos.form.notFoundDescription') : t('videos.form.errors.load'))
       }
     } catch (error) {
       console.error('Erro ao carregar vídeo:', error)
+      setLoadError(t('videos.form.errors.load'))
     } finally {
       setLoading(false)
     }
@@ -100,7 +106,7 @@ export default function EditComposerVideoPage({ params }: { params: { id: string
                 {t('videos.form.notFoundTitle')}
               </h2>
               <p className="text-gray-400 mb-6">
-                {t('videos.form.notFoundDescription')}
+                {loadError || t('videos.form.notFoundDescription')}
               </p>
               <Link
                 href="/compositores/admin/videos"
@@ -155,7 +161,7 @@ function ComposerVideoForm({
   composerId: string
   composerName: string 
 }) {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const router = useRouter()
   const [formData, setFormData] = useState({
     title: video.title || '',
@@ -323,12 +329,13 @@ function ComposerVideoForm({
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(i18n.language.startsWith('pt') && data.error ? data.error : t('videos.form.errors.update'))
+        setError(composerVideoError(t, data, response.status, 'update'))
+        return
       }
 
       router.push('/compositores/admin/videos')
     } catch (err: any) {
-      setError(i18n.language.startsWith('pt') ? (err.message || t('videos.form.errors.update')) : t('videos.form.errors.update'))
+      setError(t('videos.form.errors.update'))
     } finally {
       setLoading(false)
     }
@@ -408,7 +415,7 @@ function ComposerVideoForm({
           type="text"
           value={formData.tags}
           onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-          placeholder="tag1, tag2, tag3"
+          placeholder={t('videos.form.tagsPlaceholder')}
           className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
         />
       </div>
@@ -462,6 +469,7 @@ function ComposerVideoForm({
                     type="button"
                     onClick={() => handleRemoveComposer(composer)}
                     className="hover:text-red-400 transition-colors"
+                    aria-label={t('videos.form.removeComposer', { name: composer })}
                   >
                     ×
                   </button>

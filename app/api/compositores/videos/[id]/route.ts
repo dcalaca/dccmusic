@@ -12,7 +12,7 @@ export async function GET(
     const composer = getComposerFromRequest(request)
     if (!composer) {
       return NextResponse.json(
-        { error: 'Não autorizado' },
+        { error: 'Não autorizado', errorCode: 'unauthorized' },
         { status: 401 }
       )
     }
@@ -29,7 +29,7 @@ export async function GET(
 
     if (!videoComposer) {
       return NextResponse.json(
-        { error: 'Vídeo não encontrado ou você não tem permissão' },
+        { error: 'Vídeo não encontrado ou você não tem permissão', errorCode: 'videoNotFound' },
         { status: 404 }
       )
     }
@@ -59,7 +59,7 @@ export async function PUT(
     const composer = getComposerFromRequest(request)
     if (!composer) {
       return NextResponse.json(
-        { error: 'Não autorizado' },
+        { error: 'Não autorizado', errorCode: 'unauthorized' },
         { status: 401 }
       )
     }
@@ -76,7 +76,7 @@ export async function PUT(
 
     if (!videoComposer) {
       return NextResponse.json(
-        { error: 'Vídeo não encontrado ou você não tem permissão' },
+        { error: 'Vídeo não encontrado ou você não tem permissão', errorCode: 'videoNotFound' },
         { status: 404 }
       )
     }
@@ -85,7 +85,7 @@ export async function PUT(
     const hasSubscription = await db.checkComposerHasActiveSubscription(composer.composerId)
     if (!hasSubscription) {
       return NextResponse.json(
-        { error: 'Você precisa de uma assinatura ativa para gerenciar vídeos' },
+        { error: 'Você precisa de uma assinatura ativa para gerenciar vídeos', errorCode: 'subscriptionRequired' },
         { status: 403 }
       )
     }
@@ -110,7 +110,7 @@ export async function PUT(
 
     if (!title) {
       return NextResponse.json(
-        { error: 'Título é obrigatório' },
+        { error: 'Título é obrigatório', errorCode: 'titleRequired' },
         { status: 400 }
       )
     }
@@ -169,7 +169,7 @@ export async function DELETE(
     const composer = getComposerFromRequest(request)
     if (!composer) {
       return NextResponse.json(
-        { error: 'Não autorizado' },
+        { error: 'Não autorizado', errorCode: 'unauthorized' },
         { status: 401 }
       )
     }
@@ -186,7 +186,7 @@ export async function DELETE(
 
     if (!videoComposer) {
       return NextResponse.json(
-        { error: 'Vídeo não encontrado ou você não tem permissão' },
+        { error: 'Vídeo não encontrado ou você não tem permissão', errorCode: 'videoNotFound' },
         { status: 404 }
       )
     }
@@ -195,7 +195,7 @@ export async function DELETE(
     const hasSubscription = await db.checkComposerHasActiveSubscription(composer.composerId)
     if (!hasSubscription) {
       return NextResponse.json(
-        { error: 'Você precisa de uma assinatura ativa para gerenciar vídeos' },
+        { error: 'Você precisa de uma assinatura ativa para gerenciar vídeos', errorCode: 'subscriptionRequired' },
         { status: 403 }
       )
     }

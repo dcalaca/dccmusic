@@ -1625,7 +1625,8 @@
       "edit": "Edit",
       "delete": "Delete",
       "deleteConfirm": "Are you sure you want to delete this video?",
-      "deleteError": "Could not delete the video"
+      "deleteError": "Could not delete the video",
+      "loadError": "Could not load videos. Please try again."
     },
     "form": {
       "back": "Back",
@@ -1639,6 +1640,8 @@
       "title": "Title",
       "slug": "Slug",
       "slugPlaceholder": "Generated automatically if left blank",
+      "tagsPlaceholder": "E.g. pop, acoustic, live",
+      "removeComposer": "Remove songwriter {{name}}",
       "youtubeUrl": "YouTube URL",
       "youtubeEmbed": "YouTube embed (optional)",
       "youtubeEmbedPlaceholder": "Paste the YouTube iframe code",
@@ -1658,7 +1661,13 @@
       "cancel": "Cancel",
       "errors": {
         "create": "Could not add the video",
-        "update": "Could not update the video"
+        "update": "Could not update the video",
+        "unauthorized": "Your session has expired. Please sign in again.",
+        "subscriptionRequired": "An active subscription is required to manage videos.",
+        "notFound": "Video not found or access denied.",
+        "titleRequired": "Enter a video title.",
+        "delete": "Could not delete the video.",
+        "load": "Could not load the video. Please try again."
       }
     },
     "card": {

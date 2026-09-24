@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     const composer = getComposerFromRequest(request)
     if (!composer) {
       return NextResponse.json(
-        { error: 'Não autorizado' },
+        { error: 'Não autorizado', errorCode: 'unauthorized' },
         { status: 401 }
       )
     }
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     const hasSubscription = await db.checkComposerHasActiveSubscription(composer.composerId)
     if (!hasSubscription) {
       return NextResponse.json(
-        { error: 'Você precisa de uma assinatura ativa para cadastrar vídeos' },
+        { error: 'Você precisa de uma assinatura ativa para cadastrar vídeos', errorCode: 'subscriptionRequired' },
         { status: 403 }
       )
     }
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     if (!title) {
       return NextResponse.json(
-        { error: 'Título é obrigatório' },
+        { error: 'Título é obrigatório', errorCode: 'titleRequired' },
         { status: 400 }
       )
     }

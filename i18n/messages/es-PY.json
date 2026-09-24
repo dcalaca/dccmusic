@@ -1593,7 +1593,8 @@
       "edit": "Editar",
       "delete": "Eliminar",
       "deleteConfirm": "¿Seguro que quieres eliminar este video?",
-      "deleteError": "Error al eliminar el video"
+      "deleteError": "Error al eliminar el video",
+      "loadError": "No se pudieron cargar los videos. Inténtalo de nuevo."
     },
     "form": {
       "back": "Volver",
@@ -1607,6 +1608,8 @@
       "title": "Título",
       "slug": "Slug",
       "slugPlaceholder": "Se generará automáticamente si lo dejas vacío",
+      "tagsPlaceholder": "Ej.: pop, acústico, en vivo",
+      "removeComposer": "Quitar compositor {{name}}",
       "youtubeUrl": "URL de YouTube",
       "youtubeEmbed": "Embed de YouTube (opcional)",
       "youtubeEmbedPlaceholder": "Pega el código iframe de YouTube",
@@ -1626,7 +1629,13 @@
       "cancel": "Cancelar",
       "errors": {
         "create": "Error al registrar el video",
-        "update": "Error al actualizar el video"
+        "update": "Error al actualizar el video",
+        "unauthorized": "Tu sesión expiró. Inicia sesión de nuevo.",
+        "subscriptionRequired": "Necesitás una suscripción activa para administrar videos.",
+        "notFound": "No se encontró el video o no tenés permiso.",
+        "titleRequired": "Ingresá un título para el video.",
+        "delete": "No se pudo eliminar el video.",
+        "load": "No se pudo cargar el video. Intentá de nuevo."
       }
     },
     "card": {
