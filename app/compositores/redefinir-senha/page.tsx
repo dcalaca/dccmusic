@@ -37,6 +37,7 @@ function ResetPasswordForm() {
       return
     }
 
+    let feedback = t('auth.errors.resetFailed')
     try {
       setLoading(true)
       const response = await fetch('/api/compositores/password-reset/confirm', {
@@ -45,12 +46,15 @@ function ResetPasswordForm() {
         body: JSON.stringify({ token, newPassword }),
       })
 
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.reason === 'expired' ? t('auth.errors.expiredResetLink') : data.reason ? t('auth.errors.invalidResetLink') : t('auth.errors.resetFailed'))
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        feedback = data.reason === 'expired' ? t('auth.errors.expiredResetLink') : data.reason ? t('auth.errors.invalidResetLink') : feedback
+        throw new Error(feedback)
+      }
 
       router.push('/compositores/login?passwordChanged=true')
     } catch (err: any) {
-      setError(err.message || t('auth.errors.resetFailed'))
+      setError(feedback)
     } finally {
       setLoading(false)
     }
@@ -89,6 +93,8 @@ function ResetPasswordForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? t('auth.actions.hidePassword') : t('auth.actions.showPassword')}
+                    aria-pressed={showPassword}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
             >
               {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
@@ -114,6 +120,8 @@ function ResetPasswordForm() {
             <button
               type="button"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? t('auth.actions.hidePassword') : t('auth.actions.showPassword')}
+                    aria-pressed={showConfirmPassword}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
             >
               {showConfirmPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}

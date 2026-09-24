@@ -45,12 +45,14 @@ export default function ComposerChangePasswordPage() {
       return
     }
 
+    let feedback = t('auth.errors.changePasswordFailed')
     try {
       setLoading(true)
       const tempToken = localStorage.getItem('composer_token_temp')
       
       if (!tempToken) {
-        throw new Error(t('auth.errors.sessionExpired'))
+        feedback = t('auth.errors.sessionExpired')
+        throw new Error(feedback)
       }
 
       const response = await fetch('/api/compositores/change-password', {
@@ -64,10 +66,9 @@ export default function ComposerChangePasswordPage() {
         }),
       })
 
-      const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(response.status === 401 ? t('auth.errors.sessionExpired') : t('auth.errors.changePasswordFailed'))
+        feedback = response.status === 401 ? t('auth.errors.sessionExpired') : feedback
+        throw new Error(feedback)
       }
 
       // Remover token temporário
@@ -76,7 +77,7 @@ export default function ComposerChangePasswordPage() {
       // Redirecionar para login com mensagem de sucesso
       router.push('/compositores/login?passwordChanged=true')
     } catch (err: any) {
-      setError(err.message || t('auth.errors.changePasswordFailed'))
+      setError(feedback)
     } finally {
       setLoading(false)
     }
@@ -123,6 +124,8 @@ export default function ComposerChangePasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? t('auth.actions.hidePassword') : t('auth.actions.showPassword')}
+                    aria-pressed={showPassword}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
                 >
                   {showPassword ? (
@@ -152,6 +155,8 @@ export default function ComposerChangePasswordPage() {
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? t('auth.actions.hidePassword') : t('auth.actions.showPassword')}
+                    aria-pressed={showConfirmPassword}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
                 >
                   {showConfirmPassword ? (

@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     if (!email || !password || !composerName) {
       return NextResponse.json(
-        { error: 'Email, senha e pseudônimo são obrigatórios' },
+        { error: 'Email, senha e pseudônimo são obrigatórios', code: 'MISSING_FIELDS' },
         { status: 400 }
       )
     }
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     const emailValidation = validateSignupEmail(email)
     if (!emailValidation.valid) {
       return NextResponse.json(
-        { error: emailValidation.error, suggestion: emailValidation.suggestion },
+        { error: emailValidation.error, suggestion: emailValidation.suggestion, code: 'INVALID_EMAIL' },
         { status: 400 }
       )
     }
@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Este e-mail já teve uma conta excluída anteriormente. Por segurança, não é possível criar uma nova conta grátis com o mesmo e-mail. Entre em contato com a DCC Music se precisar reativar o acesso.',
+          code: 'DELETED_ACCOUNT',
         },
         { status: 403 }
       )
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     // Validar senha (mínimo 6 caracteres)
     if (password.length < 6) {
       return NextResponse.json(
-        { error: 'Senha deve ter no mínimo 6 caracteres' },
+        { error: 'Senha deve ter no mínimo 6 caracteres', code: 'PASSWORD_TOO_SHORT' },
         { status: 400 }
       )
     }
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
     // Garantir que temos um composer válido
     if (!('composer' in result) || !result.composer) {
       return NextResponse.json(
-        { error: 'Erro ao criar compositor' },
+        { error: 'Erro ao criar compositor', code: 'SIGNUP_FAILED' },
         { status: 500 }
       )
     }

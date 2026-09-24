@@ -1055,6 +1055,7 @@
     }
   },
   "auth": {
+    "actions": {"showPassword": "Mostrar palavra-passe", "hidePassword": "Ocultar palavra-passe"},
     "fields": {
       "email": "E-mail",
       "password": "Senha",
@@ -1064,12 +1065,17 @@
       "confirmNewPassword": "Confirmar nova senha"
     },
     "placeholders": {
+      "email": "o-seu@email.com",
       "password": "Sua senha",
       "name": "Seu nome",
       "minPassword": "Mínimo 6 caracteres",
       "confirmPassword": "Digite a senha novamente"
     },
     "errors": {
+      "deletedAccount": "Este e-mail pertence a uma conta eliminada. Por segurança, não é possível criar outra conta grátis com o mesmo endereço. Contacte a DCC Music para recuperar o acesso.",
+      "artistNameTaken": "Este nome artístico já está a ser utilizado. Escolha outro e tente novamente.",
+      "signupConflict": "Este e-mail ou nome artístico já está a ser utilizado. Escolha outro e tente novamente.",
+      "emailRequired": "Indique o seu e-mail.",
       "emailNotFound": "E-mail não cadastrado. Vamos te levar para criar sua conta.",
       "invalidPassword": "Senha incorreta. Tente novamente.",
       "emailNotVerified": "Seu e-mail ainda não foi confirmado. Confirme o e-mail para entrar.",
@@ -1091,6 +1097,7 @@
       "changePasswordFailed": "Erro ao trocar senha."
     },
     "login": {
+      "and": "e",
       "title": "Login Compositor",
       "subtitle": "Uma conta só: com ela você comenta, avalia e cria músicas no Studio IA.",
       "signupSuccess": "Cadastro realizado com sucesso! Confirme seu e-mail para ativar a conta.",
@@ -1153,6 +1160,7 @@
       "afterSave": "Após salvar, você precisará fazer login novamente com sua nova senha."
     },
     "verify": {
+      "confirmError": "Não foi possível confirmar o e-mail agora. Tente novamente dentro de momentos.",
       "confirming": "Confirmando seu e-mail e entrando na sua conta...",
       "missingToken": "Link sem token de confirmação.",
       "loginError": "E-mail confirmado, mas não foi possível criar o login automático.",

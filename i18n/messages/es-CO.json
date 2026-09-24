@@ -1050,6 +1050,7 @@
     }
   },
   "auth": {
+    "actions": {"showPassword": "Mostrar contraseña", "hidePassword": "Ocultar contraseña"},
     "fields": {
       "email": "Correo electrónico",
       "password": "Contraseña",
@@ -1059,12 +1060,17 @@
       "confirmNewPassword": "Confirmar nueva contraseña"
     },
     "placeholders": {
+      "email": "tu@correo.com",
       "password": "Tu contraseña",
       "name": "Tu nombre",
       "minPassword": "Mínimo 6 caracteres",
       "confirmPassword": "Escribe la contraseña nuevamente"
     },
     "errors": {
+      "deletedAccount": "Este correo pertenece a una cuenta eliminada. Por seguridad, no puedes crear otra cuenta gratis con él. Contacta a DCC Music para recuperar el acceso.",
+      "artistNameTaken": "Este nombre artístico ya está en uso. Elige otro e inténtalo de nuevo.",
+      "signupConflict": "Este correo o nombre artístico ya está en uso. Elige otro e inténtalo de nuevo.",
+      "emailRequired": "Ingresa tu correo electrónico.",
       "emailNotFound": "Correo no registrado. Te llevaremos a crear tu cuenta.",
       "invalidPassword": "Contraseña incorrecta. Inténtalo de nuevo.",
       "emailNotVerified": "Tu correo aún no ha sido confirmado. Confírmalo para iniciar sesión.",
@@ -1086,6 +1092,7 @@
       "changePasswordFailed": "No se pudo cambiar la contraseña."
     },
     "login": {
+      "and": "y",
       "title": "Inicio de sesión del compositor",
       "subtitle": "Una sola cuenta: comenta, califica y crea canciones en Studio IA.",
       "signupSuccess": "¡Registro completado! Confirma tu correo para activar la cuenta.",
@@ -1148,6 +1155,7 @@
       "afterSave": "Después de guardar, tendrás que iniciar sesión nuevamente con tu nueva contraseña."
     },
     "verify": {
+      "confirmError": "No pudimos confirmar tu correo en este momento. Inténtalo de nuevo en unos instantes.",
       "confirming": "Confirmando tu correo e iniciando sesión...",
       "missingToken": "El enlace de confirmación no tiene token.",
       "loginError": "Tu correo fue confirmado, pero no pudimos iniciar sesión automáticamente.",

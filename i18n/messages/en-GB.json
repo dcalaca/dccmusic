@@ -1082,6 +1082,7 @@
     }
   },
   "auth": {
+    "actions": {"showPassword": "Show password", "hidePassword": "Hide password"},
     "fields": {
       "email": "Email",
       "password": "Password",
@@ -1091,12 +1092,17 @@
       "confirmNewPassword": "Confirm new password"
     },
     "placeholders": {
+      "email": "you@example.com",
       "password": "Your password",
       "name": "Your name",
       "minPassword": "At least 6 characters",
       "confirmPassword": "Enter the password again"
     },
     "errors": {
+      "deletedAccount": "This email belongs to a deleted account. For security, you cannot create another free account with it. Contact DCC Music to restore access.",
+      "artistNameTaken": "This artist name is already in use. Choose another and try again.",
+      "signupConflict": "This email or artist name is already in use. Choose another and try again.",
+      "emailRequired": "Enter your email address.",
       "emailNotFound": "Email not registered. We'll take you to create your account.",
       "invalidPassword": "Incorrect password. Try again.",
       "emailNotVerified": "Your email has not been confirmed yet. Confirm it to sign in.",
@@ -1118,6 +1124,7 @@
       "changePasswordFailed": "Could not change your password."
     },
     "login": {
+      "and": "and",
       "title": "Songwriter Login",
       "subtitle": "One account lets you comment, rate, and create songs in AI Studio.",
       "signupSuccess": "Registration completed! Confirm your email to activate your account.",
@@ -1180,6 +1187,7 @@
       "afterSave": "After saving, you'll need to sign in again with your new password."
     },
     "verify": {
+      "confirmError": "We could not confirm your email right now. Please try again shortly.",
       "confirming": "Confirming your email and signing you in...",
       "missingToken": "Confirmation link has no token.",
       "loginError": "Your email was confirmed, but we could not create the automatic sign-in.",

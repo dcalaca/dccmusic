@@ -28,17 +28,23 @@ export default function VerifyComposerEmailClient({ token, language }: VerifyCom
 
   useEffect(() => {
     const locale = LOCALE_BY_LANGUAGE[language]
-    if (i18n.language !== locale) void i18n.changeLanguage(locale)
+    if (!i18n.language.startsWith(language)) void i18n.changeLanguage(locale)
   }, [i18n, language])
 
   useEffect(() => {
     if (requestedRef.current) return
     requestedRef.current = true
+    const locale = i18n.language.startsWith(language) ? i18n.language : LOCALE_BY_LANGUAGE[language]
+    const translate = i18n.getFixedT(locale)
 
     async function confirmEmail() {
+      let feedback = translate('auth.verify.confirmError')
       try {
-        setMessage(t('auth.verify.confirming'))
-        if (!token) throw new Error(t('auth.verify.missingToken'))
+        setMessage(translate('auth.verify.confirming'))
+        if (!token) {
+          feedback = translate('auth.verify.missingToken')
+          throw new Error(feedback)
+        }
 
         const response = await fetch('/api/compositores/email-verification/confirm', {
           method: 'POST',
@@ -47,14 +53,16 @@ export default function VerifyComposerEmailClient({ token, language }: VerifyCom
           cache: 'no-store',
         })
 
-        const data = await response.json()
+        const data = await response.json().catch(() => ({}))
 
         if (!response.ok || !data?.ok) {
-          throw new Error(data?.reason === 'missing' ? t('auth.verify.missingToken') : t('auth.verify.expired'))
+          feedback = data?.reason === 'missing' ? translate('auth.verify.missingToken') : ['invalid', 'used', 'expired'].includes(data?.reason) ? translate('auth.verify.expired') : feedback
+          throw new Error(feedback)
         }
 
         if (!data.login?.token || !data.login?.composer) {
-          throw new Error(t('auth.verify.loginError'))
+          feedback = translate('auth.verify.loginError')
+          throw new Error(feedback)
         }
 
         localStorage.setItem('composer_token', data.login.token)
@@ -63,19 +71,19 @@ export default function VerifyComposerEmailClient({ token, language }: VerifyCom
         window.dispatchEvent(new Event('authChange'))
 
         setState('success')
-        setMessage(t('auth.verify.confirmed'))
+        setMessage(translate('auth.verify.confirmed'))
 
         window.setTimeout(() => {
           router.replace(data.login.redirectTo || '/compositores/admin/studio-ia')
         }, 700)
       } catch (error: any) {
         setState('error')
-        setMessage(error?.message || t('auth.verify.expired'))
+        setMessage(feedback)
       }
     }
 
     confirmEmail()
-  }, [router, t, token])
+  }, [router, i18n, language, token])
 
   const success = state === 'success'
   const error = state === 'error'

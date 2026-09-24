@@ -55,6 +55,7 @@ export default function ComposerSignupPage() {
     }
 
     setLoading(true)
+    let feedback = t('auth.errors.signupFailed')
     try {
       const response = await fetch('/api/compositores/cadastro', {
         method: 'POST',
@@ -68,19 +69,28 @@ export default function ComposerSignupPage() {
           partnerAttribution: getStoredPartnerAttribution(),
         }),
       })
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
         if (data.suggestion) {
           setEmailSuggestion(data.suggestion)
         }
-        if (data.field === 'email' || data.code === 'EMAIL_TAKEN') {
+        if (data.field === 'email' || ['EMAIL_TAKEN', 'DELETED_ACCOUNT'].includes(data.code)) {
           setErrorField('email')
         }
-        throw new Error(data.code === 'EMAIL_TAKEN' ? t('auth.errors.emailTaken') : t('auth.errors.signupFailed'))
+        const errorKey: Record<string, string> = {
+          EMAIL_TAKEN: 'emailTaken',
+          DELETED_ACCOUNT: 'deletedAccount',
+          ARTIST_NAME_TAKEN: 'artistNameTaken',
+          SIGNUP_CONFLICT: 'signupConflict',
+          PASSWORD_TOO_SHORT: 'passwordTooShort',
+          INVALID_EMAIL: 'invalidEmail',
+          MISSING_FIELDS: 'signupFailed',
+        }
+        feedback = t(`auth.errors.${errorKey[data.code] || 'signupFailed'}`, { name: data.suggestionName || formData.fullName })
+        throw new Error(feedback)
       }
 
-      const successMessage = t('auth.login.signupSuccess')
       pushGtmEvent('dcc_complete_registration', {
         product_id: 'composer_signup',
         product_name: 'Cadastro de compositor',
@@ -106,10 +116,10 @@ export default function ComposerSignupPage() {
         })
       }
       router.push(
-        `/compositores/login?cadastro=sucesso&email=${encodeURIComponent(formData.email)}&mensagem=${encodeURIComponent(successMessage)}`
+        `/compositores/login?cadastro=sucesso&email=${encodeURIComponent(formData.email)}`
       )
     } catch (err: any) {
-      setError(err.message || t('auth.errors.signupFailed'))
+      setError(feedback)
       setLoading(false)
     }
   }
@@ -183,7 +193,7 @@ export default function ComposerSignupPage() {
                     className={`w-full pl-10 pr-4 py-2 bg-gray-800 border rounded-lg focus:outline-none focus:border-primary-500 ${
                       errorField === 'email' ? 'border-red-500' : 'border-gray-700'
                     }`}
-                    placeholder="seu@email.com"
+                    placeholder={t('auth.placeholders.email')}
                   />
                 </div>
               </div>
@@ -204,6 +214,8 @@ export default function ComposerSignupPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? t('auth.actions.hidePassword') : t('auth.actions.showPassword')}
+                    aria-pressed={showPassword}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
                   >
                     {showPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
@@ -226,6 +238,8 @@ export default function ComposerSignupPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? t('auth.actions.hidePassword') : t('auth.actions.showPassword')}
+                    aria-pressed={showConfirmPassword}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300"
                   >
                     {showConfirmPassword ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}

@@ -8,7 +8,7 @@ export async function POST(request: Request) {
 
     if (!email) {
       return NextResponse.json(
-        { error: 'Informe seu e-mail' },
+        { error: 'Informe seu e-mail', code: 'EMAIL_REQUIRED' },
         { status: 400 }
       )
     }
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       return NextResponse.json(
-        { error: 'E-mail inválido' },
+        { error: 'E-mail inválido', code: 'INVALID_EMAIL' },
         { status: 400 }
       )
     }

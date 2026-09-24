@@ -27,8 +27,7 @@ function LoginForm() {
 
   useEffect(() => {
     if (isPostSignup) {
-      const mensagem = searchParams.get('mensagem')
-      setSuccess(mensagem || t('auth.login.signupSuccess'))
+      setSuccess(t('auth.login.signupSuccess'))
       if (signupEmail) {
         setFormData((current) => ({ ...current, email: signupEmail }))
         setUnverifiedEmail(signupEmail)
@@ -45,6 +44,7 @@ function LoginForm() {
     setSuccess('')
     setUnverifiedEmail('')
     setLoading(true)
+    let feedback = t('auth.errors.loginFailed')
 
     try {
       const response = await fetch('/api/compositores/login', {
@@ -53,7 +53,7 @@ function LoginForm() {
         body: JSON.stringify(formData),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
         if (data.code === 'EMAIL_NOT_FOUND') {
@@ -67,9 +67,11 @@ function LoginForm() {
           setUnverifiedEmail(data.email || formData.email)
         }
         if (data.code === 'INVALID_PASSWORD') {
-          throw new Error(t('auth.errors.invalidPassword'))
+          feedback = t('auth.errors.invalidPassword')
+          throw new Error(feedback)
         }
-        throw new Error(data.code === 'EMAIL_NOT_VERIFIED' ? t('auth.errors.emailNotVerified') : t('auth.errors.loginFailed'))
+        feedback = data.code === 'EMAIL_NOT_VERIFIED' ? t('auth.errors.emailNotVerified') : t('auth.errors.loginFailed')
+        throw new Error(feedback)
       }
 
       // Se precisa trocar senha (senha temporária "123")
@@ -94,7 +96,7 @@ function LoginForm() {
 
       router.push(safeRedirect)
     } catch (err: any) {
-      setError(err.message || t('auth.errors.loginFailed'))
+      setError(feedback)
     } finally {
       setLoading(false)
     }
@@ -116,13 +118,11 @@ function LoginForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       })
-      const data = await response.json()
-
       if (!response.ok) throw new Error(t('auth.errors.resendVerification'))
 
       setSuccess(t('auth.login.verificationSent'))
     } catch (err: any) {
-      setError(err.message || t('auth.errors.resendVerification'))
+      setError(t('auth.errors.resendVerification'))
     } finally {
       setResendingVerification(false)
     }
@@ -166,7 +166,7 @@ function LoginForm() {
                 <div className="mt-4 rounded-xl border border-amber-700/40 bg-black/30 p-4">
                   <p className="flex items-start gap-2 text-sm font-bold text-amber-100">
                     <FiAlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                    {t('auth.login.checkFolders')} <span className="text-white">{t('auth.login.spam')}</span> e <span className="text-white">{t('auth.login.promotions')}</span>.
+                    {t('auth.login.checkFolders')} <span className="text-white">{t('auth.login.spam')}</span> {t('auth.login.and')} <span className="text-white">{t('auth.login.promotions')}</span>.
                   </p>
                   <p className="mt-3 text-sm leading-relaxed text-gray-300">
                     {t('auth.login.openEmailPrefix')} <span className="font-bold text-purple-300">{t('auth.login.confirmButtonHint')}</span> {t('auth.login.openEmailSuffix')}
@@ -225,7 +225,7 @@ function LoginForm() {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
                     className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
-                    placeholder="seu@email.com"
+                    placeholder={t('auth.placeholders.email')}
                   />
                 </div>
               </div>
@@ -247,6 +247,8 @@ function LoginForm() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? t('auth.actions.hidePassword') : t('auth.actions.showPassword')}
+                    aria-pressed={showPassword}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
                   >
                     {showPassword ? (

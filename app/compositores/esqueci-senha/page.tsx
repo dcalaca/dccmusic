@@ -17,6 +17,7 @@ export default function ForgotComposerPasswordPage() {
     setError('')
     setSuccess('')
     setLoading(true)
+    let feedback = t('auth.errors.resetRequestFailed')
 
     try {
       const response = await fetch('/api/compositores/password-reset/request', {
@@ -25,12 +26,15 @@ export default function ForgotComposerPasswordPage() {
         body: JSON.stringify({ email }),
       })
 
-      const data = await response.json()
-      if (!response.ok) throw new Error(t('auth.errors.resetRequestFailed'))
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        feedback = data.code === 'INVALID_EMAIL' ? t('auth.errors.invalidEmail') : data.code === 'EMAIL_REQUIRED' ? t('auth.errors.emailRequired') : feedback
+        throw new Error(feedback)
+      }
 
       setSuccess(t('auth.forgot.success'))
     } catch (err: any) {
-      setError(err.message || t('auth.errors.resetRequestFailed'))
+      setError(feedback)
     } finally {
       setLoading(false)
     }
@@ -68,7 +72,7 @@ export default function ForgotComposerPasswordPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  E-mail
+                  {t('auth.fields.email')}
                 </label>
                 <div className="relative">
                   <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -78,7 +82,7 @@ export default function ForgotComposerPasswordPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500"
-                    placeholder="seu@email.com"
+                    placeholder={t('auth.placeholders.email')}
                   />
                 </div>
               </div>
