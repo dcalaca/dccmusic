@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { isValidStudioCallback } from '@/lib/studio'
+import { isValidStudioCallback, refundStudioMusicGenerationChargeOnce } from '@/lib/studio'
 import {
   getComposerEmailIdentity,
   sendAdminStudioAlertEmail,
@@ -211,6 +211,15 @@ export async function POST(request: Request) {
       .eq('id', generation.id)
 
     if (hasFailure) {
+      await refundStudioMusicGenerationChargeOnce({
+        composerId: generation.composer_id,
+        projectId: generation.project_id,
+        taskId: generation.provider_task_id || taskId,
+        reason: providerError || callbackStatus || 'provider_failure',
+      }).catch((refundError) => {
+        console.error('[Studio IA] Erro ao estornar crédito de geração falha:', refundError)
+      })
+
       await releaseStudioProjectFromFailedGeneration(generation.project_id)
     }
 
