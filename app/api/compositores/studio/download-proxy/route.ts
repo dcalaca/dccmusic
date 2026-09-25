@@ -45,16 +45,16 @@ function normalizedAudioContentType(source: URL, upstreamContentType: string | n
 
 export async function POST(request: NextRequest) {
   const composer = getComposerFromRequest(request)
-  if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
   try {
     const body = await request.json().catch(() => ({}))
     const rawUrl = typeof body?.url === 'string' ? body.url.trim() : ''
-    if (!rawUrl) return NextResponse.json({ error: 'URL do áudio não informada.' }, { status: 400 })
+    if (!rawUrl) return NextResponse.json({ errorCode: 'missingAudioUrl' }, { status: 400 })
 
     const source = new URL(rawUrl)
     if (source.protocol !== 'https:' || !isAllowedAudioHost(source.hostname)) {
-      return NextResponse.json({ error: 'Origem do áudio não permitida.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'audioOriginNotAllowed' }, { status: 400 })
     }
 
     const upstream = await fetch(source.toString(), {
@@ -66,12 +66,12 @@ export async function POST(request: NextRequest) {
     })
 
     if (!upstream.ok) {
-      return NextResponse.json({ error: `Não foi possível baixar o áudio (${upstream.status}).` }, { status: 502 })
+      return NextResponse.json({ errorCode: 'audioDownloadFailed', upstreamStatus: upstream.status }, { status: 502 })
     }
 
     const bytes = await upstream.arrayBuffer()
     if (!bytes.byteLength) {
-      return NextResponse.json({ error: 'O arquivo de áudio está vazio.' }, { status: 502 })
+      return NextResponse.json({ errorCode: 'emptyAudioFile' }, { status: 502 })
     }
 
     return new NextResponse(bytes, {
@@ -86,6 +86,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio Download Proxy] Erro:', error)
-    return NextResponse.json({ error: 'Não foi possível preparar o download.' }, { status: 500 })
+    return NextResponse.json({ errorCode: 'prepareDownloadFailed' }, { status: 500 })
   }
 }

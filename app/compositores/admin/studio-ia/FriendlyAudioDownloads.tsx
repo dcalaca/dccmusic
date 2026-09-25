@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 let prepareNextMp3Download = false
 let prepareResetTimer: number | null = null
@@ -176,6 +177,8 @@ function clearPublicationDownload() {
 }
 
 export default function FriendlyAudioDownloads() {
+  const { t } = useTranslation()
+
   useEffect(() => {
     const originalAnchorClick = HTMLAnchorElement.prototype.click
 
@@ -256,13 +259,13 @@ export default function FriendlyAudioDownloads() {
     const addPublicationButtons = () => {
       if (!window.location.pathname.includes('/studio-ia/projetos/')) return
 
-      const downloadButtons = Array.from(
-        document.querySelectorAll<HTMLButtonElement>('button[aria-label="Baixar música"]')
-      )
+      const players = Array.from(document.querySelectorAll<HTMLElement>('div.rounded-2xl'))
+        .filter((player) => Boolean(player.querySelector('audio')))
 
-      for (const downloadButton of downloadButtons) {
-        const player = downloadButton.closest('div.rounded-2xl') as HTMLElement | null
-        if (!player || player.querySelector('[data-dcc-publication-action]')) continue
+      for (const player of players) {
+        if (player.querySelector('[data-dcc-publication-action]')) continue
+        const downloadButton = Array.from(player.querySelectorAll<HTMLButtonElement>('button')).at(-1)
+        if (!downloadButton) continue
 
         const wrapper = document.createElement('div')
         wrapper.dataset.dccPublicationAction = 'true'
@@ -270,25 +273,25 @@ export default function FriendlyAudioDownloads() {
 
         const helper = document.createElement('span')
         helper.className = 'text-xs text-gray-500'
-        helper.textContent = 'Baixa uma cópia sem metadados técnicos. O áudio original não é alterado.'
+        helper.textContent = t('studio.project.audio.publicationHint')
 
         const button = document.createElement('button')
         button.type = 'button'
         button.className = 'inline-flex items-center justify-center gap-2 rounded-xl border border-primary-600/60 bg-primary-950/40 px-3 py-2 text-xs font-bold text-primary-200 transition hover:border-primary-400 hover:text-white disabled:cursor-wait disabled:opacity-60'
-        button.textContent = 'Preparar para publicação'
-        button.setAttribute('aria-label', 'Preparar música para publicação no YouTube ou distribuidoras')
+        button.textContent = t('studio.project.audio.publicationAction')
+        button.setAttribute('aria-label', t('studio.project.audio.publicationAria'))
 
         button.addEventListener('click', () => {
           if (button.disabled) return
           button.disabled = true
-          button.textContent = 'Preparando...'
+          button.textContent = t('studio.project.audio.preparing')
           armPublicationDownload()
           downloadButton.click()
 
           window.setTimeout(() => {
             if (!button.isConnected) return
             button.disabled = false
-            button.textContent = 'Preparar para publicação'
+            button.textContent = t('studio.project.audio.publicationAction')
           }, 8_000)
         })
 
@@ -301,7 +304,7 @@ export default function FriendlyAudioDownloads() {
     const handlePublicationFinished = () => {
       document.querySelectorAll<HTMLButtonElement>('[data-dcc-publication-action] button').forEach((button) => {
         button.disabled = false
-        button.textContent = 'Preparar para publicação'
+        button.textContent = t('studio.project.audio.publicationAction')
       })
     }
 
@@ -309,7 +312,7 @@ export default function FriendlyAudioDownloads() {
       clearPublicationDownload()
       document.querySelectorAll<HTMLButtonElement>('[data-dcc-publication-action] button').forEach((button) => {
         button.disabled = false
-        button.textContent = 'Tentar novamente'
+        button.textContent = t('studio.project.audio.retry')
       })
     }
 
@@ -329,7 +332,7 @@ export default function FriendlyAudioDownloads() {
       window.removeEventListener('dcc-publication-download-finished', handlePublicationFinished)
       window.removeEventListener('dcc-publication-download-failed', handlePublicationFailed)
     }
-  }, [])
+  }, [t])
 
   return null
 }

@@ -9,18 +9,34 @@ import esES from './messages/es-ES.json'
 import esMX from './messages/es-MX.json'
 import esCO from './messages/es-CO.json'
 import esPY from './messages/es-PY.json'
+import { studioAudioMessages } from './studio-audio-messages'
+import { studioVideoMessages } from './studio-video-messages'
 
 export const translationNamespace = 'translation' as const
 
+function withStudioMessages(messages: any, locale: keyof typeof studioAudioMessages) {
+  return {
+    ...messages,
+    studio: {
+      ...messages.studio,
+      project: {
+        ...messages.studio.project,
+        audio: { ...messages.studio.project.audio, ...studioAudioMessages[locale] },
+        video: { ...messages.studio.project.video, ...studioVideoMessages[locale] },
+      },
+    },
+  }
+}
+
 export const i18nResources = {
-  'pt-BR': { [translationNamespace]: ptBR },
-  'pt-PT': { [translationNamespace]: ptPT },
-  'en-US': { [translationNamespace]: enUS },
-  'en-GB': { [translationNamespace]: enGB },
-  'es-ES': { [translationNamespace]: esES },
-  'es-MX': { [translationNamespace]: esMX },
-  'es-CO': { [translationNamespace]: esCO },
-  'es-PY': { [translationNamespace]: esPY },
+  'pt-BR': { [translationNamespace]: withStudioMessages(ptBR, 'pt-BR') },
+  'pt-PT': { [translationNamespace]: withStudioMessages(ptPT, 'pt-PT') },
+  'en-US': { [translationNamespace]: withStudioMessages(enUS, 'en-US') },
+  'en-GB': { [translationNamespace]: withStudioMessages(enGB, 'en-GB') },
+  'es-ES': { [translationNamespace]: withStudioMessages(esES, 'es-ES') },
+  'es-MX': { [translationNamespace]: withStudioMessages(esMX, 'es-MX') },
+  'es-CO': { [translationNamespace]: withStudioMessages(esCO, 'es-CO') },
+  'es-PY': { [translationNamespace]: withStudioMessages(esPY, 'es-PY') },
 } as const
 
 export function getI18nOptions(locale?: string | null): InitOptions {
