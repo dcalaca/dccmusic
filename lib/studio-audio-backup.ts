@@ -224,6 +224,13 @@ function isTemporaryProviderAudioUrl(url?: string | null) {
   return value.includes('tempfile.aiquickdraw.com') || value.includes('musicfile.removeai.ai')
 }
 
+function isPermanentExternalAudioError(error: any) {
+  const message = String(error?.message || error || '').toLowerCase()
+  // A Suno invalida alguns URLs históricos com 403. Sem um novo URL emitido
+  // pelo provedor, repetir o download nunca terá resultado diferente.
+  return /falha ao baixar áudio externo \(4(?:0[1-4]|[5-9]\d)\)/.test(message)
+}
+
 function durableAudioUrlCandidates(input: {
   audioUrl?: string | null
   streamAudioUrl?: string | null
@@ -664,9 +671,15 @@ export async function backupStudioVersionAudio(input: {
       return { backedUp: true, reason: 'external_ready' }
     }
 
-    console.error('[Studio Audio Backup] Erro ao salvar backup interno:', error)
+    const externalUrlIsUnavailable = isPermanentExternalAudioError(error)
+    console[externalUrlIsUnavailable ? 'warn' : 'error'](
+      '[Studio Audio Backup] Erro ao salvar backup interno:',
+      error
+    )
     try {
-      // Limpa path fantasma da fila para o cron poder tentar de novo.
+      // Um 4xx do provedor é definitivo para aquele URL: não reabre a fila
+      // em loop. Os demais casos continuam elegíveis para uma recuperação
+      // curta pelo cron (instabilidade/MP3 ainda propagando no CDN).
       await supabaseAdmin
         .from('studio_versions')
         .update({
@@ -674,7 +687,7 @@ export async function backupStudioVersionAudio(input: {
           stream_audio_path: null,
           audio_storage_provider: null,
           stream_audio_storage_provider: null,
-          audio_backup_status: 'failed',
+          audio_backup_status: externalUrlIsUnavailable ? 'external_unavailable' : 'failed',
           audio_backup_error: String(error?.message || error).slice(0, 1000),
           updated_at: new Date().toISOString(),
         })
