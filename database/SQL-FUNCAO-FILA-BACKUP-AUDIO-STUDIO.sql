@@ -1,6 +1,8 @@
 -- Fila de backup de áudio do Studio IA
--- v4: NÃO reserva audio_path antes do upload (path fantasma impedia retry).
--- Também reprocessa failed/pending e processing travado.
+-- v5: NÃO reserva audio_path antes do upload (path fantasma impedia retry).
+-- Apenas pending e processing travado entram aqui. Registros failed são
+-- reabertos pelo cron somente para falhas transitórias; URLs 4xx da Suno
+-- ficam como external_unavailable e não podem gerar loop de logs.
 
 create or replace function public.claim_studio_audio_backup_batch_v3(batch_limit integer default 5)
 returns table (
@@ -30,21 +32,20 @@ begin
         -- Ainda não confirmou backup real no R2
         coalesce(sv.audio_storage_provider, '') is distinct from 'r2'
         or sv.audio_path is null
-        or coalesce(sv.audio_backup_status, 'pending') in ('pending', 'failed')
+        or coalesce(sv.audio_backup_status, 'pending') = 'pending'
         or (
           sv.audio_backup_status = 'processing'
           and sv.updated_at < now() - interval '15 minutes'
         )
       )
       and (
-        coalesce(sv.audio_backup_status, 'pending') not in ('processing')
+        coalesce(sv.audio_backup_status, 'pending') = 'pending'
         or (sv.audio_backup_status = 'processing' and sv.updated_at < now() - interval '15 minutes')
       )
     order by
       case coalesce(sv.audio_backup_status, 'pending')
         when 'pending' then 0
-        when 'failed' then 1
-        else 2
+        else 1
       end,
       sv.created_at asc
     limit greatest(1, least(coalesce(batch_limit, 5), 10))
