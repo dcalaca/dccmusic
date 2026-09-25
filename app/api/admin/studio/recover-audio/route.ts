@@ -25,7 +25,10 @@ export async function POST(request: NextRequest) {
     const { data: affectedVersions, error: versionsError } = await supabaseAdmin
       .from('studio_versions')
       .select('generation_id')
-      .in('audio_backup_status', ['failed', 'external_ready'])
+      // URLs antigos da Suno podem retornar 403. Eles não devem voltar ao
+      // cron comum; esta recuperação consulta a tarefa no provedor para obter
+      // uma URL nova e então gravar a cópia definitiva no bucket.
+      .in('audio_backup_status', ['failed', 'external_ready', 'external_unavailable'])
       .not('generation_id', 'is', null)
       .order('updated_at', { ascending: true })
       .limit(60)
