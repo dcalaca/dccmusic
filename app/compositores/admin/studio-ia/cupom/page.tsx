@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { useLocalization } from '@/components/LocalizationProvider'
 import { FiArrowLeft, FiArrowRight, FiCheck, FiGift, FiLoader, FiSearch } from 'react-icons/fi'
 
@@ -18,6 +19,11 @@ type CouponPreview = {
   alreadyRedeemed: boolean
 }
 
+function getCouponError(t: TFunction, data: { errorCode?: string }, fallbackKey: string) {
+  return data.errorCode
+    ? t(`studio.tools.coupon.errors.${data.errorCode}`, { defaultValue: t(fallbackKey) })
+    : t(fallbackKey)
+}
 
 export default function StudioCouponPage() {
   const { t, i18n } = useTranslation()
@@ -66,8 +72,8 @@ export default function StudioCouponPage() {
         },
         body: JSON.stringify({ code: code.trim() }),
       })
-      const data = await response.json()
-      if (!response.ok) throw new Error(t('studio.tools.coupon.errors.invalid'))
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(getCouponError(t, data, 'studio.tools.coupon.errors.check'))
       setPreview(data)
     } catch (err: any) {
       setError(err.message || t('studio.tools.coupon.errors.check'))
@@ -94,11 +100,12 @@ export default function StudioCouponPage() {
         },
         body: JSON.stringify({ code: (preview?.code || code).trim() }),
       })
-      const data = await response.json()
-      if (!response.ok) throw new Error(t('studio.tools.coupon.errors.apply'))
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(getCouponError(t, data, 'studio.tools.coupon.errors.apply'))
 
       if (data.type === 'free') {
         setFreeSuccess({ musicQuantity: data.musicQuantity })
+        window.dispatchEvent(new Event('studioBalanceChange'))
         return
       }
 
@@ -157,7 +164,7 @@ export default function StudioCouponPage() {
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-xl">
           <Link href="/compositores/admin/studio-ia" className="mb-8 inline-flex items-center gap-2 text-primary-400 hover:text-primary-300">
-            <FiArrowLeft /> Voltar ao Studio IA
+            <FiArrowLeft /> {t('studio.tools.coupon.back')}
           </Link>
 
           <div className="rounded-3xl border border-purple-700/60 bg-gradient-to-br from-purple-950/40 via-black to-gray-950 p-8">
@@ -175,11 +182,12 @@ export default function StudioCouponPage() {
 
             {!preview ? (
               <form onSubmit={handleCheck}>
-                <label className="mb-2 block text-sm font-bold text-gray-200">{t('studio.tools.coupon.codeLabel')}</label>
+                <label htmlFor="coupon-code" className="mb-2 block text-sm font-bold text-gray-200">{t('studio.tools.coupon.codeLabel')}</label>
                 <input
+                  id="coupon-code"
                   value={code}
                   onChange={(e) => setCode(e.target.value.toUpperCase())}
-                  placeholder="Ex: EMERSON50"
+                  placeholder={t('studio.tools.coupon.codePlaceholder')}
                   className="mb-5 w-full rounded-2xl border border-purple-700/70 bg-black px-5 py-4 text-2xl font-black uppercase tracking-wider text-white outline-none focus:border-purple-300"
                 />
 

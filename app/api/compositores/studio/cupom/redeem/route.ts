@@ -45,12 +45,12 @@ async function composerAlreadyUsedCoupon(composerId: string, couponId: string, i
 export async function POST(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const code = normalizeCode(body.code)
     if (code.length < 3) {
-      return NextResponse.json({ error: 'Digite um código de cupom válido.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'codeRequired' }, { status: 400 })
     }
 
     const { data: coupon, error: couponError } = await supabaseAdmin
@@ -61,16 +61,16 @@ export async function POST(request: NextRequest) {
 
     if (couponError) throw couponError
     if (!coupon) {
-      return NextResponse.json({ error: 'Cupom não encontrado.' }, { status: 404 })
+      return NextResponse.json({ errorCode: 'notFound' }, { status: 404 })
     }
     if (!coupon.active) {
-      return NextResponse.json({ error: 'Este cupom não está mais ativo.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'inactive' }, { status: 400 })
     }
     if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
-      return NextResponse.json({ error: 'Este cupom expirou.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'expired' }, { status: 400 })
     }
     if (Number(coupon.used_count) >= Number(coupon.max_uses)) {
-      return NextResponse.json({ error: 'Este cupom já atingiu o limite de usos.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'usageLimit' }, { status: 400 })
     }
 
     const musicQuantity = Math.floor(Number(coupon.music_quantity) || 0)
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     // ----- CUPOM GRÁTIS: credita na hora -----
     if (isFree) {
       if (alreadyUsedByComposer) {
-        return NextResponse.json({ error: 'Você já usou este cupom.' }, { status: 400 })
+        return NextResponse.json({ errorCode: 'alreadyRedeemed' }, { status: 400 })
       }
 
       // Reserva atômica de 1 uso (impede passar do limite em acessos simultâneos).
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
 
       if (claimError) throw claimError
       if (!claimedCoupon) {
-        return NextResponse.json({ error: 'Este cupom já atingiu o limite de usos.' }, { status: 400 })
+        return NextResponse.json({ errorCode: 'usageLimit' }, { status: 400 })
       }
 
       try {
@@ -127,20 +127,19 @@ export async function POST(request: NextRequest) {
         type: 'free',
         musicQuantity,
         credits,
-        message: `Cupom aplicado! Você ganhou ${musicQuantity} música(s).`,
       })
     }
 
     // ----- CUPOM PAGO: cria recarga e manda pro Mercado Pago -----
     if (alreadyUsedByComposer) {
       return NextResponse.json(
-        { error: 'Você já usou este cupom ou já iniciou uma compra com ele.' },
+        { errorCode: 'alreadyUsedPaid' },
         { status: 400 }
       )
     }
 
     if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
-      return NextResponse.json({ error: 'Pagamento não está configurado no servidor.' }, { status: 500 })
+      return NextResponse.json({ errorCode: 'paymentUnavailable' }, { status: 500 })
     }
 
     const { data: composerData } = await supabaseAdmin
@@ -241,6 +240,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[CUPOM] Erro ao resgatar:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao resgatar cupom' }, { status: 500 })
+    return NextResponse.json({ errorCode: 'apply' }, { status: 500 })
   }
 }

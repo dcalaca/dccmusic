@@ -39,12 +39,12 @@ async function composerAlreadyUsedCoupon(composerId: string, couponId: string, i
 export async function POST(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const code = normalizeCode(body.code)
     if (code.length < 3) {
-      return NextResponse.json({ error: 'Digite um código de cupom válido.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'codeRequired' }, { status: 400 })
     }
 
     const { data: coupon, error: couponError } = await supabaseAdmin
@@ -55,16 +55,16 @@ export async function POST(request: NextRequest) {
 
     if (couponError) throw couponError
     if (!coupon) {
-      return NextResponse.json({ error: 'Cupom não encontrado. Confira o código.' }, { status: 404 })
+      return NextResponse.json({ errorCode: 'notFound' }, { status: 404 })
     }
     if (!coupon.active) {
-      return NextResponse.json({ error: 'Este cupom não está mais ativo.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'inactive' }, { status: 400 })
     }
     if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
-      return NextResponse.json({ error: 'Este cupom expirou.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'expired' }, { status: 400 })
     }
     if (Number(coupon.used_count) >= Number(coupon.max_uses)) {
-      return NextResponse.json({ error: 'Este cupom já atingiu o limite de usos.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'usageLimit' }, { status: 400 })
     }
 
     const musicQuantity = Math.floor(Number(coupon.music_quantity) || 0)
@@ -87,6 +87,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[CUPOM] Erro ao validar:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao validar cupom' }, { status: 500 })
+    return NextResponse.json({ errorCode: 'check' }, { status: 500 })
   }
 }
