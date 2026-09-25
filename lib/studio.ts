@@ -436,9 +436,18 @@ export async function getStudioCreditUsage(composerId: string, limits = getStudi
       .filter((generation: any) => generation.status === 'failed' && generation.provider_task_id)
       .map((generation: any) => generation.provider_task_id)
   )
-  const transactions = (data || []).filter((transaction: any) => (
-    !failedGenerationTaskIds.has(transaction.metadata?.taskId)
-  ))
+  const refundedGenerationTaskIds = new Set(
+    (data || [])
+      .filter((transaction: any) => transaction.action === 'music_generation_refund' && transaction.metadata?.taskId)
+      .map((transaction: any) => transaction.metadata.taskId)
+  )
+  // Falhas antigas, sem lançamento de estorno, continuam simplesmente fora do consumo.
+  // Falhas novas com estorno explícito mantêm débito + crédito para preservar auditoria e saldo líquido zero.
+  const transactions = (data || []).filter((transaction: any) => {
+    const taskId = transaction.metadata?.taskId
+    if (!failedGenerationTaskIds.has(taskId)) return true
+    return refundedGenerationTaskIds.has(taskId)
+  })
   const planCredits = (planCreditMovements || [])
     .reduce((sum: number, movement: any) => sum + Math.max(0, Number(movement.credits) || 0), 0)
   const paidTopupCredits = dedupePaidStudioTopups(paidTopups || [])
@@ -446,7 +455,10 @@ export async function getStudioCreditUsage(composerId: string, limits = getStudi
   const manualCredits = (manualCreditTransactions || [])
     .reduce((sum: number, transaction: any) => sum + Math.max(0, Number(transaction.amount) || 0), 0)
   const usedTopupCredits = (topupMusicTransactions || [])
-    .filter((transaction: any) => !failedGenerationTaskIds.has(transaction.metadata?.taskId))
+    .filter((transaction: any) => {
+      const taskId = transaction.metadata?.taskId
+      return !failedGenerationTaskIds.has(taskId) || refundedGenerationTaskIds.has(taskId)
+    })
     .filter((transaction: any) => transaction.metadata?.topup === true)
     .reduce((sum: number, transaction: any) => sum + Math.max(0, Number(transaction.amount) || 0), 0)
   const topupCredits = Math.max(0, paidTopupCredits + manualCredits - usedTopupCredits)
@@ -460,6 +472,7 @@ export async function getStudioCreditUsage(composerId: string, limits = getStudi
     'manual_credit',
     'stem_separation_refund',
     'lyric_video_refund',
+    'music_generation_refund',
   ])
   const otherUsed = transactions
     .filter((transaction: any) => (
@@ -498,7 +511,8 @@ export async function getStudioCreditUsage(composerId: string, limits = getStudi
     })),
     ...transactions
       .filter((transaction: any) => transaction.action === 'stem_separation_refund' ||
-        transaction.action === 'lyric_video_refund')
+        transaction.action === 'lyric_video_refund' ||
+        transaction.action === 'music_generation_refund')
       .map((transaction: any) => ({
         id: transaction.id,
         amount: Number(transaction.amount) || 0,
@@ -510,7 +524,8 @@ export async function getStudioCreditUsage(composerId: string, limits = getStudi
         transaction.action !== 'credit_topup' &&
         transaction.action !== 'manual_credit' &&
         transaction.action !== 'stem_separation_refund' &&
-        transaction.action !== 'lyric_video_refund'
+        transaction.action !== 'lyric_video_refund' &&
+        transaction.action !== 'music_generation_refund'
       ))
       .map((transaction: any) => ({
         id: transaction.id,
@@ -625,6 +640,60 @@ export async function addStudioCreditTransaction(input: {
 
   if (error) throw error
   return data
+}
+
+export async function refundStudioMusicGenerationChargeOnce(input: {
+  composerId: string
+  projectId?: string | null
+  taskId?: string | null
+  reason?: string | null
+}) {
+  const taskId = String(input.taskId || '').trim()
+  if (!taskId) return { refunded: false, reason: 'missing_task_id' as const }
+
+  const { data: existingRefund, error: existingRefundError } = await supabaseAdmin
+    .from('studio_credit_transactions')
+    .select('id')
+    .eq('composer_id', input.composerId)
+    .eq('action', 'music_generation_refund')
+    .contains('metadata', { taskId })
+    .limit(1)
+    .maybeSingle()
+
+  if (existingRefundError) throw existingRefundError
+  if (existingRefund) return { refunded: false, reason: 'already_refunded' as const }
+
+  const { data: charge, error: chargeError } = await supabaseAdmin
+    .from('studio_credit_transactions')
+    .select('id, amount, metadata')
+    .eq('composer_id', input.composerId)
+    .eq('action', 'music_generation')
+    .contains('metadata', { taskId })
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (chargeError) throw chargeError
+  if (!charge || Number(charge.amount || 0) <= 0) {
+    return { refunded: false, reason: 'charge_not_found' as const }
+  }
+
+  await addStudioCreditTransaction({
+    composerId: input.composerId,
+    projectId: input.projectId || null,
+    action: 'music_generation_refund',
+    amount: Number(charge.amount) || STUDIO_MUSIC_CREDITS,
+    description: 'Estorno automático — geração de música não concluída',
+    metadata: {
+      taskId,
+      chargeTransactionId: charge.id,
+      automatic: true,
+      topup: charge.metadata?.topup === true,
+      reason: input.reason || 'provider_failure',
+    },
+  })
+
+  return { refunded: true, reason: 'refunded' as const }
 }
 
 export async function chargeStudioVoiceCreationOnce(input: {
