@@ -5,6 +5,7 @@ import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { FiMail, FiLock, FiLoader, FiX } from 'react-icons/fi'
+import { useTranslation } from 'react-i18next'
 
 interface AdminLoginModalProps {
   isOpen: boolean
@@ -12,6 +13,7 @@ interface AdminLoginModalProps {
 }
 
 export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
+  const { t } = useTranslation()
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -42,14 +44,14 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
       })
 
       if (result?.error) {
-        setError('Email ou senha incorretos')
+        setError(t('adminLogin.errors.invalidCredentials'))
       } else {
         onClose()
         router.push('/admin')
         router.refresh()
       }
     } catch (err) {
-      setError('Erro ao fazer login. Tente novamente.')
+      setError(t('adminLogin.errors.signIn'))
     } finally {
       setLoading(false)
     }
@@ -63,7 +65,7 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
-          aria-label="Fechar"
+          aria-label={t('common.actions.close')}
         >
           <FiX className="w-6 h-6" />
         </button>
@@ -78,7 +80,7 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
               className="h-10 w-auto"
             />
           </div>
-          <h2 className="text-2xl font-semibold text-gray-300">Admin Login</h2>
+          <h2 className="text-2xl font-semibold text-gray-300">{t('adminLogin.title')}</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -90,7 +92,7 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
 
           <div>
             <label htmlFor="modal-email" className="block text-sm font-medium mb-2 text-gray-300">
-              Email
+              {t('adminLogin.email')}
             </label>
             <div className="relative">
               <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -101,14 +103,14 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-primary-500 text-white"
-                placeholder="seu@email.com"
+                placeholder={t('adminLogin.emailPlaceholder')}
               />
             </div>
           </div>
 
           <div>
             <label htmlFor="modal-password" className="block text-sm font-medium mb-2 text-gray-300">
-              Senha
+              {t('adminLogin.password')}
             </label>
             <div className="relative">
               <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -132,10 +134,10 @@ export default function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProp
             {loading ? (
               <>
                 <FiLoader className="w-5 h-5 animate-spin" />
-                <span>Entrando...</span>
+                <span>{t('adminLogin.signingIn')}</span>
               </>
             ) : (
-              <span>Entrar</span>
+              <span>{t('adminLogin.signIn')}</span>
             )}
           </button>
         </form>

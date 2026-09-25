@@ -9,15 +9,24 @@
       "tryAgain": "Tentar novamente",
       "copy": "Copiar",
       "copied": "Copiado!",
-      "delete": "Excluir"
+      "delete": "Excluir",
+      "understood": "Entendi"
     },
     "status": {
       "loading": "A carregar...",
       "processing": "A processar...",
       "success": "Concluído",
-      "error": "Ocorreu um erro"
-    }
+      "error": "Ocorreu um erro",
+      "loadingPlayer": "A carregar o leitor...",
+      "loadingVideo": "A carregar o vídeo..."
+    },
+    "labels": { "songs": "Músicas", "videos": "Vídeos" },
+    "counts": { "items_one": "{{count}} item", "items_other": "{{count}} itens", "songs_one": "{{count}} música", "songs_other": "{{count}} músicas", "videos_one": "{{count}} vídeo", "videos_other": "{{count}} vídeos" },
+    "accessibility": { "youtubePlayer": "Leitor de vídeo do YouTube", "closeNotice": "Fechar aviso" }
   },
+  "notFound": { "description": "Página não encontrada", "backHome": "Voltar à página inicial" },
+  "adminLogin": { "title": "Início de sessão administrativo", "email": "E-mail", "emailPlaceholder": "o-seu@email.com", "password": "Palavra-passe", "signingIn": "A iniciar sessão...", "signIn": "Iniciar sessão", "errors": { "invalidCredentials": "E-mail ou palavra-passe incorretos", "signIn": "Erro ao iniciar sessão. Tente novamente." } },
+  "studioLanding": { "actions": { "checking": "A verificar...", "createSongs": "Criar músicas", "createPlayback": "Criar playback", "improveSongs": "Melhorar músicas", "createCovers": "Criar capas", "viewPlans": "Ver planos", "buyTopup": "Comprar recarga avulsa", "haveCoupon": "Tem um cupão?", "checkingPlan": "A verificar o plano...", "subscribe": "Subscrever Studio IA" }, "noBalance": { "title": "Não tem saldo no Studio IA", "description": "Já utilizou a sua música grátis e não tem saldo. Para continuar a criar, escolha um plano ou compre uma recarga avulsa." }, "freeMusic": { "signIn": "Inicie sessão para ver o seu saldo e começar a criar.", "available": "Ainda tem uma música grátis para experimentar, clique aqui.", "used": "Já utilizou a sua música grátis; veja os planos ou compre uma recarga avulsa.", "checking": "A verificar música grátis..." } },
   "menu": {
     "home": "Início",
     "createSong": "Crie a sua música",

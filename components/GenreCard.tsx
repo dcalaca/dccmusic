@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { FiMusic, FiPlayCircle } from 'react-icons/fi'
+import { useTranslation } from 'react-i18next'
 
 interface GenreCardProps {
   genre: {
@@ -16,6 +17,7 @@ interface GenreCardProps {
 }
 
 export default function GenreCard({ genre, count, videosCount, musicsCount }: GenreCardProps) {
+  const { t } = useTranslation()
   const bgColor = genre.color || 'bg-gradient-to-br from-primary-600 to-purple-600'
   const totalVideos = videosCount || 0
   const totalMusics = musicsCount || 0
@@ -27,17 +29,17 @@ export default function GenreCard({ genre, count, videosCount, musicsCount }: Ge
         <FiMusic className="w-8 h-8 text-white mb-2" />
         <h3 className="font-bold text-white text-lg mb-2">{genre.name}</h3>
         {totalCount > 0 && (
-          <span className="text-white/90 text-sm font-semibold mb-2">{totalCount} itens</span>
+          <span className="text-white/90 text-sm font-semibold mb-2">{t('common.counts.items', { count: totalCount })}</span>
         )}
         <div className="text-white/80 text-xs text-center space-y-1 w-full min-h-[32px] flex flex-col justify-center">
           {totalMusics > 0 && (
             <div className="flex items-center justify-center gap-1">
-              <span>{totalMusics} música{totalMusics !== 1 ? 's' : ''}</span>
+              <span>{t('common.counts.songs', { count: totalMusics })}</span>
             </div>
           )}
           {totalVideos > 0 && (
             <div className="flex items-center justify-center gap-1">
-              <span>{totalVideos} vídeo{totalVideos !== 1 ? 's' : ''}</span>
+              <span>{t('common.counts.videos', { count: totalVideos })}</span>
             </div>
           )}
           {totalMusics === 0 && totalVideos === 0 && (
@@ -54,7 +56,7 @@ export default function GenreCard({ genre, count, videosCount, musicsCount }: Ge
             onClick={(e) => e.stopPropagation()}
           >
             <FiMusic className="w-3 h-3" />
-            <span>Músicas</span>
+            <span>{t('common.labels.songs')}</span>
           </Link>
         )}
         {totalVideos > 0 && (
@@ -64,7 +66,7 @@ export default function GenreCard({ genre, count, videosCount, musicsCount }: Ge
             onClick={(e) => e.stopPropagation()}
           >
             <FiPlayCircle className="w-3 h-3" />
-            <span>Vídeos</span>
+            <span>{t('common.labels.videos')}</span>
           </Link>
         )}
       </div>

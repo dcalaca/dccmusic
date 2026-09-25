@@ -9,15 +9,24 @@
       "tryAgain": "Try again",
       "copy": "Copy",
       "copied": "Copied!",
-      "delete": "Delete"
+      "delete": "Delete",
+      "understood": "Got it"
     },
     "status": {
       "loading": "Loading...",
       "processing": "Processing...",
       "success": "Completed",
-      "error": "Something went wrong"
-    }
+      "error": "Something went wrong",
+      "loadingPlayer": "Loading player...",
+      "loadingVideo": "Loading video..."
+    },
+    "labels": { "songs": "Songs", "videos": "Videos" },
+    "counts": { "items_one": "{{count}} item", "items_other": "{{count}} items", "songs_one": "{{count}} song", "songs_other": "{{count}} songs", "videos_one": "{{count}} video", "videos_other": "{{count}} videos" },
+    "accessibility": { "youtubePlayer": "YouTube video player", "closeNotice": "Close notice" }
   },
+  "notFound": { "description": "Page not found", "backHome": "Back to Home" },
+  "adminLogin": { "title": "Admin sign in", "email": "Email", "emailPlaceholder": "you@email.com", "password": "Password", "signingIn": "Signing in...", "signIn": "Sign in", "errors": { "invalidCredentials": "Incorrect email or password", "signIn": "We couldn't sign you in. Please try again." } },
+  "studioLanding": { "actions": { "checking": "Checking...", "createSongs": "Create songs", "createPlayback": "Create playback", "improveSongs": "Improve songs", "createCovers": "Create covers", "viewPlans": "View plans", "buyTopup": "Buy one-off top-up", "haveCoupon": "Have a voucher?", "checkingPlan": "Checking plan...", "subscribe": "Subscribe to AI Studio" }, "noBalance": { "title": "You have no AI Studio balance", "description": "You've already used your free song and have no balance. To keep creating, choose a plan or buy a one-off top-up." }, "freeMusic": { "signIn": "Sign in to see your balance and start creating.", "available": "You still have a free song to try. Click here.", "used": "You've already used your free song. View plans or buy a one-off top-up.", "checking": "Checking your free song..." } },
   "menu": {
     "home": "Home",
     "createSong": "Create your song",

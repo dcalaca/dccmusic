@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { FiBell, FiX } from 'react-icons/fi'
+import { useTranslation } from 'react-i18next'
 
 type ActiveNotice = {
   id: string
@@ -27,6 +28,7 @@ function hasLoggedUser() {
 }
 
 export default function NoticeBoard() {
+  const { t } = useTranslation()
   const [notice, setNotice] = useState<ActiveNotice | null>(null)
   const [visible, setVisible] = useState(false)
 
@@ -99,7 +101,7 @@ export default function NoticeBoard() {
           type="button"
           onClick={closeNotice}
           className="absolute right-4 top-4 rounded-full border border-white/10 bg-black/40 p-2 text-gray-300 hover:bg-white/10 hover:text-white"
-          aria-label="Fechar aviso"
+          aria-label={t('common.accessibility.closeNotice')}
         >
           <FiX />
         </button>
@@ -116,7 +118,7 @@ export default function NoticeBoard() {
           onClick={closeNotice}
           className="relative mt-6 inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white hover:from-primary-500 hover:to-purple-500"
         >
-          Entendi
+          {t('common.actions.understood')}
         </button>
       </div>
     </div>

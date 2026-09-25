@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface YouTubeEmbedProps {
   videoId: string
@@ -8,6 +9,7 @@ interface YouTubeEmbedProps {
 }
 
 export default function YouTubeEmbed({ videoId, autoplay = false }: YouTubeEmbedProps) {
+  const { t } = useTranslation()
   const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
@@ -17,7 +19,7 @@ export default function YouTubeEmbed({ videoId, autoplay = false }: YouTubeEmbed
   if (!isLoaded) {
     return (
       <div className="relative w-full aspect-video bg-gray-900 rounded-lg flex items-center justify-center">
-        <div className="text-gray-400">Carregando vídeo...</div>
+        <div className="text-gray-400">{t('common.status.loadingVideo')}</div>
       </div>
     )
   }
@@ -27,7 +29,7 @@ export default function YouTubeEmbed({ videoId, autoplay = false }: YouTubeEmbed
       <iframe
         className="absolute inset-0 w-full h-full"
         src={`https://www.youtube.com/embed/${videoId}${autoplay ? '?autoplay=1' : ''}`}
-        title="YouTube video player"
+        title={t('common.accessibility.youtubePlayer')}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
         loading="lazy"

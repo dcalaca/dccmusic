@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FiArrowRight, FiCreditCard, FiGift, FiHeadphones, FiImage, FiLoader, FiMusic, FiX, FiZap } from 'react-icons/fi'
 import { trackTikTokEvent } from '@/components/TikTokEvents'
+import { useTranslation } from 'react-i18next'
 
 const PROJECTS_URL = '/compositores/admin/studio-ia/projetos'
 const STUDIO_MUSIC_CREDITS = 10
@@ -75,6 +76,7 @@ function showActiveNotice() {
 }
 
 export function StudioHeroActions() {
+  const { t } = useTranslation()
   const router = useRouter()
   const [checkingCreate, setCheckingCreate] = useState(false)
   const [showUsedFreeModal, setShowUsedFreeModal] = useState(false)
@@ -137,11 +139,11 @@ export function StudioHeroActions() {
         >
           {checkingCreate ? (
             <>
-              <FiLoader className="animate-spin" /> Verificando...
+              <FiLoader className="animate-spin" /> {t('studioLanding.actions.checking')}
             </>
           ) : (
             <>
-              Criar músicas <FiArrowRight />
+              {t('studioLanding.actions.createSongs')} <FiArrowRight />
             </>
           )}
         </button>
@@ -150,24 +152,24 @@ export function StudioHeroActions() {
           onClick={goToPlayback}
           className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-cyan-500/60 bg-cyan-950/35 px-5 py-3 text-sm font-semibold text-white transition hover:border-cyan-300 sm:w-auto sm:px-6 sm:text-base"
         >
-          <FiHeadphones /> Criar Playback
+          <FiHeadphones /> {t('studioLanding.actions.createPlayback')}
         </button>
         <button
           type="button"
           onClick={goToImproveMusic}
           className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-purple-500/70 bg-purple-950/45 px-5 py-3 text-sm font-semibold text-white transition hover:border-purple-300 sm:w-auto sm:px-6 sm:text-base"
         >
-          <FiZap /> Melhorar músicas
+          <FiZap /> {t('studioLanding.actions.improveSongs')}
         </button>
         <button
           type="button"
           onClick={goToCoverArt}
           className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-fuchsia-500/70 bg-fuchsia-950/45 px-5 py-3 text-sm font-semibold text-white transition hover:border-fuchsia-300 sm:w-auto sm:px-6 sm:text-base"
         >
-          <FiImage /> Criar Capas
+          <FiImage /> {t('studioLanding.actions.createCovers')}
         </button>
         <a href="#planos" className="inline-flex w-full items-center justify-center rounded-2xl border border-gray-700 bg-gray-950 px-5 py-3 text-sm font-semibold text-white transition hover:border-purple-400 sm:w-auto sm:px-6 sm:text-base">
-          Ver Planos
+          {t('studioLanding.actions.viewPlans')}
         </a>
       </div>
 
@@ -179,7 +181,7 @@ export function StudioHeroActions() {
               type="button"
               onClick={() => setShowUsedFreeModal(false)}
               className="absolute right-4 top-4 rounded-full border border-gray-700 bg-black/40 p-2 text-gray-300 hover:text-white"
-              aria-label="Fechar"
+              aria-label={t('common.actions.close')}
             >
               <FiX />
             </button>
@@ -187,9 +189,9 @@ export function StudioHeroActions() {
             <div className="relative mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-600/20 text-purple-200">
               <FiZap className="h-8 w-8" />
             </div>
-            <h2 className="relative text-3xl font-black text-white">Você está sem saldo no Studio IA</h2>
+            <h2 className="relative text-3xl font-black text-white">{t('studioLanding.noBalance.title')}</h2>
             <p className="relative mt-3 text-sm leading-relaxed text-purple-100/90">
-              Você já usou sua música grátis e está sem saldo. Para continuar criando, escolha um plano ou compre uma recarga avulsa.
+              {t('studioLanding.noBalance.description')}
             </p>
 
             <div className="relative mt-6 grid gap-3">
@@ -202,7 +204,7 @@ export function StudioHeroActions() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white hover:from-primary-500 hover:to-purple-500"
               >
                 <FiZap />
-                Ver planos
+                {t('studioLanding.actions.viewPlans')}
               </button>
               <button
                 type="button"
@@ -213,7 +215,7 @@ export function StudioHeroActions() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-purple-600/70 bg-purple-950/40 px-5 py-3 font-bold text-purple-100 hover:bg-purple-900/50"
               >
                 <FiCreditCard />
-                Comprar recarga avulsa
+                {t('studioLanding.actions.buyTopup')}
               </button>
             </div>
           </div>
@@ -224,6 +226,7 @@ export function StudioHeroActions() {
 }
 
 export function StudioTopupButton() {
+  const { t } = useTranslation()
   const router = useRouter()
 
   const handleClick = () => {
@@ -246,12 +249,13 @@ export function StudioTopupButton() {
       className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-purple-500/60 bg-purple-950/40 px-5 py-3 font-bold text-purple-100 transition hover:border-purple-300 hover:bg-purple-900/50"
     >
       <FiCreditCard />
-      Comprar Recarga Avulsa
+      {t('studioLanding.actions.buyTopup')}
     </button>
   )
 }
 
 export function StudioCouponButton() {
+  const { t } = useTranslation()
   const router = useRouter()
 
   const handleClick = () => {
@@ -267,12 +271,13 @@ export function StudioCouponButton() {
       className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-amber-500/50 bg-amber-950/30 px-5 py-3 font-bold text-amber-100 transition hover:border-amber-300 hover:bg-amber-900/40"
     >
       <FiGift />
-      Você tem cupom?
+      {t('studioLanding.actions.haveCoupon')}
     </button>
   )
 }
 
 export function StudioPlanButton({ planSlug }: { planSlug: string }) {
+  const { t } = useTranslation()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
@@ -317,16 +322,17 @@ export function StudioPlanButton({ planSlug }: { planSlug: string }) {
     >
       {loading ? (
         <>
-          <FiLoader className="animate-spin" /> Verificando plano...
+          <FiLoader className="animate-spin" /> {t('studioLanding.actions.checkingPlan')}
         </>
       ) : (
-        '✨ Assinar Studio IA'
+        `✨ ${t('studioLanding.actions.subscribe')}`
       )}
     </button>
   )
 }
 
 export function FreeMusicPlanNotice() {
+  const { t } = useTranslation()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -365,10 +371,10 @@ export function FreeMusicPlanNotice() {
   }
 
   const text = !isLoggedIn
-    ? 'Entre para ver seu saldo e começar a criar.'
+    ? t('studioLanding.freeMusic.signIn')
     : remaining !== null && remaining > 0
-      ? 'Você ainda tem uma música grátis para testar, clique aqui.'
-      : 'Você já usou sua música grátis, veja os planos ou compre recarga avulsa.'
+      ? t('studioLanding.freeMusic.available')
+      : t('studioLanding.freeMusic.used')
 
   return (
     <button
@@ -378,7 +384,7 @@ export function FreeMusicPlanNotice() {
       className="mx-auto mt-4 inline-flex items-center justify-center gap-2 rounded-2xl border border-purple-500/60 bg-purple-950/40 px-5 py-2.5 text-sm font-bold text-purple-100 transition hover:border-purple-300 hover:bg-purple-900/50 disabled:opacity-70"
     >
       {loading ? <FiLoader className="animate-spin" /> : <FiMusic />}
-      {loading ? 'Verificando música grátis...' : text}
+      {loading ? t('studioLanding.freeMusic.checking') : text}
     </button>
   )
 }

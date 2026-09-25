@@ -9,15 +9,24 @@
       "tryAgain": "Intentarlo de nuevo",
       "copy": "Copiar",
       "copied": "¡Copiado!",
-      "delete": "Eliminar"
+      "delete": "Eliminar",
+      "understood": "Entendido"
     },
     "status": {
       "loading": "Cargando...",
       "processing": "Procesando...",
       "success": "Completado",
-      "error": "Se ha producido un error"
-    }
+      "error": "Se ha producido un error",
+      "loadingPlayer": "Cargando reproductor...",
+      "loadingVideo": "Cargando vídeo..."
+    },
+    "labels": { "songs": "Canciones", "videos": "Vídeos" },
+    "counts": { "items_one": "{{count}} elemento", "items_other": "{{count}} elementos", "songs_one": "{{count}} canción", "songs_other": "{{count}} canciones", "videos_one": "{{count}} vídeo", "videos_other": "{{count}} vídeos" },
+    "accessibility": { "youtubePlayer": "Reproductor de vídeo de YouTube", "closeNotice": "Cerrar aviso" }
   },
+  "notFound": { "description": "Página no encontrada", "backHome": "Volver al inicio" },
+  "adminLogin": { "title": "Inicio de sesión administrativo", "email": "Correo electrónico", "emailPlaceholder": "tu@correo.com", "password": "Contraseña", "signingIn": "Iniciando sesión...", "signIn": "Iniciar sesión", "errors": { "invalidCredentials": "Correo o contraseña incorrectos", "signIn": "No pudimos iniciar sesión. Inténtalo de nuevo." } },
+  "studioLanding": { "actions": { "checking": "Comprobando...", "createSongs": "Crear canciones", "createPlayback": "Crear playback", "improveSongs": "Mejorar canciones", "createCovers": "Crear portadas", "viewPlans": "Ver planes", "buyTopup": "Comprar recarga", "haveCoupon": "¿Tienes un cupón?", "checkingPlan": "Comprobando plan...", "subscribe": "Suscribirme a Studio IA" }, "noBalance": { "title": "No tienes saldo en Studio IA", "description": "Ya usaste tu canción gratis y no tienes saldo. Para seguir creando, elige un plan o compra una recarga." }, "freeMusic": { "signIn": "Inicia sesión para ver tu saldo y empezar a crear.", "available": "Aún tienes una canción gratis para probar. Haz clic aquí.", "used": "Ya usaste tu canción gratis. Consulta los planes o compra una recarga.", "checking": "Comprobando tu canción gratis..." } },
   "menu": {
     "home": "Inicio",
     "createSong": "Crea tu canción",

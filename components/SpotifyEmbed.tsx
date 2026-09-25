@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface SpotifyEmbedProps {
   embedCode: string
@@ -63,6 +64,7 @@ function normalizeEmbedCode(embedCode: string): string {
 }
 
 export default function SpotifyEmbed({ embedCode }: SpotifyEmbedProps) {
+  const { t } = useTranslation()
   const [isLoaded, setIsLoaded] = useState(false)
   const normalizedEmbedCode = useMemo(() => normalizeEmbedCode(embedCode), [embedCode])
 
@@ -73,7 +75,7 @@ export default function SpotifyEmbed({ embedCode }: SpotifyEmbedProps) {
   if (!isLoaded) {
     return (
       <div className="w-full h-152 bg-gray-900 rounded-lg flex items-center justify-center">
-        <div className="text-gray-400">Carregando player...</div>
+        <div className="text-gray-400">{t('common.status.loadingPlayer')}</div>
       </div>
     )
   }
