@@ -19,7 +19,7 @@ function loadMercadoPagoScript() {
         return
       }
       existing.addEventListener('load', () => resolve(), { once: true })
-      existing.addEventListener('error', () => reject(new Error('Não foi possível carregar o Mercado Pago')), { once: true })
+      existing.addEventListener('error', () => reject(new Error('MERCADOPAGO_LOAD_FAILED')), { once: true })
     })
   }
 
@@ -28,7 +28,7 @@ function loadMercadoPagoScript() {
     script.src = MP_SCRIPT_SRC
     script.async = true
     script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Não foi possível carregar o Mercado Pago'))
+    script.onerror = () => reject(new Error('MERCADOPAGO_LOAD_FAILED'))
     document.body.appendChild(script)
   })
 }
@@ -172,7 +172,7 @@ export function MercadoPagoPaymentBrick({
           },
         })
       } catch (err: any) {
-        if (!cancelled) setError(err.message || t('payment.overlay.openError'))
+        if (!cancelled) setError(err?.message === 'MERCADOPAGO_LOAD_FAILED' ? t('payment.overlay.openError') : err.message || t('payment.overlay.openError'))
       }
     })()
 
@@ -426,7 +426,7 @@ export function MercadoPagoWalletBrick({
           },
         })
       } catch (err: any) {
-        if (!cancelled) setError(err.message || t('payment.overlay.openError'))
+        if (!cancelled) setError(err?.message === 'MERCADOPAGO_LOAD_FAILED' ? t('payment.overlay.openError') : err.message || t('payment.overlay.openError'))
       }
     })()
 
@@ -481,11 +481,11 @@ export function useMercadoPagoCheckout() {
           type="button"
           onClick={() => setSession(null)}
           className="absolute right-4 top-4 text-gray-400 hover:text-white"
-          title="Fechar"
+          title={t('common.actions.close')}
         >
           <FiX className="h-5 w-5" />
         </button>
-        <h2 className="mb-4 pr-8 text-xl font-black text-white">Pagamento</h2>
+        <h2 className="mb-4 pr-8 text-xl font-black text-white">{t('payment.overlay.title')}</h2>
         <MercadoPagoWalletBrick preferenceId={session.preferenceId} initPoint={session.initPoint} />
       </div>
     </div>

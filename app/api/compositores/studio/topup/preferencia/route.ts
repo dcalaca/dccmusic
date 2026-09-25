@@ -23,21 +23,21 @@ export async function POST(request: NextRequest) {
         requestUrl: request.url,
       })
       return NextResponse.json(
-        { error: 'Mercado Pago não está configurado no servidor.' },
+        { errorCode: 'paymentUnavailable' },
         { status: 500 }
       )
     }
 
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const musicQuantity = Math.floor(Number(body.musicQuantity) || 0)
     if (musicQuantity <= 0) {
-      return NextResponse.json({ error: 'Informe uma quantidade válida de músicas.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'quantityInvalid' }, { status: 400 })
     }
     if (musicQuantity > 500) {
-      return NextResponse.json({ error: 'A recarga avulsa permite no máximo 500 músicas por compra.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'quantityLimit' }, { status: 400 })
     }
     const quote = getStudioTopupQuote(musicQuantity)
     const packageName = `Recarga avulsa ${quote.musicQuantity} músicas`
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
       composerId: getComposerFromRequest(request)?.composerId,
     })
     return NextResponse.json(
-      { error: error.message || 'Erro ao criar recarga avulsa' },
+      { errorCode: 'start' },
       { status: 500 }
     )
   }

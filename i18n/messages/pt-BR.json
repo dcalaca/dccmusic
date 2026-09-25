@@ -1340,7 +1340,8 @@
         "loadBalance": "Erro ao carregar saldo.",
         "load": "Erro ao carregar recarga avulsa.",
         "confirm": "Erro ao confirmar recarga.",
-        "check": "Erro ao conferir recarga."
+        "check": "Erro ao conferir recarga.",
+        "unauthorized": "Sua sessão expirou. Entre novamente na sua conta.", "sessionExpired": "Sua sessão expirou. Entre novamente na sua conta.", "quantityInvalid": "Informe uma quantidade válida de músicas.", "quantityLimit": "A recarga avulsa permite no máximo 500 músicas por compra.", "topupRequired": "Não foi possível identificar a recarga.", "notFound": "Recarga não encontrada.", "paymentUnavailable": "O pagamento está temporariamente indisponível. Tente novamente em alguns minutos.", "amountChanged": "O valor da recarga mudou. Atualize a página e tente novamente.", "paymentMismatch": "Este pagamento não pertence a esta recarga.", "alreadyPaid": "Esta recarga já foi paga.", "paymentInProgress": "Já existe um pagamento em andamento. Aguarde a confirmação antes de tentar outra forma.", "amountInvalid": "O valor da recarga é inválido.", "currencyInvalid": "A moeda desta recarga é inválida.", "start": "Não foi possível iniciar a recarga. Tente novamente.", "processing": "Não foi possível processar o pagamento. Tente novamente.", "openStripe": "Não foi possível abrir o pagamento alternativo."
       },
       "success": {
         "checking": "Conferindo confirmação do Mercado Pago...",

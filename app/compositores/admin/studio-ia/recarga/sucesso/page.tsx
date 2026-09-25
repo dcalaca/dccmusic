@@ -8,6 +8,7 @@ import { FiCheckCircle, FiArrowRight, FiLoader } from 'react-icons/fi'
 import { trackGoogleAdsPurchaseConversion } from '@/components/GoogleAdsEvents'
 import { identifyTikTokCurrentComposer, trackTikTokEvent } from '@/components/TikTokEvents'
 import { blogAttributionEventPayload } from '@/lib/blog/attribution'
+import { studioTopupError } from '@/lib/studio-topup-error'
 
 function StudioTopupSuccessContent() {
   const { t } = useTranslation()
@@ -117,8 +118,8 @@ function StudioTopupSuccessContent() {
           },
           body: JSON.stringify({ topupId, paymentId }),
         })
-        const data = await response.json()
-        if (!response.ok) throw new Error(t('payment.topup.errors.confirm'))
+        const data = await response.json().catch(() => ({}))
+        if (!response.ok) throw new Error(studioTopupError(t, data, 'payment.topup.errors.confirm'))
 
         if (data.status === 'paid') {
           setSyncStatus('paid')

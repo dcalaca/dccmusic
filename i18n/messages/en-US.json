@@ -1367,7 +1367,8 @@
         "loadBalance": "Could not load balance.",
         "load": "Could not load the one-time top-up.",
         "confirm": "Could not confirm the top-up.",
-        "check": "Could not check the top-up."
+        "check": "Could not check the top-up.",
+        "unauthorized": "Your session has expired. Please sign in again.", "sessionExpired": "Your session has expired. Please sign in again.", "quantityInvalid": "Enter a valid number of songs.", "quantityLimit": "A one-time top-up can include up to 500 songs per purchase.", "topupRequired": "We couldn't identify this top-up.", "notFound": "Top-up not found.", "paymentUnavailable": "Payment is temporarily unavailable. Please try again in a few minutes.", "amountChanged": "The top-up amount changed. Refresh the page and try again.", "paymentMismatch": "This payment does not belong to this top-up.", "alreadyPaid": "This top-up has already been paid.", "paymentInProgress": "There is already a payment in progress. Wait for confirmation before trying another method.", "amountInvalid": "The top-up amount is invalid.", "currencyInvalid": "The currency for this top-up is invalid.", "start": "We couldn't start the top-up. Please try again.", "processing": "We couldn't process the payment. Please try again.", "openStripe": "We couldn't open the alternative payment method."
       },
       "success": {
         "checking": "Checking payment confirmation...",

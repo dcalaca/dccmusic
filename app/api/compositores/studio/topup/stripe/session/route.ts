@@ -13,30 +13,30 @@ export async function POST(request: NextRequest) {
   try {
     if (!isStripeConfigured()) {
       await reportPaymentFailure({ provider: 'stripe', stage: 'configuracao_recarga', error: 'Stripe não configurada no servidor', requestUrl: request.url })
-      return NextResponse.json({ error: 'Stripe não configurada no servidor' }, { status: 503 })
+      return NextResponse.json({ errorCode: 'paymentUnavailable' }, { status: 503 })
     }
     const tokenComposer = getComposerFromRequest(request)
-    if (!tokenComposer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!tokenComposer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
     const composer = await resolveComposerToken(tokenComposer)
-    if (!composer) return NextResponse.json({ error: 'Sua sessão está desatualizada. Entre novamente na sua conta.' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'sessionExpired' }, { status: 401 })
 
     const { topupId } = await request.json()
-    if (!topupId) return NextResponse.json({ error: 'topupId obrigatório' }, { status: 400 })
+    if (!topupId) return NextResponse.json({ errorCode: 'topupRequired' }, { status: 400 })
 
     const { data: topup, error } = await supabaseAdmin.from('studio_credit_topups').select('*').eq('id', topupId).eq('composer_id', composer.composerId).maybeSingle()
     if (error) throw error
-    if (!topup) return NextResponse.json({ error: 'Recarga não encontrada' }, { status: 404 })
-    if (topup.status === 'paid') return NextResponse.json({ error: 'Esta recarga já foi paga' }, { status: 409 })
+    if (!topup) return NextResponse.json({ errorCode: 'notFound' }, { status: 404 })
+    if (topup.status === 'paid') return NextResponse.json({ errorCode: 'alreadyPaid' }, { status: 409 })
     if (topup.payment_gateway === 'mercadopago' && topup.payment_id) {
-      return NextResponse.json({ error: 'Já existe um pagamento Mercado Pago em andamento. Aguarde a confirmação antes de tentar outra forma.' }, { status: 409 })
+      return NextResponse.json({ errorCode: 'paymentInProgress' }, { status: 409 })
     }
 
     const customerCountry = normalizeCountry(String(topup.metadata?.customer_country || 'BR'))
     const customerCountryCode = String(customerCountry)
     const amount = Number(topup.amount)
     const currency = String(topup.currency || '').toUpperCase() as StudioTopupCurrency
-    if (!(amount > 0)) return NextResponse.json({ error: 'Valor da recarga inválido' }, { status: 400 })
-    if (!['BRL','PYG','COP','EUR','MXN','USD','GBP'].includes(currency)) return NextResponse.json({ error: 'Moeda da recarga inválida' }, { status: 400 })
+    if (!(amount > 0)) return NextResponse.json({ errorCode: 'amountInvalid' }, { status: 400 })
+    if (!['BRL','PYG','COP','EUR','MXN','USD','GBP'].includes(currency)) return NextResponse.json({ errorCode: 'currencyInvalid' }, { status: 400 })
 
     const params = new URLSearchParams()
     params.set('mode', 'payment')
@@ -79,6 +79,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[Studio IA] Erro ao criar sessão Stripe:', error?.message)
     await reportPaymentFailure({ provider: 'stripe', stage: 'criacao_checkout_recarga', error, requestUrl: request.url, composerId: getComposerFromRequest(request)?.composerId })
-    return NextResponse.json({ error: error?.message || 'Erro ao abrir pagamento alternativo' }, { status: 500 })
+    return NextResponse.json({ errorCode: 'openStripe' }, { status: 500 })
   }
 }

@@ -12,14 +12,14 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const topupId = String(body.topupId || '').trim()
     const requestedPaymentId = String(body.paymentId || body.collectionId || '').trim()
 
     if (!topupId) {
-      return NextResponse.json({ error: 'topupId obrigatório' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'topupRequired' }, { status: 400 })
     }
 
     const { data: currentTopup, error: topupError } = await supabaseAdmin
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (topupError) throw topupError
-    if (!currentTopup) return NextResponse.json({ error: 'Recarga não encontrada' }, { status: 404 })
+    if (!currentTopup) return NextResponse.json({ errorCode: 'notFound' }, { status: 404 })
 
     const paymentId = requestedPaymentId || String(currentTopup.payment_id || '').trim()
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       if (!sessionId) return NextResponse.json({ success: true, status: currentTopup.status, pending: true })
       const session = await stripeRequest<any>(`/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=payment_intent`, { method: 'GET' })
       if (session.metadata?.external_reference !== currentTopup.external_reference || session.metadata?.topup_id !== currentTopup.id) {
-        return NextResponse.json({ error: 'Pagamento não pertence a esta recarga' }, { status: 400 })
+        return NextResponse.json({ errorCode: 'paymentMismatch' }, { status: 400 })
       }
       const stripePaymentId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
       if (session.payment_status !== 'paid' || !stripePaymentId) {
@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         error: 'MERCADOPAGO_ACCESS_TOKEN não configurado',
         requestUrl: request.url,
       })
-      return NextResponse.json({ error: 'Mercado Pago não configurado no servidor' }, { status: 500 })
+      return NextResponse.json({ errorCode: 'paymentUnavailable' }, { status: 500 })
     }
 
     const payment = await paymentClient.get({ id: paymentId })
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     if (paymentReference && paymentReference !== currentTopup.external_reference) {
       return NextResponse.json(
-        { error: 'Pagamento não pertence a esta recarga' },
+        { errorCode: 'paymentMismatch' },
         { status: 400 }
       )
     }
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
       composerId: getComposerFromRequest(request)?.composerId,
     })
     return NextResponse.json(
-      { error: error.message || 'Erro ao sincronizar recarga' },
+      { errorCode: 'check' },
       { status: 500 }
     )
   }

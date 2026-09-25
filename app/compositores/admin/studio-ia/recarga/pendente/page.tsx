@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { FiArrowRight, FiCheckCircle, FiClock, FiLoader } from 'react-icons/fi'
 import { trackGoogleAdsPurchaseConversion } from '@/components/GoogleAdsEvents'
 import { identifyTikTokCurrentComposer, trackTikTokEvent } from '@/components/TikTokEvents'
+import { studioTopupError } from '@/lib/studio-topup-error'
 
 function StudioTopupPendingContent() {
   const { t } = useTranslation()
@@ -90,8 +91,8 @@ function StudioTopupPendingContent() {
           },
           body: JSON.stringify({ topupId, paymentId }),
         })
-        const data = await response.json()
-        if (!response.ok) throw new Error(t('payment.topup.errors.check'))
+        const data = await response.json().catch(() => ({}))
+        if (!response.ok) throw new Error(studioTopupError(t, data, 'payment.topup.errors.check'))
 
         if (cancelled) return
 

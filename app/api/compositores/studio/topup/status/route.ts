@@ -7,12 +7,12 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     const tokenComposer = getComposerFromRequest(request)
-    if (!tokenComposer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!tokenComposer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
     const composer = await resolveComposerToken(tokenComposer)
-    if (!composer) return NextResponse.json({ error: 'Sua sessão está desatualizada. Entre novamente na sua conta.' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'sessionExpired' }, { status: 401 })
 
     const topupId = String(request.nextUrl.searchParams.get('topupId') || '').trim()
-    if (!topupId) return NextResponse.json({ error: 'topupId obrigatório' }, { status: 400 })
+    if (!topupId) return NextResponse.json({ errorCode: 'topupRequired' }, { status: 400 })
 
     const { data: topup, error } = await supabaseAdmin
       .from('studio_credit_topups')
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
 
     if (error) throw error
-    if (!topup) return NextResponse.json({ error: 'Recarga não encontrada' }, { status: 404 })
+    if (!topup) return NextResponse.json({ errorCode: 'notFound' }, { status: 404 })
 
     return NextResponse.json({
       success: true,
@@ -37,6 +37,6 @@ export async function GET(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro ao consultar status da recarga:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao consultar recarga' }, { status: 500 })
+    return NextResponse.json({ errorCode: 'check' }, { status: 500 })
   }
 }

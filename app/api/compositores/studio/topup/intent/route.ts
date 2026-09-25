@@ -31,17 +31,17 @@ export async function POST(request: NextRequest) {
 
     if (!provider) {
       await reportPaymentFailure({ provider: 'checkout', stage: 'configuracao_recarga', error: 'Nenhum provedor de pagamento está configurado', requestUrl: request.url })
-      return NextResponse.json({ error: 'Nenhum meio de pagamento está configurado no servidor.' }, { status: 500 })
+      return NextResponse.json({ errorCode: 'paymentUnavailable' }, { status: 500 })
     }
 
     const tokenComposer = getComposerFromRequest(request)
-    if (!tokenComposer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!tokenComposer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
     const composer = await resolveComposerToken(tokenComposer)
-    if (!composer) return NextResponse.json({ error: 'Sua sessão está desatualizada. Entre novamente na sua conta.' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'sessionExpired' }, { status: 401 })
 
     const musicQuantity = Math.floor(Number(body.musicQuantity) || 0)
-    if (musicQuantity <= 0) return NextResponse.json({ error: 'Informe uma quantidade válida de músicas.' }, { status: 400 })
-    if (musicQuantity > 500) return NextResponse.json({ error: 'A recarga avulsa permite no máximo 500 músicas por compra.' }, { status: 400 })
+    if (musicQuantity <= 0) return NextResponse.json({ errorCode: 'quantityInvalid' }, { status: 400 })
+    if (musicQuantity > 500) return NextResponse.json({ errorCode: 'quantityLimit' }, { status: 400 })
 
     const quote = await getStudioTopupQuoteFromPricing(musicQuantity, requestCountry)
     const packageName = `Recarga avulsa ${quote.musicQuantity} músicas`
@@ -119,6 +119,6 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[Studio IA] Erro ao criar intenção de recarga:', error)
     await reportPaymentFailure({ provider: 'checkout', stage: 'preparacao_recarga', error, requestUrl: request.url, composerId: getComposerFromRequest(request)?.composerId })
-    return NextResponse.json({ error: error.message || 'Erro ao preparar recarga avulsa' }, { status: 500 })
+    return NextResponse.json({ errorCode: 'start' }, { status: 500 })
   }
 }

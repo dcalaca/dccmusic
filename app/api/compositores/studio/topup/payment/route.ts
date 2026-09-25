@@ -75,18 +75,18 @@ export async function POST(request: NextRequest) {
         error: 'MERCADOPAGO_ACCESS_TOKEN não configurado',
         requestUrl: request.url,
       })
-      return NextResponse.json({ error: 'Mercado Pago não configurado no servidor' }, { status: 500 })
+      return NextResponse.json({ errorCode: 'paymentUnavailable' }, { status: 500 })
     }
 
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const topupId = String(body.topupId || '').trim()
     const formData = body.formData || {}
 
     if (!topupId) {
-      return NextResponse.json({ error: 'topupId obrigatório' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'topupRequired' }, { status: 400 })
     }
 
     const { data: currentTopup, error: topupError } = await supabaseAdmin
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (topupError) throw topupError
-    if (!currentTopup) return NextResponse.json({ error: 'Recarga não encontrada' }, { status: 404 })
+    if (!currentTopup) return NextResponse.json({ errorCode: 'notFound' }, { status: 404 })
     if (currentTopup.status === 'paid') {
       return NextResponse.json({
         success: true,
@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
     const storedAmount = Number(currentTopup.amount) || 0
 
     if (expectedAmount <= 0 || Math.abs(expectedAmount - storedAmount) > 0.01) {
-      return NextResponse.json({ error: 'Valor da recarga não confere. Recarregue a página e tente novamente.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'amountChanged' }, { status: 400 })
     }
 
     const { data: composerData } = await supabaseAdmin
@@ -243,7 +243,7 @@ export async function POST(request: NextRequest) {
       composerId: getComposerFromRequest(request)?.composerId,
     })
     return NextResponse.json(
-      { error: error.message || 'Erro ao processar pagamento' },
+      { errorCode: 'processing' },
       { status: 500 }
     )
   }

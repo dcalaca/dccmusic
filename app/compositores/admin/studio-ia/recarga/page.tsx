@@ -12,6 +12,7 @@ import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
 import { isMercadoPagoInSiteCheckoutEnabled } from '@/lib/mp-in-site-checkout'
 import { StripePaymentOverlay } from '@/components/StripeCheckout'
 import type { DccCountry } from '@/lib/localization'
+import { studioTopupError } from '@/lib/studio-topup-error'
 
 type TopupTier = {
   maxMusicQuantity: number | null
@@ -74,8 +75,8 @@ export default function StudioTopupPage() {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ topupId }),
     })
-    const result = await response.json()
-    if (!response.ok) throw new Error(t('payment.checkout.errors.openStripe'))
+    const result = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(studioTopupError(t, result, 'payment.checkout.errors.openStripe'))
     setInSiteCheckout({
       topupId,
       amount,
@@ -180,11 +181,11 @@ export default function StudioTopupPage() {
         return
       }
 
-      const packagesData = await packagesResponse.json()
-      const statusData = await statusResponse.json()
+      const packagesData = await packagesResponse.json().catch(() => ({}))
+      const statusData = await statusResponse.json().catch(() => ({}))
 
-      if (!packagesResponse.ok) throw new Error(t('payment.topup.errors.loadPackages'))
-      if (!statusResponse.ok) throw new Error(t('payment.topup.errors.loadBalance'))
+      if (!packagesResponse.ok) throw new Error(studioTopupError(t, packagesData, 'payment.topup.errors.loadPackages'))
+      if (!statusResponse.ok) throw new Error(studioTopupError(t, statusData, 'payment.topup.errors.loadBalance'))
 
       setTiers(packagesData.tiers || [])
       setStatus(statusData)
@@ -259,8 +260,8 @@ export default function StudioTopupPage() {
             country,
           }),
         })
-        const intent = await intentResponse.json()
-        if (!intentResponse.ok) throw new Error(t('payment.checkout.errors.start'))
+        const intent = await intentResponse.json().catch(() => ({}))
+        if (!intentResponse.ok) throw new Error(studioTopupError(t, intent, 'payment.checkout.errors.start'))
 
         const metaEventId = intent.metaInitiateCheckoutEventId || `initiate_checkout:studio_topup:${intent.topupId || Date.now()}`
         const fbq = (window as any).fbq
@@ -302,9 +303,9 @@ export default function StudioTopupPage() {
         },
         body: JSON.stringify({ musicQuantity: normalizedMusicQuantity }),
       })
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
 
-      if (!response.ok) throw new Error(t('payment.checkout.errors.start'))
+      if (!response.ok) throw new Error(studioTopupError(t, data, 'payment.checkout.errors.start'))
 
       const metaEventId = data.metaInitiateCheckoutEventId || `initiate_checkout:studio_topup:${data.preferenceId || Date.now()}`
       const fbq = (window as any).fbq
@@ -490,8 +491,8 @@ export default function StudioTopupPage() {
               headers: { Authorization: token ? `Bearer ${token}` : '', 'Content-Type': 'application/json' },
               body: JSON.stringify({ topupId: inSiteCheckout.topupId, paymentId: inSiteCheckout.stripeSessionId }),
             })
-            const result = await response.json()
-            if (!response.ok) throw new Error(t('payment.topup.errors.confirm'))
+            const result = await response.json().catch(() => ({}))
+            if (!response.ok) throw new Error(studioTopupError(t, result, 'payment.topup.errors.confirm'))
             if (result.status === 'paid') {
               const params = new URLSearchParams({ topup_id: inSiteCheckout.topupId, payment_id: result.paymentId || '' })
               router.push(`/compositores/admin/studio-ia/recarga/sucesso?${params.toString()}`)
@@ -517,8 +518,8 @@ export default function StudioTopupPage() {
                 formData,
               }),
             })
-            const result = await response.json()
-            if (!response.ok) throw new Error(t('payment.checkout.errors.processing'))
+            const result = await response.json().catch(() => ({}))
+            if (!response.ok) throw new Error(studioTopupError(t, result, 'payment.checkout.errors.processing'))
             return result
           }}
           onCheckStatus={async (paymentId) => {
@@ -534,8 +535,8 @@ export default function StudioTopupPage() {
                 paymentId,
               }),
             })
-            const result = await response.json()
-            if (!response.ok) throw new Error(t('payment.checkout.errors.checkPayment'))
+            const result = await response.json().catch(() => ({}))
+            if (!response.ok) throw new Error(studioTopupError(t, result, 'payment.checkout.errors.checkPayment'))
             return result
           }}
           onPaid={(result) => {

@@ -1340,7 +1340,8 @@
         "loadBalance": "Error al cargar el saldo.",
         "load": "Error al cargar la recarga.",
         "confirm": "Error al confirmar la recarga.",
-        "check": "Error al comprobar la recarga."
+        "check": "Error al comprobar la recarga.",
+        "unauthorized": "Tu sesión ha caducado. Inicia sesión de nuevo.", "sessionExpired": "Tu sesión ha caducado. Inicia sesión de nuevo.", "quantityInvalid": "Indica una cantidad válida de canciones.", "quantityLimit": "La recarga permite un máximo de 500 canciones por compra.", "topupRequired": "No pudimos identificar esta recarga.", "notFound": "Recarga no encontrada.", "paymentUnavailable": "El pago no está disponible temporalmente. Inténtalo de nuevo en unos minutos.", "amountChanged": "El importe de la recarga cambió. Actualiza la página e inténtalo de nuevo.", "paymentMismatch": "Este pago no pertenece a esta recarga.", "alreadyPaid": "Esta recarga ya fue pagada.", "paymentInProgress": "Ya hay un pago en curso. Espera la confirmación antes de probar otro método.", "amountInvalid": "El importe de la recarga no es válido.", "currencyInvalid": "La moneda de esta recarga no es válida.", "start": "No pudimos iniciar la recarga. Inténtalo de nuevo.", "processing": "No pudimos procesar el pago. Inténtalo de nuevo.", "openStripe": "No pudimos abrir el método de pago alternativo."
       },
       "success": {
         "checking": "Comprobando la confirmación del pago...",
