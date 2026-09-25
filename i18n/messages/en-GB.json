@@ -788,7 +788,14 @@
           "prepareUpload": "Could not prepare the upload.",
           "upload": "Could not upload the song.",
           "create": "Could not create the instrumental.",
-          "refunded": " Your 10 credits were refunded."
+    "refunded": "{{count}} credits were refunded.",
+    "unauthorized": "Your session has expired. Please sign in again.",
+    "projectNotFound": "Project not found.",
+    "versionNotFound": "This version was not found in the project.",
+    "loadSaved": "Could not load the saved instrumental.",
+    "sourceRequired": "Choose a version or upload a song.",
+    "insufficientCredits": "You need {{count}} credits to create the instrumental.",
+    "playbackUnavailable": "We could not create the instrumental right now. Please try again."
         },
         "loadingVersion": "Loading the selected version...",
         "mySong": "My song",

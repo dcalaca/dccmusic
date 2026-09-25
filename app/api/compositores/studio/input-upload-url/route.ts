@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const contentType = String(body?.contentType || '').trim() || 'audio/mpeg'
@@ -34,6 +34,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro ao criar URL de upload de áudio:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao preparar upload' }, { status: 500 })
+    return NextResponse.json({ errorCode: 'prepareUpload' }, { status: 500 })
   }
 }

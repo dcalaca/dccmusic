@@ -788,7 +788,14 @@
           "prepareUpload": "Não foi possível preparar o envio.",
           "upload": "Erro ao enviar a música.",
           "create": "Não foi possível criar o playback.",
-          "refunded": " Seus 10 créditos foram devolvidos."
+    "refunded": "{{count}} créditos foram devolvidos.",
+    "unauthorized": "A sua sessão expirou. Inicie sessão novamente.",
+    "projectNotFound": "Projeto não encontrado.",
+    "versionNotFound": "Versão não encontrada neste projeto.",
+    "loadSaved": "Não foi possível carregar o playback guardado.",
+    "sourceRequired": "Escolha uma versão ou envie uma música.",
+    "insufficientCredits": "Precisa de {{count}} créditos para criar o playback.",
+    "playbackUnavailable": "Não foi possível criar o playback agora. Tente novamente."
         },
         "loadingVersion": "Carregando a versão escolhida...",
         "mySong": "Minha música",

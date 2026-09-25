@@ -788,7 +788,14 @@
           "prepareUpload": "No se pudo preparar el envío.",
           "upload": "Error al enviar la canción.",
           "create": "No se pudo crear el instrumental.",
-          "refunded": " Tus 10 créditos fueron devueltos."
+    "refunded": "Se devolvieron {{count}} créditos.",
+    "unauthorized": "Tu sesión expiró. Inicia sesión de nuevo.",
+    "projectNotFound": "Proyecto no encontrado.",
+    "versionNotFound": "No se encontró esta versión en el proyecto.",
+    "loadSaved": "No se pudo cargar el instrumental guardado.",
+    "sourceRequired": "Elige una versión o sube una canción.",
+    "insufficientCredits": "Necesitas {{count}} créditos para crear el instrumental.",
+    "playbackUnavailable": "No pudimos crear el instrumental ahora. Inténtalo de nuevo."
         },
         "loadingVersion": "Cargando la versión elegida...",
         "mySong": "Mi canción",

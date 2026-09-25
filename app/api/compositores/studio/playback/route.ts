@@ -38,7 +38,7 @@ async function validateProjectVersion(projectId: string, versionId: string, comp
 export async function GET(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
     const projectId = request.nextUrl.searchParams.get('projectId')?.trim() || ''
     const versionId = request.nextUrl.searchParams.get('versionId')?.trim() || ''
@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { project, version } = await validateProjectVersion(projectId, versionId, composer.composerId)
-    if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
-    if (!version) return NextResponse.json({ error: 'Versão não encontrada neste projeto.' }, { status: 404 })
+    if (!project) return NextResponse.json({ errorCode: 'projectNotFound' }, { status: 404 })
+    if (!version) return NextResponse.json({ errorCode: 'versionNotFound' }, { status: 404 })
 
     const { data: assets, error } = await supabaseAdmin
       .from('studio_credit_transactions')
@@ -88,13 +88,13 @@ export async function GET(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio Playback] Erro ao buscar arquivos salvos:', error)
-    return NextResponse.json({ error: error?.message || 'Erro ao buscar playback salvo.' }, { status: 500 })
+    return NextResponse.json({ errorCode: 'loadSaved' }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   const composer = getComposerFromRequest(request)
-  if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+  if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
   let charged = false
   let projectId: string | null = null
@@ -109,8 +109,8 @@ export async function POST(request: NextRequest) {
 
     if (projectId && versionId) {
       const { project, version } = await validateProjectVersion(projectId, versionId, composer.composerId)
-      if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
-      if (!version) return NextResponse.json({ error: 'Versão não encontrada neste projeto.' }, { status: 404 })
+      if (!project) return NextResponse.json({ errorCode: 'projectNotFound' }, { status: 404 })
+      if (!version) return NextResponse.json({ errorCode: 'versionNotFound' }, { status: 404 })
 
       const audio = await getStudioVersionAudioUrls(version)
       sourceUrl = audio?.audioUrl || audio?.streamAudioUrl || ''
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       const upload = body.upload
       const sizeBytes = Number(upload.sizeBytes) || 0
       if (sizeBytes > 10 * 1024 * 1024) {
-        return NextResponse.json({ error: 'Para criar o playback, o áudio precisa ter no máximo 10 MB.' }, { status: 400 })
+        return NextResponse.json({ errorCode: 'maxSize' }, { status: 400 })
       }
       validateStudioInputUploadedAsset({
         composerId: composer.composerId,
@@ -131,13 +131,13 @@ export async function POST(request: NextRequest) {
       sourceUrl = await createStudioAudioSignedUrl(String(upload.path), String(upload.provider)) || ''
     }
 
-    if (!sourceUrl) return NextResponse.json({ error: 'Escolha uma versão ou envie uma música.' }, { status: 400 })
+    if (!sourceUrl) return NextResponse.json({ errorCode: 'sourceRequired' }, { status: 400 })
 
     const access = await getStudioAccess(composer.composerId)
     const usage = await getStudioCreditUsage(composer.composerId, access.limits)
     if (usage.remaining < STUDIO_MUSIC_CREDITS) {
       return NextResponse.json({
-        error: `Você precisa de ${STUDIO_MUSIC_CREDITS} créditos para criar o playback.`,
+        errorCode: 'insufficientCredits',
         creditsRequired: STUDIO_MUSIC_CREDITS,
         creditsRemaining: usage.remaining,
       }, { status: 402 })
@@ -214,9 +214,7 @@ export async function POST(request: NextRequest) {
       }
     }
     return NextResponse.json({
-      error: charged
-        ? 'Não conseguimos criar o playback agora.'
-        : (error?.message || 'Erro ao criar playback.'),
+      errorCode: charged ? 'playbackUnavailable' : 'create',
       creditsRefunded: refunded ? STUDIO_MUSIC_CREDITS : 0,
     }, { status: 500 })
   }
