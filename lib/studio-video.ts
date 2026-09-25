@@ -9,7 +9,6 @@ import {
   isSunoRecordMissingError,
   translateStudioVideoProviderError,
 } from '@/lib/studio-video-helpers'
-import { studioVideoErrorCode } from '@/lib/studio-video-errors'
 
 export function getStudioVideoRequestVersionId(videoRequest: any): string | null {
   const metadata = videoRequest?.metadata
@@ -29,10 +28,9 @@ export async function mapStudioVideoRequest(videoRequest: any) {
     paymentId: videoRequest.payment_id,
     providerTaskId: videoRequest.provider_task_id,
     videoUrl: await resolveStudioVideoUrl(videoRequest),
-    // O texto histórico pode conter mensagens do fornecedor em português ou
-    // inglês. O cliente usa errorCode para apresentar a tradução adequada.
-    errorMessage: null,
-    errorCode: studioVideoErrorCode(videoRequest.error_message),
+    errorMessage: videoRequest.error_message
+      ? translateStudioVideoProviderError(videoRequest.error_message)
+      : videoRequest.error_message,
     paidAt: videoRequest.paid_at,
     completedAt: videoRequest.completed_at,
     createdAt: videoRequest.created_at,
