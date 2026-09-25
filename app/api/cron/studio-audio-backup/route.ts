@@ -40,8 +40,8 @@ function isTransientBackupError(value: unknown) {
 
 /**
  * A Suno pode confirmar a geração antes de o MP3 responder no CDN. Reabre a
- * tentativa por até 30 min: depois disso, um link realmente inválido não fica
- * em loop eterno.
+ * tentativa por até 30 min. URLs 4xx são marcadas como external_unavailable
+ * pela rotina de backup e nunca retornam à fila.
  */
 async function reopenFailedBackups(limit: number) {
   const { data: failed, error } = await supabaseAdmin
