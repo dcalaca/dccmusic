@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 36995)
-Total output lines: 2936
-
 {
   "common": {
     "actions": {
@@ -321,9 +318,7 @@ Total output lines: 2936
         "detail": "Detail: {{detail}}",
         "selectAudio": "Choose a version with audio before generating the lyric video.",
         "generateError": "Could not generate the lyric video.",
-        "errors": {"unauthorized": "Your session has expired. Sign in again to generate the video.", "projectNotFound": "Project not found.", "versionNotFound": "The selected version was not found in this project.", "musicNotReady": "Finish the song before generating the lyric video.", "audioNotReady": "This version does not have audio yet to generate the lyric video.", "versionInProgress": "There is already a lyric video in progress for this version.", "anotherInProgress": "There is already a lyric video in progress. Wait for it to finish before generating one for another version.", "insufficientCredits": "You need {{count}} credits to generate this video.", "temporarilyUnavailable": "The lyric video generator is temporarily unavailable. Please try again in a few minutes.", "providerMismatch": "This song was created in another AI studio. Generate the video in that studio.", "recovery": "We could not recover the video now. Refresh the page or try again later.", "replaced": "This attempt was replaced by a new generation.", "failed": "Could not generate the lyric video. Please try again."},
         "processing": "Lyric video is being produced.",
-        "messages": {"alreadyReady": "Your lyric video is already ready.", "received": "We received your request and are preparing the file.", "recovered": "Lyric video recovered successfully.", "inProduction": "Lyric video is being produced.", "inProductionCharged": "Lyric video is being produced. {{count}} credits were charged."},
         "noStatus": "The request was sent, but the video status was not returned.",
         "confirmTitle": "Generate lyric video?",
         "confirmText": "Generating this video uses 5 credits. Do you want to continue?",
@@ -765,7 +760,1361 @@ Total output lines: 2936
         "style": "Desired style",
         "stylePlaceholder": "Example: country, pop...",
         "notes": "Notes for AI",
-        "notesPlaceho…16995 tokens truncated…tle": "Saved history",
+        "notesPlaceholder": "Example: make it more emotional, stronger chorus...",
+        "complete": "Complete my song",
+        "ready": "My song is already complete",
+        "errors": {
+          "recorderUnavailable": "Your browser could not start the recorder. Try Chrome on your phone or computer.",
+          "microphone": "We could not access your microphone. Check browser permission and try again.",
+          "recordFirst": "Record audio before transcribing.",
+          "transcribe": "We could not understand the audio.",
+          "lyricRequired": "Transcribe or write a section before asking AI to complete it.",
+          "completeLyric": "We could not complete the lyrics.",
+          "recordBeforeCreate": "Record audio before creating the song.",
+          "titleRequired": "Enter the song title.",
+          "longerLyric": "Review the lyrics and leave a longer section before creating the song.",
+          "create": "Could not create the song."
+        },
+        "messages": {
+          "maxDuration": "Recording stopped automatically at the 4 minute 30 second limit.",
+          "transcribed": "Lyrics transcribed. {{count}} credit(s) were charged. Review and correct them if needed.",
+          "lyricCompleted": "Lyrics completed. Review them before producing the song.",
+          "started": "Production started. We'll open the project so you can follow progress."
+        },
+        "lyricsUnderstood": "Lyrics understood by AI",
+        "lyricsPlaceholder": "After you click Transcribe lyrics, the text appears here. You can also write it manually.",
+        "step3": "3. Choose what to do next",
+        "step3Hint": "Choose “Complete my song” if you sang only part of it. Choose “My song is already complete” if you sang the whole song.",
+        "produceWithLyrics": "Produce with these lyrics",
+        "productionHint": "Production uses your recording as a guide for melody and performance. AI is instructed to keep the song under 4:30. Cost: 10 credits when song production starts."
+      },
+      "playback": {
+        "errors": {
+          "load": "Could not load the song.",
+          "versionMismatch": "This version does not belong to the selected project.",
+          "invalidFile": "Choose a valid audio file.",
+          "maxSize": "The audio file must be no larger than 10 MB.",
+          "prepareUpload": "Could not prepare the upload.",
+          "upload": "Could not upload the song.",
+          "create": "Could not create the instrumental.",
+    "refunded": "{{count}} credits were refunded.",
+    "unauthorized": "Your session has expired. Please sign in again.",
+    "projectNotFound": "Project not found.",
+    "versionNotFound": "This version was not found in the project.",
+    "loadSaved": "Could not load the saved instrumental.",
+    "sourceRequired": "Choose a version or upload a song.",
+    "insufficientCredits": "You need {{count}} credits to create the instrumental.",
+    "playbackUnavailable": "We could not create the instrumental right now. Please try again."
+        },
+        "loadingVersion": "Loading the selected version...",
+        "mySong": "My song",
+        "version": "Version",
+        "cost": "Cost",
+        "credits": "credits",
+        "projectCostHint": "The cost is the same as creating a song. When finished, the instrumental and isolated vocal will be saved to this project. If processing cannot be completed, your credits will be refunded automatically.",
+        "processing": "Removing vocals...",
+        "createForCredits": "Create instrumental for {{count}} credits",
+        "uploadSong": "Upload my song",
+        "uploadHint": "MP3, WAV, M4A, or another audio format · up to 10 MB",
+        "chooseDcc": "Choose a DCC song",
+        "chooseDccHint": "Select a version you already created",
+        "uploaded": "Song uploaded",
+        "refundHint": "Credits are charged only when you start. If processing cannot be completed, they will be refunded automatically.",
+        "wait": "This may take a few minutes. Keep this page open.",
+        "saved": "Files saved to the project",
+        "complete": "Separation complete!",
+        "savedHint": "Your instrumental and isolated vocal are available here to listen to or download again anytime.",
+        "readyHint": "Your instrumental and isolated vocal are ready.",
+        "instrumental": "Instrumental",
+        "downloadInstrumental": "Download instrumental",
+        "vocal": "Isolated vocal",
+        "downloadVocal": "Download vocal",
+        "noVocal": "The provider completed the instrumental but did not return a separate vocal track.",
+        "another": "Create another separation",
+        "backProject": "Back to project",
+        "backStudio": "Back to AI Studio",
+        "title": "Create Instrumental",
+        "subtitle": "Remove the lead vocal and receive the instrumental and isolated vocal tracks to listen to or download anytime.",
+        "selectedVersion": "Selected version"
+      },
+      "coupon": {
+        "errors": {
+          "codeRequired": "Enter the coupon code.",
+          "invalid": "Invalid coupon.",
+          "check": "Could not check the coupon.",
+          "apply": "Could not apply the coupon.",
+    "payment": "Could not open the payment.",
+    "unauthorized": "Your session has expired. Please sign in again.",
+    "notFound": "Coupon not found. Check the code.",
+    "inactive": "This coupon is no longer active.",
+    "expired": "This coupon has expired.",
+    "usageLimit": "This coupon has reached its usage limit.",
+    "alreadyUsedPaid": "You have already used this coupon or started a purchase with it.",
+    "paymentUnavailable": "Payment is not available right now. Please try again later."
+        },
+        "successTitle": "Coupon applied!",
+        "successText": "You received {{count}} song(s). They are already available in your balance.",
+        "createNow": "Create a song now",
+        "back": "Back to AI Studio",
+        "title": "I have a coupon",
+        "subtitle": "Enter the code you received.",
+  "codeLabel": "Coupon code",
+  "codePlaceholder": "E.g. EMERSON50",
+        "check": "Check coupon",
+        "activeTitle": "This coupon is active!",
+        "activeSubtitle": "Here's what you'll receive:",
+        "code": "Code",
+        "songs": "Songs",
+        "amount": "Amount to pay",
+        "unitPrice": "Price per song",
+        "value": "Value",
+        "free": "FREE",
+        "validUntil": "Valid until",
+        "alreadyRedeemed": "You've already redeemed this free coupon. It can only be used once per person.",
+        "continuePayment": "Continue to payment",
+        "redeem": "Redeem now",
+        "useAnother": "Use another code",
+        "paymentHint": "You'll be taken to payment to pay {{amount}}. The songs are added automatically after confirmation."
+      },
+      "ready": {
+        "moreOptions": "More options", "show": "Show", "hide": "Hide",
+        "errors": {
+          "chooseAudioTranscribe": "Choose the song audio before asking AI to transcribe it.",
+          "transcribe": "We could not understand the audio.",
+          "chooseAudio": "Choose the song audio you want to improve.",
+          "translationRequired": "To adapt to another language, paste the translated or adapted lyrics into the Song lyrics field.",
+          "maxDuration": "This audio is longer than 4 minutes 30 seconds. Upload a shorter version.",
+          "improve": "Could not improve the song.",
+          "prepareUpload": "Could not prepare the audio upload.",
+          "upload": "Could not upload the audio. Please try again."
+        },
+        "messages": {
+          "transcribing": "Uploading audio and transcribing lyrics...",
+          "transcribed": "Lyrics transcribed. {{count}} credit(s) were charged. Review them before improving.",
+          "sending": "Uploading song...",
+          "starting": "Uploading audio, transcribing lyrics, and starting the improvement...",
+          "transcribedStarted": "Lyrics transcribed and improvement started. Opening the project...",
+          "started": "Improvement started. We'll open the project so you can follow progress."
+        },
+        "badge": "Recorded song",
+        "title": "Upload a recorded song",
+        "subtitle": "Upload a song you already recorded. AI tries to preserve the melody, lyrics, and essence while producing a more professional version up to 4:30.",
+        "transcriptionHint": "No typed lyrics? When you click Improve, AI transcribes the audio as part of the 10-credit process.",
+        "reviewHint": "If you want to review first, use “Transcribe lyrics” (1 credit).",
+        "costHint": "Cost: 10 credits for improvement. Standalone transcription: 1 credit.",
+        "songTitle": "Song title",
+        "songTitlePlaceholder": "Example: My Song",
+        "genre": "Desired genre/style",
+        "keepGenre": "Keep original style",
+        "genreHint": "You can transform one style into another.",
+        "genrePlaceholder": "Enter the genre or style",
+        "language": "Language and accent of the new version",
+        "languageHint": "Defines vocal pronunciation. Choose the language that matches the desired accent.",
+        "audio": "Song audio",
+        "audioHint": "Use audio up to 4 minutes 30 seconds (max. 80 MB). It can be a demo, guide track, acoustic take, or phone recording.",
+        "whatImprove": "What do you want to improve?",
+        "extraInstructions": "Additional instructions (optional)",
+        "extraHint": "Describe what you want to change or preserve. These instructions are kept separate from the lyrics.",
+        "extraPlaceholder": "Example: keep the melody and rhythm, but use a softer interpretation.",
+        "details": "New version details",
+        "mood": "Song mood",
+        "voiceTone": "Voice characteristic",
+        "structure": "Desired structure",
+        "lyricLength": "Lyrics length",
+        "instruments": "Instruments you want (optional)",
+        "instrumentsPlaceholder": "Example: acoustic guitar, accordion, drums",
+        "voiceChoiceHint": "Choose whether to preserve the original voice or request a new interpretation.",
+        "voiceStyle": "Voice style",
+        "voiceChangeHint": "Changing the voice type gives AI more freedom to change the performance while preserving the composition.",
+        "lyrics": "Song lyrics",
+        "transcribing": "Transcribing lyrics...",
+        "transcribe": "Transcribe lyrics (1 credit)",
+        "adapt": "Adapt my song",
+        "improve": "Improve my song",
+        "back": "Back",
+        "savedOriginal": "Using the saved original song: {{title}}. You do not need to upload the file again.",
+        "avoidInstruments": "Instruments to avoid (optional)",
+        "avoidInstrumentsPlaceholder": "Example: heavy guitar",
+        "mainVoice": "Lead voice",
+        "languageAdaptationHelp": "Adapt to another language: paste the lyrics you have already translated or adapted into the desired language below. AI will try to preserve the original melody, rhythm, tempo, structure, and instruments. Small adjustments may be needed to fit the lyrics to the melody.",
+        "translatedLyricsPlaceholder": "Paste the lyrics already translated or adapted into the new language.",
+        "lyricsPlaceholder": "Optional: paste the lyrics or leave this blank for AI to transcribe the audio when improving. You can also click “Transcribe lyrics from audio”.",
+        "improvementOptions": {
+          "similar": {
+            "label": "Keep as close to the original as possible",
+            "description": "Tries to preserve the lyrics, melody, rhythm, and feel."
+          },
+          "professional": {
+            "label": "Make it more professional",
+            "description": "Improves production, mixing, vocals, and instruments."
+          },
+          "vocal": {
+            "label": "Bring the vocals forward",
+            "description": "Aims for a clearer, more prominent lead vocal."
+          },
+          "instruments": {
+            "label": "Improve the instruments",
+            "description": "Adds depth to the arrangement and production."
+          },
+          "language_adaptation": {
+            "label": "Adapt to another language",
+            "description": "Keeps the melody, rhythm, and feel while using the new lyrics you provide."
+          }
+        },
+        "voiceOptions": {
+          "same": {
+            "label": "Keep original voice",
+            "description": "Tries to preserve the vocal character of the uploaded audio."
+          },
+          "male": {
+            "label": "Male voice",
+            "description": "Requests a new performance with a male lead vocal."
+          },
+          "female": {
+            "label": "Female voice",
+            "description": "Requests a new performance with a female lead vocal."
+          }
+        },
+        "voiceStyleOptions": {
+          "natural": "Natural",
+          "soft": "Soft",
+          "powerful": "Powerful",
+          "deep": "Deep",
+          "bright": "Bright"
+        },
+        "genreLabels": {
+          "sertanejo": "Sertanejo",
+          "traditionalSertanejo": "Traditional sertanejo",
+          "modaDeViola": "Moda de viola",
+          "pagode": "Pagode",
+          "samba": "Samba",
+          "waltz": "Waltz",
+          "arrocha": "Arrocha",
+          "gospel": "Gospel",
+          "reggae": "Reggae",
+          "pop": "Pop",
+          "rock": "Rock",
+          "funk": "Funk",
+          "trap": "Trap",
+          "forro": "Forró",
+          "guarania": "Paraguayan guarania",
+          "free": "Free style",
+          "other": "Other / enter my style"
+        }
+      },
+      "cover": {
+        "eyebrow": "AI cover art",
+        "title": "Create Cover Art",
+        "cost": "Cover cost",
+        "describe": "Describe your cover",
+        "artist": "Artist",
+        "songTitlePlaceholder": "Optional. Example: Midnight Roads",
+        "artistPlaceholder": "Optional. Example: John Smith",
+        "promptPlaceholder": "Example: The artist looking down an open road at sunset, cinematic and emotional, with a modern country album aesthetic...",
+        "quality": "Cover quality",
+        "qualities": { "low": "Low quality", "medium": "Medium quality", "pro": "Pro quality" },
+        "photosSelected_one": "{{count}} photo selected.",
+        "photosSelected_other": "{{count}} photos selected.",
+        "optimizingPhotos": "Optimising photos before upload...",
+        "creating": "Creating cover...",
+        "created": "Cover created successfully.",
+        "result": "Result",
+        "download": "Download cover",
+        "createdCoverAlt": "Created cover",
+        "coverAlt": "Cover",
+        "choosePhotos": "Choose photos",
+        "errors": {
+          "download": "Could not download the cover. Please try again.",
+          "load": "Could not load the cover creator.",
+          "create": "Could not create the cover.",
+          "unauthorized": "Your session has expired. Please sign in again.",
+          "maxPhotos": "Upload no more than 3 reference photos.",
+          "ideaRequired": "Describe what you want on the cover using at least 10 characters.",
+          "insufficientCredits": "You need {{count}} credits to create this cover. Add credits to continue.",
+          "photosTooLarge": "The uploaded photos are too large. Try again with smaller photos or clearer face images.",
+          "photoUnreadable": "One of the uploaded photos could not be read. Try a JPG or PNG file.",
+          "photoOptimize": "One of the uploaded photos could not be optimised.",
+          "unsupportedImage": "Upload image files only in PNG, JPG, or WEBP format.",
+          "photoPrepare": "Your browser could not prepare the photo."
+        },
+        "options": {
+          "other": "Other option",
+          "musicStyles": { "sertanejo": "Sertanejo", "romantic": "Romantic", "gospel": "Gospel", "funk": "Funk", "popularRomanticBrega": "Popular romantic brega", "pagode": "Pagode", "pop": "Pop", "trap": "Trap", "rock": "Rock", "free": "Free", "hipHopRap": "Hip-Hop / Rap", "rnb": "R&B", "country": "Country", "alternativeIndie": "Alternative / Indie", "edmDance": "EDM / Dance", "jazz": "Jazz", "blues": "Blues", "folk": "Folk", "soul": "Soul", "metal": "Metal", "punk": "Punk", "latinPopReggaeton": "Latin Pop / Reggaeton" },
+          "visualStyles": { "modern": "Modern", "vintage": "Vintage", "cinematic": "Cinematic", "luxury": "Luxury", "romantic": "Romantic", "dark": "Dark", "colorful": "Colourful", "minimalist": "Minimalist" },
+          "environments": { "backlands": "Brazilian countryside", "city": "City", "beach": "Beach", "stage": "Stage", "farm": "Farm", "countryside": "Countryside", "nightStreet": "Night street", "musicStudio": "Music studio", "desert": "Desert", "starrySky": "Starry sky" },
+          "artDirections": { "realistic": "Realistic", "illustration": "Illustration", "movieScene": "Movie scene", "musicPoster": "Music poster", "albumCover": "Album cover", "vintage": "Vintage", "neon": "Neon", "editorial": "Editorial" }
+        },
+        "subtitle": "Upload up to 3 reference photos or create your cover using text only. AI interprets your request and creates professional cover art with the song title and artist name.",
+        "credits": "credits",
+        "qualityHint": "Higher quality usually produces a closer match to your reference photos.",
+        "balance": "Current balance",
+        "buyCredits": "Buy credits",
+        "songTitle": "Song title",
+        "musicStyle": "Music style",
+        "visualStyle": "Visual style",
+        "environment": "Setting",
+        "artDirection": "Art direction",
+        "prompt": "What would you like on the cover?",
+        "promptHint": "Keep it simple. AI will turn your description into professional visual direction.",
+        "proHint": "For portraits and more professional typography, Pro quality puts more effort into the artwork and lettering.",
+        "referencePhotos": "Reference photos, up to 3",
+        "referenceOptional": "Optional. Without a photo, the cover will be created from your text only.",
+        "optimizeHint": "Large phone photos will be optimized automatically before upload.",
+        "create": "Create Cover - {{count}} credits",
+        "resultPlaceholder": "Your cover will appear here.",
+        "history": "History"
+      }
+    },
+    "new": {
+      "errors": {
+        "loadGenres": "Could not load genres."
+      },
+      "preview": {
+        "style": "Country · Heartbreak",
+        "title": "A Heart in Silence",
+        "romanticStyle": "Country · Romantic",
+        "idea": "Someone loves in silence but is afraid to say it."
+      },
+      "options": {
+        "avoidCliches": "Avoid clichés",
+        "catchyChorus": "Make the chorus catchier",
+        "everydayLanguage": "Use everyday language",
+        "sophisticatedLanguage": "Use sophisticated language"
+      },
+      "instruments": "Instruments you want (optional)",
+      "freeLyrics": "Free lyrics"
+    }
+  },
+  "footer": {
+    "description": "A platform to listen to songs and videos, create with AI Studio, generate chords, and showcase songwriters.",
+    "auditTitle": "View the public receipt for this audit",
+    "auditAlt": "Technical quality seal — click to read the public audit receipt",
+    "quickLinks": "Quick Links",
+    "contact": "Contact",
+    "showEmail": "Show Email",
+    "copyEmail": "Copy email",
+    "rights": "All rights reserved.",
+    "links": {
+      "videos": "Videos",
+      "songs": "Songs",
+      "studio": "AI Studio",
+      "chords": "Song Chords",
+      "distribution": "Digital Distribution",
+      "composers": "Songwriters",
+      "blog": "Blog",
+      "about": "About",
+      "faq": "FAQ"
+    }
+  },
+  "global": {
+    "country": {
+      "names": {"BR": "Brazil", "PY": "Paraguay", "CO": "Colombia", "PT": "Portugal", "MX": "Mexico", "ES": "Spain", "US": "United States", "GB": "United Kingdom"},
+      "languages": {"pt": "Portuguese", "es": "Spanish", "en": "English"},
+      "change": "Change country",
+      "prefix": "Country:",
+      "choose": "Choose your country"
+    },
+    "view": {
+      "list": "List",
+      "grid": "Grid",
+      "listAria": "List view",
+      "gridAria": "Grid view"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "subtitle": "Comments, replies, likes, and finished songs",
+      "empty": "No notifications yet."
+    }
+  },
+  "auth": {
+    "actions": {"showPassword": "Show password", "hidePassword": "Hide password"},
+    "fields": {
+      "email": "Email",
+      "password": "Password",
+      "name": "Your name",
+      "confirmPassword": "Confirm password",
+      "newPassword": "New password",
+      "confirmNewPassword": "Confirm new password"
+    },
+    "placeholders": {
+      "email": "you@example.com",
+      "password": "Your password",
+      "name": "Your name",
+      "minPassword": "At least 6 characters",
+      "confirmPassword": "Enter the password again"
+    },
+    "errors": {
+      "deletedAccount": "This email belongs to a deleted account. For security, you cannot create another free account with it. Contact DCC Music to restore access.",
+      "artistNameTaken": "This artist name is already in use. Choose another and try again.",
+      "signupConflict": "This email or artist name is already in use. Choose another and try again.",
+      "emailRequired": "Enter your email address.",
+      "emailNotFound": "Email not registered. We'll take you to create your account.",
+      "invalidPassword": "Incorrect password. Try again.",
+      "emailNotVerified": "Your email has not been confirmed yet. Confirm it to sign in.",
+      "loginFailed": "Could not sign in. Try again.",
+      "resendVerification": "Could not resend the confirmation email.",
+      "nameRequired": "Enter your name.",
+      "invalidEmail": "Invalid email. Check the address you entered.",
+      "emailSuggestion": "The email domain looks incorrect. Did you mean {{email}}?",
+      "passwordMismatch": "The passwords do not match.",
+      "emailTaken": "This email is already registered. Sign in or use another email.",
+      "signupFailed": "We could not complete your registration. Try again.",
+      "resetRequestFailed": "Could not request a new password.",
+      "invalidResetLink": "This link is invalid or has already been used. Request a new password reset link.",
+      "expiredResetLink": "This link has expired. Request a new password reset link.",
+      "passwordTooShort": "The password must be at least 6 characters.",
+      "resetFailed": "Could not create a new password.",
+      "tempPasswordNotAllowed": "Choose a password other than “123”.",
+      "sessionExpired": "Your session has expired. Sign in again.",
+      "changePasswordFailed": "Could not change your password."
+    },
+    "login": {
+      "and": "and",
+      "title": "Songwriter Login",
+      "subtitle": "One account lets you comment, rate, and create songs in AI Studio.",
+      "signupSuccess": "Registration completed! Confirm your email to activate your account.",
+      "passwordChanged": "Password changed successfully! Sign in with your new password.",
+      "lastStep": "Last step",
+      "confirmEmailTitle": "Confirm your email to activate your account",
+      "sentEmail": "We sent an email",
+      "withSubject": "with the subject",
+      "confirmEmailSubject": "Confirm your email at DCC Music",
+      "checkFolders": "Also check your",
+      "spam": "Spam",
+      "promotions": "Promotions",
+      "openEmailPrefix": "Open the email and click the",
+      "confirmButtonHint": "purple “Confirm my email” button",
+      "openEmailSuffix": "to enable sign-in and use your free song in AI Studio.",
+      "resendingEmail": "Resending email...",
+      "resendEmail": "Didn't receive it? Resend confirmation email",
+      "resending": "Resending...",
+      "resendLink": "Resend confirmation link",
+      "verificationSent": "We sent a new confirmation link to your email.",
+      "forgotPassword": "Forgot my password",
+      "signingIn": "Signing in...",
+      "signIn": "Sign in",
+      "noAccount": "Don't have an account?",
+      "signUp": "Sign up",
+      "viewStudioPlans": "View DCC AI Studio plans",
+      "viewPremiumPlans": "View Premium Plans"
+    },
+    "signup": {
+      "title": "Sign Up",
+      "subtitle": "Create your account to comment, rate, create songs, and buy credits.",
+      "correctTo": "Correct to {{email}}",
+      "creating": "Creating account...",
+      "createAccount": "Create account",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign in",
+      "freeSongHint": "After signing up, you can create one free song in DCC AI Studio.",
+      "discoverStudio": "Discover DCC AI Studio"
+    },
+    "forgot": {
+      "title": "Forgot my password",
+      "subtitle": "Enter your songwriter email to receive a password reset link.",
+      "success": "If this email is registered, we'll send a link to create a new password.",
+      "sending": "Sending...",
+      "sendLink": "Send password reset link",
+      "backToLogin": "Back to sign in"
+    },
+    "reset": {
+      "title": "Create a new password",
+      "subtitle": "Enter a new password to regain access to your songwriter account.",
+      "saving": "Saving...",
+      "save": "Save new password",
+      "requestAnother": "Request another link"
+    },
+    "change": {
+      "title": "Change Password",
+      "subtitle": "You're using a temporary password. Create a new secure password.",
+      "saving": "Saving...",
+      "save": "Save New Password",
+      "afterSave": "After saving, you'll need to sign in again with your new password."
+    },
+    "verify": {
+      "confirmError": "We could not confirm your email right now. Please try again shortly.",
+      "confirming": "Confirming your email and signing you in...",
+      "missingToken": "Confirmation link has no token.",
+      "loginError": "Your email was confirmed, but we could not create the automatic sign-in.",
+      "confirmed": "Email confirmed. Taking you to your dashboard...",
+      "expired": "The link may have expired, already been used, or be invalid.",
+      "unable": "We could not confirm your email",
+      "confirmedTitle": "Email confirmed",
+      "confirmingTitle": "Confirming email",
+      "login": "Go to login",
+      "entering": "Opening your dashboard..."
+    }
+  },
+  "payment": {
+    "plans": {
+      "title": "Subscription Plans",
+      "subtitle": "Choose how you want to create, publish, and promote your music.",
+      "tipLabel": "Tip:",
+      "tip": "DCC AI Studio is for creating music with artificial intelligence. Songwriter plans are for publishing and promoting songs and videos on DCC Music.",
+      "topup": {
+        "noMonthly": "No monthly fee",
+        "title": "One-time song top-up",
+        "description": "If you don't want a subscription right now, choose how many songs you want to buy and the price is calculated automatically.",
+        "one": "1 song",
+        "twoToEight": "2 to 8 songs",
+        "nineToTwentyNine": "9 to 29 songs",
+        "thirtyPlus": "30+ songs",
+        "perSong": "per song",
+        "buy": "Buy One-time Top-up"
+      },
+      "studio": {
+        "title": "DCC AI Studio Plans",
+        "description": "Our main product: create lyrics, songs, covers, and projects with AI.",
+        "empty": "No AI Studio plan is currently active.",
+        "popular": "MOST POPULAR",
+        "subscribe": "Subscribe to AI Studio"
+      },
+      "composer": {
+        "title": "Premium Songwriter Plans",
+        "description": "Publish your songs and videos on DCC Music with your own page.",
+        "empty": "No songwriter plans are available right now.",
+        "gold": "Gold Plan",
+        "subscribe": "Subscribe Now"
+      },
+      "period": {
+        "month": "month",
+        "months": "{{count}} months",
+        "year": "year"
+      },
+      "unavailable": "Unavailable",
+      "checkingPlan": "Checking plan...",
+      "alreadyActiveTitle": "You already have an active plan in this category",
+      "alreadyActive": "Plan already active"
+    },
+    "checkout": {
+      "errors": {
+        "start": "We couldn't start the payment. Try again.",
+        "openStripe": "We couldn't open the alternative payment method.",
+        "preference": "We couldn't prepare the payment.",
+        "noPaymentLink": "The payment provider did not return a payment link.",
+        "processing": "We couldn't process the payment. Try again.",
+        "planMissing": "No plan was selected. Go back to the plans page and choose an option.",
+        "checkPayment": "We couldn't check the payment right now."
+      },
+      "checkingAccess": "Checking your access...",
+      "wait": "Please wait a few seconds",
+      "processingPayment": "Processing payment...",
+      "preparingCheckout": "Please wait while we prepare your checkout",
+      "activePlan": "Active plan",
+      "alreadyStudioTitle": "You already have an AI Studio plan",
+      "currentPlanPrefix": "Your current plan is",
+      "moreSongsHint": "If you clicked another plan because you want more songs, use a one-time top-up instead.",
+      "topupHint": "A one-time top-up adds extra credits without changing your monthly plan.",
+      "goTopup": "Go to one-time top-up",
+      "viewAllPlans": "View all plans",
+      "unlocks": "What this plan includes:",
+      "checkBeforePay": "Check before paying",
+      "redirecting": "Redirecting to Mercado Pago...",
+      "goPayment": "Go to Payment",
+      "redirectFallback": "If you are not redirected automatically, click the button above",
+      "preparing": "Preparing checkout...",
+      "secureProcessed": "Secure payment processed by {{provider}}",
+      "studio": {
+        "badge": "DCC AI Studio",
+        "title": "You're subscribing to DCC AI Studio",
+        "description": "This plan is for creating lyrics, songs, covers, and projects using artificial intelligence.",
+        "includes": [
+          "Create songs with AI inside AI Studio",
+          "Monthly credits based on the selected plan",
+          "Organize your AI-created projects"
+        ],
+        "warning": "If you only want to publish finished songs from Spotify, SoundCloud, or other players, choose Premium Songwriter.",
+        "confirm": "Confirm and pay for AI Studio",
+        "alternative": "I want Premium Songwriter"
+      },
+      "composer": {
+        "badge": "Premium Songwriter",
+        "title": "Important: this is not an AI Studio plan",
+        "description": "You're buying a Premium Songwriter plan to publish and promote songs you already have.",
+        "includes": [
+          "Publish finished songs using external links/players",
+          "Publish videos and organize your songwriter page",
+          "Promotion features inside DCC Music"
+        ],
+        "warning": "This plan does not include monthly credits for creating music with AI. To create new songs with AI, choose a DCC AI Studio plan.",
+        "confirm": "I understand, I want Premium Songwriter",
+        "alternative": "I want AI Studio"
+      }
+    },
+    "status": {
+      "processing": "Processing...",
+      "approvedTitle": "Payment Approved!",
+      "approvedDescription": "Your subscription has been activated successfully. You can now publish your songs and videos!",
+      "goToComposerArea": "Go to Songwriter Area",
+      "pendingTitle": "Payment Pending",
+      "pendingDescription": "Your payment is being processed. You'll receive an email confirmation once it is approved.",
+      "failedTitle": "Payment Not Approved",
+      "failedDescription": "The payment was not processed. Please try again or contact us.",
+      "backToPlans": "Back to Plans"
+    },
+    "topup": {
+      "backToStudio": "Back to AI Studio",
+      "page": {
+        "badge": "One-time top-up",
+        "title": "Buy extra credits to keep creating",
+        "description": "Enter how many songs you want to buy. The price changes automatically based on the price tier.",
+        "balance": "Current balance",
+        "credits": "{{count}} credits",
+        "used": "Used {{used}} of {{limit}}. Each song uses 10 credits.",
+        "quantityQuestion": "How many songs do you want to buy?",
+        "songs": "{{count}} songs",
+        "extraCredits": "{{count}} extra credits",
+        "autoRelease": "Automatically released after approved payment",
+        "securePayment": "Secure payment by card or available local method",
+        "perSong": "per song",
+        "summary": "{{count}} songs x",
+        "buy": "Buy One-time Top-up",
+        "singleTier": "Single song"
+      },
+      "errors": {
+        "loadPackages": "Could not load packages.",
+        "loadBalance": "Could not load balance.",
+        "load": "Could not load the one-time top-up.",
+        "confirm": "Could not confirm the top-up.",
+        "check": "Could not check the top-up.",
+        "unauthorized": "Your session has expired. Please sign in again.", "sessionExpired": "Your session has expired. Please sign in again.", "quantityInvalid": "Enter a valid number of songs.", "quantityLimit": "A one-off top-up can include up to 500 songs per purchase.", "topupRequired": "We couldn't identify this top-up.", "notFound": "Top-up not found.", "paymentUnavailable": "Payment is temporarily unavailable. Please try again in a few minutes.", "amountChanged": "The top-up amount changed. Refresh the page and try again.", "paymentMismatch": "This payment does not belong to this top-up.", "alreadyPaid": "This top-up has already been paid.", "paymentInProgress": "There is already a payment in progress. Wait for confirmation before trying another method.", "amountInvalid": "The top-up amount is invalid.", "currencyInvalid": "The currency for this top-up is invalid.", "start": "We couldn't start the top-up. Please try again.", "processing": "We couldn't process the payment. Please try again.", "openStripe": "We couldn't open the alternative payment method."
+      },
+      "success": {
+        "checking": "Checking payment confirmation...",
+        "awaitingConfirmation": "As soon as the payment is confirmed, the credits will appear in your AI Studio balance.",
+        "paid": "Payment confirmed. Your credits are already available in AI Studio.",
+        "received": "Payment received. The top-up will be released automatically when final confirmation arrives.",
+        "webhookFallback": "We could not confirm it automatically right now. The webhook confirmation may still release your credits.",
+        "title": "Top-up approved"
+      },
+      "pending": {
+        "checking": "Checking whether the payment has been confirmed...",
+        "autoRelease": "The top-up will be released automatically when the payment is confirmed.",
+        "received": "Payment received. We're waiting for final confirmation...",
+        "releasedTitle": "Top-up released",
+        "title": "Payment pending"
+      },
+      "failure": {
+        "title": "Payment declined",
+        "description": "This top-up was not completed and no credits were added.",
+        "explanation": "If your card was declined, the decision came from the card issuer, not DCC Music. Try another card or check with your bank that online purchases are enabled.",
+        "action": "Try again"
+      }
+    },
+    "overlay": {
+      "couldNotComplete": "We couldn't complete the payment.",
+      "openError": "We couldn't open the payment on this page.",
+      "approved": "Payment approved",
+      "pixTitle": "Pay with Pix on this device",
+      "pixDescription": "Copy the code, pay in your banking app, then come back here. Once Mercado Pago confirms it, this screen will continue automatically.",
+      "copyError": "We couldn't copy the code automatically. Press and hold the code below and choose Copy.",
+      "codeCopied": "Code copied!",
+      "copyPix": "Copy Pix code",
+      "pixCode": "Pix code",
+      "openPixBank": "Open Pix in banking app",
+      "checkingPix": "Checking whether Mercado Pago has recognized the payment...",
+      "pixRecognized": "Once the payment is recognized, you'll be taken to the success screen.",
+      "notConfirmedYet": "We still couldn't confirm it. Try again in a few seconds.",
+      "checkNow": "I've paid — check now",
+      "payHere": "Pay securely without leaving DCC Music.",
+      "fallbackUnavailable": "Alternative payment method unavailable.",
+      "title": "Payment",
+      "openingStripe": "Opening Stripe...",
+      "useStripe": "Use alternative payment method (Stripe)",
+      "payWithoutLeaving": "Pay here without leaving DCC Music.",
+      "continueMp": "Continue in Mercado Pago"
+    },
+    "stripe": {
+      "title": "Card payment",
+      "loading": "Loading secure payment...",
+      "declineTitle": "If your card is declined",
+      "declineText": "The refusal comes from the card issuer, not DCC Music. No credits are added unless the payment is approved. Try another card or check with your bank that online purchases are enabled.",
+      "openError": "We couldn't open the alternative payment method."
+    }
+  },
+  "voices": {
+    "backToProfile": "Back to my profile",
+    "badge": "AI Voice",
+    "title": "My voices",
+    "subtitle": "Register up to {{count}} voices. Prefer a clean recording of your voice without instruments. Then record the verification phrase requested by our AI.",
+    "billingHint": "Creating a voice only charges 2 credits if it becomes ready to use. Failed attempts are not charged.",
+    "registeredCount": "{{current}}/{{count}} voices registered",
+    "authorizedOnly": "Use only your own voice or voices you are authorized to use.",
+    "loading": "Loading voices...",
+    "empty": "No voices registered yet.",
+    "confirmDelete": "Delete this voice? It will disappear from your list and free a slot for another voice.",
+    "audioPreview": "Audio for voice {{name}}",
+    "status": {
+      "sourceUploaded": "Audio received",
+      "validationProcessing": "Generating verification phrase",
+      "awaitingVerification": "Waiting for phrase recording",
+      "voiceProcessing": "Creating cloned voice",
+      "ready": "Ready to use",
+      "failed": "Failed",
+      "unknown": "Status unavailable"
+    },
+    "errors": {
+      "fileTooLargeDirect": "The file is too large for direct upload. Try again; the system will use optimized upload.",
+      "audioFileRequired": "Upload an audio file.",
+      "maxFileSize": "The voice audio must be no larger than {{size}}.",
+      "prepareUpload": "Could not prepare the audio upload.",
+      "storageUpload": "Could not upload the audio to storage. Please try again.",
+      "load": "Could not load voices.",
+      "chooseOrRecord": "Choose a ready audio file or record the base voice with your microphone.",
+      "sendVoice": "Could not send the voice.",
+      "refresh": "Could not refresh the voice.",
+      "regeneratePhrase": "Could not generate a new phrase.",
+      "reactivate": "Could not reactivate the voice.",
+      "sendVerification": "Could not send verification.",
+      "verificationFileRequired": "Upload the verification phrase recording.",
+      "recordingUnsupported": "This browser does not support direct recording. Use the file upload option.",
+      "captureFailed": "We could not capture the audio. Please record again.",
+      "microphone": "Could not access the microphone. Allow microphone access in your browser or use the file upload option.",
+      "delete": "Could not delete the voice.",
+      "voiceFailed": "This voice could not be completed. Refresh the status or try generating a new phrase.",
+      "voiceExpired": "This voice has expired. Reactivate it at no charge and record a new verification phrase.",
+      "audioCatalogMatch": "The provider detected a match with an existing recording. Upload different, clean, original audio.",
+      "voiceMismatch": "The recording does not appear to use the same voice as the base audio. Record it again with the same person.",
+      "phraseUnrecognized": "The verification phrase was not recognised. Sing the exact phrase shown with a clear voice and no music.",
+      "verificationPhraseExpired": "The verification phrase expired or was not found. Generate a new phrase and record it again."
+    },
+    "apiErrors": {
+      "unauthorized": "Your session has expired. Please sign in again.",
+      "voiceLimitReached": "You already have {{count}} registered voices. Delete one before adding or recovering another.",
+      "displayNameRequired": "Enter a name for this voice.",
+      "consentRequired": "Confirm that you are authorised to use this voice.",
+      "sourceAudioRequired": "Upload or record the base voice audio.",
+      "duplicateAwaitingVerification": "The voice “{{name}}” is already waiting for verification. Use its card below; do not upload the base audio again.",
+      "duplicateVoiceName": "A voice named “{{name}}” already exists. Delete the old one or choose another name.",
+      "invalidAction": "This action is not available.",
+      "voiceNotFound": "Voice not found.",
+      "reactivationUnavailable": "This voice cannot be reactivated right now.",
+      "sourceAudioMissing": "The saved base audio could not be found.",
+      "recoverExpiredOnly": "Only previously created voices that have expired can be recovered.",
+      "duplicateActiveVoice": "An active voice named “{{name}}” already exists. Delete it before recovering the archived voice.",
+      "validationPhraseNotReady": "The verification phrase is not ready yet. Refresh the status and try again.",
+      "verificationAudioRequired": "Upload or record the verification phrase."
+    },
+    "messages": {
+      "voiceSent": "Voice sent. Now wait for the verification phrase from our AI.",
+      "statusUpdated": "Status updated.",
+      "newPhraseRequested": "New phrase requested. Wait a few seconds, then click Refresh status.",
+      "reactivationStarted": "Reactivation started at no charge. The original audio was reused. Wait for the new phrase and record it to use your voice again.",
+      "verificationSent": "Verification sent. Our AI is creating the cloned voice.",
+      "baseRecordingReady": "Base voice recording is ready. Review the audio and click Send voice.",
+      "deleted": "Voice deleted. You can now register another voice if you want."
+    },
+    "pending": {
+      "title": "Finish the voice already in progress",
+      "description": "The voice “{{name}}” is waiting for the verification phrase. Use the card below to record the phrase; do not upload the base audio again."
+    },
+    "newVoice": {
+      "title": "Register a new voice",
+      "bestOption": "Best option: clean voice audio",
+      "bestOptionHint": "Use clear voice audio with no instruments, backing vocals, and minimal effects. This helps the clone sound more like the original.",
+      "costHint": "Cost: 2 credits only when the voice is approved and ready.",
+      "name": "Voice name",
+      "namePlaceholder": "Example: My country voice",
+      "vocalStart": "Vocal start (s)",
+      "vocalEnd": "Vocal end (s)",
+      "recordOption": "Option 1: record your voice now",
+      "recordHint": "Ideal on mobile: record 10 to 20 seconds of clean voice with no music in the background.",
+      "stopRecording": "Stop recording ({{seconds}}s)",
+      "recordBase": "Record base voice",
+      "recordingReady": "Recording ready",
+      "discardRecording": "Discard recording",
+      "fileOption": "Option 2: choose a ready audio file",
+      "fileHint": "Tip: if the file is a finished song with instruments, AI may not be able to isolate and copy only the voice accurately.",
+      "consent": "I confirm this voice is mine or I have explicit authorization to use it in AI-generated music.",
+      "limitReachedHint": "You have reached the limit of {{count}} voices. Delete a registered voice below to free a slot and add another.",
+      "limitReached": "{{count}}-voice limit reached",
+      "send": "Send voice"
+    },
+    "verification": {
+      "phrase": "Phrase to record",
+      "instructions": "Sing exactly this phrase with a clear voice and no background music, then send it below.",
+      "expired": "This phrase may have expired.",
+      "generateNewPhrase": "Generate new phrase",
+      "recommendedTime": "Recommended time to send:",
+      "recordHere": "Record the phrase here",
+      "recordHereHint": "Tap record, sing the phrase above, then stop to send it automatically.",
+      "stopAndSend": "Stop and send ({{seconds}}s)",
+      "recordNow": "Record phrase now",
+      "orUpload": "Or upload a ready file",
+      "sendFile": "Send phrase file"
+    },
+    "actions": {
+      "retryPhraseFree": "Try a new phrase at no charge",
+      "refreshStatus": "Refresh status",
+      "delete": "Delete voice"
+    },
+    "recover": {
+      "title": "Expired voices that can be recovered",
+      "description": "Your original audio is still saved. Reactivate the voice at no charge and record only the new verification phrase.",
+      "limitHint": "Delete a registered voice to free a slot before recovering an expired voice.",
+      "expiredSaved": "Expired voice · original audio saved",
+      "reactivateFree": "Reactivate voice at no charge"
+    },
+    "rerecord": {
+      "back": "Back to my voices",
+      "badge": "Redo verification",
+      "title": "Sing a new phrase",
+      "description": "Use this only when the voice is already ready but the vocal result did not represent your voice well. The base audio remains saved; the system will request a new phrase for you to sing.",
+      "confirm": "Generate a new verification phrase for “{{name}}”? The voice will be temporarily unavailable while the new verification is processed.",
+      "empty": "No ready voices found.",
+      "generate": "Generate a new phrase to sing",
+      "errors": {
+        "load": "Could not load ready voices.",
+        "generate": "Could not generate the new phrase."
+      }
+    }
+  },
+  "covers": {
+    "back": "Back",
+    "title": "AI Cover Generator",
+    "loading": "Loading premium feature...",
+    "variationInstruction": "Create a new visual variation while keeping the same core emotion.",
+    "access": {
+      "description": "This feature is for active Gold Plan subscribers and lets you generate professional AI cover art.",
+      "viewGold": "View Gold Plan"
+    },
+    "hero": {
+      "badge": "Gold Plan Exclusive",
+      "subtitle": "Turn your song into professional cover art in seconds.",
+      "description": "AI interprets emotion, style, setting, and the main feeling to create modern, cinematic artwork."
+    },
+    "usage": {
+      "title": "Monthly usage",
+      "used": "{{used}} / {{count}} covers used",
+      "reset": "The counter resets automatically every month."
+    },
+    "form": {
+      "songTitle": "Song title",
+      "songTitlePlaceholder": "Example: Perfect Fool",
+      "addText": "Add text to the cover",
+      "addTextHint": "Turn this off to generate and download the cover without any text.",
+      "coverText": "Cover text (optional)",
+      "coverTextPlaceholder": "Example: Stone in My Chest",
+      "coverTextHint": "If enabled and left blank, the site uses the song title. The text is applied by the site for readability.",
+      "fontStyle": "Font style",
+      "textColor": "Text color",
+      "idea": "Paste the song lyrics or describe your idea",
+      "ideaPlaceholder": "Example: A sad country song in a bar at night, full of longing...",
+      "description": "Cover description (leave blank to generate only the image)",
+      "descriptionPlaceholder": "Example: A couple apart on a wet road under a streetlight, sad and cinematic mood...",
+      "descriptionHint": "Use this field only if you want to guide the image. You do not need to write a technical prompt.",
+      "musicStyle": "Music style",
+      "visualStyle": "Cover visual style"
+    },
+    "textStyles": {
+      "strong": "Bold",
+      "classic": "Classic",
+      "modern": "Modern",
+      "romantic": "Romantic",
+      "minimal": "Minimalist"
+    },
+    "textColors": {
+      "white": "White",
+      "gold": "Gold",
+      "purple": "Neon Purple",
+      "red": "Red",
+      "black": "Black"
+    },
+    "musicStyles": {
+      "sertanejo": "Country / Sertanejo",
+      "funk": "Funk",
+      "trap": "Trap",
+      "gospel": "Gospel",
+      "pagode": "Pagode",
+      "rock": "Rock",
+      "mpb": "MPB",
+      "pop": "Pop",
+      "electronic": "Electronic"
+    },
+    "visualStyles": {
+      "realistic": "Realistic",
+      "cinematic": "Cinematic",
+      "anime": "Anime",
+      "vintage": "Vintage",
+      "neon": "Neon",
+      "minimalist": "Minimalist",
+      "dark": "Dark",
+      "romantic": "Romantic"
+    },
+    "generate": "✨ Generate Cover",
+    "generating": "Creating your artwork...",
+    "generatingHint": "Interpreting emotion, mood, and musical identity.",
+    "generatedTitle": "Generated cover",
+    "downloadFilename": "dccmusic-cover",
+    "limitReached": "You have reached the monthly limit. More generation options will be available in future upgrades.",
+    "actions": {
+      "download": "Download PNG",
+      "variation": "Variation",
+      "share": "Share"
+    },
+    "empty": {
+      "title": "Your cover will appear here",
+      "description": "Paste the lyrics or describe the song and AI will create premium artwork."
+    },
+    "library": {
+      "title": "Cover library",
+      "untitled": "Untitled",
+      "select": "Select cover {{title}}",
+      "empty": "Generated covers will be saved here so you can download them again."
+    },
+    "alt": {
+      "generated": "AI-generated cover",
+      "cover": "Generated cover"
+    },
+    "share": {
+      "title": "Cover created on DCCMusic",
+      "text": "Cover created with DCCMusic's AI Cover Generator."
+    },
+    "messages": {
+      "variationCreated": "New variation created successfully.",
+      "created": "Cover created successfully.",
+      "linkCopied": "Temporary cover link copied."
+    },
+    "errors": {
+      "goldOnly": "This feature is exclusive to active Gold Plan subscribers.",
+      "load": "Could not load the AI Cover Generator.",
+      "inputRequired": "Paste the song lyrics or describe your idea before generating.",
+      "generate": "Could not generate the cover.", "unauthorized": "Your session has expired. Please sign in again.", "inputTooShort": "Write at least 20 characters of a description or lyric excerpt.", "inputTooLong": "The text is too long. Use up to 6,000 characters.", "cooldown": "Wait {{count}}s before creating another cover.", "monthlyLimitReached": "You reached the monthly limit of 100 Gold Plan covers. The counter will renew automatically next month.",
+      "download": "Could not download the cover. Please try again.",
+      "share": "Could not share the cover. Please try again."
+    }
+  },
+  "videos": {
+    "list": {
+      "back": "Back",
+      "subscriptionRequired": "Subscription required",
+      "subscriptionDescription": "You need an active subscription to manage your videos.",
+      "viewPlans": "View plans",
+      "title": "My Videos",
+      "subtitle": "Manage your registered videos",
+      "refresh": "Refresh",
+      "newVideo": "New Video",
+      "empty": "You have not added any videos yet.",
+      "firstVideo": "Add your first video",
+      "edit": "Edit",
+      "delete": "Delete",
+      "deleteConfirm": "Are you sure you want to delete this video?",
+      "deleteError": "Could not delete the video",
+      "loadError": "Could not load videos. Please try again."
+    },
+    "form": {
+      "back": "Back",
+      "newTitle": "New Video",
+      "newSubtitle": "Add a new video",
+      "editTitle": "Edit Video",
+      "editSubtitle": "Edit the video information",
+      "notFoundTitle": "Video not found",
+      "notFoundDescription": "The video you are trying to edit was not found or you do not have permission to edit it.",
+      "backToVideos": "Back to My Videos",
+      "title": "Title",
+      "slug": "Slug",
+      "slugPlaceholder": "Generated automatically if left blank",
+      "tagsPlaceholder": "E.g. pop, acoustic, live",
+      "removeComposer": "Remove songwriter {{name}}",
+      "youtubeUrl": "YouTube URL",
+      "youtubeEmbed": "YouTube embed (optional)",
+      "youtubeEmbedPlaceholder": "Paste the YouTube iframe code",
+      "genre": "Genre",
+      "selectGenre": "Select a genre",
+      "tags": "Tags (comma-separated)",
+      "description": "Description",
+      "publishedAt": "Publish date",
+      "duration": "Duration (optional)",
+      "durationPlaceholder": "Example: 3:45",
+      "composers": "Songwriters",
+      "composerSearchPlaceholder": "Search for a songwriter or create a new one...",
+      "createNewComposer": "Create new: “{{name}}”",
+      "saving": "Saving...",
+      "saveVideo": "Save Video",
+      "saveChanges": "Save changes",
+      "cancel": "Cancel",
+      "errors": {
+        "create": "Could not add the video",
+        "update": "Could not update the video",
+        "unauthorized": "Your session has expired. Please sign in again.",
+        "subscriptionRequired": "An active subscription is required to manage videos.",
+        "notFound": "Video not found or access denied.",
+        "titleRequired": "Enter a video title.",
+        "delete": "Could not delete the video.",
+        "load": "Could not load the video. Please try again."
+      }
+    },
+    "card": {
+      "views": "views"
+    }
+  },
+  "featured": {
+    "loginRequired": "Sign in to continue",
+    "active": "Featured",
+    "daysRemaining_one": "{{count}} day remaining",
+    "daysRemaining_other": "{{count}} days remaining",
+    "pending": "Payment pending",
+    "buttonTitle": "Pay {{price}} to feature for 10 days",
+    "processing": "Processing...",
+    "highlightPrice": "Feature ({{price}})",
+    "close": "Close",
+    "errors": {
+      "unauthorized": "Sign in again to start payment.",
+      "missingFields": "We could not identify the item to feature.",
+      "invalidType": "Invalid content type for a featured item.",
+      "notFound": "The item was not found.",
+      "alreadyActive": "This item is already featured.",
+      "missingCheckout": "Payment started, but we did not receive a checkout link. Please try again.",
+      "createPayment": "Could not create the payment",
+      "processPayment": "Could not process the payment"
+    },
+    "modal": {
+      "savedTitle": "Content saved!",
+      "savedSuccess": "was saved successfully!",
+      "featureTitle": "Feature for 10 days",
+      "descriptionMusic": "Feature your song on the main page and increase its visibility!",
+      "descriptionVideo": "Feature your video on the main page and increase its visibility!",
+      "pricePeriod": "for 10 days",
+      "notNow": "Not now",
+      "highlightNow": "Feature now"
+    }
+  },
+  "home": {
+    "metadata": {
+      "title": "Create Music with AI Online | DCC Music",
+      "description": "Create music with artificial intelligence from an idea or lyrics. Use DCC Music's AI Studio and try your first creation free.",
+      "openGraphDescription": "Type your idea or lyrics and turn them into a complete song with artificial intelligence."
+    },
+    "featured": {
+      "title": "Most-played songs",
+      "exploreAll": "Explore all songs"
+    },
+    "composer": {
+      "title": "Are you a songwriter? Publish your songs",
+      "subtitle": "Get feedback and reach new listeners",
+      "signupFree": "Sign up free"
+    },
+    "hero": {
+      "ariaLabel": "Main highlight",
+      "titlePrefix": "Create your song with",
+      "titleHighlight": "artificial intelligence",
+      "description": "Write an idea or lyrics, choose a style and turn it into a complete song. Your first creation is free.",
+      "create": "Create song with AI",
+      "explore": "Explore songs"
+    },
+    "cta": {
+      "title": "Create your next song with AI.",
+      "subtitle": "Start with an idea, lyrics, or just a feeling. Your first creation is free.",
+      "start": "Start creating",
+      "explore": "Explore"
+    }
+  },
+  "exploreMusic": {
+    "title": "Explore songs",
+    "subtitle": "Discover songs created by the DCC Music community.",
+    "featuredVideos": "Featured music videos",
+    "loadingFilters": "Loading filters...",
+    "empty": "No songs found.",
+    "count_one": "{{count}} song found",
+    "count_other": "{{count}} songs found",
+    "loadingSongs": "Loading songs...",
+    "pagination": {
+      "previous": "Previous",
+      "pageOf": "Page {{page}} of {{total}}",
+      "next": "Next"
+    }
+  },
+  "musicFilters": {
+    "search": "Search",
+    "placeholder": "Title, tags...",
+    "genres": "Genres",
+    "none": "None",
+    "platform": "Platform",
+    "all": "All",
+    "sort": "Sort by",
+    "mostViewed": "Most viewed",
+    "recent": "Newest",
+    "old": "Oldest",
+    "az": "A-Z",
+    "close": "Close",
+    "clear": "Clear",
+    "filters": "Filters"
+  },
+  "musicCard": {
+    "views": "views"
+  },
+  "siteStats": {
+    "badge": "Live on the site",
+    "title": "DCC Music by the numbers",
+    "subtitle": "AI Studio, community, and engagement growing every day.",
+    "createdSongs": "Songs created on DCC",
+    "realtime": "real-time update",
+    "community": "Community",
+    "songwriters": "songwriters",
+    "interactions": "Interactions",
+    "commentsRatings": "{{comments}} comments + {{ratings}} ratings",
+    "aiDelivered": "AI songs delivered",
+    "last14Days": "Last 14 days",
+    "totalVideos": "Total videos",
+    "totalMusics": "Total songs",
+    "views": "Views: {{count}}"
+  },
+  "composerSignupLanding": {
+    "metaTitle": "For songwriters — sign up",
+    "metaDescription": "Share your music with listeners around the world. Publish your songs, get real feedback, and find new fans on DCC Music.",
+    "title": "Share your music with the world",
+    "description": "Publish your songs, get real feedback, and find new listeners.",
+    "signup": "👉 Sign up as a songwriter (free)",
+    "platformNumbers": "Platform numbers",
+    "publishedSongs": "songs published",
+    "registeredComposers": "songwriters registered",
+    "startNow": "👉 Get started",
+    "benefits": {
+      "listeners": "Real people listening to your music",
+      "feedback": "Real feedback from listeners",
+      "visibility": "More visibility for your work"
+    }
+  },
+  "composerCta": {
+    "addMusic": "Add song",
+    "viewPremiumPlans": "View Premium Songwriter plans"
+  },
+  "publicVideos": {
+    "metadata": {
+      "title": "Videos | DCC Music",
+      "description": "Explore DCC Music's complete collection of music videos. Watch clips, performances, and the latest releases.",
+      "shortDescription": "Explore DCC Music's complete collection of music videos",
+      "keywords": {
+        "musicVideos": "music videos",
+        "clips": "music clips",
+        "dccVideos": "DCC Music videos",
+        "music": "music",
+        "youtubeMusic": "YouTube music",
+        "releases": "music releases",
+        "videoMusic": "music video"
+      }
+    },
+    "title": "Videos",
+    "subtitle": "Explore music videos",
+    "loadingFilters": "Loading filters...",
+    "empty": "No videos found.",
+    "count_one": "{{count}} video found",
+    "count_other": "{{count}} videos found",
+    "pagination": {
+      "previous": "Previous",
+      "pageOf": "Page {{page}} of {{total}}",
+      "next": "Next"
+    }
+  },
+  "videoDetail": {
+    "metadata": {
+      "notFound": "Video not found",
+      "description": "Watch {{title}} on DCC Music"
+    },
+    "publishedAt": "Published on {{date}}",
+    "views": "Views: {{count}}",
+    "duration": "Duration: {{duration}}",
+    "songwriters": "Songwriters",
+    "share": "Share",
+    "copyLink": "Copy link",
+    "openYoutube": "Open on YouTube",
+    "similarVideos": "Similar videos"
+  },
+  "videoFilters": {
+    "search": "Search",
+    "placeholder": "Title, tags...",
+    "genres": "Genres",
+    "none": "None",
+    "year": "Year",
+    "allYears": "All years",
+    "sort": "Sort by",
+    "mostViewed": "Most viewed",
+    "recent": "Newest",
+    "old": "Oldest",
+    "az": "A-Z",
+    "close": "Close",
+    "clear": "Clear",
+    "filters": "Filters"
+  },
+  "ratings": {
+    "title": "Rating",
+    "loading": "Loading...",
+    "alreadyRated": {
+      "music": "You already rated this song",
+      "video": "You already rated this video",
+      "studio_music": "You already rated this song"
+    },
+    "updated": "Rating updated successfully!",
+    "errors": {
+      "notAuthenticated": "Not authenticated",
+      "rate": "Could not submit rating"
+    },
+    "stars": {
+      "rateTitle_one": "Rate with {{count}} star",
+      "rateTitle_other": "Rate with {{count}} stars",
+      "loginToRate": "Sign in to rate",
+      "yourRating": "Your rating:",
+      "stars_one": "{{count}} star",
+      "stars_other": "{{count}} stars",
+      "clickToRate": "Click the stars to rate",
+      "ratings_one": "{{count}} rating",
+      "ratings_other": "{{count}} ratings"
+    }
+  },
+  "comments": {
+    "title": "Comments",
+    "like": "Like",
+    "reply": "Reply",
+    "replyPlaceholder": "Reply to {{name}}...",
+    "send": "Send",
+    "cancel": "Cancel",
+    "placeholder": "Write your comment...",
+    "sending": "Sending...",
+    "characters": "{{count}}/500 characters",
+    "loginHint": "Sign in to comment, like, and reply. You can also create music with the same account.",
+    "loginOrCreate": "Sign in or create account",
+    "loading": "Loading comments...",
+    "empty": "No comments yet. Be the first to comment!",
+    "delete": "Delete comment",
+    "deleteConfirm": "Are you sure you want to delete this comment?",
+    "errors": {
+      "commentMin": "Comment must be at least 3 characters",
+      "comment": "Could not post comment",
+      "replyMin": "Reply must be at least 3 characters",
+      "reply": "Could not post reply",
+      "like": "Could not like comment",
+      "delete": "Could not delete comment"
+    }
+  },
+  "composerDirectory": {
+    "badge": "Premium Songwriters",
+    "titlePrefix": "Find songwriters and discover their",
+    "titleHighlight": "published songs",
+    "subtitle": "See who's publishing on DCC Music, listen to their work, and discover new names to follow.",
+    "songwriters": "songwriters",
+    "publishedSongs": "published songs",
+    "specialSelection": "special selection",
+    "emptyTitle": "No premium songwriters found",
+    "emptyDescription": "As soon as new premium songwriters publish their work, they will appear here.",
+    "photoAlt": "Photo of {{name}}",
+    "allTitle": "All songwriters",
+    "order": {
+      "az": "Sorted by name.",
+      "least": "Sorted by fewest published songs.",
+      "most": "Sorted by most published songs."
+    },
+    "searchPlaceholder": "Search songwriter...",
+    "sortAria": "Sort: {{label}}",
+    "sort": {
+      "most": "Most songs",
+      "least": "Fewest songs"
+    },
+    "noResults": "No songwriters found for this search.",
+    "featuredRank": "Featured #{{rank}}",
+    "musicCount_one": "{{count}} published song",
+    "musicCount_other": "{{count}} published songs",
+    "viewPage": "View page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page"
+  },
+  "composerProfile": {
+    "metadata": {
+      "notFound": "Songwriter not found",
+      "description": "Explore all songs and videos by songwriter {{name}} on DCC Music"
+    },
+    "photoAlt": "Photo of {{name}}",
+    "goldArtist": "Gold Artist",
+    "summary_one": "Songwriter • {{count}} work on DCC Music",
+    "summary_other": "Songwriter • {{count}} works on DCC Music",
+    "videoCount_one": "{{count}} video",
+    "videoCount_other": "{{count}} videos",
+    "musicCount_one": "{{count}} song",
+    "musicCount_other": "{{count}} songs",
+    "listenNow": "Listen now",
+    "watchNow": "Watch now",
+    "videos": "Videos",
+    "musics": "Songs",
+    "createdInStudio": "Created in DCC AI Studio",
+    "createdWithStudio": "Created with DCC AI Studio",
+    "freeStyle": "Open style",
+    "noMood": "No mood",
+    "noWorks": "No work found for this songwriter."
+  },
+  "composerFilters": {
+    "filters": "Filters",
+    "searchPlaceholder": "Search works...",
+    "type": "Type",
+    "all": "All",
+    "videos": "Videos",
+    "musics": "Songs",
+    "genre": "Genre",
+    "sort": "Sort by",
+    "mostViewed": "Most viewed",
+    "recent": "Newest",
+    "clearFilters": "Clear filters",
+    "search": "Search",
+    "clear": "Clear",
+    "apply": "Apply"
+  },
+  "musicDetail": {
+    "notFound": {
+      "title": "Song not found",
+      "description": "This song may have been removed, its audio may not be published yet, or the link may be incorrect.",
+      "browse": "Browse published songs",
+      "home": "Back to Home"
+    },
+    "metadata": {
+      "lyricsAndListen": "Lyrics and where to listen to \"{{title}}\" on DCC Music.",
+      "listen": "Listen to {{title}} on DCC Music"
+    },
+    "playerUnavailable": "Player unavailable",
+    "audioUnpublished": "Audio not published yet",
+    "lyricsWithoutPlayer": "This page has lyrics, but no music player is available yet.",
+    "composers": "Songwriters",
+    "copyLink": "Copy link",
+    "lyrics": "Lyrics",
+    "similar": "Similar songs",
+    "openOn": "Open on {{platform}}",
+    "publishedOn": "Published on {{date}}",
+    "views": "{{formattedCount}} views",
+    "copied": "Copied!",
+    "openPlatform": "Open on music platform"
+  },
+  "about": {
+    "title": "About DCC Music",
+    "hero": "DCC Music helps songwriters turn ideas into complete songs, generate chord sheets, organise projects and share their creations professionally.",
+    "studioCta": "Discover Studio AI",
+    "chords": "Song chords",
+    "composersCta": "Browse songwriters",
+    "whyTitle": "Why DCC Music exists",
+    "why1": "Many people have a good song idea but do not know how to turn it into a finished song. They may need organised lyrics, production, cover art, promotion or simply an easy tool to use.",
+    "why2": "DCC Music was created to bridge that gap. It brings AI creation, project organisation, a songwriter workspace, songs, videos and sharing tools together in one place.",
+    "why3": "Simplicity comes first. Songwriters can write an idea, submit lyrics, record themselves singing a passage or upload a song to improve. Studio AI helps develop it into a more complete track.",
+    "why4": "Every creation is saved in a project with its history, versions, date, lyrics, audio and cover art. Songwriters can return later, compare versions and choose which song to keep developing.",
+    "studioBadge": "AI music creation",
+    "studioTitle": "Studio AI: from idea to finished song",
+    "studio1": "Studio AI helps songwriters at every stage: write or improve lyrics, generate songs, record vocals in the browser, use a version as inspiration, create cover art and keep everything organised.",
+    "studio2": "The goal is to give songwriters control. You do not need technical experience: describe what you want to create and follow the project in your account.",
+    "studioExplore": "Explore Studio AI",
+    "studioItem1Title": "AI lyrics",
+    "studioItem1Text": "Create, improve or complete lyrics with ease.",
+    "studioItem2Title": "Record on the site",
+    "studioItem2Text": "Sing a passage and use your recording as a reference.",
+    "studioItem3Title": "Song versions",
+    "studioItem3Text": "Listen to the generated versions and choose your favourite.",
+    "studioItem4Title": "Saved projects",
+    "studioItem4Text": "Keep lyrics, audio, cover art and history organised.",
+    "chordsTitle": "Song chords: ready to play",
+    "chords1": "After creating a song in Studio AI, you can generate a PDF chord sheet with lyrics, chords, key and BPM. It is saved in your account under My Projects, in the Chords filter.",
+    "chords2": "This service costs 10 credits per song and is available for songs created in Studio AI.",
+    "chordsCta": "Generate chord sheet",
+    "chordsItem1Title": "PDF chord sheet",
+    "chordsItem1Text": "Ready to print and play.",
+    "chordsItem2Title": "Lyrics and chords",
+    "chordsItem2Text": "A clearly organised chord sheet.",
+    "chordsItem3Title": "Key and BPM",
+    "chordsItem3Text": "Song details when available.",
+    "chordsItem4Title": "Saved history",
     "chordsItem4Text": "Download it again whenever you like.",
     "featuresTitle": "What the platform offers",
     "valuesTitle": "Our approach",
