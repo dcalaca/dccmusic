@@ -14,6 +14,7 @@ import {
   getStudioAccess,
   getStudioCreditUsage,
 } from '@/lib/studio'
+import { studioVideoErrorCode } from '@/lib/studio-video-errors'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -122,11 +123,11 @@ async function chargeStudioLyricVideoOnce(input: {
 export async function POST(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
     const body = await request.json()
     const project = await getProjectForComposer(body.projectId, composer.composerId)
-    if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
+    if (!project) return NextResponse.json({ errorCode: 'projectNotFound' }, { status: 404 })
 
     const { cover } = await getCurrentProjectAssets(project.id)
     const { data: versions } = await supabaseAdmin
@@ -144,14 +145,14 @@ export async function POST(request: NextRequest) {
 
     if (!version) {
       return NextResponse.json(
-        { error: requestedVersionId ? 'Versão não encontrada neste projeto.' : 'Finalize a música antes de gerar o vídeo com letra.' },
+        { errorCode: requestedVersionId ? 'versionNotFound' : 'musicNotReady' },
         { status: 400 }
       )
     }
 
     if (!version.audio_url && !version.stream_audio_url) {
       return NextResponse.json(
-        { error: 'Essa versão ainda não tem áudio para gerar o vídeo com letra.' },
+        { errorCode: 'audioNotReady' },
         { status: 400 }
       )
     }
@@ -193,7 +194,7 @@ export async function POST(request: NextRequest) {
     if (completedForVersion && !(replaceExisting && canReplace)) {
       return NextResponse.json({
         success: true,
-        message: 'Este vídeo com letra já estava pronto para esta versão. Use o botão abaixo para assistir ou baixar.',
+        messageCode: 'alreadyReady',
         videoRequest: {
           ...(await mapStudioVideoRequest(completedForVersion)),
           canRegenerate: canReplace,
@@ -212,7 +213,7 @@ export async function POST(request: NextRequest) {
 
     if (activeForVersion) {
       return NextResponse.json(
-        { error: 'Já existe um vídeo com letra em andamento para esta versão.' },
+        { errorCode: 'versionInProgress' },
         { status: 409 }
       )
     }
@@ -224,7 +225,7 @@ export async function POST(request: NextRequest) {
 
     if (anotherVideoInProduction) {
       return NextResponse.json(
-        { error: 'Já existe um vídeo com letra em andamento. Aguarde finalizar para gerar o de outra versão.' },
+        { errorCode: 'anotherInProgress' },
         { status: 409 }
       )
     }
@@ -259,7 +260,7 @@ export async function POST(request: NextRequest) {
       const usage = await getStudioCreditUsage(composer.composerId, limits)
       if (usage.remaining < billing.credits) {
         return NextResponse.json({
-          error: `Vídeo com letra custa ${billing.credits} créditos. Seu saldo é insuficiente.`,
+          errorCode: 'insufficientCredits',
           creditsRequired: billing.credits,
           creditsRemaining: usage.remaining,
         }, { status: 402 })
@@ -301,7 +302,7 @@ export async function POST(request: NextRequest) {
     if (isInternalPilot) {
       return NextResponse.json({
         success: true,
-        message: 'Vídeo com letra recebido. A DCC já está preparando o arquivo.',
+        messageCode: 'received',
         videoRequest: await mapStudioVideoRequest(videoRequest),
       }, { status: 202 })
     }
@@ -330,11 +331,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: readyNow
-        ? 'Vídeo com letra recuperado com sucesso.'
+      messageCode: readyNow
+        ? 'recovered'
         : billing.credits > 0
-          ? `Vídeo com letra em produção. Foram debitados ${billing.credits} créditos.`
-          : 'Vídeo com letra em produção.',
+          ? 'inProductionCharged'
+          : 'inProduction',
       creditsCharged: billing.credits,
       billingType: billing.type,
       videoRequest: await mapStudioVideoRequest(startedVideoRequest),
@@ -342,7 +343,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('[Studio IA] Erro gerar vídeo com letra:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao gerar vídeo com letra' },
+      { errorCode: studioVideoErrorCode(error?.message) || 'failed' },
       { status: 500 }
     )
   }
