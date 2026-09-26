@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { supabaseAdmin } from '@/lib/supabase'
+import { refundStudioMusicGenerationChargeOnce } from '@/lib/studio'
 import { COUNTRY_COOKIE } from '@/lib/localization'
 import {
   getComposerEmailIdentity,
@@ -258,6 +259,14 @@ export async function GET(request: NextRequest) {
           generation,
           fallbackError ? getStudioMusicGenerationFailureMessage(fallbackError, country) : undefined,
         )
+        await refundStudioMusicGenerationChargeOnce({
+          composerId: generation.composer_id,
+          projectId: generation.project_id,
+          taskId: generation.provider_task_id,
+          reason: fallbackError || 'generation_timeout',
+        }).catch((refundError) => {
+          console.error('[Studio IA] Erro ao estornar crédito após timeout de geração:', refundError)
+        })
       }
     } else if (needsPolling && generation.provider === 'sunoapi' && generation.provider_task_id && process.env.SUNOAPI_KEY) {
       const response = await fetch(`https://api.sunoapi.org/api/v1/generate/record-info?taskId=${encodeURIComponent(generation.provider_task_id)}`, {
@@ -293,6 +302,14 @@ export async function GET(request: NextRequest) {
               updated_at: new Date().toISOString(),
             })
             .eq('id', generation.id)
+          await refundStudioMusicGenerationChargeOnce({
+            composerId: generation.composer_id,
+            projectId: generation.project_id,
+            taskId: generation.provider_task_id,
+            reason: providerError || status || 'poll_failure',
+          }).catch((refundError) => {
+            console.error('[Studio IA] Erro ao estornar crédito após falha detectada no polling:', refundError)
+          })
           await releaseStudioProjectFromFailedGeneration(generation.project_id)
         }
       } else if (result) {
