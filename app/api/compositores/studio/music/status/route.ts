@@ -291,8 +291,12 @@ export async function GET(request: NextRequest) {
         })
         if (!fallback.started) {
           const fallbackError = 'error' in fallback ? fallback.error : null
-          const providerError = fallbackError || getStudioGenerationProviderError(result) || result?.msg || status
-          const friendlyError = getStudioMusicGenerationFailureMessage(providerError, country)
+          const providerError = getStudioGenerationProviderError(result) || result?.msg || fallbackError || status
+          const friendlyError = getStudioMusicGenerationFailureMessage(
+            providerError,
+            country,
+            generation.request_payload?.feature,
+          )
           await supabaseAdmin
             .from('studio_generations')
             .update({
@@ -340,6 +344,7 @@ export async function GET(request: NextRequest) {
           error_message: getStudioMusicGenerationFailureMessage(
             getStudioGenerationProviderError(freshGeneration.response_payload) || freshGeneration.error_message,
             country,
+            freshGeneration.request_payload?.feature,
           ),
         }
       : freshGeneration
