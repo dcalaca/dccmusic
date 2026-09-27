@@ -226,12 +226,17 @@ export async function POST(request: Request) {
       ])
 
       if (failedProject && failedComposer && failureMessage) {
+        const localizedFailureMessage = getStudioMusicGenerationFailureMessage(
+          providerError,
+          failedComposer.country,
+          generation.request_payload?.feature,
+        )
         await sendStudioMusicFailureEmail({
           ...failedComposer,
           projectId: failedProject.id,
           generationId: generation.id,
           projectTitle: failedProject.title || 'Sua música',
-          errorMessage: failureMessage,
+          errorMessage: localizedFailureMessage,
         }).catch((emailError) => {
           console.error('[Studio IA] Erro ao enviar e-mail de falha de música:', emailError)
         })
