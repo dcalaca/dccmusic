@@ -273,6 +273,16 @@ export async function GET(
       .limit(1)
       .maybeSingle()
 
+    const { data: latestFailedGeneration } = await supabaseAdmin
+      .from('studio_generations')
+      .select('id, status, error_message, created_at, updated_at, project_id')
+      .eq('project_id', project.id)
+      .eq('composer_id', composer.composerId)
+      .eq('status', 'failed')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
     if (activeGeneration && isStudioGenerationTimedOut(activeGeneration)) {
       const { data: generationVersion } = await supabaseAdmin
         .from('studio_versions')
@@ -379,6 +389,11 @@ export async function GET(
         status: activeGeneration.status,
         createdAt: activeGeneration.created_at,
         updatedAt: activeGeneration.updated_at,
+      } : null,
+      generationFailure: (latestFailedGeneration && availableVersions.length === 0) ? {
+        id: latestFailedGeneration.id,
+        message: latestFailedGeneration.error_message || STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR,
+        createdAt: latestFailedGeneration.created_at,
       } : null,
     })
   } catch (error: any) {
