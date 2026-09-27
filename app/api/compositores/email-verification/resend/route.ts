@@ -6,16 +6,16 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await request.json().catch(() => ({}))
     const email = String(body.email || '').toLowerCase().trim()
 
     if (!email) {
-      return NextResponse.json({ error: 'Informe o e-mail.' }, { status: 400 })
+      return NextResponse.json({ errorCode: 'emailRequired' }, { status: 400 })
     }
 
     const { data: composer, error } = await supabaseAdmin
       .from('dccmusic_composers')
-    .select('id, name, email, country, email_verified')
+      .select('id, name, email, country, email_verified')
       .eq('email', email)
       .maybeSingle()
 
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     if (!composer || composer.email_verified) {
       return NextResponse.json({
         success: true,
-        message: 'Se houver uma conta pendente para esse e-mail, enviaremos um novo link de confirmação.',
+        messageCode: 'verificationResendAccepted',
       })
     }
 
@@ -38,16 +38,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: getComposerEmailLanguage(composer.country) === 'en'
-        ? 'We sent a new confirmation link to your email.'
-        : getComposerEmailLanguage(composer.country) === 'es'
-          ? 'Enviamos un nuevo enlace de confirmación a tu correo.'
-          : 'Enviamos um novo link de confirmação para seu e-mail.',
+      messageCode: 'verificationSent',
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('[EMAIL VERIFY] Erro ao reenviar:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao reenviar confirmação' },
+      { errorCode: 'resendVerificationFailed' },
       { status: 500 }
     )
   }
