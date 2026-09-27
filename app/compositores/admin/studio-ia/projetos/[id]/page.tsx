@@ -332,6 +332,7 @@ function normalizeStudioVideoRequest(videoRequest: any) {
     providerTaskId: videoRequest.providerTaskId || videoRequest.provider_task_id || null,
     videoUrl: videoRequest.videoUrl || videoRequest.video_url || null,
     errorMessage: videoRequest.errorMessage || videoRequest.error_message || null,
+    errorCode: videoRequest.errorCode || videoRequest.error_code || null,
     paidAt: videoRequest.paidAt || videoRequest.paid_at || null,
     completedAt: videoRequest.completedAt || videoRequest.completed_at || null,
     createdAt: videoRequest.createdAt || videoRequest.created_at || null,
@@ -343,6 +344,30 @@ function normalizeStudioVideoRequest(videoRequest: any) {
 }
 
 const videoRequestStatus = new Set(['payment_pending', 'requested', 'in_production', 'retry_pending', 'completed', 'cancelled', 'failed'])
+
+function getStudioVideoErrorMessage(t: any, data: any) {
+  const code = String(data?.errorCode || '').trim()
+  if (!code) return t('studio.project.video.generateError')
+  return t(`studio.project.video.errors.${code}`, {
+    count: Number(data?.creditsRequired || data?.creditCost || 0),
+    defaultValue: t('studio.project.video.generateError'),
+  })
+}
+
+function getStudioVideoSuccessMessage(t: any, data: any, videoRequest: any) {
+  const code = String(data?.messageCode || '').trim()
+  if (code) {
+    return t(`studio.project.video.messages.${code}`, {
+      count: Number(data?.creditsCharged || 0),
+      defaultValue: videoRequest?.status === 'completed'
+        ? t('studio.project.video.status.completed.description')
+        : t('studio.project.video.processing'),
+    })
+  }
+  return videoRequest?.status === 'completed'
+    ? t('studio.project.video.status.completed.description')
+    : t('studio.project.video.processing')
+}
 
 export default function StudioProjectDetailPage() {
   const router = useRouter()
@@ -1287,7 +1312,7 @@ export default function StudioProjectDetailPage() {
         body: JSON.stringify({ projectId, versionId, replaceExisting }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(t('studio.project.video.generateError'))
+      if (!response.ok) throw new Error(getStudioVideoErrorMessage(t, data))
 
       const mappedVideoRequest = normalizeStudioVideoRequest(data.videoRequest)
       if (mappedVideoRequest) {
@@ -1303,14 +1328,14 @@ export default function StudioProjectDetailPage() {
             ],
           }
         })
-        setMessage(mappedVideoRequest.status === 'completed' ? t('studio.project.video.status.completed.description') : t('studio.project.video.processing'))
+        setMessage(getStudioVideoSuccessMessage(t, data, mappedVideoRequest))
         setVideoCheckoutLoading(false)
         return
       }
 
       throw new Error(t('studio.project.video.noStatus'))
-    } catch {
-      setError(t('studio.project.video.generateError'))
+    } catch (requestError: any) {
+      setError(requestError?.message || t('studio.project.video.generateError'))
       setVideoCheckoutLoading(false)
     }
   }
@@ -2032,6 +2057,13 @@ export default function StudioProjectDetailPage() {
                                   {versionLabel}
                                 </div>
                                 <p className="text-sm text-purple-100/90">{t(`studio.project.video.status.${status}.description`)}</p>
+                                {status === 'failed' && (
+                                  <p className="mt-2 text-xs text-red-200">
+                                    {t(`studio.project.video.errors.${video.errorCode || 'failed'}`, {
+                                      defaultValue: t('studio.project.video.errors.failed'),
+                                    })}
+                                  </p>
+                                )}
                                 <p className="mt-2 text-xs text-purple-200/70">
                                   {t('studio.project.video.requestedAt', { date: new Date(video.createdAt || video.completedAt).toLocaleString(i18n.language) })}
                                 </p>

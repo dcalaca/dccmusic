@@ -3,6 +3,7 @@ import { getStudioCallbackUrl } from '@/lib/studio'
 import { formatMusicTitle } from '@/lib/normalize'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { backupStudioVideoRequest, resolveStudioVideoUrl } from '@/lib/studio-video-backup'
+import { studioVideoErrorCode } from '@/lib/studio-video-errors'
 import {
   getStudioVideoAudioId,
   isMurekaStudioTrack,
@@ -31,6 +32,7 @@ export async function mapStudioVideoRequest(videoRequest: any) {
     errorMessage: videoRequest.error_message
       ? translateStudioVideoProviderError(videoRequest.error_message)
       : videoRequest.error_message,
+    errorCode: studioVideoErrorCode(videoRequest.error_message) || null,
     paidAt: videoRequest.paid_at,
     completedAt: videoRequest.completed_at,
     createdAt: videoRequest.created_at,
