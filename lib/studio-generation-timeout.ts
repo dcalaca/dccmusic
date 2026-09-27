@@ -68,7 +68,7 @@ function getVoiceExpiredMessage(language: StudioErrorLanguage) {
 }
 
 /** Mensagem transparente para o usuário, sem revelar a infraestrutura utilizada. */
-export function getTransparentStudioGenerationError(providerError?: string | null, country?: string | null) {
+export function getTransparentStudioGenerationError(providerError?: string | null, country?: string | null, feature?: string | null) {
   const error = normalizeProviderError(providerError)
   const lower = error.toLowerCase()
   const language = getStudioErrorLanguage(country)
@@ -85,6 +85,12 @@ export function getTransparentStudioGenerationError(providerError?: string | nul
   }
 
   if (lower.includes('copyrighted material') || lower.includes('copyright') || lower.includes('direitos autorais')) {
+    if (feature === 'enhance_music') {
+      if (language === 'en') return withNoCreditSuffix('We could not process this audio because the system identified copyrighted content in the uploaded recording. Try another audio or, if the song is yours, try a different recording.', language)
+      if (language === 'es') return withNoCreditSuffix('No pudimos procesar este audio porque el sistema identificó contenido protegido por derechos de autor en la grabación enviada. Prueba con otro audio o, si la canción es tuya, intenta con una grabación diferente.', language)
+      if (language === 'pt-PT') return withNoCreditSuffix('Não foi possível processar este áudio porque o sistema identificou conteúdo protegido por direitos de autor na gravação enviada. Tente outro áudio ou, se a música for sua, experimente uma gravação diferente.', language)
+      return withNoCreditSuffix('Não foi possível processar este áudio porque o sistema identificou conteúdo protegido por direitos autorais na gravação enviada. Tente outro áudio ou, se a música for de sua autoria, tente uma gravação diferente.', language)
+    }
     if (language === 'en') return withNoCreditSuffix('The submitted lyrics contain content identified as copyrighted. Change that section and try again.', language)
     if (language === 'es') return withNoCreditSuffix('La letra enviada contiene contenido identificado como protegido por derechos de autor. Modifica ese fragmento e inténtalo de nuevo.', language)
     if (language === 'pt-PT') return withNoCreditSuffix('A letra enviada contém conteúdo identificado como protegido por direitos de autor. Altere esse trecho e tente novamente.', language)
@@ -140,7 +146,7 @@ export function getTransparentStudioGenerationError(providerError?: string | nul
 
 const ACTIVE_WITHOUT_AUDIO_STATUSES = new Set(['pending', 'processing'])
 
-export function getStudioMusicGenerationFailureMessage(providerError?: string | null, country?: string | null) {
+export function getStudioMusicGenerationFailureMessage(providerError?: string | null, country?: string | null, feature?: string | null) {
   const rawError = String(providerError || '')
   const lower = rawError.toLowerCase()
   const language = getStudioErrorLanguage(country)
@@ -162,7 +168,7 @@ export function getStudioMusicGenerationFailureMessage(providerError?: string | 
     return getAudioCatalogMatchMessage(language)
   }
 
-  return getTransparentStudioGenerationError(providerError, country)
+  return getTransparentStudioGenerationError(providerError, country, feature)
 }
 
 export function isStudioGenerationTimedOut(
