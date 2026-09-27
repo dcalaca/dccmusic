@@ -577,13 +577,13 @@ export async function getFreeMusicUsage(composerId: string) {
   const [{ data: freeTransactions, error: transactionError }, { data: generations, error: generationError }] = await Promise.all([
     supabaseAdmin
       .from('studio_credit_transactions')
-      .select('id, metadata, created_at')
+      .select('id, project_id, metadata, created_at')
       .eq('composer_id', composerId)
       .eq('action', 'free_music_generation')
       .order('created_at', { ascending: true }),
     supabaseAdmin
       .from('studio_generations')
-      .select('provider_task_id, status')
+      .select('project_id, provider_task_id, status')
       .eq('composer_id', composerId),
   ])
 
@@ -595,11 +595,24 @@ export async function getFreeMusicUsage(composerId: string) {
       .filter((generation: any) => generation.status === 'failed' && generation.provider_task_id)
       .map((generation: any) => String(generation.provider_task_id))
   )
+  const statusesByProject = new Map<string, string[]>()
+  ;(generations || []).forEach((generation: any) => {
+    if (!generation.project_id) return
+    const statuses = statusesByProject.get(String(generation.project_id)) || []
+    statuses.push(String(generation.status || ''))
+    statusesByProject.set(String(generation.project_id), statuses)
+  })
 
   // A música grátis pertence ao usuário até ser efetivamente usada.
   // Comprar créditos antes da primeira geração não pode consumir nem esconder esse benefício.
   // Uma tentativa grátis que falhou também não deve queimar a cortesia.
   const used = (freeTransactions || []).filter((transaction: any) => {
+    const projectId = String(transaction.project_id || '').trim()
+    if (projectId) {
+      const statuses = statusesByProject.get(projectId) || []
+      if (statuses.length > 0 && statuses.every((status) => status === 'failed')) return false
+    }
+
     const taskId = String(transaction.metadata?.taskId || '').trim()
     return !taskId || !failedTaskIds.has(taskId)
   }).length
