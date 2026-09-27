@@ -4,6 +4,7 @@ import { isValidStudioCallback, refundStudioMusicGenerationChargeOnce } from '@/
 import {
   getComposerEmailIdentity,
   sendAdminStudioAlertEmail,
+  sendStudioMusicFailureEmail,
   sendStudioMusicReadyEmail,
 } from '@/lib/dcc-emails'
 import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
@@ -215,6 +216,27 @@ export async function POST(request: Request) {
       .eq('id', generation.id)
 
     if (hasFailure) {
+      const [{ data: failedProject }, failedComposer] = await Promise.all([
+        supabaseAdmin
+          .from('studio_projects')
+          .select('id, title')
+          .eq('id', generation.project_id)
+          .maybeSingle(),
+        getComposerEmailIdentity(generation.composer_id),
+      ])
+
+      if (failedProject && failedComposer && failureMessage) {
+        await sendStudioMusicFailureEmail({
+          ...failedComposer,
+          projectId: failedProject.id,
+          generationId: generation.id,
+          projectTitle: failedProject.title || 'Sua música',
+          errorMessage: failureMessage,
+        }).catch((emailError) => {
+          console.error('[Studio IA] Erro ao enviar e-mail de falha de música:', emailError)
+        })
+      }
+
       await refundStudioMusicGenerationChargeOnce({
         composerId: generation.composer_id,
         projectId: generation.project_id,
