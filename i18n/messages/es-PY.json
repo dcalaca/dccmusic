@@ -190,7 +190,28 @@
       "highlights": {
         "mostPopular": "MÁS POPULAR",
         "elite": "ELITE"
-      }
+      },
+      "planFeatures": {
+      "credits80": "80 créditos/mes",
+      "credits130": "130 créditos/mes",
+      "credits300": "300 créditos/mes",
+      "songs20": "20 canciones/mes",
+      "unlimitedLyrics": "Letras con IA ilimitadas",
+      "unlimitedQuickCovers": "Portadas rápidas ilimitadas",
+      "saveProjects": "Guardar proyectos musicales",
+      "preview20": "Vista previa de 20 segundos",
+      "publishDcc": "Publicación en DCC Music",
+      "premiumCovers10": "10 portadas premium con IA",
+      "premiumCovers30": "30 portadas premium con IA",
+      "premiumPlayer": "Reproductor premium",
+      "mp3Download": "Descarga MP3",
+      "mp3Downloads": "Descargas MP3",
+      "unlimitedProjects": "Proyectos ilimitados",
+      "generationPriority": "Prioridad de generación",
+      "maxPriority": "Prioridad máxima",
+      "eliteBadge": "Insignia Studio Elite",
+      "earlyFeatures": "Acceso anticipado a futuras funciones"
+}
     }
   },
   "menu": {
