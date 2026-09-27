@@ -574,38 +574,35 @@ export async function getFreeLyricUsage(composerId: string, monthKey = studioMon
 }
 
 export async function getFreeMusicUsage(composerId: string) {
-  const [{ data: generations, error }, { data: versions, error: versionsError }, { data: composer, error: composerError }] = await Promise.all([
+  const [{ data: freeTransactions, error: transactionError }, { data: generations, error: generationError }] = await Promise.all([
+    supabaseAdmin
+      .from('studio_credit_transactions')
+      .select('id, metadata, created_at')
+      .eq('composer_id', composerId)
+      .eq('action', 'free_music_generation')
+      .order('created_at', { ascending: true }),
     supabaseAdmin
       .from('studio_generations')
-      .select('project_id')
-      .eq('composer_id', composerId)
-      .neq('status', 'failed'),
-    supabaseAdmin
-      .from('studio_versions')
-      .select('project_id, audio_url, stream_audio_url')
+      .select('provider_task_id, status')
       .eq('composer_id', composerId),
-    supabaseAdmin
-      .from('dccmusic_composers')
-      .select('created_at')
-      .eq('id', composerId)
-      .maybeSingle(),
   ])
 
-  if (error) throw error
-  if (versionsError) throw versionsError
-  if (composerError) throw composerError
+  if (transactionError) throw transactionError
+  if (generationError) throw generationError
 
-  const usedProjectIds = new Set<string>()
-  ;(generations || []).forEach((generation: any) => {
-    if (generation.project_id) usedProjectIds.add(generation.project_id)
-  })
-  ;(versions || []).forEach((version: any) => {
-    if (version.project_id && (version.audio_url || version.stream_audio_url)) {
-      usedProjectIds.add(version.project_id)
-    }
-  })
+  const failedTaskIds = new Set(
+    (generations || [])
+      .filter((generation: any) => generation.status === 'failed' && generation.provider_task_id)
+      .map((generation: any) => String(generation.provider_task_id))
+  )
 
-  const used = usedProjectIds.size
+  // A música grátis pertence ao usuário até ser efetivamente usada.
+  // Comprar créditos antes da primeira geração não pode consumir nem esconder esse benefício.
+  // Uma tentativa grátis que falhou também não deve queimar a cortesia.
+  const used = (freeTransactions || []).filter((transaction: any) => {
+    const taskId = String(transaction.metadata?.taskId || '').trim()
+    return !taskId || !failedTaskIds.has(taskId)
+  }).length
   const remaining = Math.max(0, FREE_STUDIO_MUSIC_LIMIT - used)
 
   return {
