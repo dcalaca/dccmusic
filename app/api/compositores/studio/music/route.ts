@@ -651,26 +651,22 @@ export async function POST(request: NextRequest) {
     if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
     const { hasAccess, limits } = await getStudioAccess(composer.composerId)
-    const usage = await getStudioCreditUsage(composer.composerId, limits)
+    const [usage, freeMusicUsage] = await Promise.all([
+      getStudioCreditUsage(composer.composerId, limits),
+      getFreeMusicUsage(composer.composerId),
+    ])
     const hasPaidCredits = canCreateStudioMusicWithCredits(usage)
-    let isFreeGeneration = false
-
-    if (!hasAccess && !hasPaidCredits) {
-      const freeMusicUsage = await getFreeMusicUsage(composer.composerId)
-      if (freeMusicUsage.remaining <= 0) {
-        return NextResponse.json(
-          {
-            error: 'Você já usou sua música grátis. Assine um plano DCC Studio IA ou faça uma recarga avulsa para criar novas músicas.',
-          },
-          { status: 403 }
-        )
-      }
-      isFreeGeneration = true
-    }
+    // A cortesia é sempre consumida primeiro, mesmo que o usuário já tenha
+    // comprado créditos ou assinado um plano.
+    const isFreeGeneration = freeMusicUsage.remaining > 0
 
     if (!isFreeGeneration && !hasPaidCredits) {
       return NextResponse.json(
-        { error: `Você atingiu seu saldo de músicas do DCC Studio IA. Faça uma recarga avulsa para continuar criando ainda este mês.` },
+        {
+          error: freeMusicUsage.used > 0
+            ? 'Você já usou sua música grátis e está sem saldo suficiente. Faça uma recarga avulsa para continuar criando.'
+            : 'Você precisa de pelo menos 10 créditos para criar uma música.',
+        },
         { status: 429 }
       )
     }
