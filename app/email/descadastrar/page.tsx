@@ -68,7 +68,7 @@ export default async function EmailUnsubscribePage({
         }
       } else {
         state = {
-          title: 'Link inválido',
+          title: t('unsubscribe.invalidTitle'),
           message: t('unsubscribe.invalidMessage'),
           tone: 'error',
         }
