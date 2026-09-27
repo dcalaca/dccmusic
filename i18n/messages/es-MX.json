@@ -232,14 +232,11 @@
         "publishDcc": "Publicación en DCC Music",
         "premiumCovers10": "10 portadas premium con IA",
         "premiumCovers30": "30 portadas premium con IA",
-        "premiumPlayer": "Reproductor premium",
         "mp3Download": "Descarga MP3",
         "mp3Downloads": "Descargas MP3",
         "unlimitedProjects": "Proyectos ilimitados",
         "generationPriority": "Prioridad de generación",
-        "maxPriority": "Prioridad máxima",
-        "eliteBadge": "Insignia Studio Elite",
-        "earlyFeatures": "Acceso anticipado a futuras funciones"
+        "maxPriority": "Prioridad máxima"
       },
       "oneSong": "1 canción",
       "twoToEight": "2 a 8 canciones",
