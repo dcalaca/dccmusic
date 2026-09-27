@@ -2616,6 +2616,7 @@ export async function createPlan(plan: {
   durationMonths: number
   description?: string | null
   features?: string[] | null
+  featureKeys?: string[] | null
   featuredMusicsPerMonth?: number | null
   hasPriorityFeatured?: boolean
   hasGoldBadge?: boolean
