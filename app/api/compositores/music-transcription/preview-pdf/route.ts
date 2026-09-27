@@ -20,11 +20,11 @@ function normalizeFilename(value: string) {
 export async function GET(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')?.trim()
-    if (!id) return NextResponse.json({ error: 'id obrigatório.' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'id obrigatório.', errorCode: 'invalidRequest' }, { status: 400 })
 
     const { data: row, error } = await supabaseAdmin
       .from('music_transcriptions')
@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
 
     if (error) throw error
-    if (!row) return NextResponse.json({ error: 'Transcrição não encontrada.' }, { status: 404 })
-    if (!row.preview_text) return NextResponse.json({ error: 'Prévia de letra e cifra não encontrada.' }, { status: 404 })
+    if (!row) return NextResponse.json({ error: 'Transcrição não encontrada.', errorCode: 'resultNotFound' }, { status: 404 })
+    if (!row.preview_text) return NextResponse.json({ error: 'Prévia de letra e cifra não encontrada.', errorCode: 'previewNotFound' }, { status: 404 })
 
     const buffer = createSimpleTextPdf({
       title: row.title || 'Letra e cifra',
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Music Transcription] Erro gerar PDF da prévia:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao gerar PDF da prévia.' },
+      { error: error.message || 'Erro ao gerar PDF da prévia.', errorCode: 'download' },
       { status: 500 }
     )
   }
