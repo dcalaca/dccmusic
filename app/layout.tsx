@@ -13,6 +13,7 @@ import TikTokTestPageView from '@/components/TikTokTestPageView'
 import GtmPageEvents from '@/components/GtmEvents'
 import LocalizationProvider from '@/components/LocalizationProvider'
 import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
+import { createDccI18n } from '@/i18n/i18next'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -22,87 +23,93 @@ export const viewport: Viewport = {
   maximumScale: 1,
 }
 
-export const metadata: Metadata = {
-  title: {
-    default: 'DCC Music - Studio IA e Cifras | Músicas e Vídeos',
-    template: '%s | DCC Music',
-  },
-  description: 'Crie músicas com IA no Studio IA, gere cifras, ouça lançamentos e divulgue seu trabalho. Plataforma completa para compositores e fãs de música no Brasil.',
-  keywords: [
-    'DCC Music',
-    'Studio IA',
-    'música com inteligência artificial',
-    'cifra da música',
-    'cifras',
-    'música brasileira',
-    'vídeos musicais',
-    'artista independente',
-    'compositor',
-    'criar música com IA',
-    'plataforma musical',
-    'música online',
-    'clipes musicais',
-    'lançamentos musicais',
-  ],
-  authors: [{ name: 'DCC Music' }],
-  creator: 'DCC Music',
-  publisher: 'DCC Music',
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-  metadataBase: new URL('https://www.dccmusic.online'),
-  alternates: {
-    canonical: '/',
-  },
-  openGraph: {
-    type: 'website',
-    locale: 'pt_BR',
-    url: 'https://www.dccmusic.online',
-    siteName: 'DCC Music',
-    title: 'DCC Music - Studio IA e Cifras',
-    description: 'Crie músicas com IA, gere cifras, ouça lançamentos e divulgue seu trabalho na plataforma DCC Music.',
-    images: [
-      {
-        url: '/logopng.png',
-        width: 1200,
-        height: 630,
-        alt: 'DCC Music Logo',
-      },
+export async function generateMetadata(): Promise<Metadata> {
+  const requestHeaders = headers()
+  const country = normalizeCountry(
+    requestHeaders.get('x-dcc-country') ||
+    requestHeaders.get('x-vercel-ip-country') ||
+    requestHeaders.get('cf-ipcountry')
+  )
+  const locale = getLocaleForCountry(country)
+  const i18n = await createDccI18n(locale)
+  const t = i18n.t.bind(i18n)
+  const title = t('home.metadata.title')
+  const description = t('home.metadata.description')
+  const openGraphDescription = t('home.metadata.openGraphDescription')
+
+  return {
+    title: {
+      default: title,
+      template: '%s | DCC Music',
+    },
+    description,
+    keywords: [
+      'DCC Music',
+      t('studioLanding.keywordStudio'),
+      t('studioLanding.keywordAiMusic'),
+      t('studioLanding.keywordCreate'),
+      t('studioLanding.keywordLyrics'),
     ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'DCC Music - Studio IA e Cifras',
-    description: 'Crie músicas com IA, gere cifras e explore lançamentos no DCC Music.',
-    images: ['/logopng.png'],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
+    authors: [{ name: 'DCC Music' }],
+    creator: 'DCC Music',
+    publisher: 'DCC Music',
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+    metadataBase: new URL('https://www.dccmusic.online'),
+    alternates: {
+      canonical: '/',
+    },
+    openGraph: {
+      type: 'website',
+      locale: locale.replace('-', '_'),
+      url: 'https://www.dccmusic.online',
+      siteName: 'DCC Music',
+      title,
+      description: openGraphDescription,
+      images: [
+        {
+          url: '/logopng.png',
+          width: 1200,
+          height: 630,
+          alt: 'DCC Music Logo',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: openGraphDescription,
+      images: ['/logopng.png'],
+    },
+    robots: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
     },
-  },
-  verification: {
-    // Adicione aqui códigos de verificação quando disponíveis
-    // google: 'seu-codigo-google',
-    // yandex: 'seu-codigo-yandex',
-  },
-  icons: {
-    icon: [
-      { url: '/favicon-dcc-fundopreto.png', sizes: '48x48', type: 'image/png' },
-      { url: '/favicon-dcc-fundopreto.png', sizes: '96x96', type: 'image/png' },
-      { url: '/favicon-dcc-fundopreto.png', sizes: '192x192', type: 'image/png' },
-    ],
-    shortcut: '/favicon-dcc-fundopreto.png',
-    apple: '/favicon-dcc-fundopreto.png',
-  },
+    verification: {
+      // Adicione aqui códigos de verificação quando disponíveis
+      // google: 'seu-codigo-google',
+      // yandex: 'seu-codigo-yandex',
+    },
+    icons: {
+      icon: [
+        { url: '/favicon-dcc-fundopreto.png', sizes: '48x48', type: 'image/png' },
+        { url: '/favicon-dcc-fundopreto.png', sizes: '96x96', type: 'image/png' },
+        { url: '/favicon-dcc-fundopreto.png', sizes: '192x192', type: 'image/png' },
+      ],
+      shortcut: '/favicon-dcc-fundopreto.png',
+      apple: '/favicon-dcc-fundopreto.png',
+    },
+  }
 }
 
 const entityGraphSchema = {
