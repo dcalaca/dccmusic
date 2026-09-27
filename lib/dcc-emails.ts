@@ -42,6 +42,7 @@ type DccEmailInput = {
   contentHtml: string
   metadata?: Record<string, any>
   bccAdmin?: boolean
+  locale?: string
 }
 
 function getSiteUrl() {
@@ -108,6 +109,12 @@ function button(label: string, href: string) {
 
 function emailLayout(input: DccEmailInput) {
   return buildDccEmailHtml(input)
+}
+
+function getEmailLocale(language: ComposerEmailLanguage) {
+  if (language === 'en') return 'en-US'
+  if (language === 'es') return 'es-ES'
+  return 'pt-BR'
 }
 
 function isUniqueViolation(error: any) {
@@ -279,12 +286,14 @@ export async function getComposerEmailIdentity(composerId: string) {
 }
 
 export async function sendComposerWelcomeEmail(input: ComposerEmailInput) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.welcomeSubject,
     title: `${copy.welcomeTitle}, ${input.name}`,
     category: 'composer_welcome',
+    locale: getEmailLocale(language),
     eventKey: `composer-welcome/${input.composerId}`,
     metadata: { composerId: input.composerId },
     contentHtml: `
@@ -325,12 +334,14 @@ export async function sendAdminComposerMessageEmail(input: ComposerEmailInput & 
   message: string
   adminEmail?: string | null
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: input.subject,
     title: input.subject,
     category: 'admin_composer_message',
+    locale: getEmailLocale(language),
     eventKey: `admin-message/${input.composerId}/${Date.now()}`,
     metadata: { composerId: input.composerId, adminEmail: input.adminEmail || null },
     contentHtml: `
@@ -391,6 +402,7 @@ export async function sendMarketingCampaignEmail(input: {
     title: input.subject,
     preview: input.preview || input.subject,
     category: 'admin_email_campaign',
+    locale: getEmailLocale(language),
     eventKey: `admin-campaign/${input.campaignId}/${input.to}`,
     metadata: {
       campaignId: input.campaignId,
@@ -415,12 +427,14 @@ export async function sendManualStudioCreditEmail(input: ComposerEmailInput & {
   reason: string
   message?: string
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.creditsSubject,
     title: copy.creditsTitle,
     category: 'manual_studio_credit',
+    locale: getEmailLocale(language),
     eventKey: `manual-credit/${input.composerId}/${Date.now()}`,
     metadata: { composerId: input.composerId, credits: input.credits },
     contentHtml: `
@@ -438,12 +452,14 @@ export async function sendLowStudioCreditsEmail(input: ComposerEmailInput & {
   remainingMusics: number
   monthKey?: string
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.lowCreditsSubject,
     title: copy.lowCreditsTitle,
     category: 'low_studio_credits',
+    locale: getEmailLocale(language),
     eventKey: `low-credits/${input.composerId}/${input.monthKey || 'current'}`,
     metadata: { composerId: input.composerId, remainingCredits: input.remainingCredits },
     contentHtml: `
@@ -469,7 +485,8 @@ export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
   projectSlug?: string | null
   audioUrl?: string | null
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   // O callback do fornecedor pode chegar alguns segundos antes de o MP3 ficar
   // realmente disponível. Não avisamos o cliente enquanto as duas versões não
   // estiverem guardadas e reproduzíveis no nosso armazenamento.
@@ -509,6 +526,7 @@ export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
     subject: copy.readySubject.replace('%s', input.projectTitle),
     title: copy.readyTitle,
     category: 'studio_music_ready',
+    locale: getEmailLocale(language),
     eventKey: getStudioMusicReadyEventKey(input),
     metadata: {
       composerId: input.composerId,
@@ -531,12 +549,14 @@ export async function sendStudioMusicCommentEmail(input: ComposerEmailInput & {
   comment: string
   commentId: string
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.commentSubject,
     title: copy.commentTitle,
     category: 'studio_music_comment',
+    locale: getEmailLocale(language),
     eventKey: `studio-comment/${input.commentId}`,
     metadata: { composerId: input.composerId, commentId: input.commentId },
     contentHtml: `
@@ -554,12 +574,14 @@ export async function sendPaymentConfirmationEmail(input: ComposerEmailInput & {
   amount: number
   paidAt?: Date
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.paymentSubject,
     title: copy.paymentTitle,
     category: 'payment_confirmation',
+    locale: getEmailLocale(language),
     eventKey: `payment/${input.paymentId}`,
     metadata: { composerId: input.composerId, paymentId: String(input.paymentId), productType: input.productType },
     contentHtml: `
@@ -633,12 +655,14 @@ export async function sendSubscriptionExpirationReminderEmail(input: ComposerEma
   expiresAt?: string | Date | null
   daysRemaining?: number
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.subscriptionSubject,
     title: copy.subscriptionTitle,
     category: 'subscription_expiration_reminder',
+    locale: getEmailLocale(language),
     eventKey: `subscription-reminder/${input.composerId}/${input.daysRemaining ?? 'x'}`,
     metadata: { composerId: input.composerId, daysRemaining: input.daysRemaining },
     contentHtml: `
@@ -729,12 +753,14 @@ export async function sendPartnerWelcomeEmail(input: {
 }
 
 export async function sendComposerAccountDeletedEmail(input: ComposerEmailInput) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.deletedSubject,
     title: copy.deletedTitle,
     category: 'composer_account_deleted',
+    locale: getEmailLocale(language),
     eventKey: `account-deleted/${input.composerId}`,
     metadata: { composerId: input.composerId },
     contentHtml: `
