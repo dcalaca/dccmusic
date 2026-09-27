@@ -26,7 +26,173 @@
   },
   "notFound": { "description": "Page not found", "backHome": "Back to Home" },
   "adminLogin": { "title": "Admin sign in", "email": "Email", "emailPlaceholder": "you@email.com", "password": "Password", "signingIn": "Signing in...", "signIn": "Sign in", "errors": { "invalidCredentials": "Incorrect email or password", "signIn": "We couldn't sign you in. Please try again." } },
-  "studioLanding": { "actions": { "checking": "Checking...", "createSongs": "Create songs", "createPlayback": "Create playback", "improveSongs": "Improve songs", "createCovers": "Create covers", "viewPlans": "View plans", "buyTopup": "Buy one-time top-up", "haveCoupon": "Have a coupon?", "checkingPlan": "Checking plan...", "subscribe": "Subscribe to AI Studio" }, "noBalance": { "title": "You have no AI Studio balance", "description": "You've already used your free song and have no balance. To keep creating, choose a plan or buy a one-time top-up." }, "freeMusic": { "signIn": "Sign in to see your balance and start creating.", "available": "You still have a free song to try. Click here.", "used": "You've already used your free song. View plans or buy a one-time top-up.", "checking": "Checking your free song..." } },
+  "studioLanding": {
+    "actions": {
+      "checking": "Checking...",
+      "createSongs": "Create songs",
+      "createPlayback": "Create playback",
+      "improveSongs": "Improve songs",
+      "createCovers": "Create covers",
+      "viewPlans": "View plans",
+      "buyTopup": "Buy one-time top-up",
+      "haveCoupon": "Have a coupon?",
+      "checkingPlan": "Checking plan...",
+      "subscribe": "Subscribe to AI Studio"
+    },
+    "noBalance": {
+      "title": "You have no AI Studio balance",
+      "description": "You've already used your free song and have no balance. To keep creating, choose a plan or buy a one-time top-up."
+    },
+    "freeMusic": {
+      "signIn": "Sign in to see your balance and start creating.",
+      "available": "You still have a free song to try. Click here.",
+      "used": "You've already used your free song. View plans or buy a one-time top-up.",
+      "checking": "Checking your free song..."
+    },
+    "meta": {
+      "title": "DCC AI Studio - Create Music with Artificial Intelligence",
+      "description": "Create lyrics, complete songs, covers and versions with AI. Organize projects, publish on DCC Music and generate chord sheets for your creations.",
+      "ogTitle": "DCC AI Studio | DCC Music",
+      "ogDescription": "Create lyrics, complete songs and professional covers with artificial intelligence.",
+      "keywordStudio": "AI music studio",
+      "keywordAiMusic": "music with artificial intelligence",
+      "keywordCreate": "create music with AI",
+      "keywordLyrics": "AI lyrics"
+    },
+    "hero": {
+      "badge": "Premium creative AI studio",
+      "title": "Create your song with AI, right from your phone.",
+      "description": "Write your idea, choose the style, and generate lyrics, audio, cover art, and a public page in just a few steps."
+    },
+    "preview": {
+      "eyebrow": "Your studio in minutes",
+      "title": "From idea to finished audio",
+      "badge": "AI + Studio",
+      "musicPreview": "Song preview",
+      "audioContents": "Lyrics, vocals and instrumental",
+      "versions": "2 versions",
+      "steps": {
+        "idea": {
+          "title": "Idea",
+          "text": "Theme, style and mood"
+        },
+        "lyrics": {
+          "title": "Lyrics",
+          "text": "Organized sections"
+        },
+        "music": {
+          "title": "Song",
+          "text": "Complete audio"
+        },
+        "publish": {
+          "title": "Publish",
+          "text": "A page ready to share"
+        }
+      }
+    },
+    "receive": {
+      "title": "What you get",
+      "fullLyrics": "Complete lyrics",
+      "songWithVocals": "Song with vocals",
+      "promoCover": "Cover art for promotion",
+      "savedProject": "Project saved to your account",
+      "publicLink": "Shareable public link"
+    },
+    "featuresTitle": "Everything in one place",
+    "featuresSubtitle": "Lyrics, music, cover art, projects and publishing without the hassle.",
+    "features": {
+      "completeSongs": {
+        "title": "Complete song creation",
+        "text": "Turn lyrics and ideas into a finished song ready to play."
+      },
+      "smartLyrics": {
+        "title": "Smart lyrics",
+        "text": "Natural, singable lyrics without forced rhymes."
+      },
+      "aiCovers": {
+        "title": "Automatic AI covers",
+        "text": "Fast cover art plus a premium option with a professional look."
+      },
+      "organizedProjects": {
+        "title": "Organized projects",
+        "text": "Drafts, versions, covers, lyrics and audio all in one place."
+      },
+      "dccPublishing": {
+        "title": "Publish on DCC Music",
+        "text": "Publish the song on your profile and share it publicly."
+      },
+      "professionalPlayer": {
+        "title": "Professional player",
+        "text": "A polished player, preview and premium listening experience."
+      },
+      "easySharing": {
+        "title": "Easy sharing",
+        "text": "Public link and embeddable player for sharing outside the platform."
+      },
+      "songChords": {
+        "title": "Song chords",
+        "text": "Generate a PDF chord sheet with lyrics and chords for songs created in AI Studio."
+      },
+      "premiumLook": {
+        "title": "Premium design",
+        "text": "A modern, artistic experience built for songwriters."
+      }
+    },
+    "howItWorks": "How it works",
+    "steps": {
+      "idea": {
+        "title": "Write your idea",
+        "text": "Describe the theme, style and mood of the song."
+      },
+      "lyrics": {
+        "title": "AI creates the lyrics",
+        "text": "Get complete lyrics organized into sections."
+      },
+      "music": {
+        "title": "Turn it into a song",
+        "text": "Generate audio with vocals, melody and instrumental."
+      },
+      "publish": {
+        "title": "Publish on DCC Music",
+        "text": "Share your song and add it to your profile."
+      }
+    },
+    "history": {
+      "eyebrow": "First record of your creation",
+      "title": "Your song starts with a creation history inside DCC Music",
+      "description": "When you create your lyrics and song in DCC AI Studio, the project is recorded with a date, account authorship, and creation history inside the platform.",
+      "note": "This history can support proof of precedence and help organize your creation. It does not replace official copyright registration where required."
+    },
+    "pricing": {
+      "title": "DCC AI Studio plans",
+      "loading": "Loading the best prices for you...",
+      "subtitle": "Choose a plan or one-time top-up to keep creating.",
+      "noSubscription": "No subscription",
+      "topupTitle": "One-time song top-up",
+      "topupDescription": "If you do not want a subscription right now, choose how many songs you want and the system calculates the price automatically.",
+      "perSong": "per song",
+      "noPlans": "There are no active AI Studio plans right now.",
+      "noPlansHint": "Enable or create plans in the admin panel.",
+      "idealFor": "Ideal for {{audience}}",
+      "months_one": "month",
+      "months_other": "{{count}} months",
+      "topup": {
+        "oneSong": "1 song",
+        "twoToEight": "2 to 8 songs",
+        "nineToTwentyNine": "9 to 29 songs",
+        "thirtyPlus": "30+ songs"
+      },
+      "audiences": {
+        "beginnerUsers": "new users",
+        "activeComposers": "active songwriters",
+        "advancedCreators": "advanced users and high-volume creators"
+      },
+      "highlights": {
+        "mostPopular": "MOST POPULAR",
+        "elite": "ELITE"
+      }
+    }
+  },
   "menu": {
     "home": "Home",
     "createSong": "Create your song",
