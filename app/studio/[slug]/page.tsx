@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { cookies, headers } from 'next/headers'
 import Link from 'next/link'
 import { FiShare2 } from 'react-icons/fi'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -8,9 +9,24 @@ import CopyButton from '@/components/CopyButton'
 import RatingAndComments from '@/components/RatingAndComments'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
+import { createDccI18n } from '@/i18n'
+import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
+
+async function getStudioPublicTranslator() {
+  const h = headers()
+  const country = normalizeCountry(
+    cookies().get(COUNTRY_COOKIE)?.value ||
+    h.get('x-dcc-country') ||
+    h.get('x-vercel-ip-country') ||
+    h.get('cf-ipcountry')
+  )
+  const locale = getLocaleForCountry(country)
+  const i18n = await createDccI18n(locale)
+  return { t: i18n.t.bind(i18n), locale }
+}
 
 function extractVoicePreferences(description?: string | null) {
   const match = String(description || '').match(/Preferência de voz:\s*(.+)/i)
@@ -43,17 +59,17 @@ async function getStudioMusic(slug: string) {
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
-  const data = await getStudioMusic(params.slug)
-  if (!data) return { title: 'Música não encontrada' }
+  const [data, { t }] = await Promise.all([getStudioMusic(params.slug), getStudioPublicTranslator()])
+  if (!data) return { title: t('publicStudio.notFound') }
 
   return {
     title: `${data.project.title} | DCC Studio IA`,
-    description: `Ouça ${data.project.title}, criado com DCC Studio IA.`,
+    description: t('publicStudio.metaDescription', { title: data.project.title }),
   }
 }
 
 export default async function StudioPublicMusicPage({ params }: { params: { slug: string } }) {
-  const data = await getStudioMusic(params.slug)
+  const [data, { t, locale }] = await Promise.all([getStudioMusic(params.slug), getStudioPublicTranslator()])
   if (!data) notFound()
 
   const { project, lyric, versionAudio, coverUrl } = data
@@ -74,7 +90,7 @@ export default async function StudioPublicMusicPage({ params }: { params: { slug
                 </div>
                 <div className="p-5">
                   <span className="inline-flex rounded-full bg-primary-900/60 px-3 py-1 text-xs text-primary-200">
-                    Criado com DCC Studio IA
+                    {t('publicStudio.createdWith')}
                   </span>
                 </div>
               </div>
@@ -85,25 +101,25 @@ export default async function StudioPublicMusicPage({ params }: { params: { slug
                 <span className="gradient-text">{project.title}</span>
               </h1>
               <div className="mb-6 flex flex-wrap gap-3 text-sm text-gray-400">
-                <span>{project.style || 'Livre'}</span>
-                <span>{project.mood || 'Sem clima'}</span>
-                {project.published_at && <span>{formatDate(project.published_at)}</span>}
+                <span>{project.style || t('publicStudio.free')}</span>
+                <span>{project.mood || t('publicStudio.noMood')}</span>
+                {project.published_at && <span>{formatDate(project.published_at, locale)}</span>}
               </div>
 
               <section className="mb-6 rounded-2xl border border-gray-800 bg-gray-950/70 p-4">
-                <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-500">Preferências da criação</h2>
+                <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-500">{t('publicStudio.creationPreferences')}</h2>
                 <div className="flex flex-wrap gap-2 text-xs">
-                  <span className="rounded-full bg-primary-950 px-3 py-1 text-primary-100">Estilo: {project.style || 'Livre'}</span>
-                  <span className="rounded-full bg-purple-950 px-3 py-1 text-purple-100">Clima: {project.mood || 'Livre'}</span>
-                  {project.structure && <span className="rounded-full bg-gray-800 px-3 py-1 text-gray-200">Estrutura: {project.structure}</span>}
-                  {project.line_count && <span className="rounded-full bg-gray-800 px-3 py-1 text-gray-200">Linhas: {project.line_count}</span>}
-                  {voicePreferences && <span className="rounded-full bg-fuchsia-950 px-3 py-1 text-fuchsia-100">Voz: {voicePreferences}</span>}
+                  <span className="rounded-full bg-primary-950 px-3 py-1 text-primary-100">{t('publicStudio.style')}: {project.style || t('publicStudio.free')}</span>
+                  <span className="rounded-full bg-purple-950 px-3 py-1 text-purple-100">{t('publicStudio.mood')}: {project.mood || t('publicStudio.free')}</span>
+                  {project.structure && <span className="rounded-full bg-gray-800 px-3 py-1 text-gray-200">{t('publicStudio.structure')}: {project.structure}</span>}
+                  {project.line_count && <span className="rounded-full bg-gray-800 px-3 py-1 text-gray-200">{t('publicStudio.lines')}: {project.line_count}</span>}
+                  {voicePreferences && <span className="rounded-full bg-fuchsia-950 px-3 py-1 text-fuchsia-100">{t('publicStudio.voice')}: {voicePreferences}</span>}
                 </div>
               </section>
 
               {project.composer && (
                 <p className="mb-6 text-gray-300">
-                  Compositor:{' '}
+                  {t('publicStudio.composer')}:{' '}
                   <Link href={`/compositores/${project.composer.slug}`} className="text-primary-300 hover:text-primary-200">
                     {project.composer.name}
                   </Link>
@@ -117,15 +133,15 @@ export default async function StudioPublicMusicPage({ params }: { params: { slug
               )}
 
               <div className="mb-8 flex flex-wrap gap-3">
-                <CopyButton text={pageUrl} label="Copiar link" />
+                <CopyButton text={pageUrl} label={t('publicStudio.copyLink')} />
                 <button className="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2">
-                  <FiShare2 /> Compartilhar
+                  <FiShare2 /> {t('publicStudio.share')}
                 </button>
               </div>
 
               {lyric?.content && (
                 <section className="mb-8 rounded-3xl border border-gray-800 bg-gray-950/70 p-6">
-                  <h2 className="text-2xl font-bold mb-4">Letra</h2>
+                  <h2 className="text-2xl font-bold mb-4">{t('publicStudio.lyrics')}</h2>
                   <p className="whitespace-pre-line leading-relaxed text-gray-300">{lyric.content}</p>
                 </section>
               )}
