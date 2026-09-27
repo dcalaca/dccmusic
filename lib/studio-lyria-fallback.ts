@@ -142,6 +142,15 @@ export async function startLyriaFallbackForSunoGeneration(input: {
 
   const request = generation.request_payload || {}
 
+  // Rejeições reais do provedor têm prioridade sobre o motivo interno de
+  // bloquear fallback. Assim a UI consegue mostrar copyright/política/voz.
+  if (isNonFallbackableSunoFailure(sunoFailurePayload)) {
+    return {
+      started: false as const,
+      reason: 'non_fallbackable_failure',
+    }
+  }
+
   // "Melhorar música" depende do áudio original. O Lyria gera uma nova faixa
   // a partir de texto e, portanto, não pode substituir silenciosamente o Suno
   // nesse fluxo.
@@ -150,16 +159,6 @@ export async function startLyriaFallbackForSunoGeneration(input: {
       started: false as const,
       reason: 'enhance_requires_suno',
       error: 'enhance_requires_suno',
-    }
-  }
-
-  // Rejeições por copyright, palavra sensível, política ou voz inválida não
-  // devem ser reenviadas a outro motor.
-  if (isNonFallbackableSunoFailure(sunoFailurePayload)) {
-    return {
-      started: false as const,
-      reason: 'non_fallbackable_failure',
-      error: 'non_fallbackable_failure',
     }
   }
 
