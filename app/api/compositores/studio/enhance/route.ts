@@ -134,22 +134,14 @@ export async function POST(request: NextRequest) {
     if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
     const { hasAccess, limits } = await getStudioAccess(composer.composerId)
-    const usage = await getStudioCreditUsage(composer.composerId, limits)
+    const [usage, freeMusicUsage] = await Promise.all([
+      getStudioCreditUsage(composer.composerId, limits),
+      getFreeMusicUsage(composer.composerId),
+    ])
     const hasPaidCredits = canCreateStudioMusicWithCredits(usage)
-    let isFreeGeneration = false
-
-    if (!hasAccess && !hasPaidCredits) {
-      const freeMusicUsage = await getFreeMusicUsage(composer.composerId)
-      if (freeMusicUsage.remaining <= 0) {
-        return NextResponse.json(
-          {
-            error: 'Você já usou sua música grátis. Assine um plano DCC Studio IA ou faça uma recarga avulsa para melhorar músicas.',
-          },
-          { status: 403 }
-        )
-      }
-      isFreeGeneration = true
-    }
+    // A cortesia é sempre consumida primeiro, inclusive quando o cliente
+    // comprou créditos antes de testar a primeira música.
+    const isFreeGeneration = freeMusicUsage.remaining > 0
 
     if (!isFreeGeneration && !hasPaidCredits) {
       return NextResponse.json({ error: 'Você precisa de pelo menos 10 créditos para melhorar uma música.' }, { status: 429 })
