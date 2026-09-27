@@ -1398,8 +1398,19 @@
     },
     "notifications": {
       "title": "Notifications",
-      "subtitle": "Comments, replies, likes, and finished songs",
-      "empty": "No notifications yet."
+      "subtitle": "Comments, replies, likes and finished songs",
+      "empty": "No notifications yet.",
+      "actorFallback": "Someone",
+      "commentTitle": "{{actor}} commented on {{title}}",
+      "replyTitle": "{{actor}} replied to your comment",
+      "likeTitle": "{{actor}} liked your comment",
+      "likeBody": "On {{title}}",
+      "musicReadyTitle": "Your song “{{title}}” is ready",
+      "musicReadyBody": "It is now available in your AI Studio.",
+      "content": {
+        "song": "your song",
+        "video": "your video"
+      }
     }
   },
   "auth": {
