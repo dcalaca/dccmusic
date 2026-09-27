@@ -1709,7 +1709,59 @@
         "description": "Nuestro producto principal: crea letras, canciones, portadas y proyectos con IA.",
         "empty": "No hay planes de Studio IA activos en este momento.",
         "popular": "MÁS POPULAR",
-        "subscribe": "Suscribirme a Studio IA"
+        "subscribe": "Suscribirme a Studio IA",
+        "cards": {
+          "studio_start": {
+            "description": "Ideal para usuarios que están empezando",
+            "features": [
+              "80 créditos/mes",
+              "Letras con IA ilimitadas",
+              "Portadas rápidas ilimitadas",
+              "Guardar proyectos musicales",
+              "Publicación en DCC Music"
+            ]
+          },
+          "studio_pro": {
+            "description": "Ideal para compositores activos",
+            "features": [
+              "130 créditos/mes",
+              "Letras con IA ilimitadas",
+              "Portadas rápidas ilimitadas",
+              "10 portadas premium con IA",
+              "Reproductor premium",
+              "Descargas MP3",
+              "Proyectos ilimitados",
+              "Publicación en DCC Music",
+              "Prioridad de generación"
+            ]
+          },
+          "studio_elite": {
+            "description": "Ideal para usuarios avanzados y creadores intensivos",
+            "features": [
+              "300 créditos/mes",
+              "Letras con IA ilimitadas",
+              "Portadas rápidas ilimitadas",
+              "30 portadas premium con IA",
+              "Descargas MP3",
+              "Proyectos ilimitados",
+              "Prioridad máxima",
+              "Sello Studio Elite",
+              "Acceso anticipado a futuras funciones"
+            ]
+          },
+          "dcc_studio_ia": {
+            "description": "Estudio musical con IA para crear letras, canciones completas, portadas, proyectos organizados, publicar en DCC Music y descargar MP3.",
+            "features": [
+              "20 canciones/mes",
+              "Letras con IA ilimitadas",
+              "Portadas rápidas ilimitadas",
+              "Guardar proyectos musicales",
+              "Publicación en DCC Music",
+              "Reproductor premium",
+              "Descargas MP3"
+            ]
+          }
+        }
       },
       "composer": {
         "title": "Planes para Compositor Premium",
