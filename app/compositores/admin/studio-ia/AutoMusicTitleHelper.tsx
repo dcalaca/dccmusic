@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 
 const TITLE_MAX_LENGTH = 30
 
@@ -11,13 +12,13 @@ function setNativeInputValue(input: HTMLInputElement, value: string) {
   input.dispatchEvent(new Event('change', { bubbles: true }))
 }
 
-function shortenTitle(value: string) {
+function shortenTitle(value: string, fallbackTitle: string) {
   const clean = value
     .replace(/^[-–—"'“”‘’]+|[-–—"'“”‘’]+$/g, '')
     .replace(/\s+/g, ' ')
     .trim()
 
-  if (!clean) return 'Nova música'
+  if (!clean) return fallbackTitle
   if (clean.length <= TITLE_MAX_LENGTH) return clean
 
   const preview = clean.slice(0, TITLE_MAX_LENGTH + 1)
@@ -25,7 +26,7 @@ function shortenTitle(value: string) {
   return (lastSpace >= 12 ? preview.slice(0, lastSpace) : clean.slice(0, TITLE_MAX_LENGTH)).trim()
 }
 
-function deriveTitleFromLyric(lyric: string) {
+function deriveTitleFromLyric(lyric: string, fallbackTitle: string) {
   const lines = lyric
     .split(/\r?\n/)
     .map((line) => line.trim())
@@ -39,17 +40,16 @@ function deriveTitleFromLyric(lyric: string) {
     ? lines.slice(chorusIndex + 1).find((line) => !sectionLine.test(line))
     : lines.find((line) => !sectionLine.test(line))
 
-  return shortenTitle(candidate || 'Nova música')
+  return shortenTitle(candidate || fallbackTitle, fallbackTitle)
 }
 
 function findTitleInput() {
-  const labels = Array.from(document.querySelectorAll('label'))
-  const titleLabel = labels.find((label) => label.textContent?.trim() === 'Nome da música')
-  const wrapper = titleLabel?.parentElement?.parentElement
-  return wrapper?.querySelector('input') as HTMLInputElement | null
+  return document.querySelector('[data-studio-title-input="true"]') as HTMLInputElement | null
 }
 
 export default function AutoMusicTitleHelper() {
+  const { t } = useTranslation()
+
   useEffect(() => {
     if (window.location.pathname !== '/compositores/admin/studio-ia/novo') return
 
@@ -61,18 +61,19 @@ export default function AutoMusicTitleHelper() {
       const button = (event.target as HTMLElement | null)?.closest('button') as HTMLButtonElement | null
       if (!button) return
 
-      const text = (button.textContent || '').replace(/\s+/g, ' ').trim()
-      const creatingWithAi = text.includes('Criar minha música')
-      const savingOwnLyric = text.includes('Salvar e Criar Projeto')
+      const action = button.dataset.studioCreateAction
+      const creatingWithAi = action === 'create-with-ai'
+      const savingOwnLyric = action === 'save-own-lyrics'
       if (!creatingWithAi && !savingOwnLyric) return
 
       const input = findTitleInput()
       if (!input || input.value.trim()) return
 
       const textarea = document.querySelector('textarea') as HTMLTextAreaElement | null
+      const fallbackTitle = t('studio.create.autoTitle')
       const automaticTitle = savingOwnLyric
-        ? deriveTitleFromLyric(textarea?.value || '')
-        : 'Nova música'
+        ? deriveTitleFromLyric(textarea?.value || '', fallbackTitle)
+        : fallbackTitle
 
       event.preventDefault()
       event.stopPropagation()
@@ -92,7 +93,7 @@ export default function AutoMusicTitleHelper() {
 
     document.addEventListener('click', handleClick, true)
     return () => document.removeEventListener('click', handleClick, true)
-  }, [])
+  }, [t])
 
   return null
 }

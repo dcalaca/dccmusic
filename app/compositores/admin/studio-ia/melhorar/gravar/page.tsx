@@ -259,7 +259,7 @@ export default function RecordMusicPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-5xl">
           <Link href="/compositores/admin/studio-ia/melhorar" className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-primary-300 transition hover:text-primary-200">
-            <FiArrowLeft /> Voltar
+            <FiArrowLeft /> {t('common.actions.back')}
           </Link>
 
           <section className="relative mb-5 overflow-hidden rounded-[1.75rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(217,70,239,0.28),transparent_34%),linear-gradient(135deg,rgba(8,8,12,0.98),rgba(17,24,39,0.94),rgba(49,15,80,0.68))] p-4 shadow-2xl shadow-purple-950/25 sm:p-6">

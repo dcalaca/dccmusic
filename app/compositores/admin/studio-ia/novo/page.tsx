@@ -707,6 +707,7 @@ export default function NewStudioMusicPage() {
                           <span className="text-[11px] font-semibold text-gray-500">{form.title.length}/{titleMaxLength}</span>
                         </div>
                         <input
+                          data-studio-title-input="true"
                           value={form.title}
                           onChange={(e) => setForm({ ...form, title: e.target.value.slice(0, titleMaxLength) })}
                           maxLength={titleMaxLength}
@@ -951,6 +952,7 @@ export default function NewStudioMusicPage() {
                     </div>
                     <button
                       type="button"
+                      data-studio-create-action={hasOwnLyric ? 'save-own-lyrics' : 'create-with-ai'}
                       onClick={handleSubmit}
                       disabled={loading}
                       className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 px-6 py-4 text-base font-black text-white shadow-lg shadow-purple-950/40 transition hover:scale-[1.01] hover:from-primary-400 hover:via-purple-400 hover:to-fuchsia-400 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto lg:min-w-[280px]"
