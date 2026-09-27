@@ -4,6 +4,10 @@ import {
   STUDIO_AUDIO_CATALOG_MATCH_MESSAGE,
   VOICE_EXPIRED_ERROR_MESSAGE,
 } from '@/lib/studio-voice-errors'
+import {
+  getComposerEmailIdentity,
+  sendStudioMusicFailureEmail,
+} from '@/lib/dcc-emails'
 
 /** Tempo máximo que a UI/API esperam áudio antes de tratar como falha de comunicação. */
 export const STUDIO_MUSIC_GENERATION_TIMEOUT_MS = 10 * 60 * 1000
@@ -210,6 +214,27 @@ export async function markStudioGenerationAsCommunicationFailure(
       updated_at: now,
     })
     .eq('id', generation.id)
+
+  const { data: projectInfo } = await supabaseAdmin
+    .from('studio_projects')
+    .select('id, title, composer_id')
+    .eq('id', generation.project_id)
+    .maybeSingle()
+
+  if (projectInfo?.composer_id) {
+    const composer = await getComposerEmailIdentity(projectInfo.composer_id)
+    if (composer) {
+      await sendStudioMusicFailureEmail({
+        ...composer,
+        projectId: projectInfo.id,
+        generationId: generation.id,
+        projectTitle: projectInfo.title || 'Sua música',
+        errorMessage,
+      }).catch((emailError) => {
+        console.error('[Studio IA] Erro ao enviar e-mail de falha por comunicação:', emailError)
+      })
+    }
+  }
 
   const { data: project } = await supabaseAdmin
     .from('studio_projects')
