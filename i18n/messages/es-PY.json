@@ -26,7 +26,173 @@
   },
   "notFound": { "description": "Página no encontrada", "backHome": "Volver al inicio" },
   "adminLogin": { "title": "Inicio de sesión administrativo", "email": "Correo electrónico", "emailPlaceholder": "tu@correo.com", "password": "Contraseña", "signingIn": "Iniciando sesión...", "signIn": "Iniciar sesión", "errors": { "invalidCredentials": "Correo o contraseña incorrectos", "signIn": "No pudimos iniciar sesión. Inténtalo de nuevo." } },
-  "studioLanding": { "actions": { "checking": "Comprobando...", "createSongs": "Crear canciones", "createPlayback": "Crear playback", "improveSongs": "Mejorar canciones", "createCovers": "Crear portadas", "viewPlans": "Ver planes", "buyTopup": "Comprar recarga", "haveCoupon": "¿Tienes un cupón?", "checkingPlan": "Comprobando plan...", "subscribe": "Suscribirme a Studio IA" }, "noBalance": { "title": "No tienes saldo en Studio IA", "description": "Ya usaste tu canción gratis y no tienes saldo. Para seguir creando, elige un plan o compra una recarga." }, "freeMusic": { "signIn": "Inicia sesión para ver tu saldo y empezar a crear.", "available": "Aún tienes una canción gratis para probar. Haz clic aquí.", "used": "Ya usaste tu canción gratis. Consulta los planes o compra una recarga.", "checking": "Comprobando tu canción gratis..." } },
+  "studioLanding": {
+    "actions": {
+      "checking": "Comprobando...",
+      "createSongs": "Crear canciones",
+      "createPlayback": "Crear playback",
+      "improveSongs": "Mejorar canciones",
+      "createCovers": "Crear portadas",
+      "viewPlans": "Ver planes",
+      "buyTopup": "Comprar recarga",
+      "haveCoupon": "¿Tienes un cupón?",
+      "checkingPlan": "Comprobando plan...",
+      "subscribe": "Suscribirme a Studio IA"
+    },
+    "noBalance": {
+      "title": "No tienes saldo en Studio IA",
+      "description": "Ya usaste tu canción gratis y no tienes saldo. Para seguir creando, elige un plan o compra una recarga."
+    },
+    "freeMusic": {
+      "signIn": "Inicia sesión para ver tu saldo y empezar a crear.",
+      "available": "Aún tienes una canción gratis para probar. Haz clic aquí.",
+      "used": "Ya usaste tu canción gratis. Consulta los planes o compra una recarga.",
+      "checking": "Comprobando tu canción gratis..."
+    },
+    "meta": {
+      "title": "DCC Studio IA - Crea Música con Inteligencia Artificial",
+      "description": "Crea letras, canciones completas, portadas y versiones con IA. Organiza proyectos, publica en DCC Music y genera acordes para tus creaciones.",
+      "ogTitle": "DCC Studio IA | DCC Music",
+      "ogDescription": "Crea letras, canciones completas y portadas profesionales con inteligencia artificial.",
+      "keywordStudio": "Studio IA",
+      "keywordAiMusic": "música con inteligencia artificial",
+      "keywordCreate": "crear música con IA",
+      "keywordLyrics": "letras con IA"
+    },
+    "hero": {
+      "badge": "Estudio creativo premium con IA",
+      "title": "Crea tu canción con IA directamente desde el móvil.",
+      "description": "Escribe tu idea, elige el estilo y genera letra, audio, portada y página pública en pocos pasos."
+    },
+    "preview": {
+      "eyebrow": "Tu estudio en minutos",
+      "title": "De la idea al audio terminado",
+      "badge": "IA + Studio",
+      "musicPreview": "Vista previa de la canción",
+      "audioContents": "Letra, voz e instrumental",
+      "versions": "2 versiones",
+      "steps": {
+        "idea": {
+          "title": "Idea",
+          "text": "Tema, estilo y ambiente"
+        },
+        "lyrics": {
+          "title": "Letra",
+          "text": "Secciones organizadas"
+        },
+        "music": {
+          "title": "Canción",
+          "text": "Audio completo"
+        },
+        "publish": {
+          "title": "Publicación",
+          "text": "Página lista para compartir"
+        }
+      }
+    },
+    "receive": {
+      "title": "Lo que recibes",
+      "fullLyrics": "Letra completa",
+      "songWithVocals": "Canción con voz",
+      "promoCover": "Portada para promocionar",
+      "savedProject": "Proyecto guardado en tu cuenta",
+      "publicLink": "Enlace público para compartir"
+    },
+    "featuresTitle": "Todo en un solo lugar",
+    "featuresSubtitle": "Letra, música, portada, proyectos y publicación sin complicaciones.",
+    "features": {
+      "completeSongs": {
+        "title": "Creación de canciones completas",
+        "text": "Convierte letras e ideas en una canción terminada y lista para escuchar."
+      },
+      "smartLyrics": {
+        "title": "Letras inteligentes",
+        "text": "Letras naturales y cantables, sin rimas forzadas."
+      },
+      "aiCovers": {
+        "title": "Portadas automáticas con IA",
+        "text": "Portadas rápidas y una opción premium con acabado profesional."
+      },
+      "organizedProjects": {
+        "title": "Proyectos organizados",
+        "text": "Borradores, versiones, portadas, letras y audio en un solo lugar."
+      },
+      "dccPublishing": {
+        "title": "Publicación en DCC Music",
+        "text": "Publica la canción en tu perfil y compártela públicamente."
+      },
+      "professionalPlayer": {
+        "title": "Reproductor profesional",
+        "text": "Un reproductor atractivo, vista previa y experiencia premium."
+      },
+      "easySharing": {
+        "title": "Compartir fácilmente",
+        "text": "Enlace público y reproductor insertable para compartir fuera de la plataforma."
+      },
+      "songChords": {
+        "title": "Acordes de la canción",
+        "text": "Genera un PDF con la letra y los acordes de las canciones creadas en Studio IA."
+      },
+      "premiumLook": {
+        "title": "Estética premium",
+        "text": "Una experiencia moderna y artística pensada para compositores."
+      }
+    },
+    "howItWorks": "Cómo funciona",
+    "steps": {
+      "idea": {
+        "title": "Escribe tu idea",
+        "text": "Cuenta el tema, estilo y ambiente de la canción."
+      },
+      "lyrics": {
+        "title": "La IA crea la letra",
+        "text": "Recibe una letra completa organizada por secciones."
+      },
+      "music": {
+        "title": "Conviértela en canción",
+        "text": "Genera audio con voz, melodía e instrumental."
+      },
+      "publish": {
+        "title": "Publica en DCC Music",
+        "text": "Comparte tu canción y añádela a tu perfil."
+      }
+    },
+    "history": {
+      "eyebrow": "Primer registro de tu creación",
+      "title": "Tu canción nace con un historial dentro de DCC Music",
+      "description": "Al crear tu letra y tu canción en DCC Studio IA, el proyecto queda registrado con fecha, autoría de la cuenta e historial de creación dentro de la plataforma.",
+      "note": "Este historial sirve como apoyo de anterioridad y organización de la creación. No sustituye los registros oficiales de derechos de autor cuando sean necesarios."
+    },
+    "pricing": {
+      "title": "Planes de DCC Studio IA",
+      "loading": "Cargando los mejores precios para ti...",
+      "subtitle": "Elige un plan o una recarga puntual para seguir creando.",
+      "noSubscription": "Sin suscripción",
+      "topupTitle": "Recarga puntual de canciones",
+      "topupDescription": "Si no quieres suscribirte ahora, elige cuántas canciones quieres comprar y el sistema calcula el precio automáticamente.",
+      "perSong": "por canción",
+      "noPlans": "No hay planes activos de Studio IA en este momento.",
+      "noPlansHint": "Activa o crea los planes en el panel administrativo.",
+      "idealFor": "Ideal para {{audience}}",
+      "months_one": "mes",
+      "months_other": "{{count}} meses",
+      "topup": {
+        "oneSong": "1 canción",
+        "twoToEight": "2 a 8 canciones",
+        "nineToTwentyNine": "9 a 29 canciones",
+        "thirtyPlus": "30+ canciones"
+      },
+      "audiences": {
+        "beginnerUsers": "usuarios principiantes",
+        "activeComposers": "compositores activos",
+        "advancedCreators": "usuarios avanzados y creadores intensivos"
+      },
+      "highlights": {
+        "mostPopular": "MÁS POPULAR",
+        "elite": "ELITE"
+      }
+    }
+  },
   "menu": {
     "home": "Inicio",
     "createSong": "Crea tu canción",
