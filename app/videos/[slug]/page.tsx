@@ -6,7 +6,22 @@ import { formatDate } from '@/lib/utils'
 import VideoEmbed from '@/components/VideoEmbed'
 import CopyButton from '@/components/CopyButton'
 import RatingAndComments from '@/components/RatingAndComments'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
+import { createDccI18n } from '@/i18n'
+import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
+
+async function getVideoDetailTranslator() {
+  const h = headers()
+  const country = normalizeCountry(
+    cookies().get(COUNTRY_COOKIE)?.value ||
+    h.get('x-dcc-country') ||
+    h.get('x-vercel-ip-country') ||
+    h.get('cf-ipcountry')
+  )
+  const locale = getLocaleForCountry(country)
+  const i18n = await createDccI18n(locale)
+  return { t: i18n.t.bind(i18n), locale }
+}
 
 /** Só busca vídeo — sem contar visualização (evita dupla contagem com generateMetadata) */
 async function fetchVideoOnly(slug: string) {
@@ -21,13 +36,15 @@ async function fetchVideoOnly(slug: string) {
 export async function generateMetadata({ params }: { params: { slug: string } }) {
   const video = await fetchVideoOnly(params.slug)
 
+  const { t } = await getVideoDetailTranslator()
+
   if (!video) {
     return {
-      title: 'Vídeo não encontrado',
+      title: t('videoDetail.notFound'),
     }
   }
 
-  const description = video.description || `Assista ao vídeo ${video.title} no DCC Music`
+  const description = video.description || t('videoDetail.metaDescription', { title: video.title })
 
   return {
     title: video.title,
@@ -45,7 +62,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
-function buildVideoJsonLd(video: NonNullable<Awaited<ReturnType<typeof fetchVideoOnly>>>) {
+function buildVideoJsonLd(video: NonNullable<Awaited<ReturnType<typeof fetchVideoOnly>>>, description: string) {
   const pageUrl = `https://www.dccmusic.online/videos/${video.slug}`
   const thumbnail = video.thumbnailUrl
     || (video.youtubeId ? `https://i.ytimg.com/vi/${video.youtubeId}/hqdefault.jpg` : undefined)
@@ -54,7 +71,7 @@ function buildVideoJsonLd(video: NonNullable<Awaited<ReturnType<typeof fetchVide
     '@context': 'https://schema.org',
     '@type': 'VideoObject',
     name: video.title,
-    description: video.description || `Assista ao vídeo ${video.title} no DCC Music`,
+    description,
     uploadDate: new Date(video.publishedAt || video.createdAt || Date.now()).toISOString(),
     url: pageUrl,
   }
@@ -75,6 +92,7 @@ function buildVideoJsonLd(video: NonNullable<Awaited<ReturnType<typeof fetchVide
 
 export default async function VideoDetailPage({ params }: { params: { slug: string } }) {
   const video = await fetchVideoOnly(params.slug)
+  const { t, locale } = await getVideoDetailTranslator()
 
   if (!video) {
     notFound()
@@ -119,25 +137,51 @@ export default async function VideoDetailPage({ params }: { params: { slug: stri
 
   const videoUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/videos/${displayVideo.slug}`
 
+  const description = displayVideo.description || t('videoDetail.metaDescription', { title: displayVideo.title })
+
   return (
-    <VideoDetailContent video={displayVideo} relatedVideos={relatedVideos} videoUrl={videoUrl} />
+    <VideoDetailContent video={displayVideo} relatedVideos={relatedVideos} videoUrl={videoUrl} locale={locale} description={description} copy={{
+      published: t('videoDetail.published'),
+      views: t('videoDetail.views'),
+      duration: t('videoDetail.duration'),
+      composers: t('videoDetail.composers'),
+      share: t('videoDetail.share'),
+      copyLink: t('videoDetail.copyLink'),
+      openYoutube: t('videoDetail.openYoutube'),
+      similar: t('videoDetail.similar'),
+    }} />
   )
 }
 
 function VideoDetailContent({ 
   video, 
   relatedVideos, 
-  videoUrl 
-}: { 
+  videoUrl,
+  locale,
+  description,
+  copy,
+}: {
   video: NonNullable<Awaited<ReturnType<typeof fetchVideoOnly>>>
   relatedVideos: any[]
   videoUrl: string
+  locale: string
+  description: string
+  copy: {
+    published: string
+    views: string
+    duration: string
+    composers: string
+    share: string
+    copyLink: string
+    openYoutube: string
+    similar: string
+  }
 }) {
   return (
     <div className="min-h-screen py-8">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildVideoJsonLd(video)) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(buildVideoJsonLd(video, description)) }}
       />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
@@ -160,11 +204,11 @@ function VideoDetailContent({
                   <p className="text-gray-300 mb-4 whitespace-pre-line">{video.description}</p>
                 )}
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-                  <span>Publicado em {formatDate(video.publishedAt)}</span>
+                  <span>{copy.published} {formatDate(video.publishedAt, locale)}</span>
                   {video.viewCount > 0 && (
-                    <span>{video.viewCount.toLocaleString('pt-BR')} visualizações</span>
+                    <span>{video.viewCount.toLocaleString(locale)} {copy.views}</span>
                   )}
-                  {video.duration && <span>Duração: {video.duration}</span>}
+                  {video.duration && <span>{copy.duration}: {video.duration}</span>}
                 </div>
                 {video.tags && (
                   <div className="mt-4 flex flex-wrap gap-2">
@@ -180,7 +224,7 @@ function VideoDetailContent({
                 )}
                 {video.composers && video.composers.length > 0 && (
                   <div className="mt-4">
-                    <h3 className="text-sm font-semibold text-gray-400 mb-2">Compositores</h3>
+                    <h3 className="text-sm font-semibold text-gray-400 mb-2">{copy.composers}</h3>
                     <div className="flex flex-wrap gap-2">
                       {video.composers.map((composer) => (
                         <a
@@ -199,8 +243,8 @@ function VideoDetailContent({
 
             <div className="lg:col-span-1">
               <div className="bg-gray-900/50 p-6 rounded-lg border border-gray-800 space-y-4">
-                <h3 className="font-semibold text-lg mb-4">Compartilhar</h3>
-                <CopyButton text={videoUrl} label="Copiar link" />
+                <h3 className="font-semibold text-lg mb-4">{copy.share}</h3>
+                <CopyButton text={videoUrl} label={copy.copyLink} />
                 <a
                   href={video.youtubeUrl}
                   target="_blank"
@@ -208,7 +252,7 @@ function VideoDetailContent({
                   className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
                 >
                   <FiExternalLink className="w-4 h-4" />
-                  <span>Abrir no YouTube</span>
+                  <span>{copy.openYoutube}</span>
                 </a>
               </div>
             </div>
@@ -223,7 +267,7 @@ function VideoDetailContent({
           {relatedVideos.length > 0 && (
             <div>
               <h2 className="text-2xl font-bold mb-6">
-                <span className="gradient-text">Vídeos Semelhantes</span>
+                <span className="gradient-text">{copy.similar}</span>
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {relatedVideos.map((relatedVideo) => (
