@@ -573,7 +573,15 @@
         "publish": "Publish song on DCC Music",
         "viewPublic": "View public page",
         "afterPublish": "After publishing, the song gets a public page you can share.",
-        "embedHint": "Publish the song to unlock the public link and embed option."
+        "embedHint": "Publish the song to unlock the public link and embed option.",
+        "activation": {
+          "title": "Publish on DCC Music",
+          "description": "Activate publishing for 30 days to publish this song and other songs on DCC Music.",
+          "period": "30 days of publishing",
+          "note": "This activation is for publishing only and does not include Studio AI music-creation credits.",
+          "cta": "Activate publishing",
+          "priceFallback": "£10.90"
+        }
       },
       "cover": {
         "proOnly": "Professional covers are available from Studio Pro.",
@@ -1762,17 +1770,17 @@
         "alternative": "I want Premium Songwriter"
       },
       "composer": {
-        "badge": "Premium Songwriter",
-        "title": "Important: this is not an AI Studio plan",
-        "description": "You're buying a Premium Songwriter plan to publish and promote songs you already have.",
+        "badge": "DCC PUBLISHING",
+        "title": "Activate publishing for 30 days",
+        "description": "Enable your account to publish songs on DCC Music for 30 days.",
         "includes": [
-          "Publish finished songs using external links/players",
-          "Publish videos and organize your songwriter page",
-          "Promotion features inside DCC Music"
+          "Publish songs on DCC Music",
+          "Composer account active for 30 days",
+          "Your page and published content available during the active period"
         ],
-        "warning": "This plan does not include monthly credits for creating music with AI. To create new songs with AI, choose a DCC AI Studio plan.",
-        "confirm": "I understand, I want Premium Songwriter",
-        "alternative": "I want AI Studio"
+        "warning": "This activation does not include Studio AI music-creation credits.",
+        "confirm": "Activate publishing",
+        "alternative": "Back to my projects"
       }
     },
     "status": {

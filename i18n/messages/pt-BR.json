@@ -573,7 +573,15 @@
         "publish": "Publicar música no DCC Music",
         "viewPublic": "Ver página pública",
         "afterPublish": "Depois de publicar, a música ganha uma página pública para você enviar para outras pessoas.",
-        "embedHint": "Publique a música para liberar o link público e a opção de colocar em outro site."
+        "embedHint": "Publique a música para liberar o link público e a opção de colocar em outro site.",
+        "activation": {
+          "title": "Publique no DCC Music",
+          "description": "Ative a publicação por 30 dias para publicar esta música e outras músicas no DCC Music.",
+          "period": "30 dias de publicação",
+          "note": "Esta ativação é somente para publicação e não inclui créditos para criar músicas no Studio IA.",
+          "cta": "Ativar publicação",
+          "priceFallback": "R$ 10,90"
+        }
       },
       "cover": {
         "proOnly": "A capa profissional está disponível a partir do Studio Pro.",
@@ -1762,17 +1770,17 @@
         "alternative": "Quero Compositor Premium"
       },
       "composer": {
-        "badge": "Compositor Premium",
-        "title": "Atenção: este não é o plano Studio IA",
-        "description": "Você está comprando um plano de Compositor Premium, feito para publicar e divulgar músicas que você já tem prontas.",
+        "badge": "PUBLICAÇÃO DCC",
+        "title": "Ativar publicação por 30 dias",
+        "description": "Libere sua conta para publicar músicas no DCC Music durante 30 dias.",
         "includes": [
-          "Cadastrar músicas prontas com link/player externo",
-          "Cadastrar vídeos e organizar sua página de compositor",
-          "Recursos de divulgação dentro do DCC Music"
+          "Publicação de músicas no DCC Music",
+          "Conta de compositor ativa por 30 dias",
+          "Sua página e seus conteúdos publicados disponíveis durante o período"
         ],
-        "warning": "Este plano não libera créditos mensais para criar músicas com IA. Para criar músicas novas com IA, escolha um plano DCC Studio IA.",
-        "confirm": "Entendi, quero Compositor Premium",
-        "alternative": "Quero Studio IA"
+        "warning": "Esta ativação não inclui créditos para criação de músicas no Studio IA.",
+        "confirm": "Ativar publicação",
+        "alternative": "Voltar aos meus projetos"
       }
     },
     "status": {

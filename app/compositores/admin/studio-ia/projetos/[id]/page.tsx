@@ -2697,53 +2697,49 @@ function UpgradeModal({ message, onClose }: { message: string; onClose: () => vo
 }
 
 function PublishPlanModal({ message, onClose }: { message: string; onClose: () => void }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const [offer, setOffer] = useState<{ amount: number; currency: string } | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/compositores/publication-offer', { cache: 'no-store' })
+      .then(async (response) => {
+        if (!response.ok) return null
+        return response.json()
+      })
+      .then((data) => {
+        if (!cancelled && data?.amount && data?.currency) {
+          setOffer({ amount: Number(data.amount), currency: String(data.currency) })
+        }
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [])
+
+  const formattedPrice = offer
+    ? new Intl.NumberFormat(i18n.language || 'pt-BR', { style: 'currency', currency: offer.currency }).format(offer.amount)
+    : t('studio.project.publish.activation.priceFallback')
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 px-4 backdrop-blur"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 12 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-md rounded-3xl border border-amber-500/50 bg-gradient-to-br from-gray-950 via-amber-950/40 to-black p-7 text-center shadow-2xl shadow-black/60"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-500/15 text-amber-200">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 px-4 backdrop-blur" onClick={onClose}>
+      <motion.div initial={{ opacity: 0, scale: 0.96, y: 12 }} animate={{ opacity: 1, scale: 1, y: 0 }} className="w-full max-w-md rounded-3xl border border-purple-500/50 bg-gradient-to-br from-gray-950 via-purple-950/40 to-black p-7 text-center shadow-2xl shadow-black/60" onClick={(event) => event.stopPropagation()}>
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-purple-500/15 text-purple-200">
           <FiLock className="h-7 w-7" />
         </div>
-        <h2 className="text-2xl font-black text-white">{t('studio.project.detail.planRequiredTitle')}</h2>
-        <p className="mt-3 text-sm leading-relaxed text-amber-50/90">
-          {message}
-        </p>
-        <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-left text-sm text-gray-300">
-          <p><span className="font-semibold text-white">{t('studio.project.detail.topupLabel')}:</span> {t('studio.project.detail.topupPurpose')}</p>
-          <p className="mt-1"><span className="font-semibold text-white">{t('studio.project.detail.activePlanLabel')}:</span> {t('studio.project.detail.activePlanPurpose')}</p>
+        <h2 className="text-2xl font-black text-white">{t('studio.project.publish.activation.title')}</h2>
+        <p className="mt-3 text-sm leading-relaxed text-gray-200">{t('studio.project.publish.activation.description')}</p>
+        <div className="mt-5 rounded-2xl border border-purple-400/30 bg-purple-500/10 px-4 py-4">
+          <p className="text-2xl font-black text-white">{formattedPrice}</p>
+          <p className="mt-1 text-sm font-semibold text-purple-200">{t('studio.project.publish.activation.period')}</p>
         </div>
+        <p className="mt-4 text-xs leading-relaxed text-gray-400">{t('studio.project.publish.activation.note')}</p>
         <div className="mt-6 grid gap-3">
-          <Link
-            href="/studio-ia#planos"
-            className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white hover:from-primary-500 hover:to-purple-500"
-          >
-            {t('studio.project.detail.viewStudioPlans')}
+          <Link href="/compositores/checkout?plan=publicacao-dcc-30d" className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-bold text-white hover:from-primary-500 hover:to-purple-500">
+            {t('studio.project.publish.activation.cta')}
           </Link>
-          <Link
-            href="/compositores/planos#compositor-premium"
-            className="inline-flex items-center justify-center rounded-xl border border-amber-500/50 px-5 py-3 font-bold text-amber-100 hover:bg-amber-950/40"
-          >
-            {t('studio.project.detail.viewComposerPremium')}
-          </Link>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl border border-gray-700 px-5 py-3 font-bold text-gray-200 hover:bg-gray-900"
-          >
-            {t('studio.project.detail.understood')}
-          </button>
+          <button type="button" onClick={onClose} className="rounded-xl border border-gray-700 px-5 py-3 font-bold text-gray-200 hover:bg-gray-900">{t('common.actions.cancel')}</button>
         </div>
+        <p className="sr-only">{message}</p>
       </motion.div>
     </motion.div>
   )
