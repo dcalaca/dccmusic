@@ -177,6 +177,7 @@ async function sendCampaignViaResend(input: {
 
   const htmlContent = buildDccEmailHtml({
     subject: input.subject,
+    locale: input.language === 'en' ? 'en-US' : input.language === 'es' ? 'es-ES' : 'pt-BR',
     title: input.subject,
     preview: input.preview,
     contentHtml: `

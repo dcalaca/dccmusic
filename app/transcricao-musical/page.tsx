@@ -73,7 +73,12 @@ function sortSourcesNewestFirst(sources: Source[]) {
 function TranscricaoMusicalContent() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language
-  const localizedError = useCallback((payload: unknown, fallbackKey: string) => {
+  const localizedError = useCallback((payload: any, fallbackKey: string) => {
+    const errorCode = String(payload?.errorCode || '').trim()
+    if (errorCode) {
+      return t(`musicTranscription.errors.${errorCode}`, { defaultValue: t(fallbackKey) })
+    }
+
     const fallback = t(fallbackKey)
     const message = readClientApiError(payload, fallback)
     const knownErrors: Record<string, string> = {

@@ -23,7 +23,7 @@ function normalizeFilename(value: string, extension: string) {
 export async function GET(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')?.trim()
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         ? 'zip'
         : 'pdf'
 
-    if (!id) return NextResponse.json({ error: 'id obrigatório.' }, { status: 400 })
+    if (!id) return NextResponse.json({ error: 'id obrigatório.', errorCode: 'invalidRequest' }, { status: 400 })
 
     const { data: row, error } = await supabaseAdmin
       .from('music_transcriptions')
@@ -43,10 +43,10 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
 
     if (error) throw error
-    if (!row) return NextResponse.json({ error: 'Transcrição não encontrada.' }, { status: 404 })
+    if (!row) return NextResponse.json({ error: 'Transcrição não encontrada.', errorCode: 'resultNotFound' }, { status: 404 })
 
     const path = kind === 'musicxml' ? row.musicxml_path : kind === 'zip' ? row.zip_path : row.pdf_path
-    if (!path) return NextResponse.json({ error: 'Arquivo não encontrado para esta transcrição.' }, { status: 404 })
+    if (!path) return NextResponse.json({ error: 'Arquivo não encontrado para esta transcrição.', errorCode: 'fileNotFound' }, { status: 404 })
 
     const isDccCifra = row.provider_payload?.provider === 'dcc_simplified_score'
     const fileBuffer = kind === 'pdf' && isDccCifra && row.preview_text
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Music Transcription] Erro baixar arquivo:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao baixar arquivo.' },
+      { error: error.message || 'Erro ao baixar arquivo.', errorCode: 'download' },
       { status: 500 }
     )
   }

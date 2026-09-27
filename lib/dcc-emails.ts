@@ -42,6 +42,7 @@ type DccEmailInput = {
   contentHtml: string
   metadata?: Record<string, any>
   bccAdmin?: boolean
+  locale?: string
 }
 
 function getSiteUrl() {
@@ -108,6 +109,12 @@ function button(label: string, href: string) {
 
 function emailLayout(input: DccEmailInput) {
   return buildDccEmailHtml(input)
+}
+
+function getEmailLocale(language: ComposerEmailLanguage) {
+  if (language === 'en') return 'en-US'
+  if (language === 'es') return 'es-ES'
+  return 'pt-BR'
 }
 
 function isUniqueViolation(error: any) {
@@ -279,12 +286,14 @@ export async function getComposerEmailIdentity(composerId: string) {
 }
 
 export async function sendComposerWelcomeEmail(input: ComposerEmailInput) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.welcomeSubject,
     title: `${copy.welcomeTitle}, ${input.name}`,
     category: 'composer_welcome',
+    locale: getEmailLocale(language),
     eventKey: `composer-welcome/${input.composerId}`,
     metadata: { composerId: input.composerId },
     contentHtml: `
@@ -325,15 +334,18 @@ export async function sendAdminComposerMessageEmail(input: ComposerEmailInput & 
   message: string
   adminEmail?: string | null
 }) {
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: input.subject,
     title: input.subject,
     category: 'admin_composer_message',
+    locale: getEmailLocale(language),
     eventKey: `admin-message/${input.composerId}/${Date.now()}`,
     metadata: { composerId: input.composerId, adminEmail: input.adminEmail || null },
     contentHtml: `
-      <p>Olá, ${escapeHtml(input.name)}.</p>
+      <p>${copy.greeting}, ${escapeHtml(input.name)}.</p>
       <p>${nl2br(input.message)}</p>
     `,
   })
@@ -342,6 +354,7 @@ export async function sendAdminComposerMessageEmail(input: ComposerEmailInput & 
 export async function sendMarketingCampaignEmail(input: {
   to: string
   name?: string | null
+  language?: ComposerEmailLanguage
   subject: string
   preview?: string | null
   body: string
@@ -352,12 +365,33 @@ export async function sendMarketingCampaignEmail(input: {
   recipientType: string
   recipientId?: string | null
 }) {
-  const bodyStartsWithGreeting = /^\s*ol[áa][,!\s]/i.test(input.body)
+  const language = input.language || 'pt'
+  const localized = language === 'en'
+    ? {
+        greeting: 'Hello',
+        footer: 'You received this email because you have an account with DCC Music.',
+        unsubscribe: 'I no longer want to receive these emails',
+        greetingPattern: /^\s*(hello|hi)[,!\s]/i,
+      }
+    : language === 'es'
+      ? {
+          greeting: 'Hola',
+          footer: 'Recibiste este correo porque tienes una cuenta en DCC Music.',
+          unsubscribe: 'No quiero recibir más estos correos',
+          greetingPattern: /^\s*hola[,!\s]/i,
+        }
+      : {
+          greeting: 'Olá',
+          footer: 'Você recebeu este e-mail porque tem cadastro na DCC Music.',
+          unsubscribe: 'Não quero mais receber estes e-mails',
+          greetingPattern: /^\s*ol[áa][,!\s]/i,
+        }
+  const bodyStartsWithGreeting = localized.greetingPattern.test(input.body)
   const greeting = bodyStartsWithGreeting
     ? ''
     : input.name
-      ? `<p>Olá, ${escapeHtml(input.name)}.</p>`
-      : '<p>Olá.</p>'
+      ? `<p>${localized.greeting}, ${escapeHtml(input.name)}.</p>`
+      : `<p>${localized.greeting}.</p>`
   const campaignButton = input.ctaLabel && input.ctaUrl
     ? button(input.ctaLabel, input.ctaUrl)
     : ''
@@ -368,6 +402,7 @@ export async function sendMarketingCampaignEmail(input: {
     title: input.subject,
     preview: input.preview || input.subject,
     category: 'admin_email_campaign',
+    locale: getEmailLocale(language),
     eventKey: `admin-campaign/${input.campaignId}/${input.to}`,
     metadata: {
       campaignId: input.campaignId,
@@ -379,8 +414,8 @@ export async function sendMarketingCampaignEmail(input: {
       <p>${nl2br(input.body)}</p>
       ${campaignButton}
       <p style="margin-top:24px;font-size:12px;color:#777080;">
-        Você recebeu este e-mail porque tem cadastro na DCC Music.
-        ${input.unsubscribeUrl ? `<br><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#7C16F8;text-decoration:underline;">Não quero mais receber estes e-mails</a>` : ''}
+        ${localized.footer}
+        ${input.unsubscribeUrl ? `<br><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#7C16F8;text-decoration:underline;">${localized.unsubscribe}</a>` : ''}
       </p>
     `,
   })
@@ -392,12 +427,14 @@ export async function sendManualStudioCreditEmail(input: ComposerEmailInput & {
   reason: string
   message?: string
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.creditsSubject,
     title: copy.creditsTitle,
     category: 'manual_studio_credit',
+    locale: getEmailLocale(language),
     eventKey: `manual-credit/${input.composerId}/${Date.now()}`,
     metadata: { composerId: input.composerId, credits: input.credits },
     contentHtml: `
@@ -415,12 +452,14 @@ export async function sendLowStudioCreditsEmail(input: ComposerEmailInput & {
   remainingMusics: number
   monthKey?: string
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.lowCreditsSubject,
     title: copy.lowCreditsTitle,
     category: 'low_studio_credits',
+    locale: getEmailLocale(language),
     eventKey: `low-credits/${input.composerId}/${input.monthKey || 'current'}`,
     metadata: { composerId: input.composerId, remainingCredits: input.remainingCredits },
     contentHtml: `
@@ -446,7 +485,8 @@ export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
   projectSlug?: string | null
   audioUrl?: string | null
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   // O callback do fornecedor pode chegar alguns segundos antes de o MP3 ficar
   // realmente disponível. Não avisamos o cliente enquanto as duas versões não
   // estiverem guardadas e reproduzíveis no nosso armazenamento.
@@ -486,6 +526,7 @@ export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
     subject: copy.readySubject.replace('%s', input.projectTitle),
     title: copy.readyTitle,
     category: 'studio_music_ready',
+    locale: getEmailLocale(language),
     eventKey: getStudioMusicReadyEventKey(input),
     metadata: {
       composerId: input.composerId,
@@ -508,12 +549,14 @@ export async function sendStudioMusicCommentEmail(input: ComposerEmailInput & {
   comment: string
   commentId: string
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.commentSubject,
     title: copy.commentTitle,
     category: 'studio_music_comment',
+    locale: getEmailLocale(language),
     eventKey: `studio-comment/${input.commentId}`,
     metadata: { composerId: input.composerId, commentId: input.commentId },
     contentHtml: `
@@ -531,12 +574,14 @@ export async function sendPaymentConfirmationEmail(input: ComposerEmailInput & {
   amount: number
   paidAt?: Date
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.paymentSubject,
     title: copy.paymentTitle,
     category: 'payment_confirmation',
+    locale: getEmailLocale(language),
     eventKey: `payment/${input.paymentId}`,
     metadata: { composerId: input.composerId, paymentId: String(input.paymentId), productType: input.productType },
     contentHtml: `
@@ -610,12 +655,14 @@ export async function sendSubscriptionExpirationReminderEmail(input: ComposerEma
   expiresAt?: string | Date | null
   daysRemaining?: number
 }) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.subscriptionSubject,
     title: copy.subscriptionTitle,
     category: 'subscription_expiration_reminder',
+    locale: getEmailLocale(language),
     eventKey: `subscription-reminder/${input.composerId}/${input.daysRemaining ?? 'x'}`,
     metadata: { composerId: input.composerId, daysRemaining: input.daysRemaining },
     contentHtml: `
@@ -641,22 +688,103 @@ export async function sendPartnerWelcomeEmail(input: {
   cpaStudioTopupAmount?: number
   cpaSubscriptionAmount?: number
   commissionCapAmount?: number | null
+  language?: ComposerEmailLanguage
 }) {
+  const language = input.language || 'pt'
+  const copy = language === 'en'
+    ? {
+        subject: 'Welcome to the DCC Music Partner Program',
+        title: 'Welcome',
+        preview: 'Your partner account is ready. Finish setting up access and start sharing.',
+        greeting: 'Hello',
+        intro: 'Your DCC Music partner account has been created. You can now access your dashboard to track clicks, sign-ups and purchases.',
+        finish: 'To finish your registration and access the dashboard:',
+        access: 'Open partner area',
+        temp1: 'Sign in with your email and the temporary password',
+        temp2: 'Create your permanent password when prompted.',
+        normal1: 'Sign in with your email and the permanent password you already created.',
+        share: 'Then use your exclusive referral link in your campaigns.',
+        email: 'Access email',
+        tempPassword: 'Temporary password',
+        commission: 'Commission',
+        paymentRule: 'Payment rule',
+        attribution: 'Attribution window',
+        days: 'days',
+        lifetime: 'Customer lifetime',
+        months: 'months',
+        link: 'Exclusive referral link',
+        important: 'Important: your link is unique. Always use this link in your campaigns so sign-ups and purchases are attributed correctly.',
+        firstPurchase: 'Only the first purchase from each attributed customer generates commission.',
+        lifetimeRule: 'Purchases made within the customer lifetime generate commission.',
+      }
+    : language === 'es'
+      ? {
+          subject: 'Bienvenido al Programa de Socios de DCC Music',
+          title: 'Bienvenido',
+          preview: 'Tu cuenta de socio está lista. Completa el acceso y empieza a compartir.',
+          greeting: 'Hola',
+          intro: 'Tu cuenta de socio de DCC Music ha sido creada. Ya puedes acceder a tu panel para seguir clics, registros y compras.',
+          finish: 'Para completar el registro y entrar al panel:',
+          access: 'Acceder al área de socios',
+          temp1: 'Entra con tu correo y la contraseña temporal',
+          temp2: 'Crea tu contraseña definitiva cuando el sistema lo solicite.',
+          normal1: 'Entra con tu correo y la contraseña definitiva que ya creaste.',
+          share: 'Después, usa tu enlace exclusivo de difusión en tus campañas.',
+          email: 'Correo de acceso',
+          tempPassword: 'Contraseña temporal',
+          commission: 'Comisión',
+          paymentRule: 'Regla de pago',
+          attribution: 'Ventana de atribución',
+          days: 'días',
+          lifetime: 'LT del cliente',
+          months: 'meses',
+          link: 'Enlace exclusivo para difusión',
+          important: 'Importante: tu enlace es exclusivo. Úsalo siempre en tus campañas para que los registros y las compras se atribuyan correctamente.',
+          firstPurchase: 'Solo la primera compra de cada cliente atribuido genera comisión.',
+          lifetimeRule: 'Las compras realizadas dentro del LT del cliente generan comisión.',
+        }
+      : {
+          subject: 'Bem-vindo ao Programa de Parceiros DCC Music',
+          title: 'Bem-vindo',
+          preview: 'Sua conta de parceiro foi criada. Veja como finalizar o acesso e começar a divulgar.',
+          greeting: 'Olá',
+          intro: 'Sua conta de parceiro da DCC Music foi criada. A partir de agora, você pode acessar seu painel para acompanhar cliques, cadastros e compras.',
+          finish: 'Para finalizar o cadastro e entrar no painel:',
+          access: 'Acessar área do parceiro',
+          temp1: 'Entre com seu e-mail e a senha temporária',
+          temp2: 'Crie sua senha oficial quando o sistema solicitar.',
+          normal1: 'Entre com seu e-mail e a senha oficial que você já criou.',
+          share: 'Depois, use seu link exclusivo de divulgação nas campanhas.',
+          email: 'E-mail de acesso',
+          tempPassword: 'Senha temporária',
+          commission: 'Comissão',
+          paymentRule: 'Regra de pagamento',
+          attribution: 'Janela de atribuição',
+          days: 'dias',
+          lifetime: 'LT do cliente',
+          months: 'meses',
+          link: 'Link exclusivo para divulgação',
+          important: 'Importante: seu link é exclusivo. Use sempre esse link nas campanhas para que os cadastros e compras sejam atribuídos corretamente.',
+          firstPurchase: 'Somente a primeira compra de cada cliente atribuído gera comissão.',
+          lifetimeRule: 'Compras feitas dentro do LT do cliente geram comissão.',
+        }
+
   const loginUrl = `${getSiteUrl()}/parceiros/login`
   const hasTemporaryPassword = Boolean(input.temporaryPassword)
   const commissionDescription = input.commissionModel === 'cpa'
-    ? `CPA: ${formatMoney(input.cpaStudioTopupAmount)} por música avulsa e ${formatMoney(input.cpaSubscriptionAmount)} por assinatura${input.commissionCapAmount ? `, limitado a ${formatMoney(input.commissionCapAmount)}` : ''}`
+    ? `CPA: ${formatMoney(input.cpaStudioTopupAmount)} / ${formatMoney(input.cpaSubscriptionAmount)}${input.commissionCapAmount ? ` · cap ${formatMoney(input.commissionCapAmount)}` : ''}`
     : `${input.commissionPercentage}%`
   const paymentScopeDescription = input.commissionPaymentScope === 'first_purchase'
-    ? 'Somente a primeira compra de cada cliente atribuído gera comissão.'
-    : 'Compras feitas dentro do LT do cliente geram comissão.'
+    ? copy.firstPurchase
+    : copy.lifetimeRule
 
   return sendDccEmail({
     to: input.email,
-    subject: 'Bem-vindo ao Programa de Parceiros DCC Music',
-    title: `Bem-vindo, ${input.displayName}`,
-    preview: 'Sua conta de parceiro foi criada. Veja como finalizar o acesso e começar a divulgar.',
+    subject: copy.subject,
+    title: `${copy.title}, ${input.displayName}`,
+    preview: copy.preview,
     category: 'partner_welcome',
+    locale: getEmailLocale(language),
     eventKey: `partner-welcome/${input.partnerId}`,
     metadata: {
       partnerId: input.partnerId,
@@ -665,53 +793,52 @@ export async function sendPartnerWelcomeEmail(input: {
     },
     bccAdmin: await isAdminEmailEnabled('admin_email.partner_welcome_copy'),
     contentHtml: `
-      <p>Olá, ${escapeHtml(input.displayName)}.</p>
-      <p>Sua conta de parceiro da DCC Music foi criada. A partir de agora, você pode acessar seu painel para acompanhar cliques, cadastros e compras.</p>
-
-      <p>Para finalizar o cadastro e entrar no painel:</p>
-      ${button('Acessar área do parceiro', loginUrl)}
+      <p>${copy.greeting}, ${escapeHtml(input.displayName)}.</p>
+      <p>${copy.intro}</p>
+      <p>${copy.finish}</p>
+      ${button(copy.access, loginUrl)}
 
       ${hasTemporaryPassword
         ? `
           <ol>
-            <li>Entre com seu e-mail e a senha temporária <strong>${escapeHtml(input.temporaryPassword)}</strong>.</li>
-            <li>Crie sua senha oficial quando o sistema solicitar.</li>
-            <li>Depois, use seu link exclusivo de divulgação nas campanhas.</li>
+            <li>${copy.temp1} <strong>${escapeHtml(input.temporaryPassword)}</strong>.</li>
+            <li>${copy.temp2}</li>
+            <li>${copy.share}</li>
           </ol>
         `
         : `
           <ol>
-            <li>Entre com seu e-mail e a senha oficial que você já criou.</li>
-            <li>Depois, use seu link exclusivo de divulgação nas campanhas.</li>
+            <li>${copy.normal1}</li>
+            <li>${copy.share}</li>
           </ol>
         `}
 
       <div style="background:#F8F4FC; border:1px solid #E8E3EE; border-radius:12px; padding:16px; margin-top:18px; color:#5E5868;">
-        <p><strong>E-mail de acesso:</strong> ${escapeHtml(input.email)}</p>
-        ${hasTemporaryPassword ? `<p><strong>Senha temporária:</strong> ${escapeHtml(input.temporaryPassword)}</p>` : ''}
-        <p><strong>Comissão:</strong> ${escapeHtml(commissionDescription)}</p>
-        <p><strong>Regra de pagamento:</strong> ${escapeHtml(paymentScopeDescription)}</p>
-        <p><strong>Janela de atribuição:</strong> ${escapeHtml(String(input.attributionWindowDays))} dias</p>
+        <p><strong>${copy.email}:</strong> ${escapeHtml(input.email)}</p>
+        ${hasTemporaryPassword ? `<p><strong>${copy.tempPassword}:</strong> ${escapeHtml(input.temporaryPassword)}</p>` : ''}
+        <p><strong>${copy.commission}:</strong> ${escapeHtml(commissionDescription)}</p>
+        <p><strong>${copy.paymentRule}:</strong> ${escapeHtml(paymentScopeDescription)}</p>
+        <p><strong>${copy.attribution}:</strong> ${escapeHtml(String(input.attributionWindowDays))} ${copy.days}</p>
         ${input.commissionPaymentScope === 'first_purchase'
           ? ''
-          : `<p><strong>LT do cliente:</strong> ${escapeHtml(String(input.customerLifetimeMonths))} meses</p>`}
-        <p style="margin-top:16px;"><strong>Link exclusivo para divulgação:</strong><br><a href="${escapeHtml(input.partnerLink)}" style="color:#7C16F8;">${escapeHtml(input.partnerLink)}</a></p>
+          : `<p><strong>${copy.lifetime}:</strong> ${escapeHtml(String(input.customerLifetimeMonths))} ${copy.months}</p>`}
+        <p style="margin-top:16px;"><strong>${copy.link}:</strong><br><a href="${escapeHtml(input.partnerLink)}" style="color:#7C16F8;">${escapeHtml(input.partnerLink)}</a></p>
       </div>
 
-      <p style="font-size:13px; color:#777080;">
-        Importante: seu link é exclusivo. Use sempre esse link nas campanhas para que os cadastros e compras sejam atribuídos corretamente.
-      </p>
+      <p style="font-size:13px; color:#777080;">${copy.important}</p>
     `,
   })
 }
 
 export async function sendComposerAccountDeletedEmail(input: ComposerEmailInput) {
-  const copy = getComposerEmailCopy(await getEmailLanguage(input))
+  const language = await getEmailLanguage(input)
+  const copy = getComposerEmailCopy(language)
   return sendDccEmail({
     to: input.email,
     subject: copy.deletedSubject,
     title: copy.deletedTitle,
     category: 'composer_account_deleted',
+    locale: getEmailLocale(language),
     eventKey: `account-deleted/${input.composerId}`,
     metadata: { composerId: input.composerId },
     contentHtml: `

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { consumeMagicLoginToken } from '@/lib/email-magic-login'
+import { consumeMagicLoginToken, MagicLoginError } from '@/lib/email-magic-login'
+import { createDccI18n } from '@/i18n'
+import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,15 +33,32 @@ function jsonForScript(value: any) {
     .replace(/\u2029/g, '\\u2029')
 }
 
-function buildSuccessHtml(input: Awaited<ReturnType<typeof consumeMagicLoginToken>>) {
+async function getRequestTranslator(request: NextRequest) {
+  const country = normalizeCountry(
+    request.cookies.get(COUNTRY_COOKIE)?.value ||
+    request.headers.get('x-dcc-country') ||
+    request.headers.get('x-vercel-ip-country') ||
+    request.headers.get('cf-ipcountry')
+  )
+  const locale = getLocaleForCountry(country)
+  const i18n = await createDccI18n(locale)
+  return { t: i18n.t.bind(i18n), locale }
+}
+
+function buildSuccessHtml(
+  input: Awaited<ReturnType<typeof consumeMagicLoginToken>>,
+  copy: { title: string; heading: string; redirecting: string; saveError: string },
+  locale: string
+) {
   const authPayload = jsonForScript(input)
+  const saveError = jsonForScript(copy.saveError)
 
   return `<!doctype html>
-<html lang="pt-BR">
+<html lang="${escapeHtml(locale)}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Entrando na DCC Music...</title>
+    <title>${escapeHtml(copy.title)}</title>
     <style>
       body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #030712; color: #f9fafb; font-family: Arial, Helvetica, sans-serif; }
       main { max-width: 520px; padding: 28px; border: 1px solid #4c1d95; border-radius: 18px; background: #050816; text-align: center; }
@@ -48,8 +67,8 @@ function buildSuccessHtml(input: Awaited<ReturnType<typeof consumeMagicLoginToke
   </head>
   <body>
     <main>
-      <h1>Entrando na sua conta...</h1>
-      <p id="status">Aguarde um instante. Você será redirecionado automaticamente.</p>
+      <h1>${escapeHtml(copy.heading)}</h1>
+      <p id="status">${escapeHtml(copy.redirecting)}</p>
     </main>
     <script>
       (function () {
@@ -72,7 +91,7 @@ function buildSuccessHtml(input: Awaited<ReturnType<typeof consumeMagicLoginToke
 
           window.location.replace(payload.redirectPath || '/');
         } catch (error) {
-          status.textContent = 'Não foi possível salvar o login neste navegador. Tente abrir o link novamente.';
+          status.textContent = ${saveError};
         }
       })();
     </script>
@@ -80,13 +99,17 @@ function buildSuccessHtml(input: Awaited<ReturnType<typeof consumeMagicLoginToke
 </html>`
 }
 
-function buildErrorHtml(message: string) {
+function buildErrorHtml(
+  message: string,
+  copy: { title: string; heading: string; fallback: string; signIn: string; createAccount: string },
+  locale: string
+) {
   return `<!doctype html>
-<html lang="pt-BR">
+<html lang="${escapeHtml(locale)}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Link inválido - DCC Music</title>
+    <title>${escapeHtml(copy.title)} - DCC Music</title>
     <style>
       body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #030712; color: #f9fafb; font-family: Arial, Helvetica, sans-serif; }
       main { max-width: 560px; padding: 28px; border: 1px solid #7f1d1d; border-radius: 18px; background: #050816; text-align: center; }
@@ -96,23 +119,39 @@ function buildErrorHtml(message: string) {
   </head>
   <body>
     <main>
-      <h1>Não foi possível entrar automaticamente</h1>
+      <h1>${escapeHtml(copy.heading)}</h1>
       <p>${escapeHtml(message)}</p>
-      <p>Você ainda pode entrar normalmente pela página de login.</p>
-      <p><a href="/compositores/login">Entrar na conta</a> · <a href="/compositores/cadastro">Criar conta</a></p>
+      <p>${escapeHtml(copy.fallback)}</p>
+      <p><a href="/compositores/login">${escapeHtml(copy.signIn)}</a> · <a href="/compositores/cadastro">${escapeHtml(copy.createAccount)}</a></p>
     </main>
   </body>
 </html>`
 }
 
 export async function GET(request: NextRequest) {
+  const { t, locale } = await getRequestTranslator(request)
+
   try {
     const token = request.nextUrl.searchParams.get('token') || ''
     const result = await consumeMagicLoginToken(token)
 
-    return htmlPage(buildSuccessHtml(result))
+    return htmlPage(buildSuccessHtml(result, {
+      title: t('emailMagic.enteringTitle'),
+      heading: t('emailMagic.enteringHeading'),
+      redirecting: t('emailMagic.redirecting'),
+      saveError: t('emailMagic.saveError'),
+    }, locale))
   } catch (error: any) {
     console.error('[EMAIL MAGIC LOGIN] Erro ao autenticar:', error)
-    return htmlPage(buildErrorHtml(error?.message || 'O link está inválido ou expirado.'), 400)
+    const errorCode = error instanceof MagicLoginError ? error.code : 'invalid'
+    const message = t(`emailMagic.errors.${errorCode}`, { defaultValue: t('emailMagic.errors.invalid') })
+
+    return htmlPage(buildErrorHtml(message, {
+      title: t('emailMagic.invalidTitle'),
+      heading: t('emailMagic.errorHeading'),
+      fallback: t('emailMagic.loginFallback'),
+      signIn: t('emailMagic.signIn'),
+      createAccount: t('emailMagic.createAccount'),
+    }, locale), 400)
   }
 }

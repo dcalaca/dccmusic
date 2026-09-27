@@ -283,6 +283,25 @@
       "dateTime": "Data e hora do clique"
     }
   },
+  "emailMagic": {
+    "enteringTitle": "A entrar na DCC Music...",
+    "enteringHeading": "A entrar na sua conta...",
+    "redirecting": "Aguarde um instante. Será redirecionado automaticamente.",
+    "saveError": "Não foi possível guardar o início de sessão neste navegador. Tente abrir a ligação novamente.",
+    "invalidTitle": "Ligação inválida",
+    "errorHeading": "Não foi possível entrar automaticamente",
+    "loginFallback": "Pode entrar normalmente através da página de início de sessão.",
+    "signIn": "Entrar na conta",
+    "createAccount": "Criar conta",
+    "errors": {
+      "invalid": "A ligação é inválida ou expirou.",
+      "used": "Esta ligação já foi utilizada.",
+      "expired": "Esta ligação expirou.",
+      "composerNotFound": "A conta de compositor não foi encontrada.",
+      "emailNotVerified": "Confirme o seu e-mail antes de entrar.",
+      "userNotFound": "A conta de utilizador não foi encontrada."
+    }
+  },
   "menu": {
     "home": "Início",
     "createSong": "Crie a sua música",
@@ -1353,7 +1372,18 @@
     "notifications": {
       "title": "Notificações",
       "subtitle": "Comentários, respostas, gostos e músicas prontas",
-      "empty": "Ainda não há notificações."
+      "empty": "Ainda não tem notificações.",
+      "actorFallback": "Alguém",
+      "commentTitle": "{{actor}} comentou em {{title}}",
+      "replyTitle": "{{actor}} respondeu ao seu comentário",
+      "likeTitle": "{{actor}} gostou do seu comentário",
+      "likeBody": "Em {{title}}",
+      "musicReadyTitle": "A sua música “{{title}}” está pronta",
+      "musicReadyBody": "Já está disponível no seu Studio IA.",
+      "content": {
+        "song": "a sua música",
+        "video": "o seu vídeo"
+      }
     }
   },
   "auth": {

@@ -4,6 +4,7 @@ export type DccEmailTemplateInput = {
   preview?: string | null
   contentHtml: string
   headerLabel?: string
+  locale?: string
 }
 
 export function escapeEmailHtml(value: unknown) {
@@ -33,9 +34,41 @@ export function buildDccEmailHtml(input: DccEmailTemplateInput) {
   const preview = escapeEmailHtml(input.preview || input.subject)
   const title = escapeEmailHtml(input.title)
   const headerLabel = escapeEmailHtml(input.headerLabel || 'Studio IA')
+  const locale = String(input.locale || 'pt-BR')
+  const footer = locale.startsWith('en')
+    ? {
+        tagline: 'DCC Music turns ideas and stories into music with artificial intelligence.',
+        help: 'Need help?',
+        site: 'Website',
+        studio: 'AI Studio',
+        blog: 'Blog',
+      }
+    : locale.startsWith('es')
+      ? {
+          tagline: 'DCC Music transforma ideas e historias en música con inteligencia artificial.',
+          help: '¿Necesitas ayuda?',
+          site: 'Sitio',
+          studio: 'Studio IA',
+          blog: 'Blog',
+        }
+      : locale === 'pt-PT'
+        ? {
+            tagline: 'A DCC Music transforma ideias e histórias em música com inteligência artificial.',
+            help: 'Precisa de ajuda?',
+            site: 'Site',
+            studio: 'Studio IA',
+            blog: 'Blog',
+          }
+        : {
+            tagline: 'A DCC Music transforma ideias e histórias em músicas com inteligência artificial.',
+            help: 'Precisa de ajuda?',
+            site: 'Site',
+            studio: 'Studio IA',
+            blog: 'Blog',
+          }
 
   return `<!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="${escapeEmailHtml(locale)}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -85,17 +118,17 @@ export function buildDccEmailHtml(input: DccEmailTemplateInput) {
           <tr>
             <td style="background:#0B0A11;padding:24px 32px;border-top:1px solid #252130;">
               <p style="margin:0 0 15px;padding-left:12px;border-left:3px solid #C6F135;font-size:13px;line-height:1.6;color:#D6D2DF;">
-                A DCC Music transforma ideias e histórias em músicas com inteligência artificial.
+                ${escapeEmailHtml(footer.tagline)}
               </p>
               <p style="margin:0 0 11px;font-size:12px;line-height:1.6;color:#817C8E;">
-                Precisa de ajuda? <a href="mailto:suporte@dccmusic.online" style="color:#AFA9BE;text-decoration:underline;">suporte@dccmusic.online</a>
+                ${escapeEmailHtml(footer.help)} <a href="mailto:suporte@dccmusic.online" style="color:#AFA9BE;text-decoration:underline;">suporte@dccmusic.online</a>
               </p>
               <p style="margin:0;font-size:11px;line-height:1.7;color:#686373;">
-                <a href="https://www.dccmusic.online/" style="color:#918B9E;text-decoration:underline;">Site</a>
+                <a href="https://www.dccmusic.online/" style="color:#918B9E;text-decoration:underline;">${escapeEmailHtml(footer.site)}</a>
                 &nbsp;·&nbsp;
-                <a href="https://www.dccmusic.online/studio-ia" style="color:#918B9E;text-decoration:underline;">Studio IA</a>
+                <a href="https://www.dccmusic.online/studio-ia" style="color:#918B9E;text-decoration:underline;">${escapeEmailHtml(footer.studio)}</a>
                 &nbsp;·&nbsp;
-                <a href="https://blog.dccmusic.online/" style="color:#918B9E;text-decoration:underline;">Blog</a>
+                <a href="https://blog.dccmusic.online/" style="color:#918B9E;text-decoration:underline;">${escapeEmailHtml(footer.blog)}</a>
               </p>
             </td>
           </tr>

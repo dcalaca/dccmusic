@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
     if (!composer) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+      return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
     }
 
     const limitParam = Number(new URL(request.url).searchParams.get('limit') || 30)
@@ -48,10 +48,10 @@ export async function GET(request: NextRequest) {
       unreadCount: count || 0,
       notifications: (data || []).map(mapNotification),
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('[NOTIFICATIONS] Erro ao listar:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao buscar notificações' },
+      { errorCode: 'notificationsLoadFailed' },
       { status: 500 }
     )
   }
@@ -61,7 +61,7 @@ export async function PATCH(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
     if (!composer) {
-      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+      return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
     }
 
     const body = await request.json().catch(() => ({}))
@@ -80,10 +80,10 @@ export async function PATCH(request: NextRequest) {
     if (error) throw error
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
+  } catch (error) {
     console.error('[NOTIFICATIONS] Erro ao marcar como lida:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao atualizar notificações' },
+      { errorCode: 'notificationsUpdateFailed' },
       { status: 500 }
     )
   }

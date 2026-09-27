@@ -1,8 +1,20 @@
 import { supabaseAdmin } from './supabase'
+import { createDccI18n } from '@/i18n'
+import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export type NotificationType = 'comment' | 'reply' | 'comment_like' | 'new_music'
 
 type ContentType = 'music' | 'video' | 'studio_music'
+
+async function getNotificationTranslator(composerId: string) {
+  const { data } = await supabaseAdmin
+    .from('dccmusic_composers')
+    .select('country')
+    .eq('id', composerId)
+    .maybeSingle()
+  const i18n = await createDccI18n(getLocaleForCountry(normalizeCountry(data?.country)))
+  return i18n.t.bind(i18n)
+}
 
 export async function createNotification(input: {
   composerId: string
@@ -113,7 +125,7 @@ export async function getContentLink(
       .eq('id', contentId)
       .maybeSingle()
 
-    const title = data?.title || 'sua música'
+    const title = data?.title || ''
     if (data?.public_slug) {
       return { href: `/studio/${data.public_slug}`, title }
     }
@@ -129,7 +141,7 @@ export async function getContentLink(
 
     return {
       href: data?.slug ? `/musicas/${data.slug}` : '/musicas',
-      title: data?.title || 'sua música',
+      title: data?.title || '',
     }
   }
 
@@ -141,13 +153,18 @@ export async function getContentLink(
 
   return {
     href: data?.slug ? `/videos/${data.slug}` : '/videos',
-    title: data?.title || 'seu vídeo',
+    title: data?.title || '',
   }
 }
 
-function actorLabel(name?: string | null) {
+function actorLabel(name: string | null | undefined, fallback: string) {
   const trimmed = String(name || '').trim()
-  return trimmed || 'Alguém'
+  return trimmed || fallback
+}
+
+function contentFallback(t: any, contentType: ContentType) {
+  if (contentType === 'video') return t('global.notifications.content.video')
+  return t('global.notifications.content.song')
 }
 
 export async function notifyNewComment(input: {
@@ -164,21 +181,23 @@ export async function notifyNewComment(input: {
     getContentLink(input.contentType, input.contentId),
   ])
 
-  const actor = actorLabel(input.actorName)
   await Promise.all(
     owners
       .filter((composerId) => composerId !== actorComposerId)
-      .map((composerId) =>
-        createNotification({
+      .map(async (composerId) => {
+        const t = await getNotificationTranslator(composerId)
+        const actor = actorLabel(input.actorName, t('global.notifications.actorFallback'))
+        const title = content.title || contentFallback(t, input.contentType)
+        return createNotification({
           composerId,
           type: 'comment',
-          title: `${actor} comentou em ${content.title}`,
+          title: t('global.notifications.commentTitle', { actor, title }),
           body: input.comment.slice(0, 280),
           href: content.href,
           actorName: actor,
           eventKey: `comment/${input.commentId}/${composerId}`,
         })
-      )
+      })
   )
 }
 
@@ -200,11 +219,12 @@ export async function notifyCommentReply(input: {
 
   if (!recipientComposerId) return
 
-  const actor = actorLabel(input.actorName)
+  const t = await getNotificationTranslator(recipientComposerId)
+  const actor = actorLabel(input.actorName, t('global.notifications.actorFallback'))
   await createNotification({
     composerId: recipientComposerId,
     type: 'reply',
-    title: `${actor} respondeu seu comentário`,
+    title: t('global.notifications.replyTitle', { actor }),
     body: input.comment.slice(0, 280),
     href: content.href,
     actorName: actor,
@@ -229,12 +249,14 @@ export async function notifyCommentLike(input: {
 
   if (!recipientComposerId) return
 
-  const actor = actorLabel(input.actorName)
+  const t = await getNotificationTranslator(recipientComposerId)
+  const actor = actorLabel(input.actorName, t('global.notifications.actorFallback'))
+  const title = content.title || contentFallback(t, input.contentType)
   await createNotification({
     composerId: recipientComposerId,
     type: 'comment_like',
-    title: `${actor} curtiu seu comentário`,
-    body: `Em ${content.title}`,
+    title: t('global.notifications.likeTitle', { actor }),
+    body: t('global.notifications.likeBody', { title }),
     href: content.href,
     actorName: actor,
     eventKey: `comment-like/${input.commentId}/${input.actorSiteUserId}`,
@@ -247,11 +269,12 @@ export async function notifyMusicReady(input: {
   projectTitle: string
   generationId?: string | null
 }) {
+  const t = await getNotificationTranslator(input.composerId)
   await createNotification({
     composerId: input.composerId,
     type: 'new_music',
-    title: `Sua música "${input.projectTitle}" ficou pronta`,
-    body: 'Já está disponível no seu Studio IA.',
+    title: t('global.notifications.musicReadyTitle', { title: input.projectTitle }),
+    body: t('global.notifications.musicReadyBody'),
     href: `/compositores/admin/studio-ia/projetos/${input.projectId}`,
     eventKey: `studio-ready/${input.generationId || input.projectId}`,
   })

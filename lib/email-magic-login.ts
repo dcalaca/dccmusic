@@ -7,6 +7,16 @@ import { getBaseUrl, getTrackedLinkUrl } from './link-utils'
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 const MAGIC_LINK_TTL_DAYS = 7
 
+export class MagicLoginError extends Error {
+  code: 'invalid' | 'used' | 'expired' | 'composerNotFound' | 'emailNotVerified' | 'userNotFound'
+
+  constructor(code: MagicLoginError['code']) {
+    super(code)
+    this.name = 'MagicLoginError'
+    this.code = code
+  }
+}
+
 type RecipientType = 'composer' | 'site_user'
 
 type CampaignButtonInput = {
@@ -154,12 +164,12 @@ async function markMagicLinkAsUsed(record: MagicLoginRecord) {
     .maybeSingle()
 
   if (error) throw error
-  if (!data) throw new Error('Este link já foi usado.')
+  if (!data) throw new MagicLoginError('used')
 }
 
 export async function consumeMagicLoginToken(rawToken: string) {
   const token = String(rawToken || '').trim()
-  if (!token) throw new Error('Link de acesso inválido.')
+  if (!token) throw new MagicLoginError('invalid')
 
   const { data, error } = await supabaseAdmin
     .from('admin_email_campaign_magic_links')
@@ -168,12 +178,12 @@ export async function consumeMagicLoginToken(rawToken: string) {
     .maybeSingle()
 
   if (error) throw error
-  if (!data) throw new Error('Link de acesso inválido.')
+  if (!data) throw new MagicLoginError('invalid')
 
   const record = data as MagicLoginRecord
 
-  if (record.used_at) throw new Error('Este link já foi usado.')
-  if (new Date(record.expires_at) < new Date()) throw new Error('Este link expirou.')
+  if (record.used_at) throw new MagicLoginError('used')
+  if (new Date(record.expires_at) < new Date()) throw new MagicLoginError('expired')
 
   await markMagicLinkAsUsed(record)
 
@@ -185,9 +195,9 @@ export async function consumeMagicLoginToken(rawToken: string) {
       .maybeSingle()
 
     if (composerError) throw composerError
-    if (!composer?.email) throw new Error('Conta de compositor não encontrada.')
+    if (!composer?.email) throw new MagicLoginError('composerNotFound')
     if ((composer as any).email_verified === false) {
-      throw new Error('Confirme seu e-mail antes de entrar.')
+      throw new MagicLoginError('emailNotVerified')
     }
 
     const tokenJwt = jwt.sign(
@@ -224,7 +234,7 @@ export async function consumeMagicLoginToken(rawToken: string) {
     .maybeSingle()
 
   if (siteUserError) throw siteUserError
-  if (!siteUser?.email) throw new Error('Conta de usuário não encontrada.')
+  if (!siteUser?.email) throw new MagicLoginError('userNotFound')
 
   const tokenJwt = jwt.sign(
     {

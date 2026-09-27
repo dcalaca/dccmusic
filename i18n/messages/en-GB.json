@@ -283,6 +283,25 @@
       "dateTime": "Click date and time"
     }
   },
+  "emailMagic": {
+    "enteringTitle": "Signing in to DCC Music...",
+    "enteringHeading": "Signing in to your account...",
+    "redirecting": "Please wait a moment. You will be redirected automatically.",
+    "saveError": "We could not save your sign-in in this browser. Try opening the link again.",
+    "invalidTitle": "Invalid link",
+    "errorHeading": "We could not sign you in automatically",
+    "loginFallback": "You can still sign in normally from the login page.",
+    "signIn": "Sign in",
+    "createAccount": "Create account",
+    "errors": {
+      "invalid": "This link is invalid or has expired.",
+      "used": "This link has already been used.",
+      "expired": "This link has expired.",
+      "composerNotFound": "The songwriter account could not be found.",
+      "emailNotVerified": "Confirm your email before signing in.",
+      "userNotFound": "The user account could not be found."
+    }
+  },
   "menu": {
     "home": "Home",
     "createSong": "Create your song",
@@ -1379,8 +1398,19 @@
     },
     "notifications": {
       "title": "Notifications",
-      "subtitle": "Comments, replies, likes, and finished songs",
-      "empty": "No notifications yet."
+      "subtitle": "Comments, replies, likes and finished songs",
+      "empty": "No notifications yet.",
+      "actorFallback": "Someone",
+      "commentTitle": "{{actor}} commented on {{title}}",
+      "replyTitle": "{{actor}} replied to your comment",
+      "likeTitle": "{{actor}} liked your comment",
+      "likeBody": "On {{title}}",
+      "musicReadyTitle": "Your song “{{title}}” is ready",
+      "musicReadyBody": "It is now available in your AI Studio.",
+      "content": {
+        "song": "your song",
+        "video": "your video"
+      }
     }
   },
   "auth": {

@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
     if (!token) {
       return NextResponse.json(
-        { ok: false, reason: 'missing', error: 'Token não informado.' },
+        { ok: false, reason: 'missing', errorCode: 'verificationTokenMissing' },
         { status: 400 }
       )
     }
@@ -22,7 +22,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           ...result,
-          error: 'O link pode estar expirado, já ter sido usado ou estar incorreto.',
+          errorCode: result.reason === 'expired'
+            ? 'verificationExpired'
+            : result.reason === 'used'
+              ? 'verificationUsed'
+              : 'verificationInvalid',
         },
         { status: 400 }
       )
@@ -33,10 +37,10 @@ export async function POST(request: NextRequest) {
         'Cache-Control': 'no-store, no-cache, max-age=0, must-revalidate',
       },
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('[EMAIL VERIFY CONFIRM] Erro:', error)
     return NextResponse.json(
-      { ok: false, reason: 'error', error: error?.message || 'Erro ao confirmar e-mail.' },
+      { ok: false, reason: 'error', errorCode: 'verificationFailed' },
       { status: 500 }
     )
   }
