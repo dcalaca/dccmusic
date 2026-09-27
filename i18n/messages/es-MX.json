@@ -1372,7 +1372,18 @@
     "notifications": {
       "title": "Notificaciones",
       "subtitle": "Comentarios, respuestas, me gusta y canciones listas",
-      "empty": "Aún no hay notificaciones."
+      "empty": "Aún no hay notificaciones.",
+      "actorFallback": "Alguien",
+      "commentTitle": "{{actor}} comentó en {{title}}",
+      "replyTitle": "{{actor}} respondió a tu comentario",
+      "likeTitle": "A {{actor}} le gustó tu comentario",
+      "likeBody": "En {{title}}",
+      "musicReadyTitle": "Tu canción “{{title}}” está lista",
+      "musicReadyBody": "Ya está disponible en tu Studio IA.",
+      "content": {
+        "song": "tu canción",
+        "video": "tu video"
+      }
     }
   },
   "auth": {
