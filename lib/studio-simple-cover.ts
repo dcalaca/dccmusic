@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto'
 import { supabaseAdmin } from './supabase'
 import { studioMonthKey } from './studio'
+import { isPoliticalCampaignContent } from './studio-political-content'
 
 const SIMPLE_COVER_MODEL = process.env.OPENAI_SIMPLE_COVER_IMAGE_MODEL || 'gpt-image-2'
 const SIMPLE_COVER_SIZE = process.env.OPENAI_SIMPLE_COVER_SIZE || '1024x1024'
@@ -78,6 +79,13 @@ async function ensureSimpleStudioCoverInternal(input: {
   description?: string | null
   replaceCurrent?: boolean
 }) {
+  if (isPoliticalCampaignContent(input.title, input.description)) {
+    console.warn('[Studio IA] Capa OpenAI ignorada para conteúdo de campanha política', {
+      projectId: input.projectId,
+    })
+    return null
+  }
+
   const { data: currentCover } = await supabaseAdmin
     .from('studio_covers')
     .select('id, image_url, image_path, is_premium, provider')
