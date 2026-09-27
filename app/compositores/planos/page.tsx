@@ -75,13 +75,12 @@ function formatCurrency(value: number, currency: StudioTopupCurrency = 'BRL') {
 function getLocalizedStudioPlanCopy(plan: db.Plan, t: any) {
   const key = plan.slug.replace(/-/g, '_')
   const translatedDescription = t(`payment.plans.studio.cards.${key}.description`, { defaultValue: plan.description || '' })
-  const translatedFeatures = t(`payment.plans.studio.cards.${key}.features`, { returnObjects: true, defaultValue: [] }) as unknown
 
   return {
     description: translatedDescription,
-    features: Array.isArray(translatedFeatures) && translatedFeatures.length > 0
-      ? translatedFeatures.map((feature) => String(feature))
-      : (Array.isArray(plan.features) ? plan.features : []),
+    features: (plan.featureKeys || []).map((featureKey) =>
+      t(`studioLanding.pricing.planFeatures.${featureKey}`, { defaultValue: featureKey })
+    ),
   }
 }
 

@@ -151,6 +151,7 @@ export interface Plan {
   durationMonths: number
   description?: string | null
   features?: string[] | null
+  featureKeys?: string[] | null
   featuredMusicsPerMonth?: number | null // Quantidade de músicas em destaque por mês
   hasPriorityFeatured?: boolean // Destaques com prioridade máxima
   hasGoldBadge?: boolean // Selo "Artista Ouro" no perfil
@@ -2105,6 +2106,7 @@ export function mapPlan(data: any): Plan {
       durationMonths: data.duration_months || 12,
       description: data.description || null,
       features: Array.isArray(data.features) ? data.features : [],
+      featureKeys: Array.isArray(data.feature_keys) ? data.feature_keys : [],
       featuredMusicsPerMonth: data.featured_musics_per_month !== undefined && data.featured_musics_per_month !== null ? Number(data.featured_musics_per_month) : null,
       hasPriorityFeatured: data.has_priority_featured !== undefined ? Boolean(data.has_priority_featured) : false,
       hasGoldBadge: data.has_gold_badge !== undefined ? Boolean(data.has_gold_badge) : false,
@@ -2630,6 +2632,7 @@ export async function createPlan(plan: {
         duration_months: plan.durationMonths,
         description: plan.description?.trim() || null,
         features: plan.features || [],
+        feature_keys: plan.featureKeys || [],
         featured_musics_per_month: plan.featuredMusicsPerMonth || null,
         has_priority_featured: plan.hasPriorityFeatured || false,
         has_gold_badge: plan.hasGoldBadge || false,
@@ -2659,6 +2662,7 @@ export async function updatePlan(
     durationMonths: number
     description: string | null
     features: string[]
+    featureKeys: string[]
     featuredMusicsPerMonth: number | null
     hasPriorityFeatured: boolean
     hasGoldBadge: boolean
@@ -2688,6 +2692,7 @@ export async function updatePlan(
     if (updates.durationMonths !== undefined) updateData.duration_months = updates.durationMonths
     if (updates.description !== undefined) updateData.description = updates.description?.trim() || null
     if (updates.features !== undefined) updateData.features = updates.features
+    if (updates.featureKeys !== undefined) updateData.feature_keys = updates.featureKeys
     if (updates.featuredMusicsPerMonth !== undefined) updateData.featured_musics_per_month = updates.featuredMusicsPerMonth
     if (updates.hasPriorityFeatured !== undefined) updateData.has_priority_featured = updates.hasPriorityFeatured
     if (updates.hasGoldBadge !== undefined) updateData.has_gold_badge = updates.hasGoldBadge

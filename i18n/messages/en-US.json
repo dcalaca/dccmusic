@@ -228,8 +228,7 @@
         "unlimitedLyrics": "Unlimited AI lyrics",
         "unlimitedQuickCovers": "Unlimited quick covers",
         "saveProjects": "Save music projects",
-        "preview20": "20-second preview",
-        "publishDcc": "Publish on DCC Music",
+        "publishDcc": "Publish on DCC Music for 30 days",
         "premiumCovers10": "10 premium AI covers",
         "premiumCovers30": "30 premium AI covers",
         "mp3Download": "MP3 download",
@@ -1709,51 +1708,16 @@
         "subscribe": "Subscribe to AI Studio",
         "cards": {
           "studio_start": {
-            "description": "Ideal for new users",
-            "features": [
-              "80 credits/month",
-              "Unlimited AI lyrics",
-              "Unlimited quick covers",
-              "Save music projects",
-              "Publishing on DCC Music"
-            ]
+            "description": "Ideal for new users"
           },
           "studio_pro": {
-            "description": "Ideal for active songwriters",
-            "features": [
-              "130 credits/month",
-              "Unlimited AI lyrics",
-              "Unlimited quick covers",
-              "10 premium AI covers",
-              "MP3 downloads",
-              "Unlimited projects",
-              "Publishing on DCC Music",
-              "Generation priority"
-            ]
+            "description": "Ideal for active songwriters"
           },
           "studio_elite": {
-            "description": "Ideal for advanced users and high-volume creators",
-            "features": [
-              "300 credits/month",
-              "Unlimited AI lyrics",
-              "Unlimited quick covers",
-              "30 premium AI covers",
-              "MP3 downloads",
-              "Unlimited projects",
-              "Maximum priority"
-            ]
+            "description": "Ideal for advanced users and high-volume creators"
           },
           "dcc_studio_ia": {
-            "description": "AI music studio for creating lyrics, full songs, covers, organized projects, publishing on DCC Music, and MP3 downloads.",
-            "features": [
-              "20 songs/month",
-              "Unlimited AI lyrics",
-              "Unlimited quick covers",
-              "Save music projects",
-              "Publishing on DCC Music",
-              "Premium player",
-              "MP3 downloads"
-            ]
+            "description": "AI music studio for creating lyrics, full songs, covers, organized projects, publishing on DCC Music, and MP3 downloads."
           }
         }
       },

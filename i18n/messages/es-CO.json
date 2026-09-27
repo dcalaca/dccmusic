@@ -228,8 +228,7 @@
         "unlimitedLyrics": "Letras con IA ilimitadas",
         "unlimitedQuickCovers": "Portadas rápidas ilimitadas",
         "saveProjects": "Guardar proyectos musicales",
-        "preview20": "Vista previa de 20 segundos",
-        "publishDcc": "Publicación en DCC Music",
+        "publishDcc": "Publicación en DCC Music por 30 días",
         "premiumCovers10": "10 portadas premium con IA",
         "premiumCovers30": "30 portadas premium con IA",
         "mp3Download": "Descarga MP3",
@@ -1709,51 +1708,16 @@
         "subscribe": "Suscribirme a Studio IA",
         "cards": {
           "studio_start": {
-            "description": "Ideal para usuarios que están empezando",
-            "features": [
-              "80 créditos/mes",
-              "Letras con IA ilimitadas",
-              "Portadas rápidas ilimitadas",
-              "Guardar proyectos musicales",
-              "Publicación en DCC Music"
-            ]
+            "description": "Ideal para usuarios que están empezando"
           },
           "studio_pro": {
-            "description": "Ideal para compositores activos",
-            "features": [
-              "130 créditos/mes",
-              "Letras con IA ilimitadas",
-              "Portadas rápidas ilimitadas",
-              "10 portadas premium con IA",
-              "Descargas MP3",
-              "Proyectos ilimitados",
-              "Publicación en DCC Music",
-              "Prioridad de generación"
-            ]
+            "description": "Ideal para compositores activos"
           },
           "studio_elite": {
-            "description": "Ideal para usuarios avanzados y creadores intensivos",
-            "features": [
-              "300 créditos/mes",
-              "Letras con IA ilimitadas",
-              "Portadas rápidas ilimitadas",
-              "30 portadas premium con IA",
-              "Descargas MP3",
-              "Proyectos ilimitados",
-              "Prioridad máxima"
-            ]
+            "description": "Ideal para usuarios avanzados y creadores intensivos"
           },
           "dcc_studio_ia": {
-            "description": "Estudio musical con IA para crear letras, canciones completas, portadas, proyectos organizados, publicar en DCC Music y descargar MP3.",
-            "features": [
-              "20 canciones/mes",
-              "Letras con IA ilimitadas",
-              "Portadas rápidas ilimitadas",
-              "Guardar proyectos musicales",
-              "Publicación en DCC Music",
-              "Reproductor premium",
-              "Descargas MP3"
-            ]
+            "description": "Estudio musical con IA para crear letras, canciones completas, portadas, proyectos organizados, publicar en DCC Music y descargar MP3."
           }
         }
       },
