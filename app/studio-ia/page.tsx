@@ -31,8 +31,8 @@ const receiveKeys = ['fullLyrics', 'songWithVocals', 'promoCover', 'savedProject
 const studioPlanSlugs = ['studio-start', 'studio-pro', 'studio-elite', 'dcc-studio-ia']
 const planFeatureKeys: Record<string, string[]> = {
   'studio-start': ['credits80', 'unlimitedLyrics', 'unlimitedQuickCovers', 'saveProjects', 'preview20', 'publishDcc'],
-  'studio-pro': ['credits130', 'unlimitedLyrics', 'unlimitedQuickCovers', 'premiumCovers10', 'premiumPlayer', 'mp3Download', 'unlimitedProjects', 'publishDcc', 'generationPriority'],
-  'studio-elite': ['credits300', 'unlimitedLyrics', 'unlimitedQuickCovers', 'premiumCovers30', 'mp3Downloads', 'unlimitedProjects', 'maxPriority', 'eliteBadge', 'earlyFeatures'],
+  'studio-pro': ['credits130', 'unlimitedLyrics', 'unlimitedQuickCovers', 'premiumCovers10', 'mp3Download', 'unlimitedProjects', 'publishDcc', 'generationPriority'],
+  'studio-elite': ['credits300', 'unlimitedLyrics', 'unlimitedQuickCovers', 'premiumCovers30', 'mp3Downloads', 'unlimitedProjects', 'maxPriority'],
   'dcc-studio-ia': ['songs20', 'unlimitedLyrics', 'unlimitedQuickCovers', 'saveProjects', 'publishDcc', 'premiumPlayer', 'mp3Downloads'],
 }
 
