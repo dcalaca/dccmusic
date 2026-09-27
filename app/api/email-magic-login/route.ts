@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { consumeMagicLoginToken, MagicLoginError } from '@/lib/email-magic-login'
 import { createDccI18n } from '@/i18n'
-import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
+import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,7 +35,7 @@ function jsonForScript(value: any) {
 
 async function getRequestTranslator(request: NextRequest) {
   const country = normalizeCountry(
-    request.cookies.get('dcc_country')?.value ||
+    request.cookies.get(COUNTRY_COOKIE)?.value ||
     request.headers.get('x-dcc-country') ||
     request.headers.get('x-vercel-ip-country') ||
     request.headers.get('cf-ipcountry')
