@@ -100,7 +100,7 @@ async function mapVersionToSource(version: any, projectUpdatedAt?: string | null
 export async function GET(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const preferredVersionId = searchParams.get('studioVersionId')?.trim() || ''
@@ -173,7 +173,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Music Transcription] Erro listar fontes:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao carregar suas músicas.' },
+      { error: error.message || 'Erro ao carregar suas músicas.', errorCode: 'loadSongs' },
       { status: 500 }
     )
   }
