@@ -1035,12 +1035,16 @@ export default function StudioProjectDetailPage() {
         setPreviewAudioUrl('')
         setGenerationBackgroundMode(false)
         setMessage('')
-        const generationError = String(data.generation?.error_message || '')
+        const generationError = String(data.generation?.error_message || '').trim()
         const normalizedGenerationError = generationError.toLowerCase()
         const isExpiredVoiceError =
           normalizedGenerationError.includes('voice has expired') ||
           (normalizedGenerationError.includes('voz') && normalizedGenerationError.includes('expir'))
-        setError(isExpiredVoiceError ? studioVoiceInvalidMessage : t('studio.project.generation.failed'))
+        setError(
+          isExpiredVoiceError
+            ? studioVoiceInvalidMessage
+            : generationError || t('studio.project.generation.failed')
+        )
         await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
         return
       }
