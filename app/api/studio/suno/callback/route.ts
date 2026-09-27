@@ -179,13 +179,17 @@ export async function POST(request: Request) {
           fallback: 'lyria',
         })
       }
-      if ('error' in fallback && fallback.error) {
-        providerError = fallback.error || providerError
+      if (!providerError && 'error' in fallback && fallback.error) {
+        providerError = fallback.error
       }
     }
 
     const failureMessage = hasFailure
-      ? getStudioMusicGenerationFailureMessage(providerError)
+      ? getStudioMusicGenerationFailureMessage(
+          providerError,
+          undefined,
+          generation.request_payload?.feature,
+        )
       : generation.error_message
 
     // Status preliminar; complete só vira completed se tivermos exatamente 2 versões.
