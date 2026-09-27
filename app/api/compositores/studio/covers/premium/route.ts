@@ -11,6 +11,10 @@ import {
 } from '@/lib/studio'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { supabaseAdmin } from '@/lib/supabase'
+import {
+  isPoliticalCampaignContent,
+  POLITICAL_CAMPAIGN_OPENAI_BLOCK_MESSAGE,
+} from '@/lib/studio-political-content'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -121,6 +125,16 @@ export async function POST(request: NextRequest) {
     if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
 
     const { lyric } = await getCurrentProjectAssets(project.id)
+    if (isPoliticalCampaignContent(project.title, project.description, lyric?.content)) {
+      return NextResponse.json(
+        {
+          error: POLITICAL_CAMPAIGN_OPENAI_BLOCK_MESSAGE,
+          errorCode: 'politicalCampaignOpenAiBlocked',
+        },
+        { status: 422 }
+      )
+    }
+
     const prompt = await buildCoverPrompt({
       title: project.title,
       style: project.style,
