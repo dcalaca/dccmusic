@@ -20,63 +20,13 @@
       "loadingPlayer": "Loading player...",
       "loadingVideo": "Loading video..."
     },
-    "labels": {
-      "songs": "Songs",
-      "videos": "Videos"
-    },
-    "counts": {
-      "items_one": "{{count}} item",
-      "items_other": "{{count}} items",
-      "songs_one": "{{count}} song",
-      "songs_other": "{{count}} songs",
-      "videos_one": "{{count}} video",
-      "videos_other": "{{count}} videos"
-    },
-    "accessibility": {
-      "youtubePlayer": "YouTube video player",
-      "closeNotice": "Close notice"
-    }
+    "labels": { "songs": "Songs", "videos": "Videos" },
+    "counts": { "items_one": "{{count}} item", "items_other": "{{count}} items", "songs_one": "{{count}} song", "songs_other": "{{count}} songs", "videos_one": "{{count}} video", "videos_other": "{{count}} videos" },
+    "accessibility": { "youtubePlayer": "YouTube video player", "closeNotice": "Close notice" }
   },
-  "notFound": {
-    "description": "Page not found",
-    "backHome": "Back to Home"
-  },
-  "adminLogin": {
-    "title": "Admin sign in",
-    "email": "Email",
-    "emailPlaceholder": "you@email.com",
-    "password": "Password",
-    "signingIn": "Signing in...",
-    "signIn": "Sign in",
-    "errors": {
-      "invalidCredentials": "Incorrect email or password",
-      "signIn": "We couldn't sign you in. Please try again."
-    }
-  },
-  "studioLanding": {
-    "actions": {
-      "checking": "Checking...",
-      "createSongs": "Create songs",
-      "createPlayback": "Create playback",
-      "improveSongs": "Improve songs",
-      "createCovers": "Create covers",
-      "viewPlans": "View plans",
-      "buyTopup": "Buy one-off top-up",
-      "haveCoupon": "Have a voucher?",
-      "checkingPlan": "Checking plan...",
-      "subscribe": "Subscribe to AI Studio"
-    },
-    "noBalance": {
-      "title": "You have no AI Studio balance",
-      "description": "You've already used your free song and have no balance. To keep creating, choose a plan or buy a one-off top-up."
-    },
-    "freeMusic": {
-      "signIn": "Sign in to see your balance and start creating.",
-      "available": "You still have a free song to try. Click here.",
-      "used": "You've already used your free song. View plans or buy a one-off top-up.",
-      "checking": "Checking your free song..."
-    }
-  },
+  "notFound": { "description": "Page not found", "backHome": "Back to Home" },
+  "adminLogin": { "title": "Admin sign in", "email": "Email", "emailPlaceholder": "you@email.com", "password": "Password", "signingIn": "Signing in...", "signIn": "Sign in", "errors": { "invalidCredentials": "Incorrect email or password", "signIn": "We couldn't sign you in. Please try again." } },
+  "studioLanding": { "actions": { "checking": "Checking...", "createSongs": "Create songs", "createPlayback": "Create playback", "improveSongs": "Improve songs", "createCovers": "Create covers", "viewPlans": "View plans", "buyTopup": "Buy one-off top-up", "haveCoupon": "Have a voucher?", "checkingPlan": "Checking plan...", "subscribe": "Subscribe to AI Studio" }, "noBalance": { "title": "You have no AI Studio balance", "description": "You've already used your free song and have no balance. To keep creating, choose a plan or buy a one-off top-up." }, "freeMusic": { "signIn": "Sign in to see your balance and start creating.", "available": "You still have a free song to try. Click here.", "used": "You've already used your free song. View plans or buy a one-off top-up.", "checking": "Checking your free song..." } },
   "menu": {
     "home": "Home",
     "createSong": "Create your song",
@@ -109,124 +59,115 @@
   "studio": {
     "project": {
       "detail": {
-        "coverPrimary": "MAIN",
-        "coverPro": "PRO",
-        "usePrimary": "Use as main",
-        "deleteCover": "Delete",
-        "swipeCovers": "Swipe to see other covers",
-        "generatingCover": "Creating cover...",
-        "yourCovers": "Your covers",
-        "makePrimary": "Set as main",
-        "downloadCover": "Download cover",
-        "download": "Download",
-        "songProject": "Song project",
-        "myProjects": "My Projects",
-        "orderDetails": "Request details",
-        "free": "Open",
-        "noMood": "No mood",
-        "generatedSong": "Generated song",
-        "style": "Style",
-        "mood": "Mood",
-        "format": "Format",
-        "length": "Length",
-        "voice": "Voice",
-        "aboutPublish": "About publishing",
-        "createProfessionalCover": "Create professional cover",
-        "downloadMp3": "Download MP3",
-        "refineTitle": "Fine-tune the lyrics",
-        "refineLyrics": "Improve lyrics with AI",
-        "optional": "optional",
-        "shareLink": "Share link",
-        "embed": "Embed on another site",
-        "copyCode": "Copy code",
-        "aiGenerated": "Made with AI",
-        "advancedTechnology": "Advanced technology",
-        "yourRights": "Your rights",
-        "guaranteedRights": "100% guaranteed",
-        "highQuality": "High quality",
-        "professionalAudio": "Professional audio",
-        "requestReceived": "Request received",
-        "backgroundGeneration": "Generating in the background",
-        "requestSummary": "Your request summary",
-        "submittedIdea": "Submitted idea",
-        "whatNext": "What happens next?",
-        "refreshStatus": "Refresh status",
-        "elapsed": "Elapsed time",
-        "musicPreview": "Song preview",
-        "planRequiredTitle": "An active plan is required to publish",
-        "viewStudioPlans": "View Studio IA plans",
-        "viewComposerPremium": "View Compositor Premium",
-        "understood": "Got it",
-        "previousCover": "Previous cover",
-        "nextCover": "Next cover",
-        "coverInfo": "About covers",
-        "publishInfo": "About publishing",
-        "closeTracking": "Close progress view",
-        "copyProjectCode": "Copy project code",
-        "coverAlt": "{{title}} - cover {{number}}",
-        "coverCount_one": "{{count}} version",
-        "coverCount_other": "{{count}} versions",
-        "backgroundHint": "Generation continues in the background. You can wait here or close this window.",
-        "videoVersionCredits": "Create video for Version {{number}} · 5 credits",
-        "videoCredits": "Create lyric video · 5 credits",
-        "waitVideoVersion": "Wait for this version to finish before creating another video.",
-        "waitVideoRequest": "Wait for the current request to finish before creating a video for another version.",
-        "unknownVersion": "Unknown version",
-        "originalStyle": "Original style: {{value}}",
-        "originalMood": "Original mood: {{value}}",
-        "direction": "Direction: {{value}}",
-        "inspirationTitle": "This project is using “{{title}}” as inspiration.",
-        "inspirationHint": "When you create a song, AI will use the original audio as a reference for melody, rhythm and style. You can edit the lyrics freely.",
-        "premiumCoverUsage": "Professional covers used this month: {{used}} / {{limit}}",
-        "refineHint": "Open to improve the lyrics or add instructions for the next generation.",
-        "extraPlaceholder": "E.g. use my saved voice with a calm, expressive delivery.",
-        "embedHint": "Copy the code below and paste it where the song should appear on your website.",
-        "projectCode": "Project code",
-        "returnLater": "You can close this page and return to “My Projects” later.",
-        "topupLabel": "Top-up / credits",
-        "topupPurpose": "create and generate songs",
-        "activePlanLabel": "Active plan",
-        "activePlanPurpose": "publish on DCC Music",
-        "name": "Name",
-        "yourSong": "Your song",
-        "notProvided": "Not provided",
-        "aiChooses": "AI will choose",
-        "coverSteps": {
-          "1": "Interpreting the lyrics",
-          "2": "Creating visual direction",
-          "3": "Generating image",
-          "4": "Saving cover to project"
-        },
-        "musicSteps": {
-          "1": "Writing lyrics",
-          "2": "Composing melody",
-          "3": "Producing instrumental",
-          "4": "Creating cover",
-          "5": "Finishing mastering"
-        },
-        "savingLyrics": "Saving lyrics...",
-        "saveLyricsError": "Could not save the lyrics.",
-        "lyricsSaved": "Lyrics saved successfully.",
-        "refiningLyrics": "Rewriting lyrics...",
-        "refineLyricsError": "Could not improve the lyrics.",
-        "lyricsUpdated": "Lyrics updated.",
-        "selectingCover": "Changing main cover...",
-        "deletingCover": "Deleting cover...",
-        "manageCoverError": "Could not update the cover.",
-        "yourProjects": "Your projects",
-        "alwaysSaved": "Always saved",
-        "loadError": "Could not load the project."
+              "coverPrimary": "MAIN",
+              "coverPro": "PRO",
+              "usePrimary": "Use as main",
+              "deleteCover": "Delete",
+              "swipeCovers": "Swipe to see other covers",
+              "generatingCover": "Creating cover...",
+              "yourCovers": "Your covers",
+              "makePrimary": "Set as main",
+              "downloadCover": "Download cover",
+              "download": "Download",
+              "songProject": "Song project",
+              "myProjects": "My Projects",
+              "orderDetails": "Request details",
+              "free": "Open",
+              "noMood": "No mood",
+              "generatedSong": "Generated song",
+              "style": "Style",
+              "mood": "Mood",
+              "format": "Format",
+              "length": "Length",
+              "voice": "Voice",
+              "aboutPublish": "About publishing",
+              "createProfessionalCover": "Create professional cover",
+              "downloadMp3": "Download MP3",
+              "refineTitle": "Fine-tune the lyrics",
+              "refineLyrics": "Improve lyrics with AI",
+              "optional": "optional",
+              "shareLink": "Share link",
+              "embed": "Embed on another site",
+              "copyCode": "Copy code",
+              "aiGenerated": "Made with AI",
+              "advancedTechnology": "Advanced technology",
+              "yourRights": "Your rights",
+              "guaranteedRights": "100% guaranteed",
+              "highQuality": "High quality",
+              "professionalAudio": "Professional audio",
+              "requestReceived": "Request received",
+              "backgroundGeneration": "Generating in the background",
+              "requestSummary": "Your request summary",
+              "submittedIdea": "Submitted idea",
+              "whatNext": "What happens next?",
+              "refreshStatus": "Refresh status",
+              "elapsed": "Elapsed time",
+              "musicPreview": "Song preview",
+              "planRequiredTitle": "An active plan is required to publish",
+              "viewStudioPlans": "View Studio IA plans",
+              "viewComposerPremium": "View Compositor Premium",
+              "understood": "Got it",
+              "previousCover": "Previous cover",
+              "nextCover": "Next cover",
+              "coverInfo": "About covers",
+              "publishInfo": "About publishing",
+              "closeTracking": "Close progress view",
+              "copyProjectCode": "Copy project code",
+              "coverAlt": "{{title}} - cover {{number}}",
+              "coverCount_one": "{{count}} version",
+              "coverCount_other": "{{count}} versions",
+              "backgroundHint": "Generation continues in the background. You can wait here or close this window.",
+              "videoVersionCredits": "Create video for Version {{number}} · 5 credits",
+              "videoCredits": "Create lyric video · 5 credits",
+              "waitVideoVersion": "Wait for this version to finish before creating another video.",
+              "waitVideoRequest": "Wait for the current request to finish before creating a video for another version.",
+              "unknownVersion": "Unknown version",
+              "originalStyle": "Original style: {{value}}",
+              "originalMood": "Original mood: {{value}}",
+              "direction": "Direction: {{value}}",
+              "inspirationTitle": "This project is using “{{title}}” as inspiration.",
+              "inspirationHint": "When you create a song, AI will use the original audio as a reference for melody, rhythm and style. You can edit the lyrics freely.",
+              "premiumCoverUsage": "Professional covers used this month: {{used}} / {{limit}}",
+              "refineHint": "Open to improve the lyrics or add instructions for the next generation.",
+              "extraPlaceholder": "E.g. use my saved voice with a calm, expressive delivery.",
+              "embedHint": "Copy the code below and paste it where the song should appear on your website.",
+              "projectCode": "Project code",
+              "returnLater": "You can close this page and return to “My Projects” later.",
+              "topupLabel": "Top-up / credits",
+              "topupPurpose": "create and generate songs",
+              "activePlanLabel": "Active plan",
+              "activePlanPurpose": "publish on DCC Music",
+              "name": "Name",
+              "yourSong": "Your song",
+              "notProvided": "Not provided",
+              "aiChooses": "AI will choose",
+              "coverSteps": {
+                      "1": "Interpreting the lyrics",
+                      "2": "Creating visual direction",
+                      "3": "Generating image",
+                      "4": "Saving cover to project"
+              },
+              "musicSteps": {
+                      "1": "Writing lyrics",
+                      "2": "Composing melody",
+                      "3": "Producing instrumental",
+                      "4": "Creating cover",
+                      "5": "Finishing mastering"
+              },
+              "savingLyrics": "Saving lyrics...",
+              "saveLyricsError": "Could not save the lyrics.",
+              "lyricsSaved": "Lyrics saved successfully.",
+              "refiningLyrics": "Rewriting lyrics...",
+              "refineLyricsError": "Could not improve the lyrics.",
+              "lyricsUpdated": "Lyrics updated.",
+              "selectingCover": "Changing main cover...",
+              "deletingCover": "Deleting cover...",
+              "manageCoverError": "Could not update the cover.",
+              "yourProjects": "Your projects",
+              "alwaysSaved": "Always saved",
+              "loadError": "Could not load the project."
       },
-      "refine": {
-        "actions": {
-          "improve_chorus": "Improve chorus",
-          "sticky": "Make it catchier",
-          "sadder": "Make it sadder",
-          "modern": "Make it more modern",
-          "romantic": "Make it more romantic",
-          "commercial": "Make it more commercial"
-        }
-      },
+      "refine": {"actions": {"improve_chorus": "Improve chorus", "sticky": "Make it catchier", "sadder": "Make it sadder", "modern": "Make it more modern", "romantic": "Make it more romantic", "commercial": "Make it more commercial"}},
       "audio": {
         "listen": "Listen to song",
         "pause": "Pause song",
@@ -359,36 +300,7 @@
         "generate": "Generate chords"
       },
       "video": {
-        "status": {
-          "payment_pending": {
-            "label": "Awaiting confirmation",
-            "description": "Your request was recorded and will be sent to production."
-          },
-          "requested": {
-            "label": "Requested",
-            "description": "We received your request. Your lyric video will be sent to production."
-          },
-          "in_production": {
-            "label": "In production",
-            "description": "Your video with cover, title and lyrics is being produced. The link will appear here when ready."
-          },
-          "retry_pending": {
-            "label": "Trying again",
-            "description": "There was a temporary issue. Your video remains queued and will be retried automatically without a charge."
-          },
-          "completed": {
-            "label": "Completed",
-            "description": "Your lyric video is ready."
-          },
-          "cancelled": {
-            "label": "Cancelled",
-            "description": "This request was cancelled."
-          },
-          "failed": {
-            "label": "Not confirmed",
-            "description": "We could not confirm the request. Contact support if needed."
-          }
-        },
+        "status": {"payment_pending": {"label": "Awaiting confirmation", "description": "Your request was recorded and will be sent to production."}, "requested": {"label": "Requested", "description": "We received your request. Your lyric video will be sent to production."}, "in_production": {"label": "In production", "description": "Your video with cover, title and lyrics is being produced. The link will appear here when ready."}, "retry_pending": {"label": "Trying again", "description": "There was a temporary issue. Your video remains queued and will be retried automatically without a charge."}, "completed": {"label": "Completed", "description": "Your lyric video is ready."}, "cancelled": {"label": "Cancelled", "description": "This request was cancelled."}, "failed": {"label": "Not confirmed", "description": "We could not confirm the request. Contact support if needed."}},
         "createTitle": "Create lyric video",
         "description": "Creates a simple video with the cover, song title, and lyrics synced to the audio. Each version can have 1 video. New requests cost 5 credits.",
         "whichVersion": "Which version do you want in the video?",
@@ -485,6 +397,7 @@
       }
     },
     "create": {
+      "autoTitle": "New song",
       "backToPlans": "Back to plans",
       "noCreditsTitle": "You're out of AI Studio credits",
       "noCreditsDescription": "To create new songs, choose an AI Studio plan or buy a credit pack. If you just paid, refresh this page in a few seconds.",
@@ -679,8 +592,7 @@
         "professionalLyrics": "Professional lyrics",
         "readyToSing": "Ready to sing",
         "inSeconds": "In seconds"
-      },
-      "autoTitle": "New song"
+      }
     },
     "projects": {
       "back": "Back",
@@ -886,14 +798,14 @@
           "prepareUpload": "Could not prepare the upload.",
           "upload": "Could not upload the song.",
           "create": "Could not create the instrumental.",
-          "refunded": "{{count}} credits were refunded.",
-          "unauthorized": "Your session has expired. Please sign in again.",
-          "projectNotFound": "Project not found.",
-          "versionNotFound": "This version was not found in the project.",
-          "loadSaved": "Could not load the saved instrumental.",
-          "sourceRequired": "Choose a version or upload a song.",
-          "insufficientCredits": "You need {{count}} credits to create the instrumental.",
-          "playbackUnavailable": "We could not create the instrumental right now. Please try again."
+    "refunded": "{{count}} credits were refunded.",
+    "unauthorized": "Your session has expired. Please sign in again.",
+    "projectNotFound": "Project not found.",
+    "versionNotFound": "This version was not found in the project.",
+    "loadSaved": "Could not load the saved instrumental.",
+    "sourceRequired": "Choose a version or upload a song.",
+    "insufficientCredits": "You need {{count}} credits to create the instrumental.",
+    "playbackUnavailable": "We could not create the instrumental right now. Please try again."
         },
         "loadingVersion": "Loading the selected version...",
         "mySong": "My song",
@@ -932,14 +844,14 @@
           "invalid": "Invalid coupon.",
           "check": "Could not check the coupon.",
           "apply": "Could not apply the coupon.",
-          "payment": "Could not open the payment.",
-          "unauthorized": "Your session has expired. Please sign in again.",
-          "notFound": "Coupon not found. Check the code.",
-          "inactive": "This coupon is no longer active.",
-          "expired": "This coupon has expired.",
-          "usageLimit": "This coupon has reached its usage limit.",
-          "alreadyUsedPaid": "You have already used this coupon or started a purchase with it.",
-          "paymentUnavailable": "Payment is not available right now. Please try again later."
+    "payment": "Could not open the payment.",
+    "unauthorized": "Your session has expired. Please sign in again.",
+    "notFound": "Coupon not found. Check the code.",
+    "inactive": "This coupon is no longer active.",
+    "expired": "This coupon has expired.",
+    "usageLimit": "This coupon has reached its usage limit.",
+    "alreadyUsedPaid": "You have already used this coupon or started a purchase with it.",
+    "paymentUnavailable": "Payment is not available right now. Please try again later."
         },
         "successTitle": "Coupon applied!",
         "successText": "You received {{count}} song(s). They are already available in your balance.",
@@ -947,8 +859,8 @@
         "back": "Back to AI Studio",
         "title": "I have a coupon",
         "subtitle": "Enter the code you received.",
-        "codeLabel": "Coupon code",
-        "codePlaceholder": "E.g. EMERSON50",
+  "codeLabel": "Coupon code",
+  "codePlaceholder": "E.g. EMERSON50",
         "check": "Check coupon",
         "activeTitle": "This coupon is active!",
         "activeSubtitle": "Here's what you'll receive:",
@@ -966,9 +878,7 @@
         "paymentHint": "You'll be taken to payment to pay {{amount}}. The songs are added automatically after confirmation."
       },
       "ready": {
-        "moreOptions": "More options",
-        "show": "Show",
-        "hide": "Hide",
+        "moreOptions": "More options", "show": "Show", "hide": "Hide",
         "errors": {
           "chooseAudioTranscribe": "Choose the song audio before asking AI to transcribe it.",
           "transcribe": "We could not understand the audio.",
@@ -1103,11 +1013,7 @@
         "artistPlaceholder": "Optional. Example: John Smith",
         "promptPlaceholder": "Example: The artist looking down an open road at sunset, cinematic and emotional, with a modern country album aesthetic...",
         "quality": "Cover quality",
-        "qualities": {
-          "low": "Low quality",
-          "medium": "Medium quality",
-          "pro": "Pro quality"
-        },
+        "qualities": { "low": "Low quality", "medium": "Medium quality", "pro": "Pro quality" },
         "photosSelected_one": "{{count}} photo selected.",
         "photosSelected_other": "{{count}} photos selected.",
         "optimizingPhotos": "Optimising photos before upload...",
@@ -1134,62 +1040,10 @@
         },
         "options": {
           "other": "Other option",
-          "musicStyles": {
-            "sertanejo": "Sertanejo",
-            "romantic": "Romantic",
-            "gospel": "Gospel",
-            "funk": "Funk",
-            "popularRomanticBrega": "Popular romantic brega",
-            "pagode": "Pagode",
-            "pop": "Pop",
-            "trap": "Trap",
-            "rock": "Rock",
-            "free": "Free",
-            "hipHopRap": "Hip-Hop / Rap",
-            "rnb": "R&B",
-            "country": "Country",
-            "alternativeIndie": "Alternative / Indie",
-            "edmDance": "EDM / Dance",
-            "jazz": "Jazz",
-            "blues": "Blues",
-            "folk": "Folk",
-            "soul": "Soul",
-            "metal": "Metal",
-            "punk": "Punk",
-            "latinPopReggaeton": "Latin Pop / Reggaeton"
-          },
-          "visualStyles": {
-            "modern": "Modern",
-            "vintage": "Vintage",
-            "cinematic": "Cinematic",
-            "luxury": "Luxury",
-            "romantic": "Romantic",
-            "dark": "Dark",
-            "colorful": "Colourful",
-            "minimalist": "Minimalist"
-          },
-          "environments": {
-            "backlands": "Brazilian countryside",
-            "city": "City",
-            "beach": "Beach",
-            "stage": "Stage",
-            "farm": "Farm",
-            "countryside": "Countryside",
-            "nightStreet": "Night street",
-            "musicStudio": "Music studio",
-            "desert": "Desert",
-            "starrySky": "Starry sky"
-          },
-          "artDirections": {
-            "realistic": "Realistic",
-            "illustration": "Illustration",
-            "movieScene": "Movie scene",
-            "musicPoster": "Music poster",
-            "albumCover": "Album cover",
-            "vintage": "Vintage",
-            "neon": "Neon",
-            "editorial": "Editorial"
-          }
+          "musicStyles": { "sertanejo": "Sertanejo", "romantic": "Romantic", "gospel": "Gospel", "funk": "Funk", "popularRomanticBrega": "Popular romantic brega", "pagode": "Pagode", "pop": "Pop", "trap": "Trap", "rock": "Rock", "free": "Free", "hipHopRap": "Hip-Hop / Rap", "rnb": "R&B", "country": "Country", "alternativeIndie": "Alternative / Indie", "edmDance": "EDM / Dance", "jazz": "Jazz", "blues": "Blues", "folk": "Folk", "soul": "Soul", "metal": "Metal", "punk": "Punk", "latinPopReggaeton": "Latin Pop / Reggaeton" },
+          "visualStyles": { "modern": "Modern", "vintage": "Vintage", "cinematic": "Cinematic", "luxury": "Luxury", "romantic": "Romantic", "dark": "Dark", "colorful": "Colourful", "minimalist": "Minimalist" },
+          "environments": { "backlands": "Brazilian countryside", "city": "City", "beach": "Beach", "stage": "Stage", "farm": "Farm", "countryside": "Countryside", "nightStreet": "Night street", "musicStudio": "Music studio", "desert": "Desert", "starrySky": "Starry sky" },
+          "artDirections": { "realistic": "Realistic", "illustration": "Illustration", "movieScene": "Movie scene", "musicPoster": "Music poster", "albumCover": "Album cover", "vintage": "Vintage", "neon": "Neon", "editorial": "Editorial" }
         },
         "subtitle": "Upload up to 3 reference photos or create your cover using text only. AI interprets your request and creates professional cover art with the song title and artist name.",
         "credits": "credits",
@@ -1255,21 +1109,8 @@
   },
   "global": {
     "country": {
-      "names": {
-        "BR": "Brazil",
-        "PY": "Paraguay",
-        "CO": "Colombia",
-        "PT": "Portugal",
-        "MX": "Mexico",
-        "ES": "Spain",
-        "US": "United States",
-        "GB": "United Kingdom"
-      },
-      "languages": {
-        "pt": "Portuguese",
-        "es": "Spanish",
-        "en": "English"
-      },
+      "names": {"BR": "Brazil", "PY": "Paraguay", "CO": "Colombia", "PT": "Portugal", "MX": "Mexico", "ES": "Spain", "US": "United States", "GB": "United Kingdom"},
+      "languages": {"pt": "Portuguese", "es": "Spanish", "en": "English"},
       "change": "Change country",
       "prefix": "Country:",
       "choose": "Choose your country"
@@ -1287,10 +1128,7 @@
     }
   },
   "auth": {
-    "actions": {
-      "showPassword": "Show password",
-      "hidePassword": "Hide password"
-    },
+    "actions": {"showPassword": "Show password", "hidePassword": "Hide password"},
     "fields": {
       "email": "Email",
       "password": "Password",
@@ -1540,22 +1378,7 @@
         "load": "Could not load the one-time top-up.",
         "confirm": "Could not confirm the top-up.",
         "check": "Could not check the top-up.",
-        "unauthorized": "Your session has expired. Please sign in again.",
-        "sessionExpired": "Your session has expired. Please sign in again.",
-        "quantityInvalid": "Enter a valid number of songs.",
-        "quantityLimit": "A one-off top-up can include up to 500 songs per purchase.",
-        "topupRequired": "We couldn't identify this top-up.",
-        "notFound": "Top-up not found.",
-        "paymentUnavailable": "Payment is temporarily unavailable. Please try again in a few minutes.",
-        "amountChanged": "The top-up amount changed. Refresh the page and try again.",
-        "paymentMismatch": "This payment does not belong to this top-up.",
-        "alreadyPaid": "This top-up has already been paid.",
-        "paymentInProgress": "There is already a payment in progress. Wait for confirmation before trying another method.",
-        "amountInvalid": "The top-up amount is invalid.",
-        "currencyInvalid": "The currency for this top-up is invalid.",
-        "start": "We couldn't start the top-up. Please try again.",
-        "processing": "We couldn't process the payment. Please try again.",
-        "openStripe": "We couldn't open the alternative payment method."
+        "unauthorized": "Your session has expired. Please sign in again.", "sessionExpired": "Your session has expired. Please sign in again.", "quantityInvalid": "Enter a valid number of songs.", "quantityLimit": "A one-off top-up can include up to 500 songs per purchase.", "topupRequired": "We couldn't identify this top-up.", "notFound": "Top-up not found.", "paymentUnavailable": "Payment is temporarily unavailable. Please try again in a few minutes.", "amountChanged": "The top-up amount changed. Refresh the page and try again.", "paymentMismatch": "This payment does not belong to this top-up.", "alreadyPaid": "This top-up has already been paid.", "paymentInProgress": "There is already a payment in progress. Wait for confirmation before trying another method.", "amountInvalid": "The top-up amount is invalid.", "currencyInvalid": "The currency for this top-up is invalid.", "start": "We couldn't start the top-up. Please try again.", "processing": "We couldn't process the payment. Please try again.", "openStripe": "We couldn't open the alternative payment method."
       },
       "success": {
         "checking": "Checking payment confirmation...",
@@ -1857,12 +1680,7 @@
       "goldOnly": "This feature is exclusive to active Gold Plan subscribers.",
       "load": "Could not load the AI Cover Generator.",
       "inputRequired": "Paste the song lyrics or describe your idea before generating.",
-      "generate": "Could not generate the cover.",
-      "unauthorized": "Your session has expired. Please sign in again.",
-      "inputTooShort": "Write at least 20 characters of a description or lyric excerpt.",
-      "inputTooLong": "The text is too long. Use up to 6,000 characters.",
-      "cooldown": "Wait {{count}}s before creating another cover.",
-      "monthlyLimitReached": "You reached the monthly limit of 100 Gold Plan covers. The counter will renew automatically next month.",
+      "generate": "Could not generate the cover.", "unauthorized": "Your session has expired. Please sign in again.", "inputTooShort": "Write at least 20 characters of a description or lyric excerpt.", "inputTooLong": "The text is too long. Use up to 6,000 characters.", "cooldown": "Wait {{count}}s before creating another cover.", "monthlyLimitReached": "You reached the monthly limit of 100 Gold Plan covers. The counter will renew automatically next month.",
       "download": "Could not download the cover. Please try again.",
       "share": "Could not share the cover. Please try again."
     }
