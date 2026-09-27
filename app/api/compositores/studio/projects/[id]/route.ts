@@ -393,7 +393,7 @@ export async function GET(
         createdAt: activeGeneration.created_at,
         updatedAt: activeGeneration.updated_at,
       } : null,
-      generationFailure: (latestFailedGeneration && availableVersions.length === 0) ? {
+      generationFailure: (latestFailedGeneration && !activeGeneration && availableVersions.length === 0) ? {
         id: latestFailedGeneration.id,
         message: getStudioMusicGenerationFailureMessage(
           getStudioGenerationProviderError(latestFailedGeneration.response_payload) || latestFailedGeneration.error_message,
