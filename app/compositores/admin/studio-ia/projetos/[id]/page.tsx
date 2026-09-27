@@ -783,11 +783,11 @@ export default function StudioProjectDetailPage() {
         }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(t('studio.project.detail.refineLyricsError'))
+      if (!response.ok) throw new Error(data.error || t('studio.project.detail.refineLyricsError'))
       setLyric(data.lyric)
       setMessage(t('studio.project.detail.lyricsUpdated'))
-    } catch {
-      setError(t('studio.project.detail.refineLyricsError'))
+    } catch (err: any) {
+      setError(err?.message || t('studio.project.detail.refineLyricsError'))
     } finally {
       setProcessing('')
     }
@@ -1105,7 +1105,7 @@ export default function StudioProjectDetailPage() {
         body: JSON.stringify({ projectId }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(t('studio.project.cover.error'))
+      if (!response.ok) throw new Error(data.error || t('studio.project.cover.error'))
       setProject((currentProject: any) => ({
         ...currentProject,
         cover: data.cover,
