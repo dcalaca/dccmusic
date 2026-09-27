@@ -478,6 +478,62 @@ export function getStudioMusicReadyEventKey(input: {
   return `studio-ready/${input.generationId || input.projectId || input.projectTitle || 'unknown'}`
 }
 
+export async function sendStudioMusicFailureEmail(input: ComposerEmailInput & {
+  projectTitle: string
+  errorMessage: string
+  projectId?: string | null
+  generationId?: string | null
+}) {
+  const language = await getEmailLanguage(input)
+  const copy = language === 'en'
+    ? {
+        subject: `We couldn't complete your song: ${input.projectTitle}`,
+        title: 'There was a problem creating your song',
+        greeting: 'Hello',
+        intro: 'We could not complete the requested generation.',
+        balance: 'Your balance was preserved when applicable.',
+        action: 'Open DCC Music',
+      }
+    : language === 'es'
+      ? {
+          subject: `No pudimos completar tu canción: ${input.projectTitle}`,
+          title: 'Hubo un problema al crear tu canción',
+          greeting: 'Hola',
+          intro: 'No pudimos completar la generación solicitada.',
+          balance: 'Tu saldo fue preservado cuando correspondía.',
+          action: 'Abrir DCC Music',
+        }
+      : {
+          subject: `Não conseguimos concluir sua música: ${input.projectTitle}`,
+          title: 'Houve um problema ao criar sua música',
+          greeting: 'Olá',
+          intro: 'Não conseguimos concluir a geração solicitada.',
+          balance: 'Seu saldo foi preservado quando aplicável.',
+          action: 'Abrir DCC Music',
+        }
+
+  return sendDccEmail({
+    to: input.email,
+    subject: copy.subject,
+    title: copy.title,
+    category: 'studio_music_failure',
+    locale: getEmailLocale(language),
+    eventKey: `studio-failed/${input.generationId || input.projectId || input.projectTitle}`,
+    metadata: {
+      composerId: input.composerId,
+      projectId: input.projectId || null,
+      generationId: input.generationId || null,
+    },
+    contentHtml: `
+      <p>${copy.greeting}, ${escapeHtml(input.name)}.</p>
+      <p>${copy.intro}</p>
+      <p style="background:#FFF4F4;border:1px solid #F3C7C7;border-radius:12px;padding:14px;color:#6B2A2A;"><strong>${escapeHtml(input.errorMessage)}</strong></p>
+      <p>${copy.balance}</p>
+      ${input.projectId ? button(copy.action, `${getSiteUrl()}/compositores/admin/studio-ia/projetos/${input.projectId}`) : ''}
+    `,
+  })
+}
+
 export async function sendStudioMusicReadyEmail(input: ComposerEmailInput & {
   projectTitle: string
   projectId?: string
