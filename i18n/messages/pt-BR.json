@@ -26,7 +26,173 @@
   },
   "notFound": { "description": "Página não encontrada", "backHome": "Voltar para Home" },
   "adminLogin": { "title": "Login administrativo", "email": "E-mail", "emailPlaceholder": "seu@email.com", "password": "Senha", "signingIn": "Entrando...", "signIn": "Entrar", "errors": { "invalidCredentials": "E-mail ou senha incorretos", "signIn": "Erro ao fazer login. Tente novamente." } },
-  "studioLanding": { "actions": { "checking": "Verificando...", "createSongs": "Criar músicas", "createPlayback": "Criar Playback", "improveSongs": "Melhorar músicas", "createCovers": "Criar capas", "viewPlans": "Ver planos", "buyTopup": "Comprar recarga avulsa", "haveCoupon": "Você tem cupom?", "checkingPlan": "Verificando plano...", "subscribe": "Assinar Studio IA" }, "noBalance": { "title": "Você está sem saldo no Studio IA", "description": "Você já usou sua música grátis e está sem saldo. Para continuar criando, escolha um plano ou compre uma recarga avulsa." }, "freeMusic": { "signIn": "Entre para ver seu saldo e começar a criar.", "available": "Você ainda tem uma música grátis para testar, clique aqui.", "used": "Você já usou sua música grátis, veja os planos ou compre recarga avulsa.", "checking": "Verificando música grátis..." } },
+  "studioLanding": {
+    "actions": {
+      "checking": "Verificando...",
+      "createSongs": "Criar músicas",
+      "createPlayback": "Criar Playback",
+      "improveSongs": "Melhorar músicas",
+      "createCovers": "Criar capas",
+      "viewPlans": "Ver planos",
+      "buyTopup": "Comprar recarga avulsa",
+      "haveCoupon": "Você tem cupom?",
+      "checkingPlan": "Verificando plano...",
+      "subscribe": "Assinar Studio IA"
+    },
+    "noBalance": {
+      "title": "Você está sem saldo no Studio IA",
+      "description": "Você já usou sua música grátis e está sem saldo. Para continuar criando, escolha um plano ou compre uma recarga avulsa."
+    },
+    "freeMusic": {
+      "signIn": "Entre para ver seu saldo e começar a criar.",
+      "available": "Você ainda tem uma música grátis para testar, clique aqui.",
+      "used": "Você já usou sua música grátis, veja os planos ou compre recarga avulsa.",
+      "checking": "Verificando música grátis..."
+    },
+    "meta": {
+      "title": "DCC Studio IA - Crie Músicas com Inteligência Artificial",
+      "description": "Crie letras, músicas completas, capas e versões com IA. Organize projetos, publique no DCC Music e gere cifras das suas criações.",
+      "ogTitle": "DCC Studio IA | DCC Music",
+      "ogDescription": "Crie letras, músicas completas e capas profissionais com Inteligência Artificial.",
+      "keywordStudio": "Studio IA",
+      "keywordAiMusic": "música com inteligência artificial",
+      "keywordCreate": "criar música com IA",
+      "keywordLyrics": "letra com IA"
+    },
+    "hero": {
+      "badge": "Estúdio criativo premium com IA",
+      "title": "Crie sua música com IA, direto pelo celular.",
+      "description": "Escreva a ideia, escolha o estilo e gere letra, áudio, capa e página pública em poucos passos."
+    },
+    "preview": {
+      "eyebrow": "Seu estúdio em minutos",
+      "title": "Da ideia ao áudio pronto",
+      "badge": "IA + Studio",
+      "musicPreview": "Preview da música",
+      "audioContents": "Letra, voz e instrumental",
+      "versions": "2 versões",
+      "steps": {
+        "idea": {
+          "title": "Ideia",
+          "text": "Tema, estilo e clima"
+        },
+        "lyrics": {
+          "title": "Letra",
+          "text": "Partes organizadas"
+        },
+        "music": {
+          "title": "Música",
+          "text": "Áudio completo"
+        },
+        "publish": {
+          "title": "Publicação",
+          "text": "Página para compartilhar"
+        }
+      }
+    },
+    "receive": {
+      "title": "O que você recebe",
+      "fullLyrics": "Letra completa",
+      "songWithVocals": "Música com voz",
+      "promoCover": "Capa para divulgar",
+      "savedProject": "Projeto salvo na sua conta",
+      "publicLink": "Link público compartilhável"
+    },
+    "featuresTitle": "Tudo em um só lugar",
+    "featuresSubtitle": "Letra, música, capa, projetos e publicação sem complicar.",
+    "features": {
+      "completeSongs": {
+        "title": "Criação de músicas completas",
+        "text": "Transforme letra e ideia em uma música pronta para ouvir."
+      },
+      "smartLyrics": {
+        "title": "Letras inteligentes",
+        "text": "Letras brasileiras, cantáveis e sem rimas forçadas."
+      },
+      "aiCovers": {
+        "title": "Capas automáticas com IA",
+        "text": "Capas rápidas e opção premium com visual profissional."
+      },
+      "organizedProjects": {
+        "title": "Projetos organizados",
+        "text": "Rascunhos, versões, capas, letras e áudio no mesmo lugar."
+      },
+      "dccPublishing": {
+        "title": "Publicação no DCC Music",
+        "text": "Publique a música no perfil e compartilhe publicamente."
+      },
+      "professionalPlayer": {
+        "title": "Player profissional",
+        "text": "Player bonito, preview e experiência premium."
+      },
+      "easySharing": {
+        "title": "Compartilhamento fácil",
+        "text": "Link público e player incorporável para divulgar fora da plataforma."
+      },
+      "songChords": {
+        "title": "Cifra da Música",
+        "text": "Gere uma cifra em PDF com letra e acordes das músicas criadas no Studio IA."
+      },
+      "premiumLook": {
+        "title": "Estética premium",
+        "text": "Visual moderno, artístico e feito para compositores."
+      }
+    },
+    "howItWorks": "Como funciona",
+    "steps": {
+      "idea": {
+        "title": "Escreva sua ideia",
+        "text": "Conte o tema, estilo e clima da música."
+      },
+      "lyrics": {
+        "title": "A IA cria a letra",
+        "text": "Receba uma letra completa, organizada por partes."
+      },
+      "music": {
+        "title": "Transforme em música",
+        "text": "Gere áudio com voz, melodia e instrumental."
+      },
+      "publish": {
+        "title": "Publique no DCC Music",
+        "text": "Compartilhe sua música e coloque no seu perfil."
+      }
+    },
+    "history": {
+      "eyebrow": "Primeiro registro da sua criação",
+      "title": "Sua música nasce com histórico dentro da DCC Music",
+      "description": "Ao criar sua letra e sua música no DCC Studio IA, o projeto fica registrado com data, autoria da conta e histórico de criação dentro da plataforma.",
+      "note": "Esse histórico serve como apoio de anterioridade e organização da criação. Ele não substitui registros oficiais de direitos autorais quando forem necessários."
+    },
+    "pricing": {
+      "title": "Planos DCC Studio IA",
+      "loading": "Carregando os melhores valores para você...",
+      "subtitle": "Escolha plano ou recarga avulsa para continuar criando.",
+      "noSubscription": "Sem mensalidade",
+      "topupTitle": "Recarga avulsa de músicas",
+      "topupDescription": "Para quem não quer assinar agora: escolha quantas músicas quer comprar e o sistema calcula o valor automaticamente.",
+      "perSong": "por música",
+      "noPlans": "Nenhum plano Studio IA ativo no momento.",
+      "noPlansHint": "Ative ou cadastre os planos no painel administrativo.",
+      "idealFor": "Ideal para {{audience}}",
+      "months_one": "mês",
+      "months_other": "{{count}} meses",
+      "topup": {
+        "oneSong": "1 música",
+        "twoToEight": "2 a 8 músicas",
+        "nineToTwentyNine": "9 a 29 músicas",
+        "thirtyPlus": "A partir de 30"
+      },
+      "audiences": {
+        "beginnerUsers": "usuários iniciantes",
+        "activeComposers": "compositores ativos",
+        "advancedCreators": "usuários avançados e criadores intensivos"
+      },
+      "highlights": {
+        "mostPopular": "MAIS POPULAR",
+        "elite": "ELITE"
+      }
+    }
+  },
   "menu": {
     "home": "Home",
     "createSong": "Crie sua música",
