@@ -213,7 +213,17 @@ export async function GET(request: NextRequest) {
       })
     )
 
-    return NextResponse.json({ projects })
+    const responseProjects = filter === ORIGINALS_FILTER
+      ? projects.filter((project: any, index: number, list: any[]) => {
+          const path = String(project?.originalAudio?.audioPath || '').trim()
+          if (!path) return true
+          return list.findIndex((candidate: any) =>
+            String(candidate?.originalAudio?.audioPath || '').trim() === path
+          ) === index
+        })
+      : projects
+
+    return NextResponse.json({ projects: responseProjects })
   } catch (error: any) {
     console.error('[Studio IA] Erro listar projetos:', error)
     return NextResponse.json({ error: error.message || 'Erro ao listar projetos', errorCode: 'load' }, { status: 500 })
