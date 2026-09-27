@@ -190,7 +190,28 @@
       "highlights": {
         "mostPopular": "MAIS POPULAR",
         "elite": "ELITE"
-      }
+      },
+      "planFeatures": {
+      "credits80": "80 créditos/mês",
+      "credits130": "130 créditos/mês",
+      "credits300": "300 créditos/mês",
+      "songs20": "20 músicas/mês",
+      "unlimitedLyrics": "Letras IA ilimitadas",
+      "unlimitedQuickCovers": "Capas rápidas ilimitadas",
+      "saveProjects": "Salvar projetos musicais",
+      "preview20": "Preview de 20 segundos",
+      "publishDcc": "Publicação no DCC Music",
+      "premiumCovers10": "10 capas premium IA",
+      "premiumCovers30": "30 capas premium IA",
+      "premiumPlayer": "Player premium",
+      "mp3Download": "Download MP3",
+      "mp3Downloads": "Downloads MP3",
+      "unlimitedProjects": "Projetos ilimitados",
+      "generationPriority": "Prioridade de geração",
+      "maxPriority": "Prioridade máxima",
+      "eliteBadge": "Selo Studio Elite",
+      "earlyFeatures": "Futuras funções antecipadas"
+}
     }
   },
   "menu": {
