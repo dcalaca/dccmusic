@@ -496,7 +496,7 @@ export default function NewStudioMusicPage() {
         }),
       })
       const projectData = await projectResponse.json()
-      if (!projectResponse.ok) throw new Error(t('studio.create.errors.project'))
+      if (!projectResponse.ok) throw new Error(projectData.error || t('studio.create.errors.project'))
 
       if (projectData.project?.id && form.voiceProfileId) {
         localStorage.setItem(`studio_selected_voice:${projectData.project.id}`, form.voiceProfileId)
@@ -522,7 +522,7 @@ export default function NewStudioMusicPage() {
         }),
       })
       const lyricData = await lyricResponse.json()
-      if (!lyricResponse.ok) throw new Error(t('studio.create.errors.lyrics'))
+      if (!lyricResponse.ok) throw new Error(lyricData.error || t('studio.create.errors.lyrics'))
 
       router.push(`/compositores/admin/studio-ia/projetos/${projectData.project.id}`)
     } catch (err: any) {
