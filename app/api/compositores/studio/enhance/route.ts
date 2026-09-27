@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     const composer = getComposerFromRequest(request)
     if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
-    const { hasAccess, limits } = await getStudioAccess(composer.composerId)
+    const { limits } = await getStudioAccess(composer.composerId)
     const [usage, freeMusicUsage] = await Promise.all([
       getStudioCreditUsage(composer.composerId, limits),
       getFreeMusicUsage(composer.composerId),
