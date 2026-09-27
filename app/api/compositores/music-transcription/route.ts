@@ -14,6 +14,7 @@ import {
   TRANSCRIPTION_CATALOG_MATCH_MESSAGE,
   TRANSCRIPTION_DUPLICATE_MESSAGE,
   translateMusicTranscriptionError,
+  musicTranscriptionErrorCode,
 } from '@/lib/music-transcription-errors'
 
 export const dynamic = 'force-dynamic'
@@ -405,7 +406,7 @@ function mapTranscription(row: any) {
 export async function GET(request: NextRequest) {
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
 
     const { data, error } = await supabaseAdmin
       .from('music_transcriptions')
@@ -424,7 +425,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Music Transcription] Erro listar transcrições:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao carregar transcrições.' },
+      { error: error.message || 'Erro ao carregar transcrições.', errorCode: 'loadSongs' },
       { status: 500 }
     )
   }
@@ -450,7 +451,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const composer = getComposerFromRequest(request)
-    if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
 
     const contentType = request.headers.get('content-type') || ''
 
@@ -459,9 +460,9 @@ export async function POST(request: NextRequest) {
       const audioFile = formData.get('audio')
       const manualTitle = String(formData.get('title') || '').trim()
 
-      if (!(audioFile instanceof File)) return NextResponse.json({ error: 'Escolha um arquivo de áudio.' }, { status: 400 })
-      if (!isAllowedManualAudio(audioFile)) return NextResponse.json({ error: 'Envie MP3, WAV, M4A, AAC, FLAC ou OGG.' }, { status: 400 })
-      if (audioFile.size > MAX_MANUAL_AUDIO_BYTES) return NextResponse.json({ error: 'Envie um áudio de até 50 MB.' }, { status: 400 })
+      if (!(audioFile instanceof File)) return NextResponse.json({ error: 'Escolha um arquivo de áudio.', errorCode: 'chooseFile' }, { status: 400 })
+      if (!isAllowedManualAudio(audioFile)) return NextResponse.json({ error: 'Envie MP3, WAV, M4A, AAC, FLAC ou OGG.', errorCode: 'invalidFormat' }, { status: 400 })
+      if (audioFile.size > MAX_MANUAL_AUDIO_BYTES) return NextResponse.json({ error: 'Envie um áudio de até 50 MB.', errorCode: 'fileTooLarge' }, { status: 400 })
 
       const arrayBuffer = await audioFile.arrayBuffer()
       const sourceHash = createHash('sha256').update(Buffer.from(arrayBuffer)).digest('hex')
@@ -485,7 +486,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json().catch(() => null)
     const studioVersionId = String(body?.studioVersionId || '').trim()
-    if (!studioVersionId) return NextResponse.json({ error: 'Selecione uma música.' }, { status: 400 })
+    if (!studioVersionId) return NextResponse.json({ error: 'Selecione uma música.', errorCode: 'chooseSong' }, { status: 400 })
 
     const { data: version, error: versionError } = await supabaseAdmin
       .from('studio_versions')
@@ -495,7 +496,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (versionError) throw versionError
-    if (!version) return NextResponse.json({ error: 'Música não encontrada.' }, { status: 404 })
+    if (!version) return NextResponse.json({ error: 'Música não encontrada.', errorCode: 'songNotFound' }, { status: 404 })
 
     const existing = await getExistingCompleted(composer.composerId, 'studio_version', studioVersionId)
     if (existing) return NextResponse.json({ transcription: mapTranscription(existing), cached: true })
@@ -523,7 +524,7 @@ export async function POST(request: NextRequest) {
       .eq('is_current', true)
       .maybeSingle()
     if (lyricError) throw lyricError
-    if (!lyric?.content?.trim()) return NextResponse.json({ error: 'Essa música não tem letra disponível para criar a cifra.' }, { status: 400 })
+    if (!lyric?.content?.trim()) return NextResponse.json({ error: 'Essa música não tem letra disponível para criar a cifra.', errorCode: 'missingLyrics' }, { status: 400 })
 
     const { data: generation } = version.generation_id
       ? await supabaseAdmin.from('studio_generations').select('request_payload').eq('id', version.generation_id).maybeSingle()
@@ -549,7 +550,7 @@ export async function POST(request: NextRequest) {
       message === TRANSCRIPTION_DUPLICATE_MESSAGE ||
       message.includes('Saldo insuficiente')
     return NextResponse.json(
-      { error: message },
+      { error: message, errorCode: musicTranscriptionErrorCode(message) },
       { status: isUserError ? 400 : 500 }
     )
   }
