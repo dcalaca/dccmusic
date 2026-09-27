@@ -232,14 +232,11 @@
         "publishDcc": "Publish on DCC Music",
         "premiumCovers10": "10 premium AI covers",
         "premiumCovers30": "30 premium AI covers",
-        "premiumPlayer": "Premium player",
         "mp3Download": "MP3 download",
         "mp3Downloads": "MP3 downloads",
         "unlimitedProjects": "Unlimited projects",
         "generationPriority": "Generation priority",
-        "maxPriority": "Highest priority",
-        "eliteBadge": "Studio Elite badge",
-        "earlyFeatures": "Early access to future features"
+        "maxPriority": "Highest priority"
       },
       "oneSong": "1 song",
       "twoToEight": "2 to 8 songs",
