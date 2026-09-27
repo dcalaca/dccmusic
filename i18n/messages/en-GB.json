@@ -214,6 +214,75 @@
 }
     }
   },
+  "publicStudio": {
+    "notFound": "Song not found",
+    "metaDescription": "Listen to {{title}}, created with DCC AI Studio.",
+    "createdWith": "Created with DCC AI Studio",
+    "free": "Open",
+    "noMood": "No mood",
+    "creationPreferences": "Creation preferences",
+    "style": "Style",
+    "mood": "Mood",
+    "structure": "Structure",
+    "lines": "Lines",
+    "voice": "Voice",
+    "composer": "Songwriter",
+    "copyLink": "Copy link",
+    "share": "Share",
+    "lyrics": "Lyrics"
+  },
+  "unsubscribe": {
+    "invalidTitle": "Invalid link",
+    "missingInfo": "We could not find the information required to unsubscribe.",
+    "confirmedTitle": "Unsubscribe confirmed",
+    "confirmedMessage": "Done. This email has been removed from future DCC Music promotional campaigns.",
+    "setupTitle": "Unsubscribe is not configured yet",
+    "setupMessage": "The unsubscribe system still needs to be enabled in the database. Contact DCC Music support to remove your email.",
+    "invalidMessage": "This unsubscribe link is not valid. If you want to leave the list, reply to the email and ask to be removed.",
+    "errorTitle": "We could not unsubscribe you right now",
+    "errorMessage": "Please try again in a few minutes or reply to the email and ask to be removed.",
+    "transactionalNotice": "You may still receive important transactional emails, such as payment confirmations, password messages, and account notices.",
+    "backSite": "Back to the site"
+  },
+  "trackedLinks": {
+    "title": "Create Trackable Link",
+    "optional": "optional",
+    "creating": "Creating...",
+    "successTitle": "Link created successfully!",
+    "trackedLink": "Trackable Link",
+    "code": "Code",
+    "clicks": "Clicks",
+    "viewStats": "View statistics",
+    "howItWorks": "How does it work?",
+    "fields": {
+      "title": "Title",
+      "destinationUrl": "Destination URL",
+      "createdBy": "Created by",
+      "notes": "Notes",
+      "expiresAt": "Expiry date"
+    },
+    "placeholders": {
+      "title": "Example: Link to my website",
+      "url": "https://mywebsite.com",
+      "email": "you@email.com",
+      "notes": "Notes about this link..."
+    },
+    "errors": {
+      "create": "Could not create link"
+    },
+    "steps": {
+      "1": "1. Create a trackable link with a destination URL",
+      "2": "2. Share the generated link with other people",
+      "3": "3. When someone clicks it, the system automatically records:",
+      "4": "4. View the statistics through the statistics API"
+    },
+    "data": {
+      "ip": "IP address",
+      "device": "Browser/device",
+      "referrer": "Where the click came from",
+      "dateTime": "Click date and time"
+    }
+  },
   "menu": {
     "home": "Home",
     "createSong": "Create your song",

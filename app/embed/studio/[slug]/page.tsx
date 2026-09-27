@@ -1,11 +1,26 @@
 import { notFound } from 'next/navigation'
+import { cookies, headers } from 'next/headers'
 import { supabaseAdmin } from '@/lib/supabase'
 import StudioPreviewPlayer from '@/components/StudioPreviewPlayer'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
+import { createDccI18n } from '@/i18n'
+import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
+
+async function getEmbedTranslator() {
+  const h = headers()
+  const country = normalizeCountry(
+    cookies().get(COUNTRY_COOKIE)?.value ||
+    h.get('x-dcc-country') ||
+    h.get('x-vercel-ip-country') ||
+    h.get('cf-ipcountry')
+  )
+  const i18n = await createDccI18n(getLocaleForCountry(country))
+  return i18n.t.bind(i18n)
+}
 
 async function getEmbed(slug: string) {
   const { data: project } = await supabaseAdmin
@@ -28,7 +43,7 @@ async function getEmbed(slug: string) {
 }
 
 export default async function StudioEmbedPage({ params }: { params: { slug: string } }) {
-  const data = await getEmbed(params.slug)
+  const [data, t] = await Promise.all([getEmbed(params.slug), getEmbedTranslator()])
   if (!data) notFound()
 
   const versionAudio = await getStudioVersionAudioUrls(data.version)
@@ -42,7 +57,7 @@ export default async function StudioEmbedPage({ params }: { params: { slug: stri
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-lg font-bold">{data.project.title}</p>
-          <p className="mb-3 text-xs text-purple-300">Criado com DCC Studio IA</p>
+          <p className="mb-3 text-xs text-purple-300">{t('publicStudio.createdWith')}</p>
           {audioUrl && <StudioPreviewPlayer audioUrl={audioUrl} premium />}
         </div>
       </div>

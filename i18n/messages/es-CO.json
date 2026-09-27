@@ -214,6 +214,75 @@
 }
     }
   },
+  "publicStudio": {
+    "notFound": "Canción no encontrada",
+    "metaDescription": "Escucha {{title}}, creada con DCC Studio IA.",
+    "createdWith": "Creado con DCC Studio IA",
+    "free": "Libre",
+    "noMood": "Sin ambiente",
+    "creationPreferences": "Preferencias de la creación",
+    "style": "Estilo",
+    "mood": "Ambiente",
+    "structure": "Estructura",
+    "lines": "Líneas",
+    "voice": "Voz",
+    "composer": "Compositor",
+    "copyLink": "Copiar enlace",
+    "share": "Compartir",
+    "lyrics": "Letra"
+  },
+  "unsubscribe": {
+    "invalidTitle": "Enlace no válido",
+    "missingInfo": "No encontramos la información necesaria para cancelar la suscripción.",
+    "confirmedTitle": "Baja confirmada",
+    "confirmedMessage": "Listo. Este correo fue eliminado de las próximas campañas promocionales de DCC Music.",
+    "setupTitle": "La baja todavía no está configurada",
+    "setupMessage": "La estructura de baja todavía debe activarse en la base de datos. Contacta con el soporte de DCC Music para eliminar tu correo.",
+    "invalidMessage": "Este enlace de baja no es válido. Si quieres salir de la lista, responde al correo solicitando la eliminación.",
+    "errorTitle": "No pudimos darte de baja ahora",
+    "errorMessage": "Inténtalo de nuevo en unos minutos o responde al correo solicitando la eliminación.",
+    "transactionalNotice": "Aún puedes recibir correos transaccionales importantes, como confirmaciones de pago, contraseñas y avisos de tu cuenta.",
+    "backSite": "Volver al sitio"
+  },
+  "trackedLinks": {
+    "title": "Crear enlace rastreable",
+    "optional": "opcional",
+    "creating": "Creando...",
+    "successTitle": "¡Enlace creado correctamente!",
+    "trackedLink": "Enlace rastreable",
+    "code": "Código",
+    "clicks": "Clics",
+    "viewStats": "Ver estadísticas",
+    "howItWorks": "¿Cómo funciona?",
+    "fields": {
+      "title": "Título",
+      "destinationUrl": "URL de destino",
+      "createdBy": "Creado por",
+      "notes": "Notas",
+      "expiresAt": "Fecha de expiración"
+    },
+    "placeholders": {
+      "title": "Ej.: enlace a mi sitio",
+      "url": "https://misitio.com",
+      "email": "tu@correo.com",
+      "notes": "Notas sobre este enlace..."
+    },
+    "errors": {
+      "create": "Error al crear el enlace"
+    },
+    "steps": {
+      "1": "1. Crea un enlace rastreable indicando la URL de destino",
+      "2": "2. Comparte el enlace generado con otras personas",
+      "3": "3. Cuando alguien haga clic, el sistema registra automáticamente:",
+      "4": "4. Consulta las estadísticas a través de la API de estadísticas"
+    },
+    "data": {
+      "ip": "Dirección IP",
+      "device": "Navegador/dispositivo",
+      "referrer": "De dónde vino el clic",
+      "dateTime": "Fecha y hora del clic"
+    }
+  },
   "menu": {
     "home": "Inicio",
     "createSong": "Crea tu canción",

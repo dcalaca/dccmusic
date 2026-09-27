@@ -214,6 +214,75 @@
 }
     }
   },
+  "publicStudio": {
+    "notFound": "Música não encontrada",
+    "metaDescription": "Ouça {{title}}, criada com o DCC Studio IA.",
+    "createdWith": "Criado com DCC Studio IA",
+    "free": "Livre",
+    "noMood": "Sem ambiente",
+    "creationPreferences": "Preferências da criação",
+    "style": "Estilo",
+    "mood": "Ambiente",
+    "structure": "Estrutura",
+    "lines": "Linhas",
+    "voice": "Voz",
+    "composer": "Compositor",
+    "copyLink": "Copiar ligação",
+    "share": "Partilhar",
+    "lyrics": "Letra"
+  },
+  "unsubscribe": {
+    "invalidTitle": "Ligação inválida",
+    "missingInfo": "Não encontrámos as informações necessárias para cancelar a subscrição.",
+    "confirmedTitle": "Cancelamento confirmado",
+    "confirmedMessage": "Concluído. Este e-mail foi removido das próximas campanhas promocionais da DCC Music.",
+    "setupTitle": "Cancelamento ainda não configurado",
+    "setupMessage": "A estrutura de cancelamento ainda precisa de ser ativada na base de dados. Contacte o suporte da DCC Music para remover o seu e-mail.",
+    "invalidMessage": "Esta ligação de cancelamento não é válida. Se quiser sair da lista, responda ao e-mail a pedir a remoção.",
+    "errorTitle": "Não foi possível cancelar agora",
+    "errorMessage": "Tente novamente dentro de alguns minutos ou responda ao e-mail a pedir a remoção.",
+    "transactionalNotice": "Ainda poderá receber e-mails transacionais importantes, como confirmações de pagamento, palavras-passe e avisos da sua conta.",
+    "backSite": "Voltar ao site"
+  },
+  "trackedLinks": {
+    "title": "Criar ligação rastreável",
+    "optional": "opcional",
+    "creating": "A criar...",
+    "successTitle": "Ligação criada com sucesso!",
+    "trackedLink": "Ligação rastreável",
+    "code": "Código",
+    "clicks": "Cliques",
+    "viewStats": "Ver estatísticas",
+    "howItWorks": "Como funciona?",
+    "fields": {
+      "title": "Título",
+      "destinationUrl": "URL de destino",
+      "createdBy": "Criado por",
+      "notes": "Notas",
+      "expiresAt": "Data de expiração"
+    },
+    "placeholders": {
+      "title": "Ex.: ligação para o meu site",
+      "url": "https://meusite.com",
+      "email": "seu@email.com",
+      "notes": "Notas sobre esta ligação..."
+    },
+    "errors": {
+      "create": "Erro ao criar ligação"
+    },
+    "steps": {
+      "1": "1. Crie uma ligação rastreável indicando o URL de destino",
+      "2": "2. Partilhe a ligação gerada com outras pessoas",
+      "3": "3. Quando alguém clicar, o sistema regista automaticamente:",
+      "4": "4. Consulte as estatísticas através da API de estatísticas"
+    },
+    "data": {
+      "ip": "Endereço IP",
+      "device": "Navegador/dispositivo",
+      "referrer": "Origem do clique",
+      "dateTime": "Data e hora do clique"
+    }
+  },
   "menu": {
     "home": "Início",
     "createSong": "Crie a sua música",
