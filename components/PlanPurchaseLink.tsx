@@ -7,11 +7,12 @@ import { useTranslation } from 'react-i18next'
 type PlanPurchaseLinkProps = {
   href: string
   planType: 'studio' | 'composer'
+  planSlug?: string
   className: string
   children: React.ReactNode
 }
 
-export function PlanPurchaseLink({ href, planType, className, children }: PlanPurchaseLinkProps) {
+export function PlanPurchaseLink({ href, planType, planSlug, className, children }: PlanPurchaseLinkProps) {
   const { t } = useTranslation()
   const [checking, setChecking] = useState(true)
   const [blocked, setBlocked] = useState(false)
@@ -36,7 +37,7 @@ export function PlanPurchaseLink({ href, planType, className, children }: PlanPu
         if (!cancelled && response.ok) {
           setBlocked(
             planType === 'studio'
-              ? Boolean(status?.hasStudioPlan)
+              ? Boolean(status?.hasStudioPlan && planSlug && status?.planSlug === planSlug)
               : Boolean(status?.hasComposerPremiumAccess)
           )
         }
@@ -51,7 +52,7 @@ export function PlanPurchaseLink({ href, planType, className, children }: PlanPu
     return () => {
       cancelled = true
     }
-  }, [planType])
+  }, [planType, planSlug])
 
   if (checking) {
     return (

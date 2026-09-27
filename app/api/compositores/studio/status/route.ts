@@ -47,6 +47,7 @@ export async function GET(request: NextRequest) {
       canPublish: hasAccess || hasComposerPremiumAccess,
       campaign,
       planName: plan?.name || null,
+      planSlug: plan?.slug || null,
       credits: {
         limit: usage.monthlyCredits,
         baseLimit: usage.baseMonthlyCredits,

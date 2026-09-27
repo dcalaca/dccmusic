@@ -32,7 +32,7 @@ const studioPlanSlugs = ['studio-start', 'studio-pro', 'studio-elite', 'dcc-stud
 const planPresentation: Record<string, { idealKey: string; highlightKey?: string; tone: string }> = {
   'studio-start': { idealKey: 'beginnerUsers', tone: 'border-gray-800 bg-gray-950/70' },
   'studio-pro': { idealKey: 'activeComposers', highlightKey: 'mostPopular', tone: 'border-purple-400/70 bg-gradient-to-br from-purple-950/70 via-gray-950 to-black shadow-2xl shadow-purple-950/30 scale-[1.02]' },
-  'studio-elite': { idealKey: 'advancedCreators', highlightKey: 'elite', tone: 'border-yellow-400/70 bg-gradient-to-br from-yellow-950/40 via-purple-950/50 to-black shadow-2xl shadow-yellow-950/20' },
+  'studio-elite': { idealKey: 'advancedCreators', tone: 'border-yellow-400/70 bg-gradient-to-br from-yellow-950/40 via-purple-950/50 to-black shadow-2xl shadow-yellow-950/20' },
   'dcc-studio-ia': { idealKey: 'activeComposers', tone: 'border-purple-400/70 bg-gradient-to-br from-purple-950/70 via-gray-950 to-black' },
 }
 

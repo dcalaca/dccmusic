@@ -36,6 +36,7 @@ async function getComposerStudioBalance(token: string) {
     currentCreditBalance,
     planCreditsRemaining: currentCreditBalance,
     hasStudioPlan,
+    planSlug: data?.plan?.slug || data?.studio?.planSlug || null,
   }
 }
 
@@ -68,6 +69,7 @@ async function getStudioStatus() {
     currentCreditBalance,
     planCreditsRemaining,
     hasStudioPlan,
+    planSlug: data?.planSlug || null,
   }
 }
 
@@ -301,7 +303,7 @@ export function StudioPlanButton({ planSlug }: { planSlug: string }) {
     setLoading(true)
     try {
       const status = await getStudioStatus()
-      if (status?.hasStudioPlan) {
+      if (status?.hasStudioPlan && status?.planSlug === planSlug) {
         router.push(PROJECTS_URL)
         return
       }
