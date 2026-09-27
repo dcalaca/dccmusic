@@ -7,6 +7,8 @@ import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { formatMusicTitle } from '@/lib/normalize'
+import { COUNTRY_COOKIE } from '@/lib/localization'
+import { getStudioGenerationProviderError } from '@/lib/studio-voice-expiration'
 import { getStudioVersionVoices } from '@/lib/studio-generation-voice'
 import {
   getComposerEmailIdentity,
@@ -19,6 +21,7 @@ import {
   saveMurekaGenerationTracksEnsuringTwo,
 } from '@/lib/studio-mureka-versions'
 import {
+  getStudioMusicGenerationFailureMessage,
   isStudioGenerationTimedOut,
   markStudioGenerationAsCommunicationFailure,
   releaseStudioProjectFromFailedGeneration,
@@ -275,7 +278,7 @@ export async function GET(
 
     const { data: latestFailedGeneration } = await supabaseAdmin
       .from('studio_generations')
-      .select('id, status, error_message, created_at, updated_at, project_id')
+      .select('id, status, error_message, response_payload, request_payload, created_at, updated_at, project_id')
       .eq('project_id', project.id)
       .eq('composer_id', composer.composerId)
       .eq('status', 'failed')
@@ -392,7 +395,11 @@ export async function GET(
       } : null,
       generationFailure: (latestFailedGeneration && availableVersions.length === 0) ? {
         id: latestFailedGeneration.id,
-        message: latestFailedGeneration.error_message || STUDIO_MUSIC_GENERATION_COMMUNICATION_ERROR,
+        message: getStudioMusicGenerationFailureMessage(
+          getStudioGenerationProviderError(latestFailedGeneration.response_payload) || latestFailedGeneration.error_message,
+          request.cookies.get(COUNTRY_COOKIE)?.value || 'BR',
+          latestFailedGeneration.request_payload?.feature,
+        ),
         createdAt: latestFailedGeneration.created_at,
       } : null,
     })
