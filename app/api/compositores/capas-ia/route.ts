@@ -3,6 +3,10 @@ import { randomUUID } from 'crypto'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import * as db from '@/lib/db'
 import { supabaseAdmin } from '@/lib/supabase'
+import {
+  isPoliticalCampaignContent,
+  POLITICAL_CAMPAIGN_OPENAI_BLOCK_MESSAGE,
+} from '@/lib/studio-political-content'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -288,6 +292,16 @@ export async function POST(request: NextRequest) {
     const coverDescription = typeof body.coverDescription === 'string' ? body.coverDescription.trim().slice(0, 1500) : ''
     const musicStyle = allowedMusicStyles.includes(body.musicStyle) ? body.musicStyle : 'Pop'
     const visualStyle = allowedVisualStyles.includes(body.visualStyle) ? body.visualStyle : 'Cinematográfica'
+
+    if (isPoliticalCampaignContent(title, inputText, coverDescription)) {
+      return NextResponse.json(
+        {
+          error: POLITICAL_CAMPAIGN_OPENAI_BLOCK_MESSAGE,
+          errorCode: 'politicalCampaignOpenAiBlocked',
+        },
+        { status: 422 }
+      )
+    }
 
     if (inputText.length < 20) {
       return NextResponse.json(
