@@ -16,6 +16,10 @@ import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { formatMusicTitle } from '@/lib/normalize'
 import { normalizeStudioLyricStructure } from '@/lib/studio-lyric-normalizer'
 import { getStudioVersionVoices } from '@/lib/studio-generation-voice'
+import {
+  isPoliticalCampaignContent,
+  POLITICAL_CAMPAIGN_READY_LYRIC_MESSAGE,
+} from '@/lib/studio-political-content'
 
 export const dynamic = 'force-dynamic'
 const STUDIO_TITLE_MAX_LENGTH = 30
@@ -238,6 +242,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    const hasOwnLyric = typeof body.lyric === 'string' && body.lyric.trim().length > 0
+    if (!hasOwnLyric && isPoliticalCampaignContent(body.title, body.idea)) {
+      return NextResponse.json(
+        {
+          error: POLITICAL_CAMPAIGN_READY_LYRIC_MESSAGE,
+          errorCode: 'politicalCampaignReadyLyricRequired',
+        },
+        { status: 422 }
+      )
+    }
+
     const rawTitle = typeof body.title === 'string' && body.title.trim() ? body.title.trim().slice(0, STUDIO_TITLE_MAX_LENGTH) : 'Nova música'
     const title = formatMusicTitle(rawTitle)
     const slug = await createUniqueProjectSlug(composer.composerId, title)
