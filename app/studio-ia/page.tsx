@@ -29,6 +29,13 @@ const previewStepKeys = ['idea', 'lyrics', 'music', 'publish'] as const
 const receiveKeys = ['fullLyrics', 'songWithVocals', 'promoCover', 'savedProject', 'publicLink'] as const
 
 const studioPlanSlugs = ['studio-start', 'studio-pro', 'studio-elite', 'dcc-studio-ia']
+const planFeatureKeys: Record<string, string[]> = {
+  'studio-start': ['credits80', 'unlimitedLyrics', 'unlimitedQuickCovers', 'saveProjects', 'preview20', 'publishDcc'],
+  'studio-pro': ['credits130', 'unlimitedLyrics', 'unlimitedQuickCovers', 'premiumCovers10', 'premiumPlayer', 'mp3Download', 'unlimitedProjects', 'publishDcc', 'generationPriority'],
+  'studio-elite': ['credits300', 'unlimitedLyrics', 'unlimitedQuickCovers', 'premiumCovers30', 'mp3Downloads', 'unlimitedProjects', 'maxPriority', 'eliteBadge', 'earlyFeatures'],
+  'dcc-studio-ia': ['songs20', 'unlimitedLyrics', 'unlimitedQuickCovers', 'saveProjects', 'publishDcc', 'premiumPlayer', 'mp3Downloads'],
+}
+
 const planPresentation: Record<string, { idealKey: string; highlightKey?: string; tone: string }> = {
   'studio-start': { idealKey: 'beginnerUsers', tone: 'border-gray-800 bg-gray-950/70' },
   'studio-pro': { idealKey: 'activeComposers', highlightKey: 'mostPopular', tone: 'border-purple-400/70 bg-gradient-to-br from-purple-950/70 via-gray-950 to-black shadow-2xl shadow-purple-950/30 scale-[1.02]' },
@@ -160,7 +167,9 @@ async function StudioPricingSection({ country }: { country: DccCountry }) {
           <div className="grid gap-4 lg:grid-cols-3">
             {plansWithPrices.map(({ plan, priceQuote }) => {
               const presentation = planPresentation[plan.slug] || planPresentation['dcc-studio-ia']
-              const planFeatures = Array.isArray(plan.features) ? plan.features : []
+              const planFeatures = (planFeatureKeys[plan.slug] || []).map((key) =>
+                t(`studioLanding.pricing.planFeatures.${key}`)
+              )
               return (
                 <div key={plan.id} className={`relative rounded-[1.5rem] border p-5 sm:p-6 ${presentation.tone}`}>
                   {presentation.highlightKey && (
