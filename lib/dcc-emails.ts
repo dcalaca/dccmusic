@@ -325,6 +325,7 @@ export async function sendAdminComposerMessageEmail(input: ComposerEmailInput & 
   message: string
   adminEmail?: string | null
 }) {
+  const copy = getComposerEmailCopy(await getEmailLanguage(input))
   return sendDccEmail({
     to: input.email,
     subject: input.subject,
@@ -333,7 +334,7 @@ export async function sendAdminComposerMessageEmail(input: ComposerEmailInput & 
     eventKey: `admin-message/${input.composerId}/${Date.now()}`,
     metadata: { composerId: input.composerId, adminEmail: input.adminEmail || null },
     contentHtml: `
-      <p>Olá, ${escapeHtml(input.name)}.</p>
+      <p>${copy.greeting}, ${escapeHtml(input.name)}.</p>
       <p>${nl2br(input.message)}</p>
     `,
   })
@@ -342,6 +343,7 @@ export async function sendAdminComposerMessageEmail(input: ComposerEmailInput & 
 export async function sendMarketingCampaignEmail(input: {
   to: string
   name?: string | null
+  language?: ComposerEmailLanguage
   subject: string
   preview?: string | null
   body: string
@@ -352,12 +354,33 @@ export async function sendMarketingCampaignEmail(input: {
   recipientType: string
   recipientId?: string | null
 }) {
-  const bodyStartsWithGreeting = /^\s*ol[áa][,!\s]/i.test(input.body)
+  const language = input.language || 'pt'
+  const localized = language === 'en'
+    ? {
+        greeting: 'Hello',
+        footer: 'You received this email because you have an account with DCC Music.',
+        unsubscribe: 'I no longer want to receive these emails',
+        greetingPattern: /^\s*(hello|hi)[,!\s]/i,
+      }
+    : language === 'es'
+      ? {
+          greeting: 'Hola',
+          footer: 'Recibiste este correo porque tienes una cuenta en DCC Music.',
+          unsubscribe: 'No quiero recibir más estos correos',
+          greetingPattern: /^\s*hola[,!\s]/i,
+        }
+      : {
+          greeting: 'Olá',
+          footer: 'Você recebeu este e-mail porque tem cadastro na DCC Music.',
+          unsubscribe: 'Não quero mais receber estes e-mails',
+          greetingPattern: /^\s*ol[áa][,!\s]/i,
+        }
+  const bodyStartsWithGreeting = localized.greetingPattern.test(input.body)
   const greeting = bodyStartsWithGreeting
     ? ''
     : input.name
-      ? `<p>Olá, ${escapeHtml(input.name)}.</p>`
-      : '<p>Olá.</p>'
+      ? `<p>${localized.greeting}, ${escapeHtml(input.name)}.</p>`
+      : `<p>${localized.greeting}.</p>`
   const campaignButton = input.ctaLabel && input.ctaUrl
     ? button(input.ctaLabel, input.ctaUrl)
     : ''
@@ -379,8 +402,8 @@ export async function sendMarketingCampaignEmail(input: {
       <p>${nl2br(input.body)}</p>
       ${campaignButton}
       <p style="margin-top:24px;font-size:12px;color:#777080;">
-        Você recebeu este e-mail porque tem cadastro na DCC Music.
-        ${input.unsubscribeUrl ? `<br><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#7C16F8;text-decoration:underline;">Não quero mais receber estes e-mails</a>` : ''}
+        ${localized.footer}
+        ${input.unsubscribeUrl ? `<br><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#7C16F8;text-decoration:underline;">${localized.unsubscribe}</a>` : ''}
       </p>
     `,
   })
