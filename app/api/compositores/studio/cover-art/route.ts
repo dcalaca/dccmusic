@@ -3,6 +3,10 @@ import { randomUUID } from 'crypto'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { addStudioCreditTransaction, getStudioAccess, getStudioCreditUsage } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
+import {
+  isPoliticalCampaignContent,
+  POLITICAL_CAMPAIGN_OPENAI_BLOCK_MESSAGE,
+} from '@/lib/studio-political-content'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -711,6 +715,16 @@ export async function POST(request: NextRequest) {
       .slice(0, MAX_REFERENCE_IMAGES)
 
     if (userIdea.length < 10) return NextResponse.json({ errorCode: 'ideaRequired' }, { status: 400 })
+
+    if (isPoliticalCampaignContent(songTitle, artistName, userIdea)) {
+      return NextResponse.json(
+        {
+          error: POLITICAL_CAMPAIGN_OPENAI_BLOCK_MESSAGE,
+          errorCode: 'politicalCampaignOpenAiBlocked',
+        },
+        { status: 422 }
+      )
+    }
 
     await ensureBucket()
 
