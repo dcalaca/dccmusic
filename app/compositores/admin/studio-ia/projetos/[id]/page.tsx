@@ -588,6 +588,7 @@ export default function StudioProjectDetailPage() {
       const normalizedProject = {
         ...data.project,
         versions: projectVersions,
+        generationFailure: data.generationFailure || null,
       }
       const projectAudioUrl = normalizedProject.version?.audioUrl || normalizedProject.version?.streamAudioUrl
       const hasReadyAudio = Boolean(projectAudioUrl || projectVersions.some((version: any) => version.audioUrl || version.streamAudioUrl))
@@ -1361,6 +1362,33 @@ export default function StudioProjectDetailPage() {
 
   if (!project) {
     return <div className="min-h-screen py-10 text-center text-gray-400">{error || t('studio.project.notFound')}</div>
+  }
+
+  if (project.generationFailure?.message) {
+    return (
+      <div className="min-h-screen w-full py-6 sm:py-10">
+        <div className="mx-auto w-full max-w-2xl px-4 sm:px-6">
+          <Link
+            href="/compositores/admin/studio-ia/projetos"
+            className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-primary-300 transition hover:text-primary-200"
+          >
+            <FiArrowLeft /> {t('studio.project.detail.myProjects')}
+          </Link>
+
+          <div className="rounded-3xl border border-red-800/70 bg-red-950/30 p-6 shadow-2xl shadow-black/20 sm:p-8">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border border-red-700/70 bg-red-950/70 text-red-200">
+              <FiAlertTriangle className="h-6 w-6" />
+            </div>
+            <h1 className="text-2xl font-black text-white sm:text-3xl">
+              {t('studio.project.generation.failed')}
+            </h1>
+            <p className="mt-4 text-base leading-relaxed text-red-100">
+              {project.generationFailure.message}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const audioUrl = project.version?.audioUrl || project.version?.streamAudioUrl
