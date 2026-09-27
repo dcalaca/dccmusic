@@ -2,8 +2,10 @@
 
 import { useRef, useState } from 'react'
 import Link from 'next/link'
+import { useTranslation } from 'react-i18next'
 
 export default function StudioPreviewPlayer({ audioUrl, premium = false }: { audioUrl: string; premium?: boolean }) {
+  const { t } = useTranslation()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [locked, setLocked] = useState(false)
 
@@ -29,7 +31,7 @@ export default function StudioPreviewPlayer({ audioUrl, premium = false }: { aud
       />
       {!premium && locked && (
         <div className="mt-4 rounded-xl border border-primary-800 bg-primary-950/50 p-4 text-sm text-primary-100">
-          Preview gratuito encerrado em 20 segundos. Assine o DCC Studio IA para ouvir completo e baixar MP3.
+          {t('studioLanding.preview.lockedMessage')}
           <Link href="/studio-ia#planos" className="ml-2 font-semibold text-white underline">
             Ver plano
           </Link>
