@@ -102,3 +102,32 @@ export function translateMusicTranscriptionError(value?: unknown, fallback = 'Er
 export function readClientApiError(data: any, fallback: string) {
   return translateMusicTranscriptionError(data?.error ?? data?.message ?? data, fallback)
 }
+
+
+export function musicTranscriptionErrorCode(value?: unknown): string {
+  const message = translateMusicTranscriptionError(value, '')
+  const known: Record<string, string> = {
+    'Não autorizado': 'unauthorized',
+    'Erro ao carregar suas músicas.': 'loadSongs',
+    'Erro ao carregar cifras.': 'loadSongs',
+    'Escolha uma música do Studio IA.': 'chooseSong',
+    'Selecione uma música.': 'chooseSong',
+    'Música não encontrada.': 'songNotFound',
+    'Essa música não tem letra disponível para criar a cifra.': 'missingLyrics',
+    'Escolha um arquivo de áudio.': 'chooseFile',
+    'Envie MP3, WAV, M4A, AAC, FLAC ou OGG.': 'invalidFormat',
+    'Envie um áudio de até 50 MB.': 'fileTooLarge',
+    [TRANSCRIPTION_CATALOG_MATCH_MESSAGE]: 'originalOnly',
+    [TRANSCRIPTION_ALREADY_PROCESSING_MESSAGE]: 'alreadyProcessing',
+    [TRANSCRIPTION_DUPLICATE_MESSAGE]: 'alreadySubmitted',
+    'Não foi possível processar a resposta do servidor. Tente novamente em alguns minutos.': 'serverResponse',
+    'Erro ao gerar a cifra.': 'generate',
+    'Erro ao baixar arquivo.': 'download',
+    'id obrigatório.': 'invalidRequest',
+    'Transcrição não encontrada.': 'resultNotFound',
+    'Prévia de letra e cifra não encontrada.': 'previewNotFound',
+    'Arquivo não encontrado para esta transcrição.': 'fileNotFound',
+    'Erro ao gerar PDF da prévia.': 'download',
+  }
+  return known[message] || 'generate'
+}
