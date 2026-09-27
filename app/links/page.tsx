@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 interface LinkData {
   id: string
@@ -13,6 +14,7 @@ interface LinkData {
 }
 
 export default function LinksPage() {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     title: '',
     destinationUrl: '',
@@ -51,7 +53,7 @@ export default function LinksPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Erro ao criar link')
+        throw new Error(t('trackedLinks.errors.create'))
       }
 
       const link = await response.json()
@@ -64,7 +66,7 @@ export default function LinksPage() {
         expiresAt: '',
       })
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar link')
+      setError(err.message || t('trackedLinks.errors.create'))
     } finally {
       setLoading(false)
     }
@@ -85,13 +87,13 @@ export default function LinksPage() {
       <div className="max-w-2xl mx-auto">
         <div className="bg-white shadow-md rounded-lg p-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-6">
-            Criar Link Rastreável
+            {t('trackedLinks.title')}
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                Título *
+                {t('trackedLinks.fields.title')} *
               </label>
               <input
                 type="text"
@@ -100,13 +102,13 @@ export default function LinksPage() {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Ex: Link para meu site"
+                placeholder={t('trackedLinks.placeholders.title')}
               />
             </div>
 
             <div>
               <label htmlFor="destinationUrl" className="block text-sm font-medium text-gray-700 mb-1">
-                URL de Destino *
+                {t('trackedLinks.fields.destinationUrl')} *
               </label>
               <input
                 type="url"
@@ -115,13 +117,13 @@ export default function LinksPage() {
                 value={formData.destinationUrl}
                 onChange={(e) => setFormData({ ...formData, destinationUrl: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="https://meusite.com"
+                placeholder={t('trackedLinks.placeholders.url')}
               />
             </div>
 
             <div>
               <label htmlFor="createdBy" className="block text-sm font-medium text-gray-700 mb-1">
-                Criado por (opcional)
+                {t('trackedLinks.fields.createdBy')} ({t('trackedLinks.optional')})
               </label>
               <input
                 type="text"
@@ -129,13 +131,13 @@ export default function LinksPage() {
                 value={formData.createdBy}
                 onChange={(e) => setFormData({ ...formData, createdBy: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="seu@email.com"
+                placeholder={t('trackedLinks.placeholders.email')}
               />
             </div>
 
             <div>
               <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-                Notas (opcional)
+                {t('trackedLinks.fields.notes')} ({t('trackedLinks.optional')})
               </label>
               <textarea
                 id="notes"
@@ -143,13 +145,13 @@ export default function LinksPage() {
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Anotações sobre este link..."
+                placeholder={t('trackedLinks.placeholders.notes')}
               />
             </div>
 
             <div>
               <label htmlFor="expiresAt" className="block text-sm font-medium text-gray-700 mb-1">
-                Data de Expiração (opcional)
+                {t('trackedLinks.fields.expiresAt')} ({t('trackedLinks.optional')})
               </label>
               <input
                 type="datetime-local"
@@ -171,18 +173,18 @@ export default function LinksPage() {
               disabled={loading}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Criando...' : 'Criar Link Rastreável'}
+              {loading ? t('trackedLinks.creating') : t('trackedLinks.title')}
             </button>
           </form>
 
           {createdLink && (
             <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-md">
               <h2 className="text-lg font-semibold text-green-900 mb-2">
-                Link criado com sucesso!
+                {t('trackedLinks.successTitle')}
               </h2>
               <div className="space-y-2">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Link Rastreável:</label>
+                  <label className="text-sm font-medium text-gray-700">{t('trackedLinks.trackedLink')}:</label>
                   <div className="flex items-center gap-2 mt-1">
                     <input
                       type="text"
@@ -194,13 +196,13 @@ export default function LinksPage() {
                       onClick={() => copyToClipboard(createdLink.trackedUrl)}
                       className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
                     >
-                      {copied ? 'Copiado!' : 'Copiar'}
+                      {copied ? t('common.actions.copied') : t('common.actions.copy')}
                     </button>
                   </div>
                 </div>
                 <div className="text-sm text-gray-600">
-                  <p><strong>Código:</strong> {createdLink.shortCode}</p>
-                  <p><strong>Cliques:</strong> {createdLink.clickCount}</p>
+                  <p><strong>{t('trackedLinks.code')}:</strong> {createdLink.shortCode}</p>
+                  <p><strong>{t('trackedLinks.clicks')}:</strong> {createdLink.clickCount}</p>
                 </div>
                 <div className="mt-3">
                   <a
@@ -209,7 +211,7 @@ export default function LinksPage() {
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-800 text-sm underline"
                   >
-                    Ver estatísticas →
+                    {t('trackedLinks.viewStats')} →
                   </a>
                 </div>
               </div>
@@ -219,20 +221,20 @@ export default function LinksPage() {
 
         <div className="mt-6 bg-white shadow-md rounded-lg p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4">
-            Como funciona?
+            {t('trackedLinks.howItWorks')}
           </h2>
           <ul className="space-y-2 text-gray-700">
-            <li>1. Crie um link rastreável informando a URL de destino</li>
-            <li>2. Compartilhe o link gerado com outras pessoas</li>
-            <li>3. Quando alguém clicar, o sistema registra automaticamente:
+            <li>{t('trackedLinks.steps.1')}</li>
+            <li>{t('trackedLinks.steps.2')}</li>
+            <li>{t('trackedLinks.steps.3')}
               <ul className="ml-4 mt-1 space-y-1 text-sm text-gray-600">
-                <li>• Endereço IP</li>
-                <li>• Navegador/dispositivo</li>
-                <li>• De onde veio o clique</li>
-                <li>• Data e hora do clique</li>
+                <li>• {t('trackedLinks.data.ip')}</li>
+                <li>• {t('trackedLinks.data.device')}</li>
+                <li>• {t('trackedLinks.data.referrer')}</li>
+                <li>• {t('trackedLinks.data.dateTime')}</li>
               </ul>
             </li>
-            <li>4. Acompanhe as estatísticas acessando a API de estatísticas</li>
+            <li>{t('trackedLinks.steps.4')}</li>
           </ul>
         </div>
       </div>
