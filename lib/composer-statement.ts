@@ -96,6 +96,7 @@ function creditActionLabel(action?: string | null) {
     credit_topup_refund: 'Estorno de recarga',
     manual_credit: 'Crédito manual',
     music_generation: 'Geração de música',
+    music_generation_refund: 'Estorno de geração de música',
     free_music_generation: 'Música grátis',
     custom_voice_creation: 'Criação de voz IA',
     premium_cover: 'Capa premium IA',
@@ -111,7 +112,11 @@ function creditActionLabel(action?: string | null) {
 }
 
 function isCreditMovement(action?: string | null) {
-  return action === 'credit_topup' || action === 'manual_credit' || action === 'lyric_video_refund'
+  return action === 'credit_topup' ||
+    action === 'manual_credit' ||
+    action === 'music_generation_refund' ||
+    action === 'stem_separation_refund' ||
+    action === 'lyric_video_refund'
 }
 
 function dedupeCreditMovements(rows: any[]) {
