@@ -1,11 +1,25 @@
 import Link from 'next/link'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { recordEmailOptOut } from '@/lib/email-opt-outs'
+import { createDccI18n } from '@/i18n'
+import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
 
 type UnsubscribeState =
   | { title: string; message: string; tone: 'success' | 'error' | 'warning' }
+
+async function getUnsubscribeTranslator() {
+  const h = headers()
+  const country = normalizeCountry(
+    cookies().get(COUNTRY_COOKIE)?.value ||
+    h.get('x-dcc-country') ||
+    h.get('x-vercel-ip-country') ||
+    h.get('cf-ipcountry')
+  )
+  const i18n = await createDccI18n(getLocaleForCountry(country))
+  return i18n.t.bind(i18n)
+}
 
 function getClientIp() {
   const headerList = headers()
@@ -22,12 +36,13 @@ export default async function EmailUnsubscribePage({
   searchParams: { token?: string }
 }) {
   const token = typeof searchParams.token === 'string' ? searchParams.token : ''
+  const t = await getUnsubscribeTranslator()
   let state: UnsubscribeState
 
   if (!token) {
     state = {
-      title: 'Link inválido',
-      message: 'Não encontramos as informações necessárias para fazer o descadastro.',
+      title: t('unsubscribe.invalidTitle'),
+      message: t('unsubscribe.missingInfo'),
       tone: 'error',
     }
   } else {
@@ -41,27 +56,27 @@ export default async function EmailUnsubscribePage({
 
       if (result.success) {
         state = {
-          title: 'Descadastro confirmado',
-          message: 'Pronto. Este e-mail foi removido das próximas campanhas promocionais da DCC Music.',
+          title: t('unsubscribe.confirmedTitle'),
+          message: t('unsubscribe.confirmedMessage'),
           tone: 'success',
         }
       } else if (result.reason === 'setup_required') {
         state = {
-          title: 'Descadastro ainda não configurado',
-          message: 'A estrutura de descadastro ainda precisa ser ativada no banco de dados. Fale com o suporte da DCC Music para remover seu e-mail.',
+          title: t('unsubscribe.setupTitle'),
+          message: t('unsubscribe.setupMessage'),
           tone: 'warning',
         }
       } else {
         state = {
           title: 'Link inválido',
-          message: 'Este link de descadastro não é válido. Se quiser sair da lista, responda ao e-mail pedindo a remoção.',
+          message: t('unsubscribe.invalidMessage'),
           tone: 'error',
         }
       }
     } catch {
       state = {
-        title: 'Não foi possível descadastrar agora',
-        message: 'Tente novamente em alguns minutos ou responda ao e-mail pedindo a remoção.',
+        title: t('unsubscribe.errorTitle'),
+        message: t('unsubscribe.errorMessage'),
         tone: 'error',
       }
     }
@@ -80,13 +95,13 @@ export default async function EmailUnsubscribePage({
         <h1 className="text-3xl font-black">{state.title}</h1>
         <p className="mt-4 leading-relaxed">{state.message}</p>
         <p className="mt-4 text-sm text-white/60">
-          Você ainda poderá receber e-mails transacionais importantes, como confirmação de pagamento, senha e avisos da sua conta.
+          {t('unsubscribe.transactionalNotice')}
         </p>
         <Link
           href="/"
           className="mt-6 inline-flex rounded-xl bg-white px-4 py-3 text-sm font-black text-black hover:bg-gray-200"
         >
-          Voltar para o site
+          {t('unsubscribe.backSite')}
         </Link>
       </section>
     </main>
