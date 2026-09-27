@@ -190,7 +190,28 @@
       "highlights": {
         "mostPopular": "MOST POPULAR",
         "elite": "ELITE"
-      }
+      },
+      "planFeatures": {
+      "credits80": "80 credits/month",
+      "credits130": "130 credits/month",
+      "credits300": "300 credits/month",
+      "songs20": "20 songs/month",
+      "unlimitedLyrics": "Unlimited AI lyrics",
+      "unlimitedQuickCovers": "Unlimited quick covers",
+      "saveProjects": "Save music projects",
+      "preview20": "20-second preview",
+      "publishDcc": "Publish on DCC Music",
+      "premiumCovers10": "10 premium AI covers",
+      "premiumCovers30": "30 premium AI covers",
+      "premiumPlayer": "Premium player",
+      "mp3Download": "MP3 download",
+      "mp3Downloads": "MP3 downloads",
+      "unlimitedProjects": "Unlimited projects",
+      "generationPriority": "Generation priority",
+      "maxPriority": "Highest priority",
+      "eliteBadge": "Studio Elite badge",
+      "earlyFeatures": "Early access to future features"
+}
     }
   },
   "menu": {
