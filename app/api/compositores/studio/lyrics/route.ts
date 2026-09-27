@@ -11,6 +11,10 @@ import {
 } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
 import { formatMusicTitle } from '@/lib/normalize'
+import {
+  isPoliticalCampaignContent,
+  POLITICAL_CAMPAIGN_READY_LYRIC_MESSAGE,
+} from '@/lib/studio-political-content'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -346,6 +350,22 @@ export async function POST(request: NextRequest) {
       songLanguage: String(body.songLanguage || inferredLanguage),
     }
     const existingLyric = typeof body.existingLyric === 'string' ? body.existingLyric : ''
+    if (isPoliticalCampaignContent(
+      project.title,
+      project.description,
+      body.title,
+      body.idea,
+      existingLyric
+    )) {
+      return NextResponse.json(
+        {
+          error: POLITICAL_CAMPAIGN_READY_LYRIC_MESSAGE,
+          errorCode: 'politicalCampaignOpenAiBlocked',
+        },
+        { status: 422 }
+      )
+    }
+
     const prompt = buildPrompt(input, existingLyric)
     const lyric = await generateLyricWithOpenAI(prompt, input.songLanguage)
 
