@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { randomUUID } from 'crypto'
 import { supabaseAdmin } from '@/lib/supabase'
+import { isNonFallbackableSunoFailure } from '@/lib/studio-music-provider-fallback'
 import { uploadStudioAudioBuffer } from '@/lib/studio-audio-backup'
 
 const MODEL = process.env.GOOGLE_LYRIA_MODEL || 'lyria-3-pro-preview'
@@ -139,8 +140,30 @@ export async function startLyriaFallbackForSunoGeneration(input: {
   if (generation?.provider !== 'sunoapi') return { started: false as const, reason: 'not_suno' }
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_JSON) return { started: false as const, reason: 'lyria_not_configured' }
 
+  const request = generation.request_payload || {}
+
+  // "Melhorar música" depende do áudio original. O Lyria gera uma nova faixa
+  // a partir de texto e, portanto, não pode substituir silenciosamente o Suno
+  // nesse fluxo.
+  if (request.feature === 'enhance_music') {
+    return {
+      started: false as const,
+      reason: 'enhance_requires_suno',
+      error: 'enhance_requires_suno',
+    }
+  }
+
+  // Rejeições por copyright, palavra sensível, política ou voz inválida não
+  // devem ser reenviadas a outro motor.
+  if (isNonFallbackableSunoFailure(sunoFailurePayload)) {
+    return {
+      started: false as const,
+      reason: 'non_fallbackable_failure',
+      error: 'non_fallbackable_failure',
+    }
+  }
+
   try {
-    const request = generation.request_payload || {}
     // O Lyria não recebe nem reproduz a persona/voz clonada da Suno. Nunca
     // devemos trocar silenciosamente a voz escolhida pelo compositor.
     if (request.personaId || request.personaModel === 'voice_persona' || request.studioVoice?.profileId) {
