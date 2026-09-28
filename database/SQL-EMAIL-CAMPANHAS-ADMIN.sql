@@ -30,6 +30,12 @@ create table if not exists public.admin_email_campaigns (
   updated_at timestamptz not null default now()
 );
 
+alter table public.admin_email_campaigns
+  add column if not exists exclude_previously_sent boolean not null default false,
+  add column if not exists sent_filter_from timestamptz,
+  add column if not exists sent_filter_to timestamptz;
+
+
 create table if not exists public.admin_email_campaign_deliveries (
   id uuid primary key default gen_random_uuid(),
   campaign_id uuid not null references public.admin_email_campaigns(id) on delete cascade,
