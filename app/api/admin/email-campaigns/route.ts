@@ -8,6 +8,7 @@ import {
   getCampaignRecipients,
   getInactiveComposerRecipients,
   getPendingEmailRecipients,
+  getRecipientsForCampaign,
   sendEmailCampaign,
 } from '@/lib/admin-email-campaigns'
 
@@ -43,6 +44,15 @@ function normalizeDateTime(value: any, endOfDay = false) {
     else date.setUTCHours(0, 0, 0, 0)
   }
   return date.toISOString()
+}
+
+function normalizeCampaignDateBoundary(value: any, endOfDay = false) {
+  const raw = String(value || '')
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const time = endOfDay ? '23:59:59.999' : '00:00:00.000'
+    return new Date(`${raw}T${time}-03:00`).toISOString()
+  }
+  return normalizeDateTime(raw, endOfDay)
 }
 
 function normalizeRecurringDay(value: any) {
@@ -130,20 +140,38 @@ export async function GET(request: NextRequest) {
 
     if (request.nextUrl.searchParams.get('mode') === 'count') {
       const targetMode = request.nextUrl.searchParams.get('targetMode')
-      if (targetMode === 'pending_email') {
-        const from = normalizeDateTime(request.nextUrl.searchParams.get('from'))
-        const to = normalizeDateTime(request.nextUrl.searchParams.get('to'), true)
-        if (!from || !to) return NextResponse.json({ count: 0 })
-        if (new Date(from) > new Date(to)) return NextResponse.json({ error: 'Período inválido.' }, { status: 400 })
-        const recipients = await getPendingEmailRecipients(from, to)
-        return NextResponse.json({ count: recipients.length, languages: countRecipientLanguages(recipients) })
+      const excludePreviouslySent = request.nextUrl.searchParams.get('excludePreviouslySent') === 'true'
+      const targetFrom = normalizeDateTime(request.nextUrl.searchParams.get('from'))
+      const targetTo = normalizeDateTime(request.nextUrl.searchParams.get('to'), true)
+      const sentFilterFrom = normalizeCampaignDateBoundary(request.nextUrl.searchParams.get('sentFrom'))
+      const sentFilterTo = normalizeCampaignDateBoundary(request.nextUrl.searchParams.get('sentTo'), true)
+
+      if (targetMode === 'pending_email' && (!targetFrom || !targetTo || new Date(targetFrom) > new Date(targetTo))) {
+        return NextResponse.json({ error: 'Período inválido para e-mails pendentes.' }, { status: 400 })
       }
-      if (targetMode === 'inactive') {
-        const since = normalizeDateTime(request.nextUrl.searchParams.get('from'))
-        if (!since) return NextResponse.json({ count: 0, languages: { pt: 0, es: 0, en: 0 } })
-        const recipients = await getInactiveComposerRecipients(since)
-        return NextResponse.json({ count: recipients.length, languages: countRecipientLanguages(recipients) })
+      if (targetMode === 'inactive' && !targetFrom) {
+        return NextResponse.json({ count: 0, languages: { pt: 0, es: 0, en: 0 } })
       }
+      if (excludePreviouslySent && (!sentFilterFrom || !sentFilterTo || new Date(sentFilterFrom) > new Date(sentFilterTo))) {
+        return NextResponse.json({ error: 'Informe um período válido para verificar os e-mails já enviados.' }, { status: 400 })
+      }
+
+      const audience = normalizeAudience(request.nextUrl.searchParams.get('audience'))
+      const recipients = await getRecipientsForCampaign({
+        id: 'preview',
+        name: '',
+        subject: '',
+        body: '',
+        audience,
+        status: 'draft',
+        target_mode: targetMode === 'pending_email' || targetMode === 'inactive' ? targetMode : 'audience',
+        target_from: targetFrom,
+        target_to: targetTo,
+        exclude_previously_sent: excludePreviouslySent,
+        sent_filter_from: sentFilterFrom,
+        sent_filter_to: sentFilterTo,
+      })
+      return NextResponse.json({ count: recipients.length, languages: countRecipientLanguages(recipients) })
     }
 
     const { data, error } = await supabaseAdmin
@@ -235,6 +263,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Informe há quantos dias o público está sem criar.' }, { status: 400 })
     }
 
+    const excludePreviouslySent = body.excludePreviouslySent === true
+    const sentFilterFrom = excludePreviouslySent ? normalizeCampaignDateBoundary(body.sentFilterFrom) : null
+    const sentFilterTo = excludePreviouslySent ? normalizeCampaignDateBoundary(body.sentFilterTo, true) : null
+    if (excludePreviouslySent && (!sentFilterFrom || !sentFilterTo || new Date(sentFilterFrom) > new Date(sentFilterTo))) {
+      return NextResponse.json({ error: 'Informe um período válido para verificar os e-mails já enviados.' }, { status: 400 })
+    }
+
     const payload = {
       name: cleanText(body.name, 140),
       subject: cleanText(body.subject, 180),
@@ -253,6 +288,9 @@ export async function POST(request: NextRequest) {
       target_to: targetTo,
       target_count: 0,
       frozen_at: null,
+      exclude_previously_sent: excludePreviouslySent,
+      sent_filter_from: sentFilterFrom,
+      sent_filter_to: sentFilterTo,
       created_by: (session as any)?.user?.email || null,
       updated_at: new Date().toISOString(),
     }
