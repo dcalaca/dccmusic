@@ -20,7 +20,7 @@ export type EmailCampaign = {
   next_run_at?: string | null
   sent_count?: number
   failed_count?: number
-  target_mode?: 'audience' | 'pending_email'
+  target_mode?: 'audience' | 'pending_email' | 'inactive'
   target_from?: string | null
   target_to?: string | null
   target_count?: number
@@ -336,10 +336,64 @@ export async function getPendingEmailRecipients(from: string, to: string) {
   return recipients
 }
 
+/**
+ * Compositores que não criaram letra nem música no Studio desde a data informada.
+ * A lista é calculada antes do envio e depois congelada na fila da campanha.
+ */
+export async function getInactiveComposerRecipients(since: string) {
+  const [composers, lyrics, generations] = await Promise.all([
+    fetchAllRows<any>((from, to) => supabaseAdmin
+      .from('dccmusic_composers')
+      .select('id, name, email, country')
+      .not('email', 'is', null)
+      .order('id', { ascending: true })
+      .range(from, to)),
+    fetchAllRows<any>((from, to) => supabaseAdmin
+      .from('studio_lyrics')
+      .select('composer_id, created_at')
+      .gte('created_at', since)
+      .range(from, to)),
+    fetchAllRows<any>((from, to) => supabaseAdmin
+      .from('studio_generations')
+      .select('composer_id, created_at, status')
+      .neq('status', 'failed')
+      .gte('created_at', since)
+      .range(from, to)),
+  ])
+
+  const activeComposerIds = new Set<string>()
+  for (const row of [...lyrics, ...generations]) {
+    if (row.composer_id) activeComposerIds.add(String(row.composer_id))
+  }
+
+  const optedOut = await getOptedOutEmailSet()
+  const seen = new Set<string>()
+  const recipients: Recipient[] = []
+  for (const composer of composers) {
+    const id = String(composer.id)
+    const email = normalizeEmail(composer.email)
+    if (!email || activeComposerIds.has(id) || seen.has(email) || optedOut.has(email)) continue
+    seen.add(email)
+    const country = String(composer.country || '').trim().toUpperCase() || null
+    recipients.push({
+      type: 'composer',
+      id,
+      name: String(composer.name || 'Compositor'),
+      email,
+      country,
+      language: marketingLanguageForCountry(country),
+    })
+  }
+  return recipients
+}
+
 export async function getRecipientsForCampaign(campaign: EmailCampaign) {
   if (campaign.target_mode === 'pending_email') {
     if (!campaign.target_from || !campaign.target_to) return []
     return getPendingEmailRecipients(campaign.target_from, campaign.target_to)
+  }
+  if (campaign.target_mode === 'inactive') {
+    return campaign.target_from ? getInactiveComposerRecipients(campaign.target_from) : []
   }
   return getCampaignRecipients(campaign.audience)
 }
