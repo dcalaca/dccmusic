@@ -18,7 +18,7 @@ type Campaign = {
   next_run_at: string | null
   sent_count: number
   failed_count: number
-  target_mode?: 'audience' | 'pending_email'
+  target_mode?: 'audience' | 'pending_email' | 'inactive'
   target_from?: string | null
   target_to?: string | null
   target_count?: number
@@ -37,7 +37,7 @@ type Idea = {
   body: string
   ctaLabel: string
   ctaUrl: string
-  targetMode?: 'audience' | 'pending_email'
+  targetMode?: 'audience' | 'pending_email' | 'inactive'
 }
 
 const campaignIdeas: Idea[] = [
@@ -67,6 +67,7 @@ const campaignIdeas: Idea[] = [
     body: 'Faz um tempo que você não cria uma música nova na DCC Music.\n\nO Studio IA está pronto para te ajudar a transformar ideias em letras, capas e músicas completas.\n\nEntre no seu painel e continue de onde parou.',
     ctaLabel: 'Continuar criando',
     ctaUrl: 'https://www.dccmusic.online/compositores/admin/studio-ia/projetos',
+    targetMode: 'inactive',
   },
   {
     label: 'Novidades',
@@ -156,17 +157,19 @@ export default function EmailCampaignsAdmin() {
   const [ctaLabel, setCtaLabel] = useState('')
   const [ctaUrl, setCtaUrl] = useState('')
   const [audience, setAudience] = useState<'all' | 'composers' | 'site_users'>('all')
-  const [targetMode, setTargetMode] = useState<'audience' | 'pending_email'>('audience')
+  const [targetMode, setTargetMode] = useState<'audience' | 'pending_email' | 'inactive'>('audience')
   const [targetFrom, setTargetFrom] = useState(initialPendingRange.from)
   const [targetTo, setTargetTo] = useState(initialPendingRange.to)
+  const [inactiveDays, setInactiveDays] = useState(30)
   const [targetCount, setTargetCount] = useState<number | null>(null)
   const [targetLanguageCounts, setTargetLanguageCounts] = useState<LanguageCounts>({ pt: 0, es: 0, en: 0 })
   const [targetCountLoading, setTargetCountLoading] = useState(false)
   const [createScheduled, setCreateScheduled] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(localDateTimeValue(new Date(Date.now() + 60 * 60 * 1000)))
 
-  const selectedAudienceCount = targetMode === 'pending_email' ? (targetCount ?? 0) : (audienceCounts[audience] || 0)
-  const selectedLanguageCounts = targetMode === 'pending_email' ? targetLanguageCounts : audienceLanguageCounts[audience]
+  const selectedAudienceCount = targetMode === 'pending_email' || targetMode === 'inactive' ? (targetCount ?? 0) : (audienceCounts[audience] || 0)
+  const selectedLanguageCounts = targetMode === 'pending_email' || targetMode === 'inactive' ? targetLanguageCounts : audienceLanguageCounts[audience]
+  const audienceSelectValue = targetMode === 'inactive' ? 'inactive' : targetMode === 'pending_email' ? 'pending_email' : audience
   const previewLines = useMemo(() => body.split('\n').filter(Boolean).slice(0, 4), [body])
 
   const loadCampaigns = async (silent = false) => {
@@ -192,7 +195,7 @@ export default function EmailCampaignsAdmin() {
   useEffect(() => { void loadCampaigns() }, [])
 
   useEffect(() => {
-    if (targetMode !== 'pending_email' || !targetFrom || !targetTo) {
+    if (targetMode !== 'pending_email' && targetMode !== 'inactive') {
       setTargetCount(null)
       setTargetLanguageCounts({ pt: 0, es: 0, en: 0 })
       return
@@ -203,9 +206,9 @@ export default function EmailCampaignsAdmin() {
         setTargetCountLoading(true)
         const params = new URLSearchParams({
           mode: 'count',
-          targetMode: 'pending_email',
-          from: targetFrom,
-          to: targetTo,
+          targetMode,
+          from: targetMode === 'inactive' ? targetFrom : targetFrom,
+          to: targetMode === 'inactive' ? '' : targetTo,
         })
         const response = await fetch(`/api/admin/email-campaigns?${params.toString()}`, { cache: 'no-store', signal: controller.signal })
         const data = await response.json()
@@ -238,6 +241,15 @@ export default function EmailCampaignsAdmin() {
       setTargetTo(range.to)
       setAudience('composers')
       setCreateScheduled(false)
+    } else if (idea.targetMode === 'inactive') {
+      const since = new Date()
+      since.setDate(since.getDate() - 30)
+      setTargetMode('inactive')
+      setAudience('composers')
+      setInactiveDays(30)
+      setTargetFrom(localDateValue(since))
+      setTargetTo('')
+      setCreateScheduled(false)
     } else {
       setTargetMode('audience')
     }
@@ -252,6 +264,7 @@ export default function EmailCampaignsAdmin() {
     setCtaUrl('')
     setAudience('all')
     setTargetMode('audience')
+    setInactiveDays(30)
     setCreateScheduled(false)
     setScheduledAt(localDateTimeValue(new Date(Date.now() + 60 * 60 * 1000)))
   }
@@ -268,7 +281,7 @@ export default function EmailCampaignsAdmin() {
         body: JSON.stringify({
           name, subject, preview, body, ctaLabel, ctaUrl, audience,
           targetMode,
-          targetFrom: targetMode === 'pending_email' ? targetFrom : null,
+          targetFrom: targetMode === 'pending_email' || targetMode === 'inactive' ? targetFrom : null,
           targetTo: targetMode === 'pending_email' ? targetTo : null,
           status: createScheduled ? 'scheduled' : 'draft',
           scheduledAt: createScheduled ? scheduledAt : null,
@@ -291,6 +304,8 @@ export default function EmailCampaignsAdmin() {
     const pending = (campaign.deliveries?.pending || 0) + (campaign.deliveries?.reserved || 0)
     const targetLabel = campaign.target_mode === 'pending_email'
       ? `${campaign.target_count || pending || 'os'} cadastros com e-mail pendente`
+      : campaign.target_mode === 'inactive'
+        ? `${campaign.target_count || pending || 'os'} compositores sem criação recente`
       : audienceLabels[campaign.audience]
 
     const confirmMessage = action === 'send'
@@ -436,6 +451,31 @@ export default function EmailCampaignsAdmin() {
               </div>
             </div>
           )}
+
+          {targetMode === 'inactive' && (
+            <div className="mt-4 rounded-xl border border-cyan-700/60 bg-cyan-950/20 p-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <div className="text-sm font-bold text-cyan-100">Compositores sem criação recente</div>
+                  <p className="mt-1 text-xs text-gray-400">Entra quem não criou letra nem música no Studio IA desde o período escolhido.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[7, 15, 30, 60, 90].map((days) => (
+                    <button key={days} type="button" onClick={() => {
+                      const since = new Date(); since.setDate(since.getDate() - days)
+                      setInactiveDays(days); setTargetFrom(localDateValue(since))
+                    }} className="rounded-lg border border-gray-700 bg-black/50 px-3 py-2 text-xs font-bold text-gray-200 hover:border-cyan-500">
+                      {days} dias
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                <label className="block"><span className="mb-1 block text-xs font-bold text-gray-300">Sem criar desde</span><input type="date" value={targetFrom} onChange={(e) => setTargetFrom(e.target.value)} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white" /></label>
+                <div className="rounded-lg border border-gray-700 bg-black/50 px-4 py-2.5 text-sm text-gray-300"><FiClock className="mr-2 inline" />{targetCountLoading ? 'Calculando...' : `${targetCount ?? 0} destinatário(s)`}</div>
+              </div>
+            </div>
+          )}
         </div>
 
         <form onSubmit={createCampaign} className="grid gap-5 lg:grid-cols-[1fr_0.8fr]">
@@ -454,10 +494,22 @@ export default function EmailCampaignsAdmin() {
             <div className="rounded-2xl border border-gray-800 bg-black/40 p-4">
               <label className="block">
                 <span className="mb-1.5 block text-sm font-bold text-gray-200">Enviar para</span>
-                <select value={audience} onChange={(e) => { setAudience(e.target.value as any); setTargetMode('audience') }} disabled={targetMode === 'pending_email'} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3 disabled:opacity-60">
+                <select value={audienceSelectValue} onChange={(e) => {
+                  const value = e.target.value
+                  if (value === 'inactive') {
+                    const since = new Date(); since.setDate(since.getDate() - inactiveDays)
+                    setAudience('composers'); setTargetMode('inactive'); setTargetFrom(localDateValue(since)); setTargetTo('')
+                  } else if (value === 'pending_email') {
+                    setAudience('composers'); setTargetMode('pending_email')
+                  } else {
+                    setAudience(value as any); setTargetMode('audience')
+                  }
+                }} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3">
                   <option value="all">Toda a base ({audienceCounts.all})</option>
                   <option value="composers">Compositores ({audienceCounts.composers})</option>
                   <option value="site_users">Usuários do site ({audienceCounts.site_users})</option>
+                  <option value="inactive">Compositores sem criar há {inactiveDays} dias</option>
+                  <option value="pending_email">Cadastros com e-mail pendente</option>
                 </select>
               </label>
               <p className="mt-2 text-xs text-gray-500">Estimativa atual: {selectedAudienceCount} destinatário(s). A lista será congelada no primeiro envio.</p>
@@ -509,7 +561,7 @@ export default function EmailCampaignsAdmin() {
               const isFrozen = Boolean(campaign.frozen_at) || queueTotal > 0
               const estimatedTotal = isFrozen
                 ? Number(campaign.target_count || queueTotal)
-                : (campaign.target_mode === 'pending_email' ? Number(campaign.target_count || 0) : audienceCounts[campaign.audience] || 0)
+                : (campaign.target_mode === 'pending_email' || campaign.target_mode === 'inactive' ? Number(campaign.target_count || 0) : audienceCounts[campaign.audience] || 0)
               const remaining = isFrozen ? pendingCount + reservedCount : estimatedTotal
               const processedCount = sentCount + failedCount + skippedCount
               const progressPercent = estimatedTotal > 0 ? Math.min(100, Math.round((processedCount / estimatedTotal) * 100)) : 0
@@ -523,7 +575,7 @@ export default function EmailCampaignsAdmin() {
                     <div>
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <span className="rounded-full border border-gray-700 bg-gray-900 px-3 py-1 text-xs font-bold text-gray-200">{statusLabels[campaign.status]}</span>
-                        <span className="rounded-full border border-fuchsia-800 bg-fuchsia-950/30 px-3 py-1 text-xs font-bold text-fuchsia-100">{campaign.target_mode === 'pending_email' ? 'E-mail pendente' : audienceLabels[campaign.audience]}</span>
+                        <span className="rounded-full border border-fuchsia-800 bg-fuchsia-950/30 px-3 py-1 text-xs font-bold text-fuchsia-100">{campaign.target_mode === 'pending_email' ? 'E-mail pendente' : campaign.target_mode === 'inactive' ? 'Sem criação recente' : audienceLabels[campaign.audience]}</span>
                         {isFrozen && <span className="rounded-full border border-emerald-800 bg-emerald-950/30 px-3 py-1 text-xs font-bold text-emerald-100">Lista congelada: {estimatedTotal}</span>}
                       </div>
                       <h3 className="text-lg font-black text-white">{campaign.name}</h3>
