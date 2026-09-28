@@ -6,6 +6,7 @@ import {
   calculateNextRunAt,
   countRecipientLanguages,
   getCampaignRecipients,
+  getInactiveComposerRecipients,
   getPendingEmailRecipients,
   sendEmailCampaign,
 } from '@/lib/admin-email-campaigns'
@@ -137,6 +138,12 @@ export async function GET(request: NextRequest) {
         const recipients = await getPendingEmailRecipients(from, to)
         return NextResponse.json({ count: recipients.length, languages: countRecipientLanguages(recipients) })
       }
+      if (targetMode === 'inactive') {
+        const since = normalizeDateTime(request.nextUrl.searchParams.get('from'))
+        if (!since) return NextResponse.json({ count: 0, languages: { pt: 0, es: 0, en: 0 } })
+        const recipients = await getInactiveComposerRecipients(since)
+        return NextResponse.json({ count: recipients.length, languages: countRecipientLanguages(recipients) })
+      }
     }
 
     const { data, error } = await supabaseAdmin
@@ -158,14 +165,14 @@ export async function GET(request: NextRequest) {
     const livePendingCounts = new Map<string, number>()
     await Promise.all(
       campaigns.map(async (campaign: any) => {
-        if (
-          campaign.target_mode !== 'pending_email' ||
-          campaign.frozen_at ||
-          !campaign.target_from ||
-          !campaign.target_to
-        ) return
+        if (campaign.frozen_at || !campaign.target_from) return
+        if (campaign.target_mode !== 'pending_email' && campaign.target_mode !== 'inactive') return
 
-        const recipients = await getPendingEmailRecipients(campaign.target_from, campaign.target_to)
+        const recipients = campaign.target_mode === 'inactive'
+          ? await getInactiveComposerRecipients(campaign.target_from)
+          : campaign.target_to
+            ? await getPendingEmailRecipients(campaign.target_from, campaign.target_to)
+            : []
         livePendingCounts.set(campaign.id, recipients.length)
       })
     )
@@ -217,12 +224,15 @@ export async function POST(request: NextRequest) {
     const scheduledAt = normalizeDateTime(body.scheduledAt)
     const recurringDay = normalizeRecurringDay(body.recurringDay)
     const recurringEnabled = false
-    const targetMode = body.targetMode === 'pending_email' ? 'pending_email' : 'audience'
-    const targetFrom = targetMode === 'pending_email' ? normalizeDateTime(body.targetFrom) : null
+    const targetMode = body.targetMode === 'pending_email' || body.targetMode === 'inactive' ? body.targetMode : 'audience'
+    const targetFrom = targetMode === 'pending_email' || targetMode === 'inactive' ? normalizeDateTime(body.targetFrom) : null
     const targetTo = targetMode === 'pending_email' ? normalizeDateTime(body.targetTo, true) : null
 
     if (targetMode === 'pending_email' && (!targetFrom || !targetTo || new Date(targetFrom) > new Date(targetTo))) {
       return NextResponse.json({ error: 'Informe um período válido para e-mails pendentes.' }, { status: 400 })
+    }
+    if (targetMode === 'inactive' && !targetFrom) {
+      return NextResponse.json({ error: 'Informe há quantos dias o público está sem criar.' }, { status: 400 })
     }
 
     const payload = {
@@ -232,7 +242,7 @@ export async function POST(request: NextRequest) {
       body: cleanText(body.body, 5000),
       cta_label: cleanText(body.ctaLabel, 80) || null,
       cta_url: cleanText(body.ctaUrl, 500) || null,
-      audience: targetMode === 'pending_email' ? 'composers' : normalizeAudience(body.audience),
+      audience: targetMode === 'pending_email' || targetMode === 'inactive' ? 'composers' : normalizeAudience(body.audience),
       status,
       scheduled_at: scheduledAt,
       recurring_day: recurringEnabled ? recurringDay : null,
