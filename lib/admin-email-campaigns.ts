@@ -107,6 +107,11 @@ function nl2br(value: string) {
   return escapeHtml(value).replace(/\n/g, '<br>')
 }
 
+function recipientFirstName(value?: string | null) {
+  const name = String(value || '').trim().replace(/\s+/g, ' ')
+  return name ? name.split(' ')[0] : ''
+}
+
 function parseSender(value?: string | null) {
   const raw = String(value || '').trim()
   if (!raw) return null
@@ -167,7 +172,7 @@ async function sendCampaignViaResend(input: {
   const bodyStartsWithGreeting = localized.greetingPattern.test(input.body)
   const greeting = bodyStartsWithGreeting
     ? ''
-    : `<p>${localized.greeting}, ${escapeHtml(input.name || localized.defaultName)}.</p>`
+    : `<p>${localized.greeting}, ${escapeHtml(recipientFirstName(input.name) || localized.defaultName)}.</p>`
   const cta = input.ctaLabel && input.ctaUrl
     ? dccEmailButton(input.ctaLabel, input.ctaUrl)
     : ''
