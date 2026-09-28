@@ -579,14 +579,14 @@ export default function ComposerVoicesPage() {
           {message && <div className="mb-6 rounded-xl border border-green-800 bg-green-950/50 p-4 text-green-200">{message}</div>}
           {error && <div className="mb-6 rounded-xl border border-red-800 bg-red-950/50 p-4 text-red-200">{error}</div>}
 
-          {pendingVerificationVoice ? (
+          {pendingVerificationVoice && (
             <section className="mb-8 rounded-3xl border border-yellow-800/70 bg-yellow-950/20 p-5 sm:p-6">
               <h2 className="text-xl font-black text-yellow-100">{t('voices.pending.title')}</h2>
               <p className="mt-2 text-sm text-yellow-50/90">
                 {t('voices.pending.description', { name: pendingVerificationVoice.displayName })}
               </p>
             </section>
-          ) : (
+          )}
           <section className="mb-8 rounded-3xl border border-gray-800 bg-gray-950/70 p-5 sm:p-6">
             <h2 className="mb-4 text-xl font-black">{t('voices.newVoice.title')}</h2>
             <div className="mb-5">
@@ -661,7 +661,6 @@ export default function ComposerVoicesPage() {
               </button>
             </form>
           </section>
-          )}
 
           {loading ? (
             <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-10 text-center text-gray-400">{t('voices.loading')}</div>
@@ -780,14 +779,24 @@ export default function ComposerVoicesPage() {
                     <h3 className="text-lg font-black text-white">{voice.displayName}</h3>
                     <p className="mt-1 text-sm text-purple-100/70">{t('voices.recover.expiredSaved')}</p>
                     {voice.sourceAudioUrl && <audio controls src={voice.sourceAudioUrl} aria-label={t('voices.audioPreview', { name: voice.displayName })} className="mt-4 w-full" />}
-                    <button
-                      onClick={() => reactivateExpiredVoice(voice.id)}
-                      disabled={refreshingId === voice.id || voices.length >= limit}
-                      className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-3 font-bold text-white disabled:opacity-60"
-                    >
-                      {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
-                      {t('voices.recover.reactivateFree')}
-                    </button>
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                      <button
+                        onClick={() => reactivateExpiredVoice(voice.id)}
+                        disabled={refreshingId === voice.id || voices.length >= limit}
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-4 py-3 font-bold text-white disabled:opacity-60"
+                      >
+                        {refreshingId === voice.id ? <FiLoader className="animate-spin" /> : <FiRefreshCw />}
+                        {t('voices.recover.reactivateFree')}
+                      </button>
+                      <button
+                        onClick={() => deleteVoice(voice.id)}
+                        disabled={deletingId === voice.id}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-900/70 bg-red-950/30 px-4 py-3 font-bold text-red-100 hover:bg-red-950/60 disabled:opacity-60"
+                      >
+                        {deletingId === voice.id ? <FiLoader className="animate-spin" /> : <FiTrash2 />}
+                        {t('voices.actions.delete')}
+                      </button>
+                    </div>
                   </article>
                 ))}
               </div>

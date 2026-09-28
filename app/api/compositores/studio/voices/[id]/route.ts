@@ -151,7 +151,15 @@ export async function PATCH(
       const voiceUrl = await createStudioVoiceAssetUrl(voice.source_audio_path, voice.source_audio_storage_provider)
       if (!voiceUrl) throw new Error('Não foi possível preparar o áudio salvo da voz.')
 
-      const validation = await regenerateOrCreateValidation(voice, voiceUrl)
+      // Expired/failed validation tasks can no longer be regenerated reliably by
+      // the provider. Reactivation starts a fresh validation from the saved
+      // original voice audio; the user will only need to record the new phrase.
+      const validation = await createSunoVoiceValidation({
+        voiceUrl,
+        vocalStartS: Number(voice.vocal_start_s) || 0,
+        vocalEndS: Math.max((Number(voice.vocal_start_s) || 0) + 1, Number(voice.vocal_end_s) || 20),
+        language: voice.language || 'pt',
+      })
 
       updatePayload = {
         ...updatePayload,
@@ -406,7 +414,12 @@ export async function DELETE(
 
     const { error } = await supabaseAdmin
       .from('studio_voice_profiles')
-      .update({ status: 'archived', updated_at: new Date().toISOString() })
+      .update({
+        status: 'archived',
+        // A dismissed expired voice should no longer appear in the recovery list.
+        error_message: null,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', params.id)
       .eq('composer_id', composer.composerId)
 
