@@ -173,8 +173,8 @@ export default function EmailCampaignsAdmin() {
   const [createScheduled, setCreateScheduled] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(localDateTimeValue(new Date(Date.now() + 60 * 60 * 1000)))
 
-  const selectedAudienceCount = targetMode === 'pending_email' || targetMode === 'inactive' ? (targetCount ?? 0) : (audienceCounts[audience] || 0)
-  const selectedLanguageCounts = targetMode === 'pending_email' || targetMode === 'inactive' ? targetLanguageCounts : audienceLanguageCounts[audience]
+  const selectedAudienceCount = targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent ? (targetCount ?? 0) : (audienceCounts[audience] || 0)
+  const selectedLanguageCounts = targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent ? targetLanguageCounts : audienceLanguageCounts[audience]
   const audienceSelectValue = targetMode === 'inactive' ? 'inactive' : targetMode === 'pending_email' ? 'pending_email' : audience
   const previewLines = useMemo(() => body.split('\n').filter(Boolean).slice(0, 4), [body])
 
@@ -543,7 +543,7 @@ export default function EmailCampaignsAdmin() {
             <div className="rounded-2xl border border-gray-800 bg-black/40 p-4">
               <label className="mb-3 flex items-start gap-3 text-sm font-bold text-gray-200">
                 <input type="checkbox" checked={excludePreviouslySent} onChange={(e) => setExcludePreviouslySent(e.target.checked)} className="mt-0.5" />
-                <span>Enviar somente para quem ainda não recebeu envio de campanha no período</span>
+                <span>Enviar somente para quem ainda não recebeu campanha no período</span>
               </label>
               <p className="mb-3 text-xs text-gray-400">O filtro usa envios aceitos pelo provedor (não confirma entrega na caixa de entrada ou abertura). Desmarque para incluir também quem já recebeu envio.</p>
               <div className="grid gap-3 sm:grid-cols-2">
