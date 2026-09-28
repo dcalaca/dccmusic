@@ -23,6 +23,9 @@ type Campaign = {
   target_to?: string | null
   target_count?: number
   frozen_at?: string | null
+  exclude_previously_sent?: boolean
+  sent_filter_from?: string | null
+  sent_filter_to?: string | null
   deliveries?: { sent: number; failed: number; skipped: number; pending: number; reserved?: number }
   clicks?: { total: number; human: number; bot: number; unknown: number }
 }
@@ -160,6 +163,9 @@ export default function EmailCampaignsAdmin() {
   const [targetMode, setTargetMode] = useState<'audience' | 'pending_email' | 'inactive'>('audience')
   const [targetFrom, setTargetFrom] = useState(initialPendingRange.from)
   const [targetTo, setTargetTo] = useState(initialPendingRange.to)
+  const [excludePreviouslySent, setExcludePreviouslySent] = useState(false)
+  const [sentFilterFrom, setSentFilterFrom] = useState(localDateValue(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)))
+  const [sentFilterTo, setSentFilterTo] = useState(localDateValue(new Date()))
   const [inactiveDays, setInactiveDays] = useState(30)
   const [targetCount, setTargetCount] = useState<number | null>(null)
   const [targetLanguageCounts, setTargetLanguageCounts] = useState<LanguageCounts>({ pt: 0, es: 0, en: 0 })
@@ -167,8 +173,8 @@ export default function EmailCampaignsAdmin() {
   const [createScheduled, setCreateScheduled] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(localDateTimeValue(new Date(Date.now() + 60 * 60 * 1000)))
 
-  const selectedAudienceCount = targetMode === 'pending_email' || targetMode === 'inactive' ? (targetCount ?? 0) : (audienceCounts[audience] || 0)
-  const selectedLanguageCounts = targetMode === 'pending_email' || targetMode === 'inactive' ? targetLanguageCounts : audienceLanguageCounts[audience]
+  const selectedAudienceCount = targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent ? (targetCount ?? 0) : (audienceCounts[audience] || 0)
+  const selectedLanguageCounts = targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent ? targetLanguageCounts : audienceLanguageCounts[audience]
   const audienceSelectValue = targetMode === 'inactive' ? 'inactive' : targetMode === 'pending_email' ? 'pending_email' : audience
   const previewLines = useMemo(() => body.split('\n').filter(Boolean).slice(0, 4), [body])
 
@@ -195,7 +201,8 @@ export default function EmailCampaignsAdmin() {
   useEffect(() => { void loadCampaigns() }, [])
 
   useEffect(() => {
-    if (targetMode !== 'pending_email' && targetMode !== 'inactive') {
+    const needsDynamicCount = targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent
+    if (!needsDynamicCount) {
       setTargetCount(null)
       setTargetLanguageCounts({ pt: 0, es: 0, en: 0 })
       return
@@ -207,8 +214,12 @@ export default function EmailCampaignsAdmin() {
         const params = new URLSearchParams({
           mode: 'count',
           targetMode,
-          from: targetMode === 'inactive' ? targetFrom : targetFrom,
+          audience,
+          from: targetFrom,
           to: targetMode === 'inactive' ? '' : targetTo,
+          excludePreviouslySent: String(excludePreviouslySent),
+          sentFrom: sentFilterFrom,
+          sentTo: sentFilterTo,
         })
         const response = await fetch(`/api/admin/email-campaigns?${params.toString()}`, { cache: 'no-store', signal: controller.signal })
         const data = await response.json()
@@ -225,7 +236,7 @@ export default function EmailCampaignsAdmin() {
       }
     }, 250)
     return () => { window.clearTimeout(timer); controller.abort() }
-  }, [targetMode, targetFrom, targetTo])
+  }, [targetMode, targetFrom, targetTo, audience, excludePreviouslySent, sentFilterFrom, sentFilterTo])
 
   const applyIdea = (idea: Idea) => {
     setName(idea.name)
@@ -264,6 +275,11 @@ export default function EmailCampaignsAdmin() {
     setCtaUrl('')
     setAudience('all')
     setTargetMode('audience')
+    setTargetFrom(initialPendingRange.from)
+    setTargetTo(initialPendingRange.to)
+    setExcludePreviouslySent(false)
+    setSentFilterFrom(localDateValue(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)))
+    setSentFilterTo(localDateValue(new Date()))
     setInactiveDays(30)
     setCreateScheduled(false)
     setScheduledAt(localDateTimeValue(new Date(Date.now() + 60 * 60 * 1000)))
@@ -283,6 +299,9 @@ export default function EmailCampaignsAdmin() {
           targetMode,
           targetFrom: targetMode === 'pending_email' || targetMode === 'inactive' ? targetFrom : null,
           targetTo: targetMode === 'pending_email' ? targetTo : null,
+          excludePreviouslySent,
+          sentFilterFrom: excludePreviouslySent ? sentFilterFrom : null,
+          sentFilterTo: excludePreviouslySent ? sentFilterTo : null,
           status: createScheduled ? 'scheduled' : 'draft',
           scheduledAt: createScheduled ? scheduledAt : null,
         }),
@@ -519,6 +538,19 @@ export default function EmailCampaignsAdmin() {
                 <div className="rounded-lg border border-gray-800 bg-black/50 px-3 py-2"><strong className="block text-white">{selectedLanguageCounts.en}</strong><span className="text-gray-400">English</span></div>
               </div>
               <p className="mt-2 text-xs text-emerald-300">Espanhol e inglês são traduzidos automaticamente uma única vez antes do primeiro envio. Cada destinatário recebe a versão definida pelo país do cadastro.</p>
+            </div>
+
+            <div className="rounded-2xl border border-gray-800 bg-black/40 p-4">
+              <label className="mb-3 flex items-start gap-3 text-sm font-bold text-gray-200">
+                <input type="checkbox" checked={excludePreviouslySent} onChange={(e) => setExcludePreviouslySent(e.target.checked)} className="mt-0.5" />
+                <span>Enviar somente para quem ainda não recebeu campanha no período</span>
+              </label>
+              <p className="mb-3 text-xs text-gray-400">O filtro usa envios aceitos pelo provedor (não confirma entrega na caixa de entrada ou abertura). Desmarque para incluir também quem já recebeu envio.</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="block"><span className="mb-1 block text-xs font-bold text-gray-300">Envios desde</span><input type="date" value={sentFilterFrom} onChange={(e) => setSentFilterFrom(e.target.value)} disabled={!excludePreviouslySent} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white disabled:opacity-50" /></label>
+                <label className="block"><span className="mb-1 block text-xs font-bold text-gray-300">Envios até</span><input type="date" value={sentFilterTo} onChange={(e) => setSentFilterTo(e.target.value)} disabled={!excludePreviouslySent} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white disabled:opacity-50" /></label>
+              </div>
+              {excludePreviouslySent && <p className="mt-3 text-sm text-cyan-300"><FiClock className="mr-1 inline" />{targetCountLoading ? 'Verificando histórico...' : `${targetCount ?? 0} destinatário(s) receberão esta campanha`}</p>}
             </div>
 
             <div className="rounded-2xl border border-gray-800 bg-black/40 p-4">
