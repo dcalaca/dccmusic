@@ -3,7 +3,6 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { getCurrentProjectAssets, getProjectForComposer, mapStudioProject } from '@/lib/studio'
 import { isInternalStudioVideoPilot, mapStudioVideoRequest, studioVideoCanRegenerate } from '@/lib/studio-video'
 import { supabaseAdmin } from '@/lib/supabase'
-import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { formatMusicTitle } from '@/lib/normalize'
@@ -163,18 +162,6 @@ async function syncMurekaGenerationIfReady(project: any, composerId: string) {
     })
     return
   }
-
-  await ensureSimpleStudioCover({
-    projectId: project.id,
-    composerId,
-    title: project.title || 'Sua música',
-    style: project.style,
-    mood: project.mood,
-    description: project.description,
-    replaceCurrent: true,
-  }).catch((coverError) => {
-    console.error('[Studio IA] Erro ao criar capa simples:', coverError)
-  })
 
   if (generation.status !== 'completed') {
     await notifyMusicReady({

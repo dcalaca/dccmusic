@@ -8,7 +8,6 @@ import {
   sendStudioMusicFailureEmail,
   sendStudioMusicReadyEmail,
 } from '@/lib/dcc-emails'
-import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import {
@@ -119,26 +118,6 @@ async function saveSunoTrack(generation: any, sunoData: any[], status: string) {
   ])
 
   if (fullyReady) {
-    const { data: project } = await supabaseAdmin
-      .from('studio_projects')
-      .select('id, title, style, mood, description')
-      .eq('id', generation.project_id)
-      .maybeSingle()
-
-    if (project) {
-      await ensureSimpleStudioCover({
-        projectId: project.id,
-        composerId: generation.composer_id,
-        title: project.title || 'Sua música',
-        style: project.style,
-        mood: project.mood,
-        description: project.description,
-        replaceCurrent: true,
-      }).catch((coverError) => {
-        console.error('[Studio IA] Erro ao criar capa simples:', coverError)
-      })
-    }
-
     await notifyMusicReady(generation)
   } else if (wantsComplete && !hasExactTwo) {
     console.warn('[Studio IA] SUCCESS Suno sem 2 versões; mantendo generating', {
@@ -177,26 +156,6 @@ async function saveMurekaTrack(generation: any, choices: any[], status: string) 
   ])
 
   if (fullyReady) {
-    const { data: project } = await supabaseAdmin
-      .from('studio_projects')
-      .select('id, title, style, mood, description')
-      .eq('id', generation.project_id)
-      .maybeSingle()
-
-    if (project) {
-      await ensureSimpleStudioCover({
-        projectId: project.id,
-        composerId: generation.composer_id,
-        title: project.title || 'Sua música',
-        style: project.style,
-        mood: project.mood,
-        description: project.description,
-        replaceCurrent: true,
-      }).catch((coverError) => {
-        console.error('[Studio IA] Erro ao criar capa simples:', coverError)
-      })
-    }
-
     if (generation.status !== 'completed') {
       await notifyMusicReady(generation)
     }
