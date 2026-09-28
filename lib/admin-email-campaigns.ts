@@ -169,13 +169,18 @@ async function sendCampaignViaResend(input: {
           defaultName: 'Compositor',
           unsubscribe: 'Não quero mais receber estes e-mails',
           footer: 'Você recebeu este e-mail porque tem cadastro na DCC Music.',
-          greetingPattern: /^\s*ol[áa][,!\s]/i,
+          greetingPattern: /^\s*(ol[áa]|oi)[,!\s]/i,
         }
 
-  const bodyStartsWithGreeting = localized.greetingPattern.test(input.body)
+  const recipientName = recipientFirstName(input.name) || localized.defaultName
+  const personalize = (value?: string | null) => String(value || '').replace(/\{\{\s*nome\s*\}\}/gi, recipientName)
+  const personalizedSubject = personalize(input.subject)
+  const personalizedPreview = personalize(input.preview)
+  const personalizedBody = personalize(input.body)
+  const bodyStartsWithGreeting = localized.greetingPattern.test(personalizedBody)
   const greeting = bodyStartsWithGreeting
     ? ''
-    : `<p>${localized.greeting}, ${escapeHtml(recipientFirstName(input.name) || localized.defaultName)}.</p>`
+    : `<p>${localized.greeting}, ${escapeHtml(recipientName)}.</p>`
   const cta = input.ctaLabel && input.ctaUrl
     ? dccEmailButton(input.ctaLabel, input.ctaUrl)
     : ''
@@ -184,13 +189,13 @@ async function sendCampaignViaResend(input: {
     : ''
 
   const htmlContent = buildDccEmailHtml({
-    subject: input.subject,
+    subject: personalizedSubject,
     locale: input.language === 'en' ? 'en-US' : input.language === 'es' ? 'es-ES' : 'pt-BR',
-    title: input.subject,
-    preview: input.preview,
+    title: personalizedSubject,
+    preview: personalizedPreview,
     contentHtml: `
       ${greeting}
-      <p>${nl2br(input.body)}</p>
+      <p>${nl2br(personalizedBody)}</p>
       ${cta}
       <p style="margin-top:24px;font-size:12px;color:#777080;">${localized.footer}${unsubscribe}</p>
     `,
@@ -208,7 +213,7 @@ async function sendCampaignViaResend(input: {
       from: sender.name ? `${sender.name} <${sender.email}>` : sender.email,
       to: [input.to],
       reply_to: replyTo?.email || undefined,
-      subject: input.subject,
+      subject: personalizedSubject,
       html: htmlContent,
       tags: [{ name: 'category', value: 'admin_email_campaign' }],
     }),
@@ -478,6 +483,7 @@ async function translateCampaignContent(campaign: EmailCampaign) {
             'Each key must contain subject, preview, body and ctaLabel.',
             'Use natural neutral Spanish for es and natural English for en.',
             'Preserve DCC Music, coupon codes, product names, numbers, line breaks and meaning.',
+            'Preserve template variables exactly, including {{nome}}.',
             'Do not add claims, discounts, promises, emojis or information not present in the source.',
           ].join(' '),
         },

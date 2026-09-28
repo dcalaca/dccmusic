@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { FiCalendar, FiCheckCircle, FiClock, FiLoader, FiMail, FiPauseCircle, FiSend } from 'react-icons/fi'
 
 type Campaign = {
@@ -157,6 +157,7 @@ export default function EmailCampaignsAdmin() {
   const [subject, setSubject] = useState('')
   const [preview, setPreview] = useState('')
   const [body, setBody] = useState('')
+  const bodyTextareaRef = useRef<HTMLTextAreaElement | null>(null)
   const [ctaLabel, setCtaLabel] = useState('')
   const [ctaUrl, setCtaUrl] = useState('')
   const [audience, setAudience] = useState<'all' | 'composers' | 'site_users'>('all')
@@ -177,6 +178,16 @@ export default function EmailCampaignsAdmin() {
   const selectedLanguageCounts = targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent ? targetLanguageCounts : audienceLanguageCounts[audience]
   const audienceSelectValue = targetMode === 'inactive' ? 'inactive' : targetMode === 'pending_email' ? 'pending_email' : audience
   const previewLines = useMemo(() => body.split('\n').filter(Boolean).slice(0, 4), [body])
+
+  const insertNameToken = () => {
+    const textarea = bodyTextareaRef.current
+    if (!textarea) return
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const token = '{{nome}}'
+    setBody(`${body.slice(0, start)}${token}${body.slice(end)}`)
+    requestAnimationFrame(() => { textarea.focus(); textarea.setSelectionRange(start + token.length, start + token.length) })
+  }
 
   const loadCampaigns = async (silent = false) => {
     try {
@@ -436,7 +447,7 @@ export default function EmailCampaignsAdmin() {
         {success && <div className="mb-5 flex items-center gap-2 rounded-xl border border-green-800 bg-green-950/30 p-4 text-sm text-green-200"><FiCheckCircle /> {success}</div>}
 
         <div className="mb-5 rounded-2xl border border-gray-800 bg-black/30 p-4">
-          <p className="mb-3 text-sm font-bold text-gray-200">Ideias prontas para começar</p>
+          <p className="mb-3 text-sm font-bold text-gray-200">Modelos de mensagem (opcional)</p>
           <div className="flex flex-wrap gap-2">
             {campaignIdeas.map((idea) => (
               <button key={idea.label} type="button" onClick={() => applyIdea(idea)} className={`rounded-full border px-4 py-2 text-sm font-bold ${idea.targetMode === 'pending_email' && targetMode === 'pending_email' ? 'border-amber-400 bg-amber-950/40 text-amber-100' : 'border-fuchsia-800/70 bg-fuchsia-950/25 text-fuchsia-100 hover:border-fuchsia-400'}`}>
@@ -445,56 +456,7 @@ export default function EmailCampaignsAdmin() {
             ))}
           </div>
 
-          {targetMode === 'pending_email' && (
-            <div className="mt-4 rounded-xl border border-amber-700/60 bg-amber-950/20 p-4">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <div className="text-sm font-bold text-amber-100">Cadastros com e-mail pendente</div>
-                  <p className="mt-1 text-xs text-gray-400">Só entram compositores que ainda não confirmaram o e-mail e que se cadastraram no período escolhido.</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {[{ label: 'Hoje', days: 0 }, { label: 'Últimos 3 dias', days: 2 }, { label: 'Últimos 7 dias', days: 6 }, { label: 'Últimos 30 dias', days: 29 }].map((preset) => (
-                    <button key={preset.label} type="button" onClick={() => {
-                      const end = new Date(); const start = new Date(); start.setDate(start.getDate() - preset.days)
-                      setTargetFrom(localDateValue(start)); setTargetTo(localDateValue(end))
-                    }} className="rounded-lg border border-gray-700 bg-black/50 px-3 py-2 text-xs font-bold text-gray-200 hover:border-amber-500">
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-                <label className="block"><span className="mb-1 block text-xs font-bold text-gray-300">Cadastrados a partir de</span><input type="date" value={targetFrom} onChange={(e) => setTargetFrom(e.target.value)} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white" /></label>
-                <label className="block"><span className="mb-1 block text-xs font-bold text-gray-300">Até</span><input type="date" value={targetTo} onChange={(e) => setTargetTo(e.target.value)} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white" /></label>
-                <div className="rounded-lg border border-gray-700 bg-black/50 px-4 py-2.5 text-sm text-gray-300"><FiClock className="mr-2 inline" />{targetCountLoading ? 'Calculando...' : `${targetCount ?? 0} destinatário(s)`}</div>
-              </div>
-            </div>
-          )}
 
-          {targetMode === 'inactive' && (
-            <div className="mt-4 rounded-xl border border-cyan-700/60 bg-cyan-950/20 p-4">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <div className="text-sm font-bold text-cyan-100">Compositores sem criação recente</div>
-                  <p className="mt-1 text-xs text-gray-400">Entra quem não criou letra nem música no Studio IA desde o período escolhido.</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {[7, 15, 30, 60, 90].map((days) => (
-                    <button key={days} type="button" onClick={() => {
-                      const since = new Date(); since.setDate(since.getDate() - days)
-                      setInactiveDays(days); setTargetFrom(localDateValue(since))
-                    }} className="rounded-lg border border-gray-700 bg-black/50 px-3 py-2 text-xs font-bold text-gray-200 hover:border-cyan-500">
-                      {days} dias
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-                <label className="block"><span className="mb-1 block text-xs font-bold text-gray-300">Sem criar desde</span><input type="date" value={targetFrom} onChange={(e) => setTargetFrom(e.target.value)} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white" /></label>
-                <div className="rounded-lg border border-gray-700 bg-black/50 px-4 py-2.5 text-sm text-gray-300"><FiClock className="mr-2 inline" />{targetCountLoading ? 'Calculando...' : `${targetCount ?? 0} destinatário(s)`}</div>
-              </div>
-            </div>
-          )}
         </div>
 
         <form onSubmit={createCampaign} className="grid gap-5 lg:grid-cols-[1fr_0.8fr]">
@@ -502,7 +464,10 @@ export default function EmailCampaignsAdmin() {
             <label className="block"><span className="mb-1.5 block text-sm font-bold text-gray-200">Nome interno da campanha</span><input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3" placeholder="Ex: Cupom Junho" /></label>
             <label className="block"><span className="mb-1.5 block text-sm font-bold text-gray-200">Assunto do e-mail</span><input value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3" placeholder="Ex: Cupom exclusivo para você" /></label>
             <label className="block"><span className="mb-1.5 block text-sm font-bold text-gray-200">Resumo curto</span><input value={preview} onChange={(e) => setPreview(e.target.value)} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3" placeholder="Aparece como prévia em alguns apps de e-mail" /></label>
-            <label className="block"><span className="mb-1.5 block text-sm font-bold text-gray-200">Mensagem</span><textarea value={body} onChange={(e) => setBody(e.target.value)} rows={10} className="w-full resize-none rounded-xl border border-gray-700 bg-black px-4 py-3" placeholder="Digite o texto do e-mail..." /></label>
+            <div>
+              <label className="block"><span className="mb-1.5 block text-sm font-bold text-gray-200">Mensagem</span><textarea ref={bodyTextareaRef} value={body} onChange={(e) => setBody(e.target.value)} rows={10} className="w-full resize-y rounded-xl border border-gray-700 bg-black px-4 py-3" placeholder="Digite o texto do e-mail..." /></label>
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-400"><p>Para chamar pelo primeiro nome, escreva <code className="rounded bg-gray-800 px-1.5 py-0.5 text-fuchsia-200">{'{{nome}}'}</code>. Sem nome cadastrado, usamos “Compositor”.</p><button type="button" onClick={insertNameToken} className="rounded-lg border border-fuchsia-800 px-2.5 py-1.5 font-bold text-fuchsia-200 hover:bg-fuchsia-950/40">Inserir {'{{nome}}'}</button></div>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block"><span className="mb-1.5 block text-sm font-bold text-gray-200">Texto do botão</span><input value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value)} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3" /></label>
               <label className="block"><span className="mb-1.5 block text-sm font-bold text-gray-200">Link do botão</span><input value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3" /></label>
@@ -512,7 +477,7 @@ export default function EmailCampaignsAdmin() {
           <aside className="space-y-4">
             <div className="rounded-2xl border border-gray-800 bg-black/40 p-4">
               <label className="block">
-                <span className="mb-1.5 block text-sm font-bold text-gray-200">Enviar para</span>
+                <span className="mb-1.5 block text-sm font-bold text-gray-200">Público da campanha</span>
                 <select value={audienceSelectValue} onChange={(e) => {
                   const value = e.target.value
                   if (value === 'inactive') {
@@ -527,11 +492,35 @@ export default function EmailCampaignsAdmin() {
                   <option value="all">Toda a base ({audienceCounts.all})</option>
                   <option value="composers">Compositores ({audienceCounts.composers})</option>
                   <option value="site_users">Usuários do site ({audienceCounts.site_users})</option>
-                  <option value="inactive">Compositores sem criar há {inactiveDays} dias</option>
+                  <option value="inactive">Compositores sem criação recente</option>
                   <option value="pending_email">Cadastros com e-mail pendente</option>
                 </select>
               </label>
-              <p className="mt-2 text-xs text-gray-500">Estimativa atual: {selectedAudienceCount} destinatário(s). A lista será congelada no primeiro envio.</p>
+              {targetMode === 'inactive' && (
+                <div className="mt-4 rounded-xl border border-cyan-800/60 bg-cyan-950/20 p-3">
+                  <p className="text-sm font-semibold text-cyan-100">Sem criação desde</p>
+                  <p className="mt-1 text-xs text-gray-400">Inclui compositores que não criaram letra nem música no Studio IA após esta data.</p>
+                  <div className="mt-3 flex flex-wrap gap-2">{[7, 15, 30, 60, 90].map((days) => (
+                    <button key={days} type="button" onClick={() => { const since = new Date(); since.setDate(since.getDate() - days); setInactiveDays(days); setTargetFrom(localDateValue(since)) }} className={`rounded-lg border px-3 py-1.5 text-xs font-bold ${inactiveDays === days ? 'border-cyan-400 bg-cyan-950 text-cyan-100' : 'border-gray-700 bg-black/50 text-gray-300'}`}>{days} dias</button>
+                  ))}</div>
+                  <label className="mt-3 block"><span className="mb-1 block text-xs font-bold text-gray-300">Data limite</span><input type="date" value={targetFrom} onChange={(e) => setTargetFrom(e.target.value)} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white" /></label>
+                  <p className="mt-2 text-xs text-gray-400">{targetCountLoading ? 'Calculando público...' : `${targetCount ?? 0} compositores`}</p>
+                </div>
+              )}
+              {targetMode === 'pending_email' && (
+                <div className="mt-4 rounded-xl border border-amber-800/60 bg-amber-950/20 p-3">
+                  <p className="text-sm font-semibold text-amber-100">Cadastro não confirmado, feito neste período</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <label className="block"><span className="mb-1 block text-xs font-bold text-gray-300">De</span><input type="date" value={targetFrom} onChange={(e) => setTargetFrom(e.target.value)} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white" /></label>
+                    <label className="block"><span className="mb-1 block text-xs font-bold text-gray-300">Até</span><input type="date" value={targetTo} onChange={(e) => setTargetTo(e.target.value)} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white" /></label>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">{[{ label: 'Hoje', days: 0 }, { label: '3 dias', days: 2 }, { label: '7 dias', days: 6 }, { label: '30 dias', days: 29 }].map((preset) => (
+                    <button key={preset.label} type="button" onClick={() => { const end = new Date(); const start = new Date(); start.setDate(start.getDate() - preset.days); setTargetFrom(localDateValue(start)); setTargetTo(localDateValue(end)) }} className="rounded-lg border border-gray-700 bg-black/50 px-3 py-1.5 text-xs font-bold text-gray-200 hover:border-amber-500">Últimos {preset.label}</button>
+                  ))}</div>
+                  <p className="mt-2 text-xs text-gray-400">{targetCountLoading ? 'Calculando público...' : `${targetCount ?? 0} cadastros`}</p>
+                </div>
+              )}
+              <p className="mt-3 text-xs text-gray-500">Estimativa: {selectedAudienceCount} destinatário(s). A lista será congelada no primeiro envio.</p>
               <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                 <div className="rounded-lg border border-gray-800 bg-black/50 px-3 py-2"><strong className="block text-white">{selectedLanguageCounts.pt}</strong><span className="text-gray-400">Português</span></div>
                 <div className="rounded-lg border border-gray-800 bg-black/50 px-3 py-2"><strong className="block text-white">{selectedLanguageCounts.es}</strong><span className="text-gray-400">Español</span></div>
@@ -541,16 +530,13 @@ export default function EmailCampaignsAdmin() {
             </div>
 
             <div className="rounded-2xl border border-gray-800 bg-black/40 p-4">
-              <label className="mb-3 flex items-start gap-3 text-sm font-bold text-gray-200">
-                <input type="checkbox" checked={excludePreviouslySent} onChange={(e) => setExcludePreviouslySent(e.target.checked)} className="mt-0.5" />
-                <span>Enviar somente para quem ainda não recebeu campanha no período</span>
-              </label>
-              <p className="mb-3 text-xs text-gray-400">O filtro usa envios aceitos pelo provedor (não confirma entrega na caixa de entrada ou abertura). Desmarque para incluir também quem já recebeu envio.</p>
+              <label className="mb-2 flex items-start gap-3 text-sm font-bold text-gray-200"><input type="checkbox" checked={excludePreviouslySent} onChange={(e) => setExcludePreviouslySent(e.target.checked)} className="mt-0.5" /><span>Excluir quem já recebeu campanha</span></label>
+              <p className="mb-3 text-xs text-gray-400">Marque para evitar novo envio no período abaixo. Conta envios aceitos pelo provedor; não confirma entrega nem abertura.</p>
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="block"><span className="mb-1 block text-xs font-bold text-gray-300">Envios desde</span><input type="date" value={sentFilterFrom} onChange={(e) => setSentFilterFrom(e.target.value)} disabled={!excludePreviouslySent} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white disabled:opacity-50" /></label>
-                <label className="block"><span className="mb-1 block text-xs font-bold text-gray-300">Envios até</span><input type="date" value={sentFilterTo} onChange={(e) => setSentFilterTo(e.target.value)} disabled={!excludePreviouslySent} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white disabled:opacity-50" /></label>
+                <label className="block"><span className="mb-1 block text-xs font-bold text-gray-300">Envios de</span><input type="date" value={sentFilterFrom} onChange={(e) => setSentFilterFrom(e.target.value)} disabled={!excludePreviouslySent} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white disabled:opacity-50" /></label>
+                <label className="block"><span className="mb-1 block text-xs font-bold text-gray-300">Até</span><input type="date" value={sentFilterTo} onChange={(e) => setSentFilterTo(e.target.value)} disabled={!excludePreviouslySent} className="w-full rounded-lg border border-gray-700 bg-black px-3 py-2 text-sm text-white disabled:opacity-50" /></label>
               </div>
-              {excludePreviouslySent && <p className="mt-3 text-sm text-cyan-300"><FiClock className="mr-1 inline" />{targetCountLoading ? 'Verificando histórico...' : `${targetCount ?? 0} destinatário(s) receberão esta campanha`}</p>}
+              <p className="mt-2 text-xs text-gray-500">{excludePreviouslySent ? (targetCountLoading ? 'Verificando quem já recebeu...' : `${targetCount ?? 0} pessoas receberão após o filtro`) : 'Desmarcado: inclui também quem já recebeu campanha.'}</p>
             </div>
 
             <div className="rounded-2xl border border-gray-800 bg-black/40 p-4">
@@ -560,11 +546,11 @@ export default function EmailCampaignsAdmin() {
             </div>
 
             <div className="rounded-2xl border border-fuchsia-800/50 bg-fuchsia-950/15 p-4">
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-fuchsia-200">Prévia</p>
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-fuchsia-200">Prévia de exemplo (nome: Marina)</p>
               <h3 className="font-black text-white">{subject || 'Assunto do e-mail'}</h3>
               <p className="mt-2 text-xs text-gray-400">{preview || 'Resumo curto do e-mail'}</p>
               <div className="mt-4 rounded-xl border border-gray-800 bg-black/40 p-4 text-sm leading-relaxed text-gray-200">
-                {previewLines.length > 0 ? previewLines.map((line, index) => <p key={`${line}-${index}`} className="mb-2">{line}</p>) : <p>A mensagem aparecerá aqui.</p>}
+                {previewLines.length > 0 ? previewLines.map((line, index) => <p key={`${line}-${index}`} className="mb-2">{line.replace(/\{\{\s*nome\s*\}\}/gi, 'Marina')}</p>) : <p>A mensagem aparecerá aqui.</p>}
                 {ctaLabel && <span className="mt-3 inline-flex rounded-lg bg-fuchsia-700 px-3 py-2 text-xs font-bold text-white">{ctaLabel}</span>}
               </div>
             </div>
