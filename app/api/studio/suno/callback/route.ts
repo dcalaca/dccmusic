@@ -7,7 +7,6 @@ import {
   sendStudioMusicFailureEmail,
   sendStudioMusicReadyEmail,
 } from '@/lib/dcc-emails'
-import { ensureSimpleStudioCover } from '@/lib/studio-simple-cover'
 import {
   getTrackAudioUrl,
   getTrackStreamAudioUrl,
@@ -320,20 +319,6 @@ export async function POST(request: Request) {
             .maybeSingle(),
           getComposerEmailIdentity(generation.composer_id),
         ])
-
-        if (project) {
-          await ensureSimpleStudioCover({
-            projectId: project.id,
-            composerId: generation.composer_id,
-            title: project.title || 'Sua música',
-            style: project.style,
-            mood: project.mood,
-            description: project.description,
-            replaceCurrent: true,
-          }).catch((coverError) => {
-            console.error('[Studio IA] Erro ao criar capa simples:', coverError)
-          })
-        }
 
         if (project && composer) {
           await sendStudioMusicReadyEmail({
