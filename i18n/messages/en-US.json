@@ -588,8 +588,10 @@
         "primaryUpdated": "Main cover updated.",
         "deleted": "Cover deleted.",
         "afterMusic": "The cover will appear here after the song is created.",
-        "professionalHint": "The professional cover is a higher-quality AI image and depends on your plan.",
-        "loadingPermissions": "Loading plan permissions..."
+        "professionalHint": "Without an eligible Studio plan, you can generate a premium cover for 5 credits. Eligible plans use their monthly limit and plan credit cost.",
+        "loadingPermissions": "Loading plan permissions...",
+        "payAsYouGoConfirm": "Generating this premium cover will use {{credits}} credits. Do you want to continue?",
+        "insufficientCredits": "You need at least {{credits}} credits to generate this premium cover. Top up your credits and try again."
       },
       "lyrics": {
         "title": "Song lyrics",

@@ -588,8 +588,10 @@
         "primaryUpdated": "Portada principal actualizada.",
         "deleted": "Portada eliminada.",
         "afterMusic": "La portada aparecerá aquí después de crear la canción.",
-        "professionalHint": "La portada profesional es una imagen de mayor calidad creada por IA y depende de tu plan.",
-        "loadingPermissions": "Cargando permisos del plan..."
+        "professionalHint": "Sin un plan Studio elegible, puedes generar una portada premium por 5 créditos. Los planes elegibles mantienen su límite mensual y su coste en créditos.",
+        "loadingPermissions": "Cargando permisos del plan...",
+        "payAsYouGoConfirm": "Generar esta portada premium consumirá {{credits}} créditos. ¿Quieres continuar?",
+        "insufficientCredits": "Necesitas al menos {{credits}} créditos para generar esta portada premium. Recarga tus créditos e inténtalo de nuevo."
       },
       "lyrics": {
         "title": "Letra de la canción",

@@ -98,10 +98,19 @@ export async function POST(request: NextRequest) {
     const composer = getComposerFromRequest(request)
     if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
+    const body = await request.json()
     const { hasAccess, limits } = await getStudioAccess(composer.composerId)
-    if (!hasAccess) return NextResponse.json({ error: 'Recurso exclusivo do DCC Studio IA.' }, { status: 403 })
+    const isPayAsYouGo = !hasAccess
+    const coverCredits = isPayAsYouGo ? 5 : STUDIO_PREMIUM_COVER_CREDITS
 
-    if (limits.premiumCoverLimit <= 0) {
+    if (isPayAsYouGo && body.confirmPayAsYouGo !== true) {
+      return NextResponse.json(
+        { errorCode: 'pay_as_you_go_confirmation_required', creditsRequired: coverCredits },
+        { status: 409 }
+      )
+    }
+
+    if (hasAccess && limits.premiumCoverLimit <= 0) {
       return NextResponse.json(
         { error: 'Capas premium IA estão disponíveis a partir do Studio Pro.' },
         { status: 403 }
@@ -109,18 +118,20 @@ export async function POST(request: NextRequest) {
     }
 
     const usage = await getStudioCreditUsage(composer.composerId, limits)
-    if (usage.premiumCoverGenerations >= usage.premiumCoverLimit) {
+    if (hasAccess && usage.premiumCoverGenerations >= usage.premiumCoverLimit) {
       return NextResponse.json(
         { error: `Você atingiu o limite mensal de ${usage.premiumCoverLimit} capas premium IA.` },
         { status: 429 }
       )
     }
 
-    if (usage.remaining < STUDIO_PREMIUM_COVER_CREDITS) {
-      return NextResponse.json({ error: 'Créditos insuficientes para melhorar a capa.' }, { status: 429 })
+    if (usage.remaining < coverCredits) {
+      return NextResponse.json(
+        { errorCode: 'insufficient_credits', creditsRequired: coverCredits },
+        { status: 429 }
+      )
     }
 
-    const body = await request.json()
     const project = await getProjectForComposer(body.projectId, composer.composerId)
     if (!project) return NextResponse.json({ error: 'Projeto não encontrado' }, { status: 404 })
 
@@ -178,8 +189,10 @@ export async function POST(request: NextRequest) {
       composerId: composer.composerId,
       projectId: project.id,
       action: 'premium_cover',
-      amount: STUDIO_PREMIUM_COVER_CREDITS,
-      description: 'Melhoria de capa com IA Premium',
+      amount: coverCredits,
+      description: isPayAsYouGo
+        ? 'Geração avulsa de capa premium'
+        : 'Melhoria de capa com IA Premium',
     })
 
     return NextResponse.json({
@@ -188,6 +201,8 @@ export async function POST(request: NextRequest) {
         imageUrl: signedUrl,
         isPremium: true,
       },
+      creditsCharged: coverCredits,
+      creditsRemaining: Math.max(0, usage.remaining - coverCredits),
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro capa premium:', error)

@@ -588,8 +588,10 @@
         "primaryUpdated": "Capa principal atualizada.",
         "deleted": "Capa excluída.",
         "afterMusic": "A capa aparece aqui depois que a música for criada.",
-        "professionalHint": "A capa profissional é uma imagem mais bonita feita por IA. Ela depende do seu plano.",
-        "loadingPermissions": "Carregando permissões do plano..."
+        "professionalHint": "Sem um plano Studio elegível, você pode gerar uma capa premium avulsa por 5 créditos. Nos planos elegíveis, valem o limite mensal e o custo em créditos do plano.",
+        "loadingPermissions": "Carregando permissões do plano...",
+        "payAsYouGoConfirm": "Gerar esta capa premium vai consumir {{credits}} créditos. Deseja continuar?",
+        "insufficientCredits": "Você precisa de pelo menos {{credits}} créditos para gerar esta capa premium. Faça uma recarga e tente novamente."
       },
       "lyrics": {
         "title": "Letra da música",

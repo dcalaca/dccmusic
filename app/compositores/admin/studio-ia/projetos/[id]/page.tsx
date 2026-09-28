@@ -1091,10 +1091,22 @@ export default function StudioProjectDetailPage() {
 
   const improveCover = async () => {
     const token = localStorage.getItem('composer_token')
+    const isPayAsYouGo = !studioStatus?.hasStudioPlan
+    const payAsYouGoCredits = 5
     setError('')
     setMessage('')
 
-    if ((studioStatus?.stats?.premiumCoverLimit || 0) <= 0) {
+    if (isPayAsYouGo) {
+      const availableCredits = Number(studioStatus?.credits?.remaining) || 0
+      if (availableCredits < payAsYouGoCredits) {
+        setError(t('studio.project.cover.insufficientCredits', { credits: payAsYouGoCredits }))
+        return
+      }
+
+      if (!window.confirm(t('studio.project.cover.payAsYouGoConfirm', { credits: payAsYouGoCredits }))) {
+        return
+      }
+    } else if ((studioStatus?.stats?.premiumCoverLimit || 0) <= 0) {
       setError(t('studio.project.cover.proOnly'))
       return
     }
@@ -1107,10 +1119,18 @@ export default function StudioProjectDetailPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ projectId }),
+        body: JSON.stringify({ projectId, confirmPayAsYouGo: isPayAsYouGo }),
       })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.error || t('studio.project.cover.error'))
+      if (!response.ok) {
+        if (data.errorCode === 'insufficient_credits') {
+          throw new Error(t('studio.project.cover.insufficientCredits', { credits: data.creditsRequired || payAsYouGoCredits }))
+        }
+        if (data.errorCode === 'pay_as_you_go_confirmation_required') {
+          throw new Error(t('studio.project.cover.payAsYouGoConfirm', { credits: data.creditsRequired || payAsYouGoCredits }))
+        }
+        throw new Error(data.error || t('studio.project.cover.error'))
+      }
       setProject((currentProject: any) => ({
         ...currentProject,
         cover: data.cover,
@@ -1124,14 +1144,20 @@ export default function StudioProjectDetailPage() {
       await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
       setStudioStatus((currentStatus: any) => currentStatus ? ({
         ...currentStatus,
+        credits: {
+          ...currentStatus.credits,
+          remaining: Number.isFinite(Number(data.creditsRemaining))
+            ? Number(data.creditsRemaining)
+            : currentStatus.credits?.remaining,
+        },
         stats: {
           ...currentStatus.stats,
           premiumCoverGenerations: (currentStatus.stats?.premiumCoverGenerations || 0) + 1,
         },
       }) : currentStatus)
       setMessage(t('studio.project.cover.created'))
-    } catch {
-      setError(t('studio.project.cover.error'))
+    } catch (coverError: any) {
+      setError(coverError?.message || t('studio.project.cover.error'))
     } finally {
       setProcessing('')
     }
@@ -1409,7 +1435,11 @@ export default function StudioProjectDetailPage() {
   const canPublishOnDcc = Boolean(studioStatus?.canPublish)
   const canCreateMusic = canCreateFromStudioStatus(studioStatus)
   const canReuseLyric = canCreateFromStudioStatus(studioStatus)
-  const canGeneratePremiumCover = Boolean(studioStatus) && premiumCoverLimit > 0 && premiumCoverGenerations < premiumCoverLimit
+  const canGeneratePremiumCover = Boolean(studioStatus) && (
+    studioStatus?.hasStudioPlan
+      ? premiumCoverLimit > 0 && premiumCoverGenerations < premiumCoverLimit
+      : true
+  )
   const videoReadyVersions = projectVersions.filter((version: any) => version.audioUrl || version.streamAudioUrl)
   const resolvedVideoVersionId = (
     selectedVideoVersionId && videoReadyVersions.some((version: any) => version.id === selectedVideoVersionId)
