@@ -25,6 +25,9 @@ export type EmailCampaign = {
   target_to?: string | null
   target_count?: number
   frozen_at?: string | null
+  exclude_previously_sent?: boolean
+  sent_filter_from?: string | null
+  sent_filter_to?: string | null
   translations?: {
     es?: { subject?: string; preview?: string | null; body?: string; ctaLabel?: string | null }
     en?: { subject?: string; preview?: string | null; body?: string; ctaLabel?: string | null }
@@ -393,14 +396,33 @@ export async function getInactiveComposerRecipients(since: string) {
 }
 
 export async function getRecipientsForCampaign(campaign: EmailCampaign) {
+  let recipients: Recipient[]
   if (campaign.target_mode === 'pending_email') {
     if (!campaign.target_from || !campaign.target_to) return []
-    return getPendingEmailRecipients(campaign.target_from, campaign.target_to)
+    recipients = await getPendingEmailRecipients(campaign.target_from, campaign.target_to)
+  } else if (campaign.target_mode === 'inactive') {
+    recipients = campaign.target_from ? await getInactiveComposerRecipients(campaign.target_from) : []
+  } else {
+    recipients = await getCampaignRecipients(campaign.audience)
   }
-  if (campaign.target_mode === 'inactive') {
-    return campaign.target_from ? getInactiveComposerRecipients(campaign.target_from) : []
+
+  if (campaign.exclude_previously_sent && campaign.sent_filter_from && campaign.sent_filter_to) {
+    const sentRows = await fetchAllRows<any>((from, to) =>
+      supabaseAdmin
+        .from('admin_email_campaign_deliveries')
+        .select('recipient_email')
+        .eq('status', 'sent')
+        .gte('sent_at', campaign.sent_filter_from!)
+        .lte('sent_at', campaign.sent_filter_to!)
+        .range(from, to)
+    )
+    const previouslySentEmails = new Set(
+      sentRows.map((row) => normalizeEmail(row.recipient_email)).filter(Boolean)
+    )
+    recipients = recipients.filter((recipient) => !previouslySentEmails.has(recipient.email))
   }
-  return getCampaignRecipients(campaign.audience)
+
+  return recipients
 }
 
 type CampaignTranslationContent = {
