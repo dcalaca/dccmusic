@@ -49,12 +49,22 @@ export default function LinksPage() {
         }
         
         const data = await fallbackResponse.json()
-        setLinks(data)
+        setLinks(data.filter((link: TrackedLink) => {
+          const isCampaignLink = link.title.trim().toLowerCase().startsWith('campanha:') ||
+            link.notes?.includes('"type":"admin_email_campaign_cta"') ||
+            link.notes?.includes('"type": "admin_email_campaign_cta"')
+          return !isCampaignLink
+        }))
         return
       }
       
       const data = await response.json()
-      setLinks(data)
+      setLinks(data.filter((link: TrackedLink) => {
+          const isCampaignLink = link.title.trim().toLowerCase().startsWith('campanha:') ||
+            link.notes?.includes('"type":"admin_email_campaign_cta"') ||
+            link.notes?.includes('"type": "admin_email_campaign_cta"')
+          return !isCampaignLink
+        }))
     } catch (err: any) {
       console.error('Erro ao carregar links:', err)
       setError(err.message || 'Erro ao carregar links')
