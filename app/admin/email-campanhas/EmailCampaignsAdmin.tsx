@@ -215,6 +215,19 @@ export default function EmailCampaignsAdmin() {
 
   useEffect(() => { void loadCampaigns() }, [showHidden])
 
+  // Enquanto uma campanha estiver enviando, atualiza também os cliques
+  // automaticamente. O tracking é registrado no servidor e não depende
+  // de o administrador clicar em "Atualizar".
+  const hasSendingCampaign = campaigns.some((campaign) => campaign.status === 'sending')
+
+  useEffect(() => {
+    if (!hasSendingCampaign) return
+    const interval = window.setInterval(() => {
+      void loadCampaigns(true)
+    }, 10000)
+    return () => window.clearInterval(interval)
+  }, [hasSendingCampaign, showHidden])
+
   useEffect(() => {
     const needsDynamicCount = targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent
     if (!needsDynamicCount) {
