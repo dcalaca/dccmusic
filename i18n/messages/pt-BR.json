@@ -946,6 +946,14 @@
         "professionalLyrics": "Letra profissional",
         "readyToSing": "Pronta para cantar",
         "inSeconds": "Em segundos"
+      },
+      "ownPrompt": {
+        "toggle": "Tenho meu próprio prompt",
+        "description": "Use somente o seu prompt na criação da música. As opções abaixo ficam ocultas e a DCC não acrescenta instruções ao prompt.",
+        "label": "Seu prompt",
+        "placeholder": "Cole aqui exatamente o prompt que deseja enviar para a IA.",
+        "hint": "Neste modo, o texto deste campo é enviado como prompt de estilo sem acrescentar gênero, clima, instrumentos, voz ou outras instruções da DCC.",
+        "validation": "Escreva o seu prompt antes de continuar."
       }
     },
     "projects": {

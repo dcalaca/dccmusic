@@ -33,6 +33,7 @@ const customStyleOptionEs = 'Otro / escribir mi estilo'
 const customStyleOptionEn = 'Other / enter my style'
 const titleMaxLength = 30
 const ideaMaxLength = 1000
+const ownPromptMaxLength = 1000
 const moods = ['Romântica', 'Sofrência', 'Chiclete', 'Engraçada', 'Reflexiva', 'Balada', 'Triste', 'Motivacional']
 const structures = ['Padrão', 'A/B/Refrão/C/Refrão', 'A/Refrão/A/Refrão']
 const lineCounts = ['curta', 'média', 'longa']
@@ -292,6 +293,8 @@ export default function NewStudioMusicPage() {
     voiceTone: 'Deixar a IA escolher',
     voiceProfileId: '',
     extraInstructions: '',
+    useOwnPrompt: false,
+    ownPrompt: '',
     songLanguage: countryPreset.language,
   })
   const isCustomStyle = form.style === customStyleOption || form.style === customStyleOptionEs || form.style === customStyleOptionEn
@@ -444,8 +447,12 @@ export default function NewStudioMusicPage() {
       showError(t('studio.create.validation.title'))
       return
     }
-    if (isCustomStyle && form.customStyle.trim().length < 3) {
+    if (!form.useOwnPrompt && isCustomStyle && form.customStyle.trim().length < 3) {
       showError(t('studio.create.validation.customStyle'))
+      return
+    }
+    if (form.useOwnPrompt && form.ownPrompt.trim().length < 3) {
+      showError(t('studio.create.ownPrompt.validation'))
       return
     }
     if (hasOwnLyric && existingLyric.trim().length < 40) {
@@ -501,7 +508,7 @@ export default function NewStudioMusicPage() {
       if (projectData.project?.id && form.voiceProfileId) {
         localStorage.setItem(`studio_selected_voice:${projectData.project.id}`, form.voiceProfileId)
       }
-      if (projectData.project?.id && form.extraInstructions.trim()) {
+      if (projectData.project?.id && !form.useOwnPrompt && form.extraInstructions.trim()) {
         localStorage.setItem(`studio_extra_instructions:${projectData.project.id}`, form.extraInstructions.trim())
       }
 
@@ -862,7 +869,41 @@ export default function NewStudioMusicPage() {
 
                     {showLyricOptions && (
                       <div className="mt-3 space-y-3">
-                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        <label className="flex items-start gap-3 rounded-2xl border border-primary-400/25 bg-primary-500/10 px-4 py-3.5 text-sm text-gray-100">
+                          <input
+                            type="checkbox"
+                            checked={form.useOwnPrompt}
+                            onChange={(e) => setForm({ ...form, useOwnPrompt: e.target.checked })}
+                            className="mt-0.5 h-4 w-4 rounded border-gray-700 bg-gray-900 text-primary-600"
+                          />
+                          <span>
+                            <span className="block font-black text-white">{t('studio.create.ownPrompt.toggle')}</span>
+                            <span className="mt-1 block text-xs leading-relaxed text-gray-400">{t('studio.create.ownPrompt.description')}</span>
+                          </span>
+                        </label>
+
+                        {form.useOwnPrompt && (
+                          <div className="rounded-2xl border border-primary-400/25 bg-black/35 p-3">
+                            <label className="block text-xs font-bold text-primary-100 sm:text-sm" htmlFor="new-studio-own-prompt">
+                              {t('studio.create.ownPrompt.label')}
+                            </label>
+                            <textarea
+                              id="new-studio-own-prompt"
+                              value={form.ownPrompt}
+                              onChange={(e) => setForm({ ...form, ownPrompt: e.target.value.slice(0, ownPromptMaxLength) })}
+                              rows={7}
+                              maxLength={ownPromptMaxLength}
+                              placeholder={t('studio.create.ownPrompt.placeholder')}
+                              className="mt-3 w-full resize-none rounded-2xl border border-primary-400/20 bg-gray-950 px-4 py-3 text-sm leading-relaxed text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400"
+                            />
+                            <div className="mt-2 flex items-start justify-between gap-3">
+                              <p className="text-[11px] leading-relaxed text-gray-500">{t('studio.create.ownPrompt.hint')}</p>
+                              <p className="shrink-0 text-[11px] text-gray-500">{form.ownPrompt.length}/{ownPromptMaxLength}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className={`${form.useOwnPrompt ? 'hidden' : 'grid'} gap-2 sm:grid-cols-2 lg:grid-cols-3`}>
                           {[
                             ['avoidCliches', t('studio.create.lyricOptions.avoidCliches')],
                             ['avoidChildishRhymes', t('studio.create.lyricOptions.avoidChildishRhymes')],
@@ -883,14 +924,14 @@ export default function NewStudioMusicPage() {
                           ))}
                         </div>
 
-                        <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                        <div className={`${form.useOwnPrompt ? 'hidden' : ''} rounded-2xl border border-white/10 bg-black/25 p-3`}>
                           <Select label={t('studio.create.fields.structure')} value={form.structure} options={localizedStructures} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, structure: value })} />
                           <p className="mt-1.5 text-[11px] leading-relaxed text-gray-500">
                             {t('studio.create.structureHint')}
                           </p>
                         </div>
 
-                        <div className="grid gap-3 md:grid-cols-2">
+                        <div className={`${form.useOwnPrompt ? 'hidden' : 'grid'} gap-3 md:grid-cols-2`}>
                           <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
                             <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{t('studio.new.instruments')}</label>
                             <input
@@ -912,7 +953,7 @@ export default function NewStudioMusicPage() {
                           </div>
                         </div>
 
-                        <div className="rounded-2xl border border-purple-300/15 bg-black/25 p-3">
+                        <div className={`${form.useOwnPrompt ? 'hidden' : ''} rounded-2xl border border-purple-300/15 bg-black/25 p-3`}>
                           <label className="block text-xs font-bold text-purple-100 sm:text-sm" htmlFor="new-studio-extra-instructions">
                             {t('studio.create.fields.extraInstructions')}
                           </label>

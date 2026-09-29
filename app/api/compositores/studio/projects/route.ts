@@ -34,6 +34,10 @@ function buildProjectDescription(body: any) {
   const extraInstructions = typeof body.extraInstructions === 'string'
     ? body.extraInstructions.replace(/\s+/g, ' ').trim().slice(0, 700)
     : ''
+  const ownPrompt = typeof body.ownPrompt === 'string'
+    ? body.ownPrompt.replace(/\s+/g, ' ').trim().slice(0, 1000)
+    : ''
+  const useOwnPrompt = body.useOwnPrompt === true && ownPrompt.length > 0
   const voiceNotes = [voiceGender, voiceTone]
     .filter((value) => value && value !== 'Deixar a IA escolher')
 
@@ -43,6 +47,11 @@ function buildProjectDescription(body: any) {
     : 'Português (Brasil)'
 
   lines.push('', `Idioma da música: ${songLanguage}`)
+
+  if (useOwnPrompt) {
+    lines.push('', 'Modo de prompt próprio: ativo', `Prompt próprio do compositor: ${ownPrompt}`)
+    return lines.filter(Boolean).join('\n')
+  }
 
   if (voiceNotes.length > 0) {
     lines.push('', `Preferência de voz: ${voiceNotes.join(', ')}`)

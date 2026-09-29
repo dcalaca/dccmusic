@@ -307,6 +307,20 @@ function normalizeExtraInstructions(value: any) {
     .slice(0, 700)
 }
 
+function normalizeOwnPrompt(value: any) {
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 1000)
+}
+
+function getOwnPromptFromDescription(description?: string | null) {
+  const text = String(description || '')
+  if (!/Modo de prompt próprio:\s*ativo/i.test(text)) return ''
+  const match = text.match(/Prompt próprio do compositor:\s*([^\n]+)/i)
+  return normalizeOwnPrompt(match?.[1] || '')
+}
+
 function appendExtraInstructionsToStyle(stylePrompt: string, extraInstructions: string) {
   if (!extraInstructions) return stylePrompt
   return `${stylePrompt}, instruções extras do compositor: ${extraInstructions}`.slice(0, 1000)
@@ -792,25 +806,31 @@ export async function POST(request: NextRequest) {
       projectDescriptionForGeneration,
       extraInstructionsForPrompt ? `Instruções extras do compositor: ${extraInstructionsForPrompt}` : null,
     ].filter(Boolean).join('\n')
-    const baseSunoStyle = buildSunoStyle(project.style, project.mood, descriptionWithExtraInstructions)
-    const customVoiceDirection = getCustomVoiceDirection(selectedVoice)
-    const sunoStyleWeight = getSunoStyleWeight(descriptionWithExtraInstructions)
-    const sunoWeirdnessConstraint = getSunoWeirdnessConstraint(descriptionWithExtraInstructions)
+    const ownPrompt = getOwnPromptFromDescription(project.description)
+    const useOwnPrompt = ownPrompt.length > 0
+    const baseSunoStyle = useOwnPrompt ? '' : buildSunoStyle(project.style, project.mood, descriptionWithExtraInstructions)
+    const customVoiceDirection = useOwnPrompt ? '' : getCustomVoiceDirection(selectedVoice)
+    const sunoStyleWeight = useOwnPrompt ? null : getSunoStyleWeight(descriptionWithExtraInstructions)
+    const sunoWeirdnessConstraint = useOwnPrompt ? null : getSunoWeirdnessConstraint(descriptionWithExtraInstructions)
 
     const sunoPayload: any = {
       prompt: lyricForGeneration.slice(0, 5000),
-      style: [
-        customVoiceDirection,
-        appendExtraInstructionsToStyle(baseSunoStyle, extraInstructionsForPrompt),
-      ].filter(Boolean).join(', ').slice(0, 1000),
+      style: useOwnPrompt
+        ? ownPrompt
+        : [
+            customVoiceDirection,
+            appendExtraInstructionsToStyle(baseSunoStyle, extraInstructionsForPrompt),
+          ].filter(Boolean).join(', ').slice(0, 1000),
       title: project.title.slice(0, STUDIO_TITLE_MAX_LENGTH),
       customMode: true,
       instrumental: false,
       model: 'V5_5',
       callBackUrl: getStudioCallbackUrl('/api/studio/suno/callback'),
-      styleWeight: sunoStyleWeight,
-      weirdnessConstraint: sunoWeirdnessConstraint,
-      negativeTags: getVoiceNegativeTags(project.style, descriptionWithExtraInstructions),
+      ...(useOwnPrompt ? {} : {
+        styleWeight: sunoStyleWeight,
+        weirdnessConstraint: sunoWeirdnessConstraint,
+        negativeTags: getVoiceNegativeTags(project.style, descriptionWithExtraInstructions),
+      }),
     }
 
     if (selectedVoice?.voice_id) {
