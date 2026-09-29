@@ -949,10 +949,10 @@
       },
       "ownPrompt": {
         "toggle": "Tenho meu próprio prompt",
-        "description": "Use somente o seu prompt na criação da música. As opções abaixo ficam ocultas e a DCC não acrescenta instruções ao prompt.",
+        "description": "Para usuários avançados: ao ativar, os controles automáticos ficam ocultos e a DCC usa somente o seu prompt de produção.",
         "label": "Seu prompt",
         "placeholder": "Cole aqui exatamente o prompt que deseja enviar para a IA.",
-        "hint": "Neste modo, o texto deste campo é enviado como prompt de estilo sem acrescentar gênero, clima, instrumentos, voz ou outras instruções da DCC.",
+        "hint": "O idioma e a letra/ideia continuam separados. Para a produção musical, este texto é enviado como o prompt de estilo, sem acrescentar gênero, clima, instrumentos, voz ou outras instruções da DCC.",
         "validation": "Escreva o seu prompt antes de continuar."
       }
     },

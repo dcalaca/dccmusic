@@ -489,6 +489,28 @@ export default function NewStudioMusicPage() {
         }
       }
 
+      const projectPayload = form.useOwnPrompt
+        ? {
+            ...form,
+            style: 'Livre',
+            mood: 'Livre',
+            structure: 'Livre',
+            lineCount: 'média',
+            wantInstruments: '',
+            avoidInstruments: '',
+            avoidCliches: false,
+            avoidChildishRhymes: false,
+            avoidRepeatedWords: false,
+            stickyChorus: false,
+            popularLanguage: false,
+            sophisticatedLanguage: false,
+            voiceGender: 'Deixar a IA escolher',
+            voiceTone: 'Deixar a IA escolher',
+            voiceProfileId: '',
+            extraInstructions: '',
+          }
+        : { ...form, style: effectiveStyle }
+
       const projectResponse = await fetch('/api/compositores/studio/projects', {
         method: 'POST',
         headers: {
@@ -496,8 +518,7 @@ export default function NewStudioMusicPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          ...form,
-          style: effectiveStyle,
+          ...projectPayload,
           idea: hasOwnLyric ? form.idea || t('studio.create.lyricsProvided') : form.idea,
           lyric: hasOwnLyric ? existingLyric : undefined,
         }),
@@ -505,7 +526,7 @@ export default function NewStudioMusicPage() {
       const projectData = await projectResponse.json()
       if (!projectResponse.ok) throw new Error(projectData.error || t('studio.create.errors.project'))
 
-      if (projectData.project?.id && form.voiceProfileId) {
+      if (projectData.project?.id && !form.useOwnPrompt && form.voiceProfileId) {
         localStorage.setItem(`studio_selected_voice:${projectData.project.id}`, form.voiceProfileId)
       }
       if (projectData.project?.id && !form.useOwnPrompt && form.extraInstructions.trim()) {
@@ -524,8 +545,7 @@ export default function NewStudioMusicPage() {
           Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           projectId: projectData.project.id,
-          ...form,
-          style: effectiveStyle,
+          ...projectPayload,
         }),
       })
       const lyricData = await lyricResponse.json()
@@ -699,8 +719,56 @@ export default function NewStudioMusicPage() {
               >
                 <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-purple-300/50 to-transparent" />
 
+                <div className="mb-4 rounded-2xl border border-white/10 bg-white/[0.025] p-3">
+                  <label className="flex cursor-pointer items-start gap-3">
+                    <input
+                      type="checkbox"
+                      checked={form.useOwnPrompt}
+                      onChange={(e) => {
+                        const enabled = e.target.checked
+                        setForm((current) => ({
+                          ...current,
+                          useOwnPrompt: enabled,
+                          voiceProfileId: enabled ? '' : current.voiceProfileId,
+                          extraInstructions: enabled ? '' : current.extraInstructions,
+                        }))
+                        if (enabled) {
+                          setShowLyricOptions(false)
+                          setError('')
+                        }
+                      }}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-700 bg-gray-900 text-primary-600"
+                    />
+                    <span className="min-w-0">
+                      <span className="block text-sm font-black text-white">{t('studio.create.ownPrompt.toggle')}</span>
+                      <span className="mt-0.5 block text-xs leading-relaxed text-gray-500">{t('studio.create.ownPrompt.description')}</span>
+                    </span>
+                  </label>
+
+                  {form.useOwnPrompt && (
+                    <div className="mt-3 border-t border-white/10 pt-3">
+                      <label className="block text-xs font-bold text-primary-100 sm:text-sm" htmlFor="new-studio-own-prompt">
+                        {t('studio.create.ownPrompt.label')}
+                      </label>
+                      <textarea
+                        id="new-studio-own-prompt"
+                        value={form.ownPrompt}
+                        onChange={(e) => setForm({ ...form, ownPrompt: e.target.value.slice(0, ownPromptMaxLength) })}
+                        rows={6}
+                        maxLength={ownPromptMaxLength}
+                        placeholder={t('studio.create.ownPrompt.placeholder')}
+                        className="mt-2 w-full resize-none rounded-2xl border border-primary-400/20 bg-gray-950 px-4 py-3 text-sm leading-relaxed text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400"
+                      />
+                      <div className="mt-2 flex items-start justify-between gap-3">
+                        <p className="text-[11px] leading-relaxed text-gray-500">{t('studio.create.ownPrompt.hint')}</p>
+                        <p className="shrink-0 text-[11px] text-gray-500">{form.ownPrompt.length}/{ownPromptMaxLength}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid gap-4 lg:grid-cols-2">
-                  <section className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5">
+                  <section className={`${form.useOwnPrompt ? 'lg:col-span-2' : ''} rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5`}>
                     <SectionTitle
                       icon={<FiMusic />}
                       title={t('studio.create.sections.detailsTitle')}
@@ -726,36 +794,43 @@ export default function NewStudioMusicPage() {
                         </p>
                       </div>
 
-                      <Select
-                        label={loadingStyles
-                          ? t('studio.create.fields.styleLoading')
-                          : t('studio.create.fields.style')}
-                        value={form.style}
-                        options={styles}
-                        optionLabels={optionLabels}
-                        onChange={(value) => setForm({ ...form, style: value })}
-                      />
-                      {isCustomStyle ? (
-                        <div>
-                          <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{t('studio.create.fields.customStyle')}</label>
-                          <input
-                            value={form.customStyle}
-                            onChange={(e) => setForm({ ...form, customStyle: e.target.value })}
-                            placeholder={t('studio.create.customStyleExample')}
-                            className="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/55"
+                      {!form.useOwnPrompt && (
+                        <>
+                          <Select
+                            label={loadingStyles
+                              ? t('studio.create.fields.styleLoading')
+                              : t('studio.create.fields.style')}
+                            value={form.style}
+                            options={styles}
+                            optionLabels={optionLabels}
+                            onChange={(value) => setForm({ ...form, style: value })}
                           />
-                        </div>
-                      ) : (
-                        <Select label={t('studio.create.fields.mood')} value={form.mood} options={moods} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, mood: value })} />
+                          {isCustomStyle ? (
+                            <div>
+                              <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{t('studio.create.fields.customStyle')}</label>
+                              <input
+                                value={form.customStyle}
+                                onChange={(e) => setForm({ ...form, customStyle: e.target.value })}
+                                placeholder={t('studio.create.customStyleExample')}
+                                className="w-full rounded-2xl border border-white/10 bg-black/40 px-4 py-3.5 text-sm text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400 focus:bg-black/55"
+                              />
+                            </div>
+                          ) : (
+                            <Select label={t('studio.create.fields.mood')} value={form.mood} options={moods} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, mood: value })} />
+                          )}
+                          {isCustomStyle && (
+                            <Select label={t('studio.create.fields.mood')} value={form.mood} options={moods} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, mood: value })} />
+                          )}
+                          <Select label={t('studio.create.fields.lyricsLength')} value={form.lineCount} options={lineCounts} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, lineCount: value })} />
+                        </>
                       )}
-                      {isCustomStyle && (
-                        <Select label={t('studio.create.fields.mood')} value={form.mood} options={moods} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, mood: value })} />
-                      )}
-                      <Select label={t('studio.create.fields.lyricsLength')} value={form.lineCount} options={lineCounts} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, lineCount: value })} />
-                      <Select label={t('studio.create.fields.language')} value={form.songLanguage} options={songLanguages} optionLabels={languageLabels} onChange={(value) => setForm({ ...form, songLanguage: value })} />
+                      <div className={form.useOwnPrompt ? 'sm:col-span-2' : ''}>
+                        <Select label={t('studio.create.fields.language')} value={form.songLanguage} options={songLanguages} optionLabels={languageLabels} onChange={(value) => setForm({ ...form, songLanguage: value })} />
+                      </div>
                     </div>
                   </section>
 
+                  {!form.useOwnPrompt && (
                   <section className="rounded-[1.5rem] border border-purple-300/15 bg-purple-950/[0.16] p-4 sm:p-5">
                     <SectionTitle icon={<FiMic />} title={t('studio.create.sections.voiceTitle')} subtitle={t('studio.create.sections.voiceSubtitle')} />
 
@@ -783,6 +858,7 @@ export default function NewStudioMusicPage() {
                       </div>
                     </div>
                   </section>
+                  )}
 
                   <section className="rounded-[1.5rem] border border-white/10 bg-white/[0.03] p-4 sm:p-5 lg:col-span-2">
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -855,6 +931,7 @@ export default function NewStudioMusicPage() {
                     )}
                   </section>
 
+                  {!form.useOwnPrompt && (
                   <section className="lg:col-span-2">
                     <button
                       type="button"
@@ -869,41 +946,7 @@ export default function NewStudioMusicPage() {
 
                     {showLyricOptions && (
                       <div className="mt-3 space-y-3">
-                        <label className="flex items-start gap-3 rounded-2xl border border-primary-400/25 bg-primary-500/10 px-4 py-3.5 text-sm text-gray-100">
-                          <input
-                            type="checkbox"
-                            checked={form.useOwnPrompt}
-                            onChange={(e) => setForm({ ...form, useOwnPrompt: e.target.checked })}
-                            className="mt-0.5 h-4 w-4 rounded border-gray-700 bg-gray-900 text-primary-600"
-                          />
-                          <span>
-                            <span className="block font-black text-white">{t('studio.create.ownPrompt.toggle')}</span>
-                            <span className="mt-1 block text-xs leading-relaxed text-gray-400">{t('studio.create.ownPrompt.description')}</span>
-                          </span>
-                        </label>
-
-                        {form.useOwnPrompt && (
-                          <div className="rounded-2xl border border-primary-400/25 bg-black/35 p-3">
-                            <label className="block text-xs font-bold text-primary-100 sm:text-sm" htmlFor="new-studio-own-prompt">
-                              {t('studio.create.ownPrompt.label')}
-                            </label>
-                            <textarea
-                              id="new-studio-own-prompt"
-                              value={form.ownPrompt}
-                              onChange={(e) => setForm({ ...form, ownPrompt: e.target.value.slice(0, ownPromptMaxLength) })}
-                              rows={7}
-                              maxLength={ownPromptMaxLength}
-                              placeholder={t('studio.create.ownPrompt.placeholder')}
-                              className="mt-3 w-full resize-none rounded-2xl border border-primary-400/20 bg-gray-950 px-4 py-3 text-sm leading-relaxed text-white outline-none transition placeholder:text-gray-600 focus:border-primary-400"
-                            />
-                            <div className="mt-2 flex items-start justify-between gap-3">
-                              <p className="text-[11px] leading-relaxed text-gray-500">{t('studio.create.ownPrompt.hint')}</p>
-                              <p className="shrink-0 text-[11px] text-gray-500">{form.ownPrompt.length}/{ownPromptMaxLength}</p>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className={`${form.useOwnPrompt ? 'hidden' : 'grid'} gap-2 sm:grid-cols-2 lg:grid-cols-3`}>
+                        <div className={"grid gap-2 sm:grid-cols-2 lg:grid-cols-3"}>
                           {[
                             ['avoidCliches', t('studio.create.lyricOptions.avoidCliches')],
                             ['avoidChildishRhymes', t('studio.create.lyricOptions.avoidChildishRhymes')],
@@ -924,14 +967,14 @@ export default function NewStudioMusicPage() {
                           ))}
                         </div>
 
-                        <div className={`${form.useOwnPrompt ? 'hidden' : ''} rounded-2xl border border-white/10 bg-black/25 p-3`}>
+                        <div className={"rounded-2xl border border-white/10 bg-black/25 p-3"}>
                           <Select label={t('studio.create.fields.structure')} value={form.structure} options={localizedStructures} optionLabels={optionLabels} onChange={(value) => setForm({ ...form, structure: value })} />
                           <p className="mt-1.5 text-[11px] leading-relaxed text-gray-500">
                             {t('studio.create.structureHint')}
                           </p>
                         </div>
 
-                        <div className={`${form.useOwnPrompt ? 'hidden' : 'grid'} gap-3 md:grid-cols-2`}>
+                        <div className={"grid gap-3 md:grid-cols-2"}>
                           <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
                             <label className="mb-1.5 block text-xs font-bold text-gray-100 sm:text-sm">{t('studio.new.instruments')}</label>
                             <input
@@ -953,7 +996,7 @@ export default function NewStudioMusicPage() {
                           </div>
                         </div>
 
-                        <div className={`${form.useOwnPrompt ? 'hidden' : ''} rounded-2xl border border-purple-300/15 bg-black/25 p-3`}>
+                        <div className={"rounded-2xl border border-purple-300/15 bg-black/25 p-3"}>
                           <label className="block text-xs font-bold text-purple-100 sm:text-sm" htmlFor="new-studio-extra-instructions">
                             {t('studio.create.fields.extraInstructions')}
                           </label>
@@ -973,6 +1016,7 @@ export default function NewStudioMusicPage() {
                       </div>
                     )}
                   </section>
+                  )}
                 </div>
 
                 {error && (

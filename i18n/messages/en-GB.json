@@ -949,10 +949,10 @@
       },
       "ownPrompt": {
         "toggle": "I have my own prompt",
-        "description": "Use only your prompt for music creation. The options below are hidden and DCC does not add instructions to it.",
+        "description": "For advanced users: when enabled, automatic controls are hidden and DCC uses only your production prompt.",
         "label": "Your prompt",
         "placeholder": "Paste exactly the prompt you want to send to the AI.",
-        "hint": "In this mode, this text is sent as the style prompt without adding genre, mood, instruments, vocals, or other DCC instructions.",
+        "hint": "Language and lyrics/idea remain separate. For music production, this text is sent as the style prompt without adding genre, mood, instruments, vocals, or other DCC instructions.",
         "validation": "Enter your prompt before continuing."
       }
     },
