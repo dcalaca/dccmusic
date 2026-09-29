@@ -174,9 +174,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ count: recipients.length, languages: countRecipientLanguages(recipients) })
     }
 
+    const includeHidden = request.nextUrl.searchParams.get('showHidden') === '1'
     const { data, error } = await supabaseAdmin
       .from('admin_email_campaigns')
       .select('*')
+      .eq('is_hidden', includeHidden)
       .order('created_at', { ascending: false })
     if (error) throw error
 
@@ -295,8 +297,11 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     }
 
-    if (!payload.name || !payload.subject || !payload.body) {
-      return NextResponse.json({ error: 'Informe nome, assunto e mensagem da campanha.' }, { status: 400 })
+    if (!payload.name) {
+      return NextResponse.json({ error: 'Informe o nome interno da campanha.' }, { status: 400 })
+    }
+    if (status !== 'draft' && (!payload.subject || !payload.body)) {
+      return NextResponse.json({ error: 'Para agendar, informe o assunto e a mensagem da campanha.' }, { status: 400 })
     }
     if (status === 'scheduled' && !scheduledAt) {
       return NextResponse.json({ error: 'Para agendar, informe data e hora.' }, { status: 400 })
@@ -325,6 +330,15 @@ export async function PATCH(request: NextRequest) {
     if (!id) return NextResponse.json({ error: 'Campanha não informada.' }, { status: 400 })
 
     if (action === 'send') {
+      const { data: campaign, error: campaignError } = await supabaseAdmin
+        .from('admin_email_campaigns')
+        .select('subject, body')
+        .eq('id', id)
+        .single()
+      if (campaignError) throw campaignError
+      if (!campaign.subject?.trim() || !campaign.body?.trim()) {
+        return NextResponse.json({ error: 'Complete o assunto e a mensagem antes de iniciar o envio.' }, { status: 400 })
+      }
       const requestedLimit = Number(body.limit || CAMPAIGN_BATCH_SIZE)
       const limit = Math.min(Math.max(Number.isFinite(requestedLimit) ? Math.floor(requestedLimit) : CAMPAIGN_BATCH_SIZE, 1), CAMPAIGN_BATCH_SIZE)
       const result = await sendEmailCampaign(id, { limit })
@@ -336,6 +350,52 @@ export async function PATCH(request: NextRequest) {
         .from('admin_email_campaigns')
         .update({ status: 'paused', next_run_at: null, updated_at: new Date().toISOString() })
         .eq('id', id)
+        .select('*')
+        .single()
+      if (error) throw error
+      return NextResponse.json({ campaign: data })
+    }
+
+    if (action === 'save_draft') {
+      const name = cleanText(body.name, 140)
+      const subject = cleanText(body.subject, 180)
+      const content = cleanText(body.body, 5000)
+      if (!name) return NextResponse.json({ error: 'Informe o nome interno da campanha.' }, { status: 400 })
+      const targetMode = body.targetMode === 'pending_email' || body.targetMode === 'inactive' ? body.targetMode : 'audience'
+      const targetFrom = targetMode === 'pending_email' || targetMode === 'inactive' ? normalizeDateTime(body.targetFrom) : null
+      const targetTo = targetMode === 'pending_email' ? normalizeDateTime(body.targetTo, true) : null
+      if (targetMode === 'pending_email' && (!targetFrom || !targetTo || new Date(targetFrom) > new Date(targetTo))) {
+        return NextResponse.json({ error: 'Informe um período válido para e-mails pendentes.' }, { status: 400 })
+      }
+      if (targetMode === 'inactive' && !targetFrom) {
+        return NextResponse.json({ error: 'Informe há quantos dias o público está sem criar.' }, { status: 400 })
+      }
+      const excludePreviouslySent = body.excludePreviouslySent === true
+      const sentFilterFrom = excludePreviouslySent ? normalizeCampaignDateBoundary(body.sentFilterFrom) : null
+      const sentFilterTo = excludePreviouslySent ? normalizeCampaignDateBoundary(body.sentFilterTo, true) : null
+      if (excludePreviouslySent && (!sentFilterFrom || !sentFilterTo || new Date(sentFilterFrom) > new Date(sentFilterTo))) {
+        return NextResponse.json({ error: 'Informe um período válido para verificar os e-mails já enviados.' }, { status: 400 })
+      }
+      const { data, error } = await supabaseAdmin
+        .from('admin_email_campaigns')
+        .update({
+          name,
+          subject,
+          preview: cleanText(body.preview, 220) || null,
+          body: content,
+          cta_label: cleanText(body.ctaLabel, 80) || null,
+          cta_url: cleanText(body.ctaUrl, 500) || null,
+          audience: targetMode === 'pending_email' || targetMode === 'inactive' ? 'composers' : normalizeAudience(body.audience),
+          target_mode: targetMode,
+          target_from: targetFrom,
+          target_to: targetTo,
+          exclude_previously_sent: excludePreviouslySent,
+          sent_filter_from: sentFilterFrom,
+          sent_filter_to: sentFilterTo,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+        .eq('status', 'draft')
         .select('*')
         .single()
       if (error) throw error
@@ -357,6 +417,18 @@ export async function PATCH(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', id)
+        .select('*')
+        .single()
+      if (error) throw error
+      return NextResponse.json({ campaign: data })
+    }
+
+    if (action === 'hide' || action === 'unhide') {
+      const { data, error } = await supabaseAdmin
+        .from('admin_email_campaigns')
+        .update({ is_hidden: action === 'hide', updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('status', 'sent')
         .select('*')
         .single()
       if (error) throw error

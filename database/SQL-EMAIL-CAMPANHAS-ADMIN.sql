@@ -24,6 +24,7 @@ create table if not exists public.admin_email_campaigns (
   next_run_at timestamptz,
   sent_count integer not null default 0,
   failed_count integer not null default 0,
+  is_hidden boolean not null default false,
   translations jsonb not null default '{}'::jsonb,
   created_by text,
   created_at timestamptz not null default now(),
@@ -33,8 +34,8 @@ create table if not exists public.admin_email_campaigns (
 alter table public.admin_email_campaigns
   add column if not exists exclude_previously_sent boolean not null default false,
   add column if not exists sent_filter_from timestamptz,
-  add column if not exists sent_filter_to timestamptz;
-
+  add column if not exists sent_filter_to timestamptz,
+  add column if not exists is_hidden boolean not null default false;
 
 create table if not exists public.admin_email_campaign_deliveries (
   id uuid primary key default gen_random_uuid(),

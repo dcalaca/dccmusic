@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FiCalendar, FiCheckCircle, FiClock, FiLoader, FiMail, FiPauseCircle, FiSend } from 'react-icons/fi'
+import { FiCalendar, FiCheckCircle, FiClock, FiEye, FiEyeOff, FiLoader, FiMail, FiPauseCircle, FiSend } from 'react-icons/fi'
 
 type Campaign = {
   id: string
@@ -26,6 +26,7 @@ type Campaign = {
   exclude_previously_sent?: boolean
   sent_filter_from?: string | null
   sent_filter_to?: string | null
+  is_hidden?: boolean
   deliveries?: { sent: number; failed: number; skipped: number; pending: number; reserved?: number }
   clicks?: { total: number; human: number; bot: number; unknown: number }
 }
@@ -152,6 +153,8 @@ export default function EmailCampaignsAdmin() {
   const [processingId, setProcessingId] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [editingDraftId, setEditingDraftId] = useState('')
+  const [showHidden, setShowHidden] = useState(false)
 
   const [name, setName] = useState('')
   const [subject, setSubject] = useState('')
@@ -192,7 +195,7 @@ export default function EmailCampaignsAdmin() {
   const loadCampaigns = async (silent = false) => {
     try {
       if (!silent) setLoading(true)
-      const response = await fetch('/api/admin/email-campaigns', { cache: 'no-store' })
+      const response = await fetch(`/api/admin/email-campaigns${showHidden ? '?showHidden=1' : ''}`, { cache: 'no-store' })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao carregar campanhas')
       setCampaigns(data.campaigns || [])
@@ -209,7 +212,7 @@ export default function EmailCampaignsAdmin() {
     }
   }
 
-  useEffect(() => { void loadCampaigns() }, [])
+  useEffect(() => { void loadCampaigns() }, [showHidden])
 
   useEffect(() => {
     const needsDynamicCount = targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent
@@ -250,6 +253,7 @@ export default function EmailCampaignsAdmin() {
   }, [targetMode, targetFrom, targetTo, audience, excludePreviouslySent, sentFilterFrom, sentFilterTo])
 
   const applyIdea = (idea: Idea) => {
+    setEditingDraftId('')
     setName(idea.name)
     setSubject(idea.subject)
     setPreview(idea.preview)
@@ -278,6 +282,7 @@ export default function EmailCampaignsAdmin() {
   }
 
   const resetForm = () => {
+    setEditingDraftId('')
     setName('')
     setSubject('')
     setPreview('')
@@ -303,9 +308,10 @@ export default function EmailCampaignsAdmin() {
     setSaving(true)
     try {
       const response = await fetch('/api/admin/email-campaigns', {
-        method: 'POST',
+        method: editingDraftId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          ...(editingDraftId ? { id: editingDraftId, action: 'save_draft' } : {}),
           name, subject, preview, body, ctaLabel, ctaUrl, audience,
           targetMode,
           targetFrom: targetMode === 'pending_email' || targetMode === 'inactive' ? targetFrom : null,
@@ -319,13 +325,55 @@ export default function EmailCampaignsAdmin() {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao salvar campanha')
-      setSuccess(createScheduled ? 'Campanha salva e agendada.' : 'Campanha salva como rascunho.')
+      setSuccess(createScheduled ? 'Campanha salva e agendada.' : editingDraftId ? 'Rascunho atualizado.' : 'Campanha salva como rascunho.')
       resetForm()
       await loadCampaigns()
     } catch (err: any) {
       setError(err.message || 'Erro ao salvar campanha')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const editDraft = (campaign: Campaign) => {
+    setEditingDraftId(campaign.id)
+    setName(campaign.name)
+    setSubject(campaign.subject || '')
+    setPreview(campaign.preview || '')
+    setBody(campaign.body || '')
+    setCtaLabel(campaign.cta_label || '')
+    setCtaUrl(campaign.cta_url || '')
+    setAudience(campaign.audience)
+    setTargetMode(campaign.target_mode || 'audience')
+    setTargetFrom(campaign.target_from?.slice(0, 10) || initialPendingRange.from)
+    setTargetTo(campaign.target_to?.slice(0, 10) || initialPendingRange.to)
+    setExcludePreviouslySent(Boolean(campaign.exclude_previously_sent))
+    setSentFilterFrom(campaign.sent_filter_from?.slice(0, 10) || localDateValue(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)))
+    setSentFilterTo(campaign.sent_filter_to?.slice(0, 10) || localDateValue(new Date()))
+    setInactiveDays(campaign.target_from ? Math.max(1, Math.ceil((Date.now() - new Date(campaign.target_from).getTime()) / (24 * 60 * 60 * 1000))) : 30)
+    setCreateScheduled(false)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const toggleHidden = async (campaign: Campaign) => {
+    setProcessingId(campaign.id)
+    setError('')
+    setSuccess('')
+    try {
+      const action = campaign.is_hidden ? 'unhide' : 'hide'
+      const response = await fetch('/api/admin/email-campaigns', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: campaign.id, action }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Não foi possível atualizar a campanha.')
+      setSuccess(campaign.is_hidden ? 'Campanha restaurada.' : 'Campanha ocultada.')
+      await loadCampaigns(true)
+    } catch (err: any) {
+      setError(err.message || 'Não foi possível atualizar a campanha.')
+    } finally {
+      setProcessingId('')
     }
   }
 
@@ -460,6 +508,7 @@ export default function EmailCampaignsAdmin() {
         </div>
 
         <form onSubmit={createCampaign} className="grid gap-5 lg:grid-cols-[1fr_0.8fr]">
+          {editingDraftId && <div className="lg:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-fuchsia-700/60 bg-fuchsia-950/30 px-4 py-3 text-sm text-fuchsia-100"><span>Editando rascunho: <strong>{name}</strong></span><button type="button" onClick={resetForm} className="rounded-lg border border-fuchsia-700 px-3 py-1.5 text-xs font-bold">Cancelar edição</button></div>}
           <div className="space-y-4">
             <label className="block"><span className="mb-1.5 block text-sm font-bold text-gray-200">Nome interno da campanha</span><input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3" placeholder="Ex: Cupom Junho" /></label>
             <label className="block"><span className="mb-1.5 block text-sm font-bold text-gray-200">Assunto do e-mail</span><input value={subject} onChange={(e) => setSubject(e.target.value)} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3" placeholder="Ex: Cupom exclusivo para você" /></label>
@@ -540,7 +589,7 @@ export default function EmailCampaignsAdmin() {
             </div>
 
             <div className="rounded-2xl border border-gray-800 bg-black/40 p-4">
-              <label className="mb-3 flex items-center gap-2 text-sm font-bold text-gray-200"><input type="checkbox" checked={createScheduled} onChange={(e) => setCreateScheduled(e.target.checked)} /> Agendar envio</label>
+              <label className="mb-3 flex items-center gap-2 text-sm font-bold text-gray-200"><input type="checkbox" checked={createScheduled} disabled={Boolean(editingDraftId)} onChange={(e) => setCreateScheduled(e.target.checked)} /> Agendar envio</label>
               <label className="block"><span className="mb-1.5 block text-sm font-bold text-gray-200">Data e hora</span><input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} disabled={!createScheduled} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3 disabled:opacity-50" /></label>
               <p className="mt-2 text-xs text-gray-500">Agendamento envia apenas um lote por execução. Recorrência mensal está temporariamente desativada até a nova rotina de CRM ficar validada.</p>
             </div>
@@ -557,14 +606,14 @@ export default function EmailCampaignsAdmin() {
 
             <button type="submit" disabled={saving} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-fuchsia-600 px-5 py-3 font-bold text-white disabled:opacity-60">
               {saving ? <FiLoader className="animate-spin" /> : createScheduled ? <FiCalendar /> : <FiMail />}
-              {createScheduled ? 'Salvar campanha agendada' : 'Salvar rascunho'}
+              {createScheduled ? 'Salvar campanha agendada' : editingDraftId ? 'Atualizar rascunho' : 'Salvar rascunho'}
             </button>
           </aside>
         </form>
       </div>
 
       <div className="rounded-3xl border border-gray-800 bg-gray-950/70 p-5 sm:p-6">
-        <div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-2xl font-black">Campanhas criadas</h2><button type="button" onClick={() => loadCampaigns()} className="rounded-lg border border-gray-700 px-3 py-2 text-xs font-bold text-gray-300">Atualizar</button></div>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3"><h2 className="text-2xl font-black">{showHidden ? 'Campanhas ocultas' : 'Campanhas criadas'}</h2><div className="flex gap-2"><button type="button" onClick={() => setShowHidden((value) => !value)} className="inline-flex items-center gap-2 rounded-lg border border-gray-700 px-3 py-2 text-xs font-bold text-gray-300">{showHidden ? <FiEye /> : <FiEyeOff />}{showHidden ? 'Ocultar lista' : 'Mostrar ocultos'}</button><button type="button" onClick={() => loadCampaigns()} className="rounded-lg border border-gray-700 px-3 py-2 text-xs font-bold text-gray-300">Atualizar</button></div></div>
         {loading ? <div className="flex justify-center py-10"><FiLoader className="h-8 w-8 animate-spin text-primary-300" /></div> : campaigns.length === 0 ? <p className="py-10 text-center text-gray-500">Nenhuma campanha criada ainda.</p> : (
           <div className="space-y-3">
             {campaigns.map((campaign) => {
@@ -584,7 +633,7 @@ export default function EmailCampaignsAdmin() {
               const processedCount = sentCount + failedCount + skippedCount
               const progressPercent = estimatedTotal > 0 ? Math.min(100, Math.round((processedCount / estimatedTotal) * 100)) : 0
               const isProcessing = processingId === campaign.id
-              const canSend = campaign.status !== 'sent' && campaign.status !== 'scheduled'
+              const canSend = !showHidden && campaign.status !== 'sent' && campaign.status !== 'scheduled'
               const sendLabel = isProcessing ? 'Enviando...' : isFrozen && processedCount > 0 ? 'Retomar envio' : 'Iniciar envio'
 
               return (
@@ -618,6 +667,8 @@ export default function EmailCampaignsAdmin() {
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {canSend && <button onClick={() => runAction(campaign, 'send')} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl bg-green-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{processingId === campaign.id ? <FiLoader className="animate-spin" /> : <FiSend />}{sendLabel}</button>}
+                      {!showHidden && campaign.status === 'draft' && <button onClick={() => editDraft(campaign)} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-800 bg-fuchsia-950/30 px-4 py-2 text-sm font-bold text-fuchsia-100 disabled:opacity-60">Editar rascunho</button>}
+                      {campaign.status === 'sent' && <button onClick={() => toggleHidden(campaign)} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl border border-gray-700 px-4 py-2 text-sm font-bold text-gray-200 disabled:opacity-60">{campaign.is_hidden ? <FiEye /> : <FiEyeOff />}{campaign.is_hidden ? 'Restaurar' : 'Ocultar'}</button>}
                       {(campaign.status === 'scheduled' || campaign.status === 'sending') && <button onClick={() => runAction(campaign, 'pause')} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl border border-yellow-800 bg-yellow-950/30 px-4 py-2 text-sm font-bold text-yellow-100 disabled:opacity-60"><FiPauseCircle /> Pausar</button>}
                     </div>
                   </div>
