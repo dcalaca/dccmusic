@@ -13,6 +13,7 @@ import { isMercadoPagoInSiteCheckoutEnabled } from '@/lib/mp-in-site-checkout'
 import { StripePaymentOverlay } from '@/components/StripeCheckout'
 import type { DccCountry } from '@/lib/localization'
 import { studioTopupError } from '@/lib/studio-topup-error'
+import { StudioCouponButton } from '@/app/studio-ia/StudioActions'
 
 type TopupTier = {
   maxMusicQuantity: number | null
@@ -383,6 +384,12 @@ export default function StudioTopupPage() {
               </div>
             </div>
           </section>
+
+          <div className="mb-8 flex justify-center">
+            <div className="w-full max-w-md">
+              <StudioCouponButton />
+            </div>
+          </div>
 
           {error && (
             <div className="mb-6 rounded-xl border border-red-800 bg-red-950/50 p-4 text-red-200">
