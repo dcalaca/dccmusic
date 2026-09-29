@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { useLocalization } from '@/components/LocalizationProvider'
 import { FiArrowLeft, FiArrowRight, FiCheck, FiGift, FiLoader, FiSearch } from 'react-icons/fi'
 
 type CouponPreview = {
@@ -15,6 +14,7 @@ type CouponPreview = {
   credits: number
   price: number
   unitPrice: number
+  currency: string
   expiresAt: string | null
   alreadyRedeemed: boolean
 }
@@ -27,7 +27,6 @@ function getCouponError(t: TFunction, data: { errorCode?: string }, fallbackKey:
 
 export default function StudioCouponPage() {
   const { t, i18n } = useTranslation()
-  const { country } = useLocalization()
   const router = useRouter()
   const [code, setCode] = useState('')
   const [checkingAuth, setCheckingAuth] = useState(true)
@@ -36,8 +35,7 @@ export default function StudioCouponPage() {
   const [error, setError] = useState('')
   const [preview, setPreview] = useState<CouponPreview | null>(null)
   const [freeSuccess, setFreeSuccess] = useState<{ musicQuantity: number } | null>(null)
-  const currency = country === 'PT' || country === 'ES' ? 'EUR' : country === 'PY' ? 'PYG' : country === 'CO' ? 'COP' : country === 'MX' ? 'MXN' : country === 'US' ? 'USD' : country === 'GB' ? 'GBP' : 'BRL'
-  const formatMoney = (value: number) => new Intl.NumberFormat(i18n.language, { style: 'currency', currency }).format(Number(value || 0))
+  const formatMoney = (value: number, currency: string) => new Intl.NumberFormat(i18n.language, { style: 'currency', currency }).format(Number(value || 0))
   const formatDate = (value: string | null) => value ? new Date(value).toLocaleDateString(i18n.language) : null
 
   useEffect(() => {
@@ -220,11 +218,11 @@ export default function StudioCouponPage() {
                     <>
                       <div className="flex items-center justify-between">
                         <span className="text-gray-400">{t('studio.tools.coupon.amount')}</span>
-                        <span className="text-xl font-black text-green-300">{formatMoney(preview.price)}</span>
+                        <span className="text-xl font-black text-green-300">{formatMoney(preview.price, preview.currency || 'BRL')}</span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-500">{t('studio.tools.coupon.unitPrice')}</span>
-                        <span className="text-gray-300">{formatMoney(preview.unitPrice)}</span>
+                        <span className="text-gray-300">{formatMoney(preview.unitPrice, preview.currency || 'BRL')}</span>
                       </div>
                     </>
                   ) : (
@@ -274,7 +272,7 @@ export default function StudioCouponPage() {
 
                 {preview.type === 'paid' && (
                   <p className="mt-4 text-center text-xs text-gray-500">
-                    {t('studio.tools.coupon.paymentHint', { amount: formatMoney(preview.price) })}
+                    {t('studio.tools.coupon.paymentHint', { amount: formatMoney(preview.price, preview.currency || 'BRL') })}
                   </p>
                 )}
               </div>

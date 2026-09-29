@@ -82,6 +82,7 @@ export async function POST(request: NextRequest) {
       credits,
       price: Number(price.toFixed(2)),
       unitPrice: musicQuantity > 0 ? Number((price / musicQuantity).toFixed(2)) : 0,
+      currency: 'BRL',
       expiresAt: coupon.expires_at,
       alreadyRedeemed,
     })
