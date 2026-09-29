@@ -846,7 +846,7 @@ export async function POST(request: NextRequest) {
           ...sunoPayload,
           uploadUrl: inspirationUploadUrl,
           audioWeight: inspirationAudioWeight,
-          styleWeight: Math.max(sunoStyleWeight, 0.55),
+          styleWeight: Math.max(sunoStyleWeight ?? 0.55, 0.55),
         }
       : sunoPayload
 
