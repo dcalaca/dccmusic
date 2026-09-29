@@ -356,6 +356,19 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ campaign: data })
     }
 
+    if (action === 'cancel') {
+      const { data, error } = await supabaseAdmin
+        .from('admin_email_campaigns')
+        .update({ status: 'cancelled', next_run_at: null, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .in('status', ['scheduled', 'paused'])
+        .select('*')
+        .maybeSingle()
+      if (error) throw error
+      if (!data) return NextResponse.json({ error: 'Só é possível cancelar uma campanha agendada ou pausada.' }, { status: 409 })
+      return NextResponse.json({ campaign: data })
+    }
+
     if (action === 'save_draft') {
       const name = cleanText(body.name, 140)
       const subject = cleanText(body.subject, 180)
@@ -428,7 +441,6 @@ export async function PATCH(request: NextRequest) {
         .from('admin_email_campaigns')
         .update({ is_hidden: action === 'hide', updated_at: new Date().toISOString() })
         .eq('id', id)
-        .eq('status', 'sent')
         .select('*')
         .single()
       if (error) throw error

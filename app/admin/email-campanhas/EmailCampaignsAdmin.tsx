@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FiCalendar, FiCheckCircle, FiClock, FiEye, FiEyeOff, FiLoader, FiMail, FiPauseCircle, FiSend } from 'react-icons/fi'
+import { FiCalendar, FiCheckCircle, FiClock, FiEye, FiEyeOff, FiLoader, FiMail, FiPauseCircle, FiSend, FiX } from 'react-icons/fi'
 
 type Campaign = {
   id: string
@@ -12,7 +12,7 @@ type Campaign = {
   cta_label: string | null
   cta_url: string | null
   audience: 'all' | 'composers' | 'site_users'
-  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused'
+  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled'
   scheduled_at: string | null
   last_run_at: string | null
   next_run_at: string | null
@@ -115,6 +115,7 @@ const statusLabels: Record<string, string> = {
   sending: 'Enviando',
   sent: 'Enviada',
   paused: 'Pausada',
+  cancelled: 'Cancelada',
 }
 
 function formatDateTime(value?: string | null) {
@@ -377,7 +378,7 @@ export default function EmailCampaignsAdmin() {
     }
   }
 
-  const runAction = async (campaign: Campaign, action: 'send' | 'pause') => {
+  const runAction = async (campaign: Campaign, action: 'send' | 'pause' | 'cancel') => {
     const sentSoFar = campaign.deliveries?.sent || campaign.sent_count || 0
     const pending = (campaign.deliveries?.pending || 0) + (campaign.deliveries?.reserved || 0)
     const targetLabel = campaign.target_mode === 'pending_email'
@@ -390,7 +391,9 @@ export default function EmailCampaignsAdmin() {
       ? sentSoFar > 0 || pending > 0
         ? `Retomar a campanha "${campaign.name}" e continuar automaticamente até terminar a lista? Quem já foi processado não recebe novamente.`
         : `Iniciar a campanha "${campaign.name}" para ${targetLabel}? A lista será congelada e o envio seguirá automaticamente, em ordem, até concluir.`
-      : `Pausar a campanha "${campaign.name}"?`
+      : action === 'cancel'
+        ? `Cancelar a campanha "${campaign.name}"? Ela não será enviada.`
+        : `Pausar a campanha "${campaign.name}"?`
 
     if (!confirm(confirmMessage)) return
     setProcessingId(campaign.id)
@@ -398,15 +401,15 @@ export default function EmailCampaignsAdmin() {
     setSuccess('')
 
     try {
-      if (action === 'pause') {
+      if (action === 'pause' || action === 'cancel') {
         const response = await fetch('/api/admin/email-campaigns', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: campaign.id, action }),
         })
         const data = await response.json()
-        if (!response.ok) throw new Error(data.error || 'Erro ao pausar campanha')
-        setSuccess('Campanha pausada.')
+        if (!response.ok) throw new Error(data.error || 'Erro ao atualizar campanha')
+        setSuccess(action === 'cancel' ? 'Campanha cancelada.' : 'Campanha pausada.')
         await loadCampaigns(true)
         return
       }
@@ -633,7 +636,7 @@ export default function EmailCampaignsAdmin() {
               const processedCount = sentCount + failedCount + skippedCount
               const progressPercent = estimatedTotal > 0 ? Math.min(100, Math.round((processedCount / estimatedTotal) * 100)) : 0
               const isProcessing = processingId === campaign.id
-              const canSend = !showHidden && campaign.status !== 'sent' && campaign.status !== 'scheduled'
+              const canSend = !showHidden && campaign.status !== 'sent' && campaign.status !== 'scheduled' && campaign.status !== 'cancelled'
               const sendLabel = isProcessing ? 'Enviando...' : isFrozen && processedCount > 0 ? 'Retomar envio' : 'Iniciar envio'
 
               return (
@@ -668,8 +671,10 @@ export default function EmailCampaignsAdmin() {
                     <div className="flex flex-wrap gap-2">
                       {canSend && <button onClick={() => runAction(campaign, 'send')} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl bg-green-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-60">{processingId === campaign.id ? <FiLoader className="animate-spin" /> : <FiSend />}{sendLabel}</button>}
                       {!showHidden && campaign.status === 'draft' && <button onClick={() => editDraft(campaign)} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-800 bg-fuchsia-950/30 px-4 py-2 text-sm font-bold text-fuchsia-100 disabled:opacity-60">Editar rascunho</button>}
-                      {campaign.status === 'sent' && <button onClick={() => toggleHidden(campaign)} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl border border-gray-700 px-4 py-2 text-sm font-bold text-gray-200 disabled:opacity-60">{campaign.is_hidden ? <FiEye /> : <FiEyeOff />}{campaign.is_hidden ? 'Restaurar' : 'Ocultar'}</button>}
-                      {(campaign.status === 'scheduled' || campaign.status === 'sending') && <button onClick={() => runAction(campaign, 'pause')} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl border border-yellow-800 bg-yellow-950/30 px-4 py-2 text-sm font-bold text-yellow-100 disabled:opacity-60"><FiPauseCircle /> Pausar</button>}
+                      {campaign.status !== 'sending' && <button onClick={() => toggleHidden(campaign)} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl border border-gray-700 px-4 py-2 text-sm font-bold text-gray-200 disabled:opacity-60">{campaign.is_hidden ? <FiEye /> : <FiEyeOff />}{campaign.is_hidden ? 'Restaurar' : 'Ocultar'}</button>}
+                      {campaign.status === 'scheduled' && <button onClick={() => runAction(campaign, 'cancel')} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl border border-red-800 bg-red-950/30 px-4 py-2 text-sm font-bold text-red-100 disabled:opacity-60"><FiX /> Cancelar</button>}
+                      {campaign.status === 'paused' && <button onClick={() => runAction(campaign, 'cancel')} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl border border-red-800 bg-red-950/30 px-4 py-2 text-sm font-bold text-red-100 disabled:opacity-60"><FiX /> Cancelar</button>}
+                      {campaign.status === 'sending' && <button onClick={() => runAction(campaign, 'pause')} disabled={Boolean(processingId)} className="inline-flex items-center gap-2 rounded-xl border border-yellow-800 bg-yellow-950/30 px-4 py-2 text-sm font-bold text-yellow-100 disabled:opacity-60"><FiPauseCircle /> Pausar</button>}
                     </div>
                   </div>
                 </article>
