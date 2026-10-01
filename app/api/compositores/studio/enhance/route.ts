@@ -262,6 +262,13 @@ export async function POST(request: NextRequest) {
         lyricSource = 'whisper'
       } catch (transcriptionError: any) {
         console.error('[Studio IA] Transcrição automática no enhance falhou:', transcriptionError)
+        return NextResponse.json(
+          {
+            error: transcriptionError?.message || 'Não foi possível identificar a letra cantada. Revise ou informe a letra antes de melhorar a música.',
+            code: 'ENHANCE_LYRIC_REQUIRED',
+          },
+          { status: 422 }
+        )
       }
     }
 
