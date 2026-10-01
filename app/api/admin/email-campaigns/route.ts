@@ -101,41 +101,67 @@ async function getClickStats(campaignIds: string[]) {
   if (campaignIds.length === 0) return emptyStats
 
   try {
-    const { data: links, error: linksError } = await supabaseAdmin
-      .from('dccmusic_tracked_links')
-      .select('id, notes')
-      .eq('created_by', 'admin_email_campaign')
-      .limit(5000)
-    if (linksError) throw linksError
-
     const linkCampaignMap = new Map<string, string>()
-    for (const link of links || []) {
-      try {
-        const notes = JSON.parse((link as any).notes || '{}')
-        if (!campaignIds.includes(notes.campaignId)) continue
-        linkCampaignMap.set((link as any).id, notes.campaignId)
-      } catch {}
+
+    // Há um link individual por destinatário (e campanhas novas podem gerar
+    // mais de um link interno por e-mail). Portanto, não podemos usar um
+    // limite fixo de 5.000 registros aqui.
+    const linkPageSize = 1000
+    for (let from = 0; ; from += linkPageSize) {
+      const { data: links, error: linksError } = await supabaseAdmin
+        .from('dccmusic_tracked_links')
+        .select('id, notes')
+        .eq('created_by', 'admin_email_campaign')
+        .order('id', { ascending: true })
+        .range(from, from + linkPageSize - 1)
+      if (linksError) throw linksError
+
+      const rows = links || []
+      for (const link of rows) {
+        try {
+          const notes = JSON.parse((link as any).notes || '{}')
+          if (!campaignIds.includes(notes.campaignId)) continue
+          linkCampaignMap.set((link as any).id, notes.campaignId)
+        } catch {}
+      }
+
+      if (rows.length < linkPageSize) break
     }
 
     const linkIds = Array.from(linkCampaignMap.keys())
     if (linkIds.length === 0) return emptyStats
 
-    const { data: clicks, error: clicksError } = await supabaseAdmin
-      .from('dccmusic_link_clicks')
-      .select('link_id, click_type')
-      .in('link_id', linkIds)
-      .limit(10000)
-    if (clicksError) throw clicksError
+    // Um .in() com milhares de IDs pode exceder o tamanho da requisição do
+    // PostgREST. Consultar em blocos mantém o tracking funcionando para
+    // campanhas grandes.
+    const chunkSize = 200
+    for (let index = 0; index < linkIds.length; index += chunkSize) {
+      const chunk = linkIds.slice(index, index + chunkSize)
 
-    for (const click of clicks || []) {
-      const campaignId = linkCampaignMap.get((click as any).link_id)
-      if (!campaignId) continue
-      const item = emptyStats.get(campaignId) || { total: 0, human: 0, bot: 0, unknown: 0 }
-      item.total += 1
-      if ((click as any).click_type === 'HUMAN_CLICK') item.human += 1
-      else if ((click as any).click_type === 'BOT_PREVIEW') item.bot += 1
-      else item.unknown += 1
-      emptyStats.set(campaignId, item)
+      const clickPageSize = 1000
+      for (let from = 0; ; from += clickPageSize) {
+        const { data: clicks, error: clicksError } = await supabaseAdmin
+          .from('dccmusic_link_clicks')
+          .select('link_id, click_type')
+          .in('link_id', chunk)
+          .order('id', { ascending: true })
+          .range(from, from + clickPageSize - 1)
+        if (clicksError) throw clicksError
+
+        const clickRows = clicks || []
+        for (const click of clickRows) {
+          const campaignId = linkCampaignMap.get((click as any).link_id)
+          if (!campaignId) continue
+          const item = emptyStats.get(campaignId) || { total: 0, human: 0, bot: 0, unknown: 0 }
+          item.total += 1
+          if ((click as any).click_type === 'HUMAN_CLICK') item.human += 1
+          else if ((click as any).click_type === 'BOT_PREVIEW') item.bot += 1
+          else item.unknown += 1
+          emptyStats.set(campaignId, item)
+        }
+
+        if (clickRows.length < clickPageSize) break
+      }
     }
   } catch (error) {
     console.warn('[ADMIN EMAIL CAMPAIGNS] Não foi possível carregar cliques:', error)
