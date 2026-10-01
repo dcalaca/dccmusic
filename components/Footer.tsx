@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useTranslation } from 'react-i18next'
-import { FiInstagram, FiYoutube, FiMusic, FiMail, FiCopy, FiCheck, FiFacebook } from 'react-icons/fi'
+import { FiInstagram, FiYoutube, FiMail, FiCopy, FiCheck, FiFacebook } from 'react-icons/fi'
 import AdminLoginModal from './AdminLoginModal'
 
 export default function Footer() {
@@ -124,7 +124,6 @@ export default function Footer() {
                 <div className="mt-4 flex flex-wrap gap-3">
                   <a href="https://www.youtube.com/@dccmusic.online" target="_blank" rel="noopener noreferrer" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-950 text-gray-400 transition-colors hover:text-neon-purple" aria-label="YouTube"><FiYoutube className="w-5 h-5" /></a>
                   <a href="https://www.instagram.com/dccmusic.online/" target="_blank" rel="noopener noreferrer" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-950 text-gray-400 transition-colors hover:text-neon-purple" aria-label="Instagram"><FiInstagram className="w-5 h-5" /></a>
-                  <a href="https://open.spotify.com/intl-pt/artist/0vMZmxBm682XaehHIIIW9K" target="_blank" rel="noopener noreferrer" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-950 text-gray-400 transition-colors hover:text-neon-purple" aria-label="Spotify"><FiMusic className="w-5 h-5" /></a>
                   <a href="https://www.tiktok.com/@dccmusic.online?lang=pt-BR" target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-950 px-3 text-sm font-bold text-gray-400 transition-colors hover:text-neon-purple" aria-label="TikTok">TikTok</a>
                   <a href="https://www.facebook.com/profile.php?id=61571000874301" target="_blank" rel="noopener noreferrer" className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-800 bg-gray-950 text-gray-400 transition-colors hover:text-neon-purple" aria-label="Facebook"><FiFacebook className="w-5 h-5" /></a>
                 </div>
