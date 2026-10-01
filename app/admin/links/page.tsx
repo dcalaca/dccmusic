@@ -21,8 +21,6 @@ interface TrackedLink {
 }
 
 function isCampaignLink(link: TrackedLink) {
-  if (link.createdBy === 'admin_email_campaign') return true
-
   try {
     const notes = link.notes ? JSON.parse(link.notes) : null
     return notes?.type === 'admin_email_campaign_cta'
