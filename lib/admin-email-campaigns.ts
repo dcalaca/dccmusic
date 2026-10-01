@@ -134,6 +134,8 @@ async function sendCampaignViaResend(input: {
   body: string
   ctaLabel?: string | null
   ctaUrl?: string | null
+  footerSiteUrl?: string | null
+  footerStudioUrl?: string | null
   unsubscribeUrl?: string | null
   idempotencyKey: string
 }) {
@@ -188,7 +190,7 @@ async function sendCampaignViaResend(input: {
     ? `<br><a href="${escapeHtml(input.unsubscribeUrl)}" style="color:#7C16F8;text-decoration:underline;">${localized.unsubscribe}</a>`
     : ''
 
-  const htmlContent = buildDccEmailHtml({
+  let htmlContent = buildDccEmailHtml({
     subject: personalizedSubject,
     locale: input.language === 'en' ? 'en-US' : input.language === 'es' ? 'es-ES' : 'pt-BR',
     title: personalizedSubject,
@@ -200,6 +202,22 @@ async function sendCampaignViaResend(input: {
       <p style="margin-top:24px;font-size:12px;color:#777080;">${localized.footer}${unsubscribe}</p>
     `,
   })
+
+  // Em campanhas, os links internos do rodapé também passam pelo login mágico
+  // individual do destinatário. Assim, qualquer entrada no site a partir do
+  // e-mail mantém a experiência autenticada, não apenas o botão principal.
+  if (input.footerSiteUrl) {
+    htmlContent = htmlContent.replace(
+      'href="https://www.dccmusic.online/"',
+      `href="${escapeHtml(input.footerSiteUrl)}"`
+    )
+  }
+  if (input.footerStudioUrl) {
+    htmlContent = htmlContent.replace(
+      'href="https://www.dccmusic.online/studio-ia"',
+      `href="${escapeHtml(input.footerStudioUrl)}"`
+    )
+  }
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -746,6 +764,32 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
           })
         : null
 
+      const footerSiteUrl = row.recipient_id
+        ? await createCampaignButtonUrl({
+            campaignId,
+            campaignName: campaign.name,
+            recipientType: row.recipient_type,
+            recipientId: row.recipient_id,
+            recipientEmail: row.recipient_email,
+            recipientName: row.recipient_name || undefined,
+            ctaLabel: 'Footer: Site',
+            ctaUrl: 'https://www.dccmusic.online/',
+          })
+        : null
+
+      const footerStudioUrl = row.recipient_id
+        ? await createCampaignButtonUrl({
+            campaignId,
+            campaignName: campaign.name,
+            recipientType: row.recipient_type,
+            recipientId: row.recipient_id,
+            recipientEmail: row.recipient_email,
+            recipientName: row.recipient_name || undefined,
+            ctaLabel: 'Footer: Studio IA',
+            ctaUrl: 'https://www.dccmusic.online/studio-ia',
+          })
+        : null
+
       const result = await sendCampaignViaResend({
         to: row.recipient_email,
         name: row.recipient_name || (row.recipient_type === 'composer' ? 'Compositor' : 'Usuário'),
@@ -755,6 +799,8 @@ export async function sendEmailCampaign(campaignId: string, options?: { limit?: 
         body: content.body,
         ctaLabel: content.ctaLabel,
         ctaUrl: trackedCtaUrl || campaign.cta_url,
+        footerSiteUrl,
+        footerStudioUrl,
         unsubscribeUrl: getEmailOptOutUrl({
           email: row.recipient_email,
           recipientType: row.recipient_type,
