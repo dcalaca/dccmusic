@@ -4183,14 +4183,29 @@ export async function getTrackedLinkStats(shortCode: string): Promise<TrackedLin
 }
 
 // Listar todos os links de um criador
+// Filtrar campanhas no banco ANTES do limite de linhas do PostgREST.
+// Preservar notes NULL (links manuais) e paginar para não ocultar links antigos.
+async function getNonCampaignTrackedLinkRows(createdBy?: string): Promise<any[]> {
+  const rows: any[] = []
+  const pageSize = 500
+  for (let from = 0; ; from += pageSize) {
+    let query = supabaseAdmin
+      .from('dccmusic_tracked_links')
+      .select('*')
+      .or('notes.is.null,notes.not.like.%admin_email_campaign_cta%')
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
+      .range(from, from + pageSize - 1)
+    if (createdBy) query = query.eq('created_by', createdBy)
+    const { data, error } = await query
+    if (error) throw error
+    rows.push(...(data || []))
+    if (!data || data.length < pageSize) return rows
+  }
+}
+
 export async function getTrackedLinksByCreator(createdBy: string): Promise<TrackedLink[]> {
-  const { data, error } = await supabaseAdmin
-    .from('dccmusic_tracked_links')
-    .select('*')
-    .eq('created_by', createdBy)
-    .order('created_at', { ascending: false })
-  
-  if (error) throw error
+  const data = await getNonCampaignTrackedLinkRows(createdBy)
   
   // Contar cliques reais para cada link diretamente da tabela dccmusic_link_clicks
   const linksWithCounts = await Promise.all(
@@ -4241,15 +4256,7 @@ async function buildHumanClickCountByLinkMap(): Promise<Map<string, number>> {
 
 // Listar TODOS os links (para admin)
 export async function getAllTrackedLinks(): Promise<TrackedLink[]> {
-  const { data, error } = await supabaseAdmin
-    .from('dccmusic_tracked_links')
-    .select('*')
-    .order('created_at', { ascending: false })
-  
-  if (error) {
-    console.error('Erro ao buscar links:', error)
-    throw error
-  }
+  const data = await getNonCampaignTrackedLinkRows()
   
   const clickCountMap = await buildHumanClickCountByLinkMap()
   
