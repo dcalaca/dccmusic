@@ -20,6 +20,21 @@ interface TrackedLink {
   updatedAt: Date
 }
 
+function isCampaignLink(link: TrackedLink) {
+  if (link.createdBy === 'admin_email_campaign') return true
+
+  try {
+    const notes = link.notes ? JSON.parse(link.notes) : null
+    return notes?.type === 'admin_email_campaign_cta'
+  } catch {
+    return false
+  }
+}
+
+function visibleAdminLinks(links: TrackedLink[]) {
+  return links.filter((link) => !isCampaignLink(link))
+}
+
 export default function LinksPage() {
   const [links, setLinks] = useState<TrackedLink[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,12 +64,12 @@ export default function LinksPage() {
         }
         
         const data = await fallbackResponse.json()
-        setLinks(data)
+        setLinks(visibleAdminLinks(data))
         return
       }
       
       const data = await response.json()
-      setLinks(data)
+      setLinks(visibleAdminLinks(data))
     } catch (err: any) {
       console.error('Erro ao carregar links:', err)
       setError(err.message || 'Erro ao carregar links')
