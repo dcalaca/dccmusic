@@ -58,11 +58,11 @@ svg {
 }
 
 /* Ícone do Spotify no item "Spotify e Plataformas" do menu. */
-a[href="/distribuicao-digital"] > svg {
+a[href="/distribuicao-digital"]:not(.no-spotify-icon) > svg {
   display: none;
 }
 
-a[href="/distribuicao-digital"]::before {
+a[href="/distribuicao-digital"]:not(.no-spotify-icon)::before {
   content: '';
   width: 1rem;
   height: 1rem;

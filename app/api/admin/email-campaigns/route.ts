@@ -66,20 +66,30 @@ async function getDeliveryStats(campaignIds: string[]) {
   campaignIds.forEach((id) => stats.set(id, { sent: 0, failed: 0, skipped: 0, pending: 0, reserved: 0 }))
   if (campaignIds.length === 0) return stats
 
-  const { data, error } = await supabaseAdmin
-    .from('admin_email_campaign_deliveries')
-    .select('campaign_id, status, error_message')
-    .in('campaign_id', campaignIds)
-  if (error) throw error
+  // O Supabase limita consultas comuns a 1000 linhas por padrão.
+  // Paginar evita que campanhas maiores pareçam ter exatamente 1000 envios.
+  const pageSize = 1000
+  for (let from = 0; ; from += pageSize) {
+    const { data, error } = await supabaseAdmin
+      .from('admin_email_campaign_deliveries')
+      .select('campaign_id, status, error_message')
+      .in('campaign_id', campaignIds)
+      .order('id', { ascending: true })
+      .range(from, from + pageSize - 1)
+    if (error) throw error
 
-  for (const row of data || []) {
-    const item = stats.get((row as any).campaign_id)
-    if (!item) continue
-    if ((row as any).status === 'sent') item.sent += 1
-    else if ((row as any).status === 'failed') item.failed += 1
-    else if ((row as any).status === 'pending') item.pending += 1
-    else if ((row as any).status === 'skipped' && (row as any).error_message === '__reserved__') item.reserved += 1
-    else if ((row as any).status === 'skipped') item.skipped += 1
+    const rows = data || []
+    for (const row of rows) {
+      const item = stats.get((row as any).campaign_id)
+      if (!item) continue
+      if ((row as any).status === 'sent') item.sent += 1
+      else if ((row as any).status === 'failed') item.failed += 1
+      else if ((row as any).status === 'pending') item.pending += 1
+      else if ((row as any).status === 'skipped' && (row as any).error_message === '__reserved__') item.reserved += 1
+      else if ((row as any).status === 'skipped') item.skipped += 1
+    }
+
+    if (rows.length < pageSize) break
   }
 
   return stats

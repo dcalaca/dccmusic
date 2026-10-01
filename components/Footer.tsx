@@ -77,7 +77,7 @@ export default function Footer() {
                 <li><Link href="/musicas" className="text-gray-400 hover:text-white transition-colors">{t('footer.links.songs')}</Link></li>
                 <li><Link href="/studio-ia" className="text-gray-400 hover:text-white transition-colors">{t('footer.links.studio')}</Link></li>
                 <li><Link href="/transcricao-musical" className="text-gray-400 hover:text-white transition-colors">{t('footer.links.chords')}</Link></li>
-                <li><Link href="/distribuicao-digital" className="text-gray-400 hover:text-white transition-colors">{t('footer.links.distribution')}</Link></li>
+                <li><Link href="/distribuicao-digital" className="no-spotify-icon text-gray-400 hover:text-white transition-colors">{t('footer.links.distribution')}</Link></li>
                 <li><Link href="/compositores" className="text-gray-400 hover:text-white transition-colors">{t('footer.links.composers')}</Link></li>
                 {showBlog ? <li><Link href="/blog" className="text-gray-400 hover:text-white transition-colors">{t('footer.links.blog')}</Link></li> : null}
                 <li><Link href="/sobre" className="text-gray-400 hover:text-white transition-colors">{t('footer.links.about')}</Link></li>
