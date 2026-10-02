@@ -57,7 +57,7 @@ export default function GoogleLoginButton({ redirectTo }: { redirectTo?: string 
       },
     })
     container.current.replaceChildren()
-    google.renderButton(container.current, { type: 'standard', theme: 'outline', size: 'large', text: 'continue_with', shape: 'rectangular', width: Math.min(320, container.current.clientWidth), locale: i18n.language })
+    google.renderButton(container.current, { type: 'standard', theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'pill', width: Math.min(320, container.current.clientWidth), locale: i18n.language })
   }, [config, ready, redirectTo, t, i18n.language])
 
   if (!config) return null
