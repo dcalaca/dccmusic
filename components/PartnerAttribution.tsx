@@ -5,30 +5,26 @@ import { usePathname, useSearchParams } from 'next/navigation'
 
 const STORAGE_KEY = 'dcc_partner_attribution'
 
-function track(eventType: string, metadata?: Record<string, any>) {
-  fetch('/api/partners/track', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ eventType, metadata }),
-  }).catch(() => null)
-}
-
 export default function PartnerAttribution() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const trackedRef = useRef(false)
+  const attributedEntryRef = useRef<string | null>(null)
 
   useEffect(() => {
     const partnerCode = searchParams.get('partner')
     const serverTracked = searchParams.get('partnerTracked') === '1'
 
     if (partnerCode) {
+      const entry = window.location.pathname + window.location.search
+      if (attributedEntryRef.current === entry) return
+      attributedEntryRef.current = entry
+
       fetch('/api/partners/attribute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           partnerCode,
-          path: window.location.pathname + window.location.search,
+          path: entry,
           serverTracked,
         }),
       })
@@ -39,44 +35,10 @@ export default function PartnerAttribution() {
           }
         })
         .catch(() => null)
-    } else if (!trackedRef.current) {
-      trackedRef.current = true
-      track('page_view', { path: window.location.pathname })
+    } else {
+      attributedEntryRef.current = null
     }
   }, [pathname, searchParams])
-
-  useEffect(() => {
-    let moved = false
-    let scrolled = false
-    let stayed = false
-
-    const handleMouseMove = () => {
-      if (moved) return
-      moved = true
-      track('mouse_movement', { path: window.location.pathname })
-    }
-
-    const handleScroll = () => {
-      if (scrolled) return
-      scrolled = true
-      track('scroll', { path: window.location.pathname })
-    }
-
-    const timeout = window.setTimeout(() => {
-      if (stayed) return
-      stayed = true
-      track('button_click', { path: window.location.pathname, signal: 'time_over_10s' })
-    }, 10_000)
-
-    window.addEventListener('mousemove', handleMouseMove, { passive: true })
-    window.addEventListener('scroll', handleScroll, { passive: true })
-
-    return () => {
-      window.clearTimeout(timeout)
-      window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('scroll', handleScroll)
-    }
-  }, [pathname])
 
   return null
 }
@@ -96,7 +58,10 @@ export function getStoredPartnerAttribution() {
   }
 }
 
-export function trackPartnerEvent(eventType: string, metadata?: Record<string, any>) {
-  track(eventType, metadata)
+// Kept for existing callers. Partner clicks are recorded by /api/partners/attribute;
+// confirmed signups and purchases are recorded by the server at those events.
+// Browser interactions must not generate partner tracking requests.
+export function trackPartnerEvent(_eventType: string, _metadata?: Record<string, any>) {
+  return
 }
 
