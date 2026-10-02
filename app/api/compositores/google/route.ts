@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic'
 const COOKIE = 'dcc_google_nonce'
 const cookieOptions = { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' as const, path: '/api/compositores/google', maxAge: 300 }
 function config() {
-  return { clientId: process.env.GOOGLE_CLIENT_ID?.trim(), secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET }
+  return { clientId: process.env.GOOGLE_CLIENT_ID?.trim() || '301783166545-uvk7oetb3guj8r2qc0a3otn5e6m3qf9b.apps.googleusercontent.com', secret: process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET }
 }
 function reply(body: object, status = 200) {
   const response = NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } })
