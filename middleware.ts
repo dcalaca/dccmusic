@@ -134,5 +134,10 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // APIs keep country handling even when their paths contain file extensions.
+  // Exclude public assets before invocation; returning early still runs middleware.
+  matcher: [
+    '/api/:path*',
+    '/((?!_next/static|_next/image|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|woff|woff2|ttf|otf|css|js|map|mp3|mp4|webm)$).*)',
+  ],
 }

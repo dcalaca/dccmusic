@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import Link from 'next/link'
 import { FiBell } from 'react-icons/fi'
@@ -28,12 +28,17 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
   const [notifications, setNotifications] = useState<NotificationItem[]>([])
   const [loading, setLoading] = useState(false)
 
+  const inFlight = useRef(false)
+  const lastRefresh = useRef(0)
+
   const getToken = () => {
     if (typeof window === 'undefined') return null
     return localStorage.getItem('composer_token')
   }
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async (force = false) => {
+    if (document.hidden || inFlight.current) return
+    if (!force && Date.now() - lastRefresh.current < 60000) return
     const token = getToken()
     if (!token) {
       setUnreadCount(0)
@@ -41,6 +46,8 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
       return
     }
 
+    inFlight.current = true
+    lastRefresh.current = Date.now()
     try {
       const response = await fetch('/api/compositores/notifications?limit=30', {
         headers: { Authorization: `Bearer ${token}` },
@@ -52,8 +59,10 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
       setNotifications(Array.isArray(data.notifications) ? data.notifications : [])
     } catch (error) {
       console.error('Failed to load notifications:', error)
+    } finally {
+      inFlight.current = false
     }
-  }
+  }, [])
 
   const markAllRead = async () => {
     const token = getToken()
@@ -76,24 +85,30 @@ export default function NotificationBell({ open, onOpenChange }: NotificationBel
   }
 
   useEffect(() => {
-    loadNotifications()
-    const timer = window.setInterval(loadNotifications, 30000)
-    const onFocus = () => loadNotifications()
-    window.addEventListener('focus', onFocus)
-    window.addEventListener('authChange', onFocus)
+    const refresh = () => { void loadNotifications() }
+    const onAuthChange = () => {
+      lastRefresh.current = 0
+      void loadNotifications(true)
+    }
+    refresh()
+    const timer = window.setInterval(refresh, 60000)
+    window.addEventListener('focus', refresh)
+    window.addEventListener('authChange', onAuthChange)
+    document.addEventListener('visibilitychange', refresh)
     return () => {
       window.clearInterval(timer)
-      window.removeEventListener('focus', onFocus)
-      window.removeEventListener('authChange', onFocus)
+      window.removeEventListener('focus', refresh)
+      window.removeEventListener('authChange', onAuthChange)
+      document.removeEventListener('visibilitychange', refresh)
     }
-  }, [])
+  }, [loadNotifications])
 
   const handleToggle = async () => {
     const nextOpen = !open
     onOpenChange(nextOpen)
     if (nextOpen) {
       setLoading(true)
-      await loadNotifications()
+      await loadNotifications(true)
       setLoading(false)
       await markAllRead()
     }

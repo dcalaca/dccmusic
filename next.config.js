@@ -8,6 +8,12 @@ const nextConfig = {
     STUDIO_INTERNAL_VIDEO_PILOT: 'false',
     STUDIO_INTERNAL_VIDEO_FALLBACK: 'true',
   },
+  async headers() {
+    return [{
+      source: '/favicon-dcc-fundopreto.png',
+      headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }],
+    }]
+  },
   images: {
     domains: ['i.ytimg.com', 'i.scdn.co', 'is1-ssl.mzstatic.com'],
   },

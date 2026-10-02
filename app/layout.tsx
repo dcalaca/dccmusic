@@ -101,12 +101,7 @@ export async function generateMetadata(): Promise<Metadata> {
       // yandex: 'seu-codigo-yandex',
     },
     icons: {
-      icon: [
-        { url: '/favicon-dcc-fundopreto.png', sizes: '48x48', type: 'image/png' },
-        { url: '/favicon-dcc-fundopreto.png', sizes: '96x96', type: 'image/png' },
-        { url: '/favicon-dcc-fundopreto.png', sizes: '192x192', type: 'image/png' },
-      ],
-      shortcut: '/favicon-dcc-fundopreto.png',
+      icon: { url: '/favicon-dcc-fundopreto.png', type: 'image/png' },
       apple: '/favicon-dcc-fundopreto.png',
     },
   }
@@ -238,11 +233,6 @@ export default function RootLayout({
         {/* Verificação de propriedade (sistema Carimbo) */}
         <meta name="carimbo-verificacao" content="dc3620ace28fd5285c2a3fa2" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon-dcc-fundopreto.png" type="image/png" sizes="48x48" />
-        <link rel="icon" href="/favicon-dcc-fundopreto.png" type="image/png" sizes="96x96" />
-        <link rel="icon" href="/favicon-dcc-fundopreto.png" type="image/png" sizes="192x192" />
-        <link rel="shortcut icon" href="/favicon-dcc-fundopreto.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/favicon-dcc-fundopreto.png" sizes="180x180" />
         {/* Google AdSense - Deve estar no <head> */}
         <script
           async
