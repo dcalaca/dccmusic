@@ -15,6 +15,10 @@ const nextConfig = {
     outputFileTracingIncludes: {
       '/blog': ['./content/blog/**/*'],
       '/blog/**/*': ['./content/blog/**/*'],
+      '/api/compositores/studio/download-proxy': [
+        './node_modules/@ffmpeg-installer/ffmpeg/**/*',
+        './node_modules/@ffmpeg-installer/linux-x64/**/*',
+      ],
       '/api/admin/playback': [
         './node_modules/@ffmpeg-installer/ffmpeg/**/*',
         './node_modules/@ffmpeg-installer/linux-x64/**/*',

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { prepareStudioMp3Download } from '@/lib/studio-download-audio'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
@@ -70,7 +72,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    if (!upstream.ok) {
+    if (!upstream.ok || upstream.status === 206 || upstream.headers.has('content-range')) {
       return NextResponse.json({ errorCode: 'audioDownloadFailed', upstreamStatus: upstream.status }, { status: 502 })
     }
 
@@ -80,17 +82,20 @@ export async function POST(request: NextRequest) {
     }
 
     const contentType = normalizedAudioContentType(source, upstream.headers.get('content-type'), body?.mediaType === 'video')
+    const downloadBytes = contentType === 'audio/mpeg'
+      ? await prepareStudioMp3Download(bytes)
+      : bytes
     const extension = body?.mediaType === 'video' ? 'mp4' : 'mp3'
     const filename = (typeof body?.filename === 'string' ? body.filename : `dcc-music.${extension}`)
       .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-').trim().slice(0, 180) || `dcc-music.${extension}`
     const asciiFilename = filename.normalize('NFD').replace(/[^\x20-\x7E]/g, '') || `dcc-music.${extension}`
     const encodedFilename = encodeURIComponent(filename).replace(/['()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)
 
-    return new NextResponse(bytes, {
+    return new NextResponse(downloadBytes, {
       status: 200,
       headers: {
         'Content-Type': contentType,
-        'Content-Length': String(bytes.byteLength),
+        'Content-Length': String(downloadBytes.byteLength),
         'Content-Disposition': `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodedFilename}`,
         'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'private, no-store, max-age=0',
