@@ -3426,5 +3426,48 @@
     "songUnavailable": "Song not found or you do not have permission",
     "subscriptionRequired": "You need an active subscription to manage songs",
     "titleRequired": "Title is required"
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "updated": "Last updated: October 2, 2026",
+    "intro": "This policy explains how DCC Music processes personal data when providing music creation and publishing, videos and other features at dccmusic.online. For questions or requests about your data, contact suporte@dccmusic.online.",
+    "sections": [
+      {
+        "title": "1. Data we process",
+        "body": "We process account and profile details you provide, such as name, email and country; access, device, usage and security records; and information about credits, plans, payments and support. Lyrics, descriptions, audio, images and videos you submit or create are also processed to provide the requested features. If you register a voice, the audio is used to process that feature. Only submit content and voices you are authorised to use."
+      },
+      {
+        "title": "2. Google registration and sign-in",
+        "body": "Google sign-in is optional. We receive basic identity information, such as your Google account identifier, name and verified email, to authenticate you, create an account or securely link an existing account. We do not receive your Google password or request access to Gmail, contacts or Drive files for this sign-in. DCC Music maintains its own account and session. You can manage third-party connections in your Google account settings."
+      },
+      {
+        "title": "3. Purposes",
+        "body": "We use data to manage your account, authenticate access, maintain projects and credit balances, process payments, generate and deliver content, provide support, send service notices and analyse platform operation. We may also use contact details and usage events for promotional communications and campaign measurement. You can request that promotional communications stop by contacting support or using an unsubscribe option when provided in the message."
+      },
+      {
+        "title": "4. Service providers and sharing",
+        "body": "The platform uses providers for hosting, databases, storage, AI processing, payments, email delivery and usage or campaign analytics. They may receive data needed for the feature used: for example, audio and lyrics for music processing, transaction information for payment or an email address for a communication. Integrations include Vercel, Supabase, Google, Resend, Mercado Pago and Stripe, depending on the service and region. AI and analytics integrations may vary. These providers may process data in other countries and have their own privacy policies. Data may be shared to meet legal obligations or protect service security."
+      },
+      {
+        "title": "5. Public content",
+        "body": "When you publish music, videos or profile information, the content and associated publication data may become accessible to other users and visitors. Content kept in projects is processed for storage and the features you request. Avoid including sensitive personal information in lyrics, descriptions or files."
+      },
+      {
+        "title": "6. Cookies and browser storage",
+        "body": "We use cookies and local storage for country and language preferences, sign-in sessions, authentication protection and referral attribution. Analytics and campaign tools may also use measurement technologies. You can control cookies and clear data through browser settings; this may sign you out and affect features or preferences."
+      },
+      {
+        "title": "7. Security and retention",
+        "body": "Passwords registered with DCC Music are stored as hashes. We apply technical access and authentication controls, although these cannot eliminate every risk. We retain data as needed to operate accounts and features, provide support, maintain security and meet applicable obligations. Deletion may not immediately remove payment records, fraud-prevention records or backups. We keep deleted-account records to prevent misuse of free benefits."
+      },
+      {
+        "title": "8. Your data and account deletion",
+        "body": "You can request information, access, correction or deletion of your data and ask questions about processing by emailing suporte@dccmusic.online. Account deletion is also available in the account management area. We may ask you to confirm your identity to protect your data. Requests are evaluated according to applicable obligations and the need to retain certain records."
+      },
+      {
+        "title": "9. Changes and contact",
+        "body": "This policy may be updated to reflect platform changes. Check the update date on this page. For privacy and data protection matters, email suporte@dccmusic.online."
+      }
+    ]
   }
 }

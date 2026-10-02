@@ -3426,5 +3426,48 @@
     "songUnavailable": "Música não encontrada ou não tem permissão",
     "subscriptionRequired": "Precisa de uma subscrição ativa para gerir músicas",
     "titleRequired": "O título é obrigatório"
+  },
+  "privacy": {
+    "title": "Política de Privacidade",
+    "updated": "Última atualização: 2 de outubro de 2026",
+    "intro": "Esta política explica como a DCC Music trata dados pessoais ao oferecer criação e publicação de músicas, vídeos e outros recursos em dccmusic.online. Para dúvidas ou solicitações sobre seus dados, entre em contato pelo e-mail suporte@dccmusic.online.",
+    "sections": [
+      {
+        "title": "1. Dados que tratamos",
+        "body": "Tratamos os dados de cadastro e perfil fornecidos por você, como nome, e-mail e país; registros de acesso, dispositivo, uso e segurança; e informações sobre créditos, planos, pagamentos e atendimento. Letras, descrições, áudios, imagens e vídeos enviados ou criados também são tratados para executar os recursos solicitados. Se você cadastrar uma voz, o áudio será usado no processamento desse recurso. Envie apenas conteúdo e vozes que você tenha autorização para utilizar."
+      },
+      {
+        "title": "2. Cadastro e login com Google",
+        "body": "O login com Google é opcional. Recebemos informações básicas de identidade, como identificador da conta Google, nome e e-mail verificado, para autenticar você, criar uma conta ou vincular uma conta existente de forma segura. Não recebemos sua senha do Google nem solicitamos acesso ao Gmail, contatos ou arquivos do Drive para esse login. A DCC Music mantém sua própria conta e sessão. Você pode gerenciar as conexões com terceiros nas configurações da sua conta Google."
+      },
+      {
+        "title": "3. Finalidades",
+        "body": "Usamos os dados para administrar sua conta, autenticar acessos, manter projetos e saldo de créditos, processar pagamentos, gerar e disponibilizar conteúdo, prestar suporte, enviar avisos de serviço e analisar o funcionamento da plataforma. Também podemos utilizar dados de contato e eventos de uso em comunicações promocionais e medição de campanhas. Você pode solicitar a interrupção de comunicações promocionais pelo suporte ou utilizar a opção de descadastro quando disponível na mensagem."
+      },
+      {
+        "title": "4. Prestadores de serviços e compartilhamento",
+        "body": "A plataforma utiliza prestadores de hospedagem, banco de dados, armazenamento, processamento de IA, pagamentos, envio de e-mails e análise de uso ou campanhas. Eles podem receber os dados necessários ao recurso utilizado: por exemplo, um áudio e uma letra para processamento musical, dados de uma transação para o pagamento ou um e-mail para uma comunicação. Entre as integrações estão Vercel, Supabase, Google, Resend, Mercado Pago e Stripe, conforme o serviço e a região. As integrações de IA e análise podem variar. Esses prestadores podem processar dados em outros países e também possuem suas próprias políticas de privacidade. Dados podem ser compartilhados para cumprir obrigações legais ou proteger a segurança do serviço."
+      },
+      {
+        "title": "5. Conteúdo público",
+        "body": "Ao publicar músicas, vídeos ou informações de perfil, o conteúdo e os dados associados à publicação podem ficar acessíveis a outros usuários e visitantes. Conteúdo mantido em projetos é tratado para armazenamento e execução dos recursos solicitados. Evite incluir informações pessoais sensíveis em letras, descrições ou arquivos."
+      },
+      {
+        "title": "6. Cookies e armazenamento no navegador",
+        "body": "Usamos cookies e armazenamento local para preferências de país e idioma, sessões de login, proteção do fluxo de autenticação e atribuição de indicações. Ferramentas de análise e campanhas também podem usar tecnologias de medição. Você pode controlar cookies e limpar os dados nas configurações do navegador; isso pode encerrar seu acesso e afetar recursos ou preferências."
+      },
+      {
+        "title": "7. Segurança e conservação",
+        "body": "Senhas cadastradas na DCC Music são armazenadas como hashes. Aplicamos controles técnicos de acesso e autenticação, sem que isso elimine todos os riscos. Conservamos dados pelo período necessário à operação da conta e dos recursos, atendimento, segurança e obrigações aplicáveis. A exclusão pode não remover imediatamente registros de pagamento, prevenção a fraude ou cópias de segurança. Mantemos registros de contas excluídas para prevenir a reutilização indevida de benefícios gratuitos."
+      },
+      {
+        "title": "8. Seus dados e exclusão da conta",
+        "body": "Você pode solicitar informações, acesso, correção ou exclusão dos seus dados e esclarecer dúvidas sobre o tratamento pelo e-mail suporte@dccmusic.online. A exclusão da conta também está disponível na área de gerenciamento da conta. Podemos pedir confirmação de identidade para proteger seus dados. Solicitações são avaliadas conforme as obrigações aplicáveis e a necessidade de manter determinados registros."
+      },
+      {
+        "title": "9. Alterações e contato",
+        "body": "Esta política pode ser atualizada para refletir mudanças da plataforma. Consulte a data de atualização desta página. Para assuntos de privacidade e proteção de dados, escreva para suporte@dccmusic.online."
+      }
+    ]
   }
 }

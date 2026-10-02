@@ -133,6 +133,7 @@ export default function Footer() {
           </div>
 
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-400">
+            <Link href="/politica-de-privacidade" className="mb-3 inline-block text-gray-400 hover:text-white">{t('privacy.title')}</Link>
             <p>&copy; {currentYear} DCC Music. {t('footer.rights')}</p>
           </div>
         </div>
