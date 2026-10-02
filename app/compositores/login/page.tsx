@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import GoogleLoginButton from '@/components/GoogleLoginButton'
 import { useTranslation } from 'react-i18next'
 import { FiMail, FiLock, FiArrowRight, FiEye, FiEyeOff, FiAlertCircle, FiRefreshCw } from 'react-icons/fi'
 
@@ -184,6 +185,7 @@ function LoginForm() {
               </div>
             )}
 
+            <GoogleLoginButton redirectTo={redirectTo} />
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
                 <div className="bg-red-900/50 border border-red-800 text-red-300 px-4 py-3 rounded-lg text-sm">

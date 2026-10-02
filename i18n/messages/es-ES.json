@@ -1697,6 +1697,14 @@
       "confirmingTitle": "Confirmando correo",
       "login": "Ir al inicio de sesión",
       "entering": "Entrando a tu panel..."
+    },
+    "google": {
+      "or": "o",
+      "loading": "Iniciando sesión con Google…",
+      "invalid": "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
+      "unavailable": "El acceso con Google no está disponible. Usa tu correo y contraseña.",
+      "emailVerification": "Para este correo, inicia sesión con tu contraseña para verificar tu cuenta.",
+      "deletedAccount": "Este correo pertenece a una cuenta eliminada. Contacta con soporte."
     }
   },
   "payment": {

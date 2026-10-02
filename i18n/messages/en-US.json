@@ -1697,6 +1697,14 @@
       "confirmingTitle": "Confirming email",
       "login": "Go to login",
       "entering": "Opening your dashboard..."
+    },
+    "google": {
+      "or": "or",
+      "loading": "Signing in with Google…",
+      "invalid": "Unable to sign in with Google. Please try again.",
+      "unavailable": "Google sign-in is currently unavailable. Use your email and password.",
+      "emailVerification": "For this email address, sign in with your password to verify your account.",
+      "deletedAccount": "This email belongs to a deleted account. Please contact support."
     }
   },
   "payment": {

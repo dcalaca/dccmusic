@@ -1697,6 +1697,14 @@
       "confirmingTitle": "Confirmando e-mail",
       "login": "Ir para login",
       "entering": "Entrando no painel..."
+    },
+    "google": {
+      "or": "ou",
+      "loading": "Entrando com Google…",
+      "invalid": "Não foi possível entrar com Google. Tente novamente.",
+      "unavailable": "O login com Google está indisponível no momento. Use e-mail e senha.",
+      "emailVerification": "Para este endereço de e-mail, entre com sua senha para confirmar a conta.",
+      "deletedAccount": "Este e-mail pertence a uma conta excluída. Entre em contato com o suporte."
     }
   },
   "payment": {

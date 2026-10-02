@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import GoogleLoginButton from '@/components/GoogleLoginButton'
 import { useTranslation } from 'react-i18next'
 import { FiArrowRight, FiEye, FiEyeOff, FiLock, FiMail, FiUser } from 'react-icons/fi'
 import { getStoredPartnerAttribution } from '@/components/PartnerAttribution'
@@ -138,6 +139,7 @@ export default function ComposerSignupPage() {
           </div>
 
           <div className="bg-gray-900/50 border border-gray-800 rounded-lg p-8">
+            <GoogleLoginButton />
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
                 <div className="bg-red-900/50 border border-red-800 text-red-300 px-4 py-3 rounded-lg text-sm space-y-2">
