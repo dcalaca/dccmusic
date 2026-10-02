@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import MediaDownloadButton from '@/components/MediaDownloadButton'
 import { requireAuth } from '@/lib/auth-helpers'
 import { supabaseAdmin } from '@/lib/supabase'
 import * as db from '@/lib/db'
@@ -626,7 +627,13 @@ export default async function AdminComposerStudioPage({
                                       </div>
                                     </div>
                                     {audioUrl ? (
-                                      <audio controls src={audioUrl} className="w-full" />
+                                      <div className="space-y-3">
+                                        <audio controls controlsList="nodownload" src={audioUrl} className="w-full" />
+                                        <MediaDownloadButton admin src={audioUrl} filename={`${project.title || 'Música'} - vs ${versionNumber}.mp3`} mediaType="audio"
+                                          className="inline-flex items-center gap-2 rounded-xl border border-gray-700 px-4 py-2 text-sm font-bold text-white hover:border-primary-500">
+                                          <FiDownload /> Baixar música
+                                        </MediaDownloadButton>
+                                      </div>
                                     ) : (
                                       <p className="text-sm text-gray-500">Áudio sem URL registrada.</p>
                                     )}

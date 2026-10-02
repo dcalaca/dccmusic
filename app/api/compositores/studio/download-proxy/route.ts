@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 
 export const dynamic = 'force-dynamic'
@@ -47,7 +49,8 @@ function normalizedAudioContentType(source: URL, upstreamContentType: string | n
 
 export async function POST(request: NextRequest) {
   const composer = getComposerFromRequest(request)
-  if (!composer) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
+  const adminSession = composer ? null : await getServerSession(authOptions)
+  if (!composer && !adminSession) return NextResponse.json({ errorCode: 'unauthorized' }, { status: 401 })
 
   try {
     const body = await request.json().catch(() => ({}))
@@ -76,12 +79,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ errorCode: 'emptyAudioFile' }, { status: 502 })
     }
 
+    const contentType = normalizedAudioContentType(source, upstream.headers.get('content-type'), body?.mediaType === 'video')
+    const extension = body?.mediaType === 'video' ? 'mp4' : 'mp3'
+    const filename = (typeof body?.filename === 'string' ? body.filename : `dcc-music.${extension}`)
+      .replace(/[<>:"/\\|?*\u0000-\u001F]/g, '-').trim().slice(0, 180) || `dcc-music.${extension}`
+    const asciiFilename = filename.normalize('NFD').replace(/[^\x20-\x7E]/g, '') || `dcc-music.${extension}`
+    const encodedFilename = encodeURIComponent(filename).replace(/['()*]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)
+
     return new NextResponse(bytes, {
       status: 200,
       headers: {
-        'Content-Type': normalizedAudioContentType(source, upstream.headers.get('content-type'), body?.mediaType === 'video'),
+        'Content-Type': contentType,
         'Content-Length': String(bytes.byteLength),
-        'Content-Disposition': body?.mediaType === 'video' ? 'attachment; filename="dcc-music.mp4"' : 'attachment; filename="dcc-music.mp3"',
+        'Content-Disposition': `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodedFilename}`,
         'X-Content-Type-Options': 'nosniff',
         'Cache-Control': 'private, no-store, max-age=0',
       },

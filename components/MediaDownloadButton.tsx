@@ -4,8 +4,8 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FiDownload, FiLoader } from 'react-icons/fi'
 
-export default function MediaDownloadButton({ src, filename, mediaType, className, children }: {
-  src: string; filename: string; mediaType: 'audio' | 'video'; className?: string; children?: ReactNode
+export default function MediaDownloadButton({ src, filename, mediaType, className, children, admin = false }: {
+  src: string; filename: string; mediaType: 'audio' | 'video'; className?: string; children?: ReactNode; admin?: boolean
 }) {
   const { t, i18n } = useTranslation()
   const [busy, setBusy] = useState(false)
@@ -40,12 +40,12 @@ export default function MediaDownloadButton({ src, filename, mediaType, classNam
       let prepared = file
       if (!prepared) {
         const token = localStorage.getItem('composer_token')
-        if (!token) throw new Error('unauthorized')
+        if (!admin && !token) throw new Error('unauthorized')
         // Same-origin proxy avoids cross-origin download and CORS differences on phones.
         const response = await fetch('/api/compositores/studio/download-proxy', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: src, mediaType }),
+          headers: { ...(!admin && token ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: src, mediaType, filename }),
         })
         if (!response.ok) throw new Error('download_failed')
         const blob = await response.blob()
