@@ -36,11 +36,6 @@ export function looksLikeTranscriptionSpam(text: string) {
 }
 
 export async function transcribeStudioAudioFile(file: File | Blob, fileName = 'audio.mp3') {
-  const apiKey = process.env.OPENAI_API_KEY?.trim()
-  if (!apiKey) {
-    throw new Error('Transcrição de áudio não configurada no servidor.')
-  }
-
   if (file.size <= 0) {
     throw new Error('Envie um áudio antes de transcrever.')
   }
@@ -48,9 +43,33 @@ export async function transcribeStudioAudioFile(file: File | Blob, fileName = 'a
     throw new Error('O áudio para transcrição precisa ter no máximo 25 MB.')
   }
 
+  let text: string
+  try {
+    text = await transcribeStudioAudioWithOpenAI(file, fileName)
+  } catch (error) {
+    if (!process.env.ELEVENLABS_API_KEY?.trim()) {
+      console.warn('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
+        provider: 'elevenlabs', reason: 'fallback_not_configured', fileName,
+      }))
+      throw error
+    }
+    console.info('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
+      provider: 'elevenlabs', reason: 'fallback_started', fileName,
+    }))
+    text = await transcribeStudioAudioWithElevenLabs(file, fileName)
+  }
+  return formatTranscribedLyric(text)
+}
+
+async function transcribeStudioAudioWithOpenAI(file: File | Blob, fileName = 'audio.mp3') {
+  const apiKey = process.env.OPENAI_API_KEY?.trim()
+  if (!apiKey) {
+    throw new Error('Transcrição de áudio não configurada no servidor.')
+  }
+
   const model = process.env.OPENAI_TRANSCRIPTION_MODEL || 'whisper-1'
   const startedAt = Date.now()
-  const diagnostic = { model, fileName, sizeBytes: file.size, contentType: file.type }
+  const diagnostic = { provider: 'openai', model, fileName, sizeBytes: file.size, contentType: file.type }
   const openAiFormData = new FormData()
   openAiFormData.set('file', file, fileName)
   openAiFormData.set('model', model)
@@ -68,6 +87,7 @@ export async function transcribeStudioAudioFile(file: File | Blob, fileName = 'a
         Authorization: `Bearer ${apiKey}`,
       },
       body: openAiFormData,
+      signal: AbortSignal.timeout(30_000),
     })
   } catch (error: any) {
     console.error('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
@@ -134,10 +154,79 @@ export async function transcribeStudioAudioFile(file: File | Blob, fileName = 'a
     elapsedMs: Date.now() - startedAt,
   }))
 
-  return formatTranscribedLyric(text)
+  return text
 }
 
-/** Organiza o texto cru do Whisper em versos/estrofes cantáveis. */
+async function transcribeStudioAudioWithElevenLabs(file: File | Blob, fileName: string) {
+  const apiKey = process.env.ELEVENLABS_API_KEY?.trim()
+  if (!apiKey) throw new Error('Transcrição de áudio não configurada no servidor.')
+
+  const model = 'scribe_v2'
+  const startedAt = Date.now()
+  const diagnostic = { provider: 'elevenlabs', model, fileName, sizeBytes: file.size, contentType: file.type }
+  const form = new FormData()
+  form.set('file', file, fileName)
+  form.set('model_id', model)
+  // Auto-detecta o idioma do áudio original, inclusive nas adaptações de idioma.
+  form.set('tag_audio_events', 'false')
+  form.set('diarize', 'false')
+  form.set('timestamps_granularity', 'none')
+
+  let response: Response
+  try {
+    response = await fetch('https://api.elevenlabs.io/v1/speech-to-text', {
+      method: 'POST',
+      headers: { 'xi-api-key': apiKey },
+      body: form,
+      signal: AbortSignal.timeout(45_000),
+    })
+  } catch (error: any) {
+    console.error('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
+      ...diagnostic, reason: 'network_error', elapsedMs: Date.now() - startedAt,
+      errorMessage: error?.message || 'Falha de conexão',
+    }))
+    throw new Error('Não consegui entender esse áudio agora.')
+  }
+
+  const requestId = response.headers.get('request-id') || response.headers.get('x-request-id')
+  let data: any
+  try {
+    data = await response.json()
+  } catch {
+    console.error('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
+      ...diagnostic, requestId, httpStatus: response.status,
+      reason: 'invalid_json_response', elapsedMs: Date.now() - startedAt,
+    }))
+    throw new Error('Não consegui entender esse áudio agora.')
+  }
+
+  if (!response.ok) {
+    console.error('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
+      ...diagnostic, requestId, httpStatus: response.status,
+      reason: 'provider_error', providerError: data?.detail || data?.error,
+      elapsedMs: Date.now() - startedAt,
+    }))
+    throw new Error('Não consegui entender esse áudio agora.')
+  }
+
+  const rawText = String(data?.text || '')
+  const text = rawText.trim()
+  const rejection = getTranscriptionRejection(text)
+  if (rejection) {
+    console.error('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
+      ...diagnostic, requestId, httpStatus: response.status, ...rejection,
+      rawText, textLength: rawText.length, elapsedMs: Date.now() - startedAt,
+    }))
+    throw new Error('Não consegui capturar a letra cantada nesse áudio.')
+  }
+  console.info('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
+    ...diagnostic, requestId, httpStatus: response.status,
+    reason: 'accepted', textLength: rawText.length, elapsedMs: Date.now() - startedAt,
+  }))
+  return text
+}
+
+/** Organiza o texto cru da transcrição em versos/estrofes cantáveis. */
 export async function formatTranscribedLyric(rawText: string) {
   const raw = String(rawText || '').trim()
   if (!raw) return raw
@@ -154,6 +243,7 @@ export async function formatTranscribedLyric(rawText: string) {
         Authorization: `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
+      signal: AbortSignal.timeout(15_000),
       body: JSON.stringify({
         model: process.env.OPENAI_TEXT_MODEL || 'gpt-4o-mini',
         temperature: 0.2,

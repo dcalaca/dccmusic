@@ -1240,6 +1240,9 @@
         "paymentHint": "You'll be taken to payment to pay {{amount}}. The songs are added automatically after confirmation."
       },
       "ready": {
+        "reviewTitle": "Review the lyrics before production",
+        "reviewMessage": "The transcription may contain errors. Check and correct the lyrics below. The improvement has not started yet.",
+        "reviewConfirm": "Lyrics reviewed — produce improvement",
         "moreOptions": "More options",
         "show": "Show",
         "hide": "Hide",
@@ -1251,6 +1254,7 @@
           "maxDuration": "This audio is longer than 4 minutes 30 seconds. Upload a shorter version.",
           "improve": "Could not improve the song.",
           "lyricNotUnderstood": "We could not understand the song lyrics. Could you paste them manually into the “Song lyrics” field and try again?",
+          "transcriptionLimit": "You have reached the daily transcription limit. Paste the lyrics manually to continue.",
           "prepareUpload": "Could not prepare the audio upload.",
           "upload": "Could not upload the audio. Please try again."
         },
@@ -1265,9 +1269,9 @@
         "badge": "Recorded song",
         "title": "Upload a recorded song",
         "subtitle": "Upload a song you already recorded. AI tries to preserve the melody, lyrics, and essence while producing a more professional version up to 4:30.",
-        "transcriptionHint": "No typed lyrics? When you click Improve, AI transcribes the audio as part of the 10-credit process.",
-        "reviewHint": "If you want to review first, use “Transcribe lyrics” (1 credit).",
-        "costHint": "Cost: 10 credits for improvement. Standalone transcription: 1 credit.",
+        "transcriptionHint": "No lyrics entered? Click Improve to transcribe the audio and review the lyrics.",
+        "reviewHint": "Production only starts after you review and confirm.",
+        "costHint": "Cost: 10 credits when you start the improvement. Lyrics review has no additional charge. Standalone transcription: 1 credit.",
         "songTitle": "Song title",
         "songTitlePlaceholder": "Example: My Song",
         "genre": "Desired genre/style",
@@ -1304,7 +1308,7 @@
         "mainVoice": "Lead voice",
         "languageAdaptationHelp": "Adapt to another language: paste the lyrics you have already translated or adapted into the desired language below. AI will try to preserve the original melody, rhythm, tempo, structure, and instruments. Small adjustments may be needed to fit the lyrics to the melody.",
         "translatedLyricsPlaceholder": "Paste the lyrics already translated or adapted into the new language.",
-        "lyricsPlaceholder": "Optional: paste the lyrics or leave this blank for AI to transcribe the audio when improving. You can also click “Transcribe lyrics from audio”.",
+        "lyricsPlaceholder": "Paste the lyrics or leave this blank to transcribe and review them before production.",
         "improvementOptions": {
           "similar": {
             "label": "Keep as close to the original as possible",

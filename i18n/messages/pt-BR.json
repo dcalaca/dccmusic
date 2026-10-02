@@ -1240,6 +1240,9 @@
         "paymentHint": "Você será levado ao pagamento para pagar {{amount}}. As músicas entram automaticamente após a confirmação."
       },
       "ready": {
+        "reviewTitle": "Revise a letra antes de produzir",
+        "reviewMessage": "A transcrição pode conter erros. Confira e corrija a letra abaixo. A melhoria ainda não foi iniciada.",
+        "reviewConfirm": "Letra revisada — produzir melhoria",
         "moreOptions": "Mais opções",
         "show": "Mostrar",
         "hide": "Ocultar",
@@ -1251,6 +1254,7 @@
           "maxDuration": "Esse áudio passou de 4 minutos e 30 segundos. Envie uma versão mais curta para a IA trabalhar melhor.",
           "improve": "Erro ao melhorar música.",
           "lyricNotUnderstood": "Não conseguimos entender a letra da música. Você poderia colar a letra manualmente no campo “Letra da música” e tentar novamente?",
+          "transcriptionLimit": "Você atingiu o limite diário de transcrições. Cole a letra manualmente para continuar.",
           "prepareUpload": "Não foi possível preparar o envio do áudio.",
           "upload": "Falha ao enviar o áudio. Tente novamente."
         },
@@ -1265,9 +1269,9 @@
         "badge": "Música pronta",
         "title": "Enviar música pronta",
         "subtitle": "Envie uma música já gravada (voz e violão, demo, celular...). A IA tenta manter melodia, letra e essência, com produção mais profissional e duração máxima de 4:30.",
-        "transcriptionHint": "Sem letra digitada? Ao clicar em Melhorar, a IA transcreve a letra do áudio incluída nos 10 créditos.",
-        "reviewHint": "Se quiser revisar antes, use “Entender letra” (custa 1 crédito).",
-        "costHint": "Custo: 10 créditos na melhoria. “Entender letra” avulso: 1 crédito.",
+        "transcriptionHint": "Sem letra preenchida? Ao clicar em Melhorar, a IA transcreve o áudio e mostra a letra para você revisar.",
+        "reviewHint": "A música só começa a ser produzida depois que você revisar e confirmar.",
+        "costHint": "Custo: 10 créditos ao iniciar a melhoria. A revisão da letra não tem cobrança adicional. “Entender letra” avulso: 1 crédito.",
         "songTitle": "Nome da música",
         "songTitlePlaceholder": "Ex.: Minha canção",
         "genre": "Gênero/ritmo desejado",
@@ -1304,7 +1308,7 @@
         "mainVoice": "Voz principal",
         "languageAdaptationHelp": "Adaptar para outro idioma: cole abaixo a letra já traduzida ou adaptada para o idioma desejado. A IA tentará preservar melodia, ritmo, andamento, estrutura e instrumental da música original. Pequenos ajustes podem ser necessários para a letra caber na melodia.",
         "translatedLyricsPlaceholder": "Cole aqui a letra já traduzida ou adaptada para o novo idioma.",
-        "lyricsPlaceholder": "Opcional: cole a letra ou deixe em branco para a IA transcrever o áudio ao melhorar. Você também pode clicar em “Entender letra do áudio”.",
+        "lyricsPlaceholder": "Cole a letra ou deixe em branco para transcrever e revisar antes de produzir a melhoria.",
         "improvementOptions": {
           "similar": {
             "label": "Manter o mais parecido possível",

@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useLocalization } from '@/components/LocalizationProvider'
@@ -159,6 +159,18 @@ export default function ImproveReadyMusicPage() {
   const [lyric, setLyric] = useState('')
   const [audioFile, setAudioFile] = useState<File | null>(null)
   const [savedOriginal, setSavedOriginal] = useState<any>(null)
+  const [reviewReady, setReviewReady] = useState(false)
+  const uploadedAudio = useRef<any>(null)
+  const lyricInput = useRef<HTMLTextAreaElement>(null)
+  const submitInFlight = useRef(false)
+  const showLyricReview = () => {
+    setReviewReady(true)
+    setMessage(t('studio.tools.ready.reviewMessage'))
+    requestAnimationFrame(() => {
+      lyricInput.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      lyricInput.current?.focus({ preventScroll: true })
+    })
+  }
   const sourceProjectId = searchParams.get('sourceProjectId') || ''
 
   useEffect(() => {
@@ -216,6 +228,7 @@ export default function ImproveReadyMusicPage() {
       const data = await readApiResponse(response)
       if (!response.ok) throw new Error(t('studio.tools.ready.errors.transcribe'))
       setLyric(data.text || '')
+      setReviewReady(true)
       window.dispatchEvent(new Event('studioBalanceChange'))
       const charged = Number(data.creditsCharged) || 1
       setMessage(
@@ -231,6 +244,7 @@ export default function ImproveReadyMusicPage() {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (submitInFlight.current || transcribing) return
     const token = ensureToken()
     if (!token) return
 
@@ -246,9 +260,16 @@ export default function ImproveReadyMusicPage() {
       setError(t('studio.tools.ready.errors.translationRequired'))
       return
     }
+    if (!reviewReady && lyric.trim()) {
+      showLyricReview()
+      return
+    }
+
+    submitInFlight.current = true
     const duration = audioFile ? await getAudioDurationSeconds(audioFile) : null
     if (duration && duration > MAX_AUDIO_DURATION_SECONDS) {
       setError(t('studio.tools.ready.errors.maxDuration'))
+      submitInFlight.current = false
       return
     }
 
@@ -256,9 +277,10 @@ export default function ImproveReadyMusicPage() {
     setError('')
     setMessage(lyric.trim()
       ? t('studio.tools.ready.messages.sending')
-      : t('studio.tools.ready.messages.starting'))
+      : t('studio.tools.ready.messages.transcribing'))
     try {
-      const uploaded = audioFile ? await uploadAudioDirectToStorage(token, audioFile, 'enhance-source', { prepare: t('studio.tools.ready.errors.prepareUpload'), upload: t('studio.tools.ready.errors.upload') }) : savedOriginal
+      const uploaded = uploadedAudio.current || (audioFile ? await uploadAudioDirectToStorage(token, audioFile, 'enhance-source', { prepare: t('studio.tools.ready.errors.prepareUpload'), upload: t('studio.tools.ready.errors.upload') }) : savedOriginal)
+      uploadedAudio.current = uploaded
       const response = await fetch('/api/compositores/studio/enhance', {
         method: 'POST',
         headers: {
@@ -280,6 +302,7 @@ export default function ImproveReadyMusicPage() {
           avoidInstruments: avoidInstruments.trim(),
           additionalInstructions: additionalInstructions.trim(),
           lyric: lyric.trim(),
+          lyricReviewed: reviewReady && !!lyric.trim(),
           ...uploaded,
         }),
       })
@@ -287,7 +310,15 @@ export default function ImproveReadyMusicPage() {
       if (!response.ok) {
         throw new Error(t(data.code === 'ENHANCE_LYRIC_REQUIRED'
           ? 'studio.tools.ready.errors.lyricNotUnderstood'
-          : 'studio.tools.ready.errors.improve'))
+          : data.code === 'ENHANCE_TRANSCRIPTION_LIMIT'
+            ? 'studio.tools.ready.errors.transcriptionLimit'
+            : 'studio.tools.ready.errors.improve'))
+      }
+
+      if (data.reviewRequired) {
+        setLyric(data.text || '')
+        showLyricReview()
+        return
       }
 
       window.dispatchEvent(new Event('studioBalanceChange'))
@@ -304,6 +335,7 @@ export default function ImproveReadyMusicPage() {
       setMessage('')
     } finally {
       setSubmitting(false)
+      submitInFlight.current = false
     }
   }
 
@@ -327,7 +359,7 @@ export default function ImproveReadyMusicPage() {
             </p>
             <p className="mt-3 rounded-2xl border border-emerald-700/60 bg-emerald-950/20 p-3 text-sm text-emerald-100">
               {t('studio.tools.ready.transcriptionHint')}
-              {t('studio.tools.ready.reviewHint')}
+              {' '}{t('studio.tools.ready.reviewHint')}
             </p>
             <p className="mt-3 rounded-2xl border border-yellow-700/60 bg-yellow-950/20 p-3 text-sm text-yellow-100">
               {t('studio.tools.ready.costHint')}
@@ -338,6 +370,7 @@ export default function ImproveReadyMusicPage() {
           {error && <div className="mb-5 rounded-xl border border-red-800 bg-red-950/50 p-4 text-red-200">{error}</div>}
 
           <form onSubmit={submit} className="rounded-3xl border border-gray-800 bg-gray-950/70 p-5 sm:p-6">
+            <fieldset disabled={submitting || transcribing}>
             <div className="grid gap-4">
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-gray-300">{t('studio.tools.ready.songTitle')}</span>
@@ -368,6 +401,10 @@ export default function ImproveReadyMusicPage() {
                 onChange={(event) => {
                   const file = event.target.files?.[0] || null
                   setAudioFile(file)
+                  uploadedAudio.current = null
+                  setReviewReady(false)
+                  setLyric('')
+                  setMessage('')
                   if (file) setSavedOriginal(null)
                 }}
                 className="w-full rounded-xl border border-gray-700 bg-black/40 px-4 py-3 text-white file:mr-4 file:rounded-lg file:border-0 file:bg-primary-600 file:px-4 file:py-2 file:font-bold file:text-white"
@@ -544,12 +581,22 @@ export default function ImproveReadyMusicPage() {
                 </div>
               )}
 
+              {reviewReady && (
+                <div role="status" className="mb-3 rounded-xl border border-amber-600/60 bg-amber-950/30 p-4 text-sm text-amber-100">
+                  <p className="font-bold">{t('studio.tools.ready.reviewTitle')}</p>
+                  <p className="mt-1">{t('studio.tools.ready.reviewMessage')}</p>
+                </div>
+              )}
               <textarea
+                ref={lyricInput}
                 name="lyric"
                 value={lyric}
-                onChange={(event) => setLyric(event.target.value)}
-                rows={5}
-                required={isLanguageAdaptation}
+                onChange={(event) => {
+                  setLyric(event.target.value)
+                  if (!event.target.value.trim()) setReviewReady(false)
+                }}
+                rows={reviewReady ? 14 : 5}
+                required={isLanguageAdaptation || reviewReady}
                 placeholder={isLanguageAdaptation
                   ? t('studio.tools.ready.translatedLyricsPlaceholder')
                   : t('studio.tools.ready.lyricsPlaceholder')}
@@ -559,8 +606,9 @@ export default function ImproveReadyMusicPage() {
 
             <button type="submit" disabled={submitting || transcribing} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-4 font-black text-white transition hover:scale-[1.01] disabled:opacity-60">
               {submitting ? <FiLoader className="animate-spin" /> : <FiMusic />}
-              {submitting ? t('studio.tools.ready.messages.sending') : isLanguageAdaptation ? t('studio.tools.ready.adapt') : t('studio.tools.ready.improve')}
+              {submitting ? t(lyric.trim() ? 'studio.tools.ready.messages.sending' : 'studio.tools.ready.transcribing') : reviewReady ? t('studio.tools.ready.reviewConfirm') : isLanguageAdaptation ? t('studio.tools.ready.adapt') : t('studio.tools.ready.improve')}
             </button>
+            </fieldset>
           </form>
         </div>
       </div>

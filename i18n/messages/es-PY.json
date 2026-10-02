@@ -1240,6 +1240,9 @@
         "paymentHint": "Irás al pago para pagar {{amount}}. Las canciones se agregan automáticamente después de la confirmación."
       },
       "ready": {
+        "reviewTitle": "Revisa la letra antes de producir",
+        "reviewMessage": "La transcripción puede contener errores. Revisa y corrige la letra de abajo. La mejora aún no ha comenzado.",
+        "reviewConfirm": "Letra revisada — producir mejora",
         "moreOptions": "Más opciones",
         "show": "Mostrar",
         "hide": "Ocultar",
@@ -1251,6 +1254,7 @@
           "maxDuration": "Este audio supera 4 minutos y 30 segundos. Envía una versión más corta.",
           "improve": "Error al mejorar la canción.",
           "lyricNotUnderstood": "No pudimos entender la letra de la canción. ¿Podrías pegarla manualmente en el campo “Letra de la canción” e intentarlo de nuevo?",
+          "transcriptionLimit": "Has alcanzado el límite diario de transcripciones. Pega la letra manualmente para continuar.",
           "prepareUpload": "No se pudo preparar el envío del audio.",
           "upload": "No se pudo subir el audio. Inténtalo de nuevo."
         },
@@ -1265,9 +1269,9 @@
         "badge": "Canción lista",
         "title": "Subir canción grabada",
         "subtitle": "Sube una canción ya grabada. La IA intenta conservar melodía, letra y esencia con una producción más profesional y duración máxima de 4:30.",
-        "transcriptionHint": "¿No escribiste la letra? Al pulsar Mejorar, la IA transcribe el audio dentro del proceso de 10 créditos.",
-        "reviewHint": "Si quieres revisar antes, usa “Entender letra” (1 crédito).",
-        "costHint": "Costo: 10 créditos para mejorar. Transcripción aparte: 1 crédito.",
+        "transcriptionHint": "¿No escribiste la letra? Pulsa Mejorar para transcribir el audio y revisar la letra.",
+        "reviewHint": "La producción solo comienza después de revisar y confirmar.",
+        "costHint": "Costo: 10 créditos al iniciar la mejora. Revisar la letra no tiene costo adicional. Transcripción aparte: 1 crédito.",
         "songTitle": "Nombre de la canción",
         "songTitlePlaceholder": "Ej.: Mi canción",
         "genre": "Género/ritmo deseado",
@@ -1304,7 +1308,7 @@
         "mainVoice": "Voz principal",
         "languageAdaptationHelp": "Adaptar a otro idioma: pega abajo la letra ya traducida o adaptada al idioma deseado. La IA intentará conservar la melodía, el ritmo, el tempo, la estructura y los instrumentos de la canción original. Puede ser necesario hacer pequeños ajustes para encajar la letra en la melodía.",
         "translatedLyricsPlaceholder": "Pega aquí la letra ya traducida o adaptada al nuevo idioma.",
-        "lyricsPlaceholder": "Opcional: pega la letra o deja este campo vacío para que la IA transcriba el audio al mejorar. También puedes pulsar “Entender letra del audio”.",
+        "lyricsPlaceholder": "Pega la letra o deja este campo vacío para transcribirla y revisarla antes de producir la mejora.",
         "improvementOptions": {
           "similar": {
             "label": "Mantenerla lo más parecida posible",

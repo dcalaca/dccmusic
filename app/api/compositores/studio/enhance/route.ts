@@ -165,6 +165,7 @@ export async function POST(request: NextRequest) {
     let avoidInstruments = ''
     let additionalInstructions = ''
     let lyric = ''
+    let lyricReviewed = false
     let uploaded: {
       path: string
       provider: 'r2' | 'supabase'
@@ -189,6 +190,7 @@ export async function POST(request: NextRequest) {
       avoidInstruments = String(body?.avoidInstruments || '').trim().slice(0, 250)
       additionalInstructions = String(body?.additionalInstructions || '').trim().slice(0, MAX_ADDITIONAL_INSTRUCTIONS_LENGTH)
       lyric = String(body?.lyric || '').trim()
+      lyricReviewed = body?.lyricReviewed === true
 
       validateStudioInputUploadedAsset({
         composerId: composer.composerId,
@@ -225,6 +227,7 @@ export async function POST(request: NextRequest) {
       avoidInstruments = String(formData.get('avoidInstruments') || '').trim().slice(0, 250)
       additionalInstructions = String(formData.get('additionalInstructions') || '').trim().slice(0, MAX_ADDITIONAL_INSTRUCTIONS_LENGTH)
       lyric = String(formData.get('lyric') || '').trim()
+      lyricReviewed = formData.get('lyricReviewed') === 'true'
       uploaded = await uploadStudioInputAudio({
         composerId: composer.composerId,
         file,
@@ -244,9 +247,32 @@ export async function POST(request: NextRequest) {
     }
 
     const title = formatMusicTitle(rawTitle)
-    let lyricSource: 'manual' | 'whisper' | 'none' = lyric ? 'manual' : 'none'
+    let lyricSource: 'manual' | 'automatic' | 'none' = lyric ? 'manual' : 'none'
+
+    if (lyricReviewed && !lyric) {
+      return NextResponse.json({
+        error: 'Revise ou informe a letra antes de melhorar a música.',
+        code: 'ENHANCE_LYRIC_REQUIRED',
+      }, { status: 422 })
+    }
 
     if (!lyric) {
+      // A revisão incluída na melhoria tem limite diário, sem débito de créditos.
+      const dayStart = new Date()
+      dayStart.setUTCHours(0, 0, 0, 0)
+      const { count, error: countError } = await supabaseAdmin
+        .from('studio_credit_transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('composer_id', composer.composerId)
+        .eq('action', 'audio_lyric_transcription')
+        .gte('created_at', dayStart.toISOString())
+      if (countError) throw countError
+      if ((count || 0) >= 15) {
+        return NextResponse.json({
+          error: 'Limite diário de transcrições atingido. Informe a letra manualmente.',
+          code: 'ENHANCE_TRANSCRIPTION_LIMIT',
+        }, { status: 429 })
+      }
       try {
         if (sourceFile) {
           lyric = await transcribeStudioAudioFile(sourceFile, sourceFile.name || 'enhance-source.mp3')
@@ -259,7 +285,14 @@ export async function POST(request: NextRequest) {
             contentType: downloaded.contentType || uploaded.contentType,
           })
         }
-        lyricSource = 'whisper'
+        lyricSource = 'automatic'
+        await addStudioCreditTransaction({
+          composerId: composer.composerId,
+          action: 'audio_lyric_transcription',
+          amount: 0,
+          description: 'Transcrição para revisão antes da melhoria — sem débito',
+          metadata: { feature: 'enhance_lyric_review', audioPath: uploaded.path },
+        })
       } catch (transcriptionError: any) {
         console.error('[Studio IA] Transcrição automática no enhance falhou:', transcriptionError)
         return NextResponse.json(
@@ -270,6 +303,14 @@ export async function POST(request: NextRequest) {
           { status: 422 }
         )
       }
+    }
+
+    if (!lyricReviewed) {
+      return NextResponse.json({
+        reviewRequired: true,
+        text: lyric,
+        creditsCharged: 0,
+      })
     }
 
     const slug = await createUniqueProjectSlug(composer.composerId, title)
@@ -299,7 +340,7 @@ export async function POST(request: NextRequest) {
           additionalInstructions ? `Instruções adicionais: ${additionalInstructions}` : null,
           `Preferência de voz: ${getVoicePrompt(voice)}.`,
           `Estilo vocal: ${getVoiceStylePrompt(voiceStyle)}.`,
-          lyricSource === 'whisper' ? 'Letra obtida por transcrição automática do áudio enviado.' : null,
+          lyricSource === 'automatic' ? 'Letra obtida por transcrição automática do áudio enviado.' : null,
         ].filter(Boolean).join('\n'),
       })
       .select('*')
@@ -401,6 +442,7 @@ export async function POST(request: NextRequest) {
           },
           feature: 'enhance_music',
           lyricSource,
+          lyricReviewed: true,
           improvement,
           songLanguage,
           additionalInstructions: additionalInstructions || null,
@@ -426,15 +468,15 @@ export async function POST(request: NextRequest) {
       action: isFreeGeneration ? 'free_music_generation' : 'music_generation',
       amount: isFreeGeneration ? 0 : STUDIO_MUSIC_CREDITS,
       description: isFreeGeneration ? 'Melhoria de música grátis no DCC Studio IA' : 'Melhoria de música no DCC Studio IA',
-      metadata: { taskId, free: isFreeGeneration, feature: 'enhance_music', lyricSource, improvement, songLanguage, additionalInstructions: additionalInstructions || null, voice, voiceStyle },
+      metadata: { taskId, free: isFreeGeneration, feature: 'enhance_music', lyricSource, lyricReviewed: true, improvement, songLanguage, additionalInstructions: additionalInstructions || null, voice, voiceStyle },
     })
 
     return NextResponse.json({
       success: true,
       projectId: project.id,
       generationId: generation.id,
-      lyricTranscribed: lyricSource === 'whisper',
-      message: lyricSource === 'whisper'
+      lyricTranscribed: lyricSource === 'automatic',
+      message: lyricSource === 'automatic'
         ? 'Letra transcrita do áudio e melhoria iniciada. Acompanhe no projeto.'
         : 'Melhoria iniciada. A nova versão pode levar alguns minutos para ficar pronta.',
     })
