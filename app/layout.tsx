@@ -72,8 +72,8 @@ export async function generateMetadata(): Promise<Metadata> {
       images: [
         {
           url: '/logopng.png',
-          width: 1200,
-          height: 630,
+          width: 880,
+          height: 409,
           alt: 'DCC Music Logo',
         },
       ],
@@ -119,18 +119,30 @@ const entityGraphSchema = {
       logo: {
         '@type': 'ImageObject',
         '@id': 'https://www.dccmusic.online/#logo',
-        url: 'https://www.dccmusic.online/logopng.png',
-        width: 1200,
-        height: 630,
+        url: 'https://www.dccmusic.online/dcc-music-logo.png',
+        width: 1254,
+        height: 1254,
       },
-      image: { '@id': 'https://www.dccmusic.online/#logo' },
+      image: {
+        '@type': 'ImageObject',
+        '@id': 'https://www.dccmusic.online/#brand-image',
+        url: 'https://www.dccmusic.online/logopng.png',
+        width: 880,
+        height: 409,
+      },
+      sameAs: [
+        'https://www.youtube.com/@dccmusic.online',
+        'https://www.instagram.com/dccmusic.online/',
+        'https://www.tiktok.com/@dccmusic.online',
+        'https://www.facebook.com/profile.php?id=61571000874301',
+      ],
       description: 'Plataforma brasileira para criar músicas com inteligência artificial, gerar cifras, organizar projetos e divulgar obras de compositores.',
       email: 'suporte@dccmusic.online',
       contactPoint: {
         '@type': 'ContactPoint',
         email: 'suporte@dccmusic.online',
         contactType: 'customer support',
-        availableLanguage: ['Portuguese', 'Spanish'],
+        availableLanguage: ['Portuguese', 'Spanish', 'English'],
       },
       areaServed: [
         { '@type': 'Country', name: 'Brazil' },
@@ -153,7 +165,7 @@ const entityGraphSchema = {
       description: 'Plataforma de criação musical com IA, transcrição musical, músicas, vídeos e perfis públicos de compositores.',
       publisher: { '@id': 'https://www.dccmusic.online/#organization' },
       about: { '@id': 'https://www.dccmusic.online/#organization' },
-      inLanguage: ['pt-BR', 'es-PY', 'es-CO'],
+      inLanguage: ['pt-BR', 'pt-PT', 'en-US', 'en-GB', 'es-ES', 'es-MX', 'es-CO', 'es-PY'],
     },
     {
       '@type': 'WebApplication',
@@ -166,7 +178,7 @@ const entityGraphSchema = {
       browserRequirements: 'Requires a modern web browser',
       description: 'Ambiente web da DCC Music para transformar ideias e letras em projetos musicais com apoio de inteligência artificial, incluindo letra, áudio, versões, capas e publicação pública.',
       publisher: { '@id': 'https://www.dccmusic.online/#organization' },
-      inLanguage: ['pt-BR', 'es-PY', 'es-CO'],
+      inLanguage: ['pt-BR', 'pt-PT', 'en-US', 'en-GB', 'es-ES', 'es-MX', 'es-CO', 'es-PY'],
       featureList: [
         'Criação de letras com IA',
         'Geração de música',

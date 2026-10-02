@@ -275,7 +275,7 @@ export default function Header() {
       <div className="container mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex min-h-16 flex-col gap-2 py-2 md:h-16 md:flex-row md:items-center md:justify-between md:py-0">
           <div className="flex w-full min-w-0 items-center justify-between md:flex-1 md:space-x-4">
-            <Link href={logoHref} className="flex shrink-0 items-center space-x-2">
+            <Link href={logoHref} aria-label={`DCC Music – ${t('menu.home')}`} className="flex shrink-0 items-center space-x-2">
               <Image
                 src="/logopng.png"
                 alt="DCC Music"
@@ -425,7 +425,8 @@ export default function Header() {
               </>
             ) : (
               <Link
-                href="/compositores/admin"
+                href="/compositores/login"
+                aria-label={copy.composerAccess}
                 className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-700 hover:to-purple-700 text-white font-medium transition-all"
               >
                 <FiShield className="w-4 h-4" />
@@ -567,7 +568,8 @@ export default function Header() {
               </div>
             ) : (
               <Link
-                href="/compositores/admin"
+                href="/compositores/login"
+                aria-label={copy.composerAccess}
                 className="shrink-0 rounded-lg bg-gradient-to-r from-primary-600 to-purple-600 p-2 text-white transition-all hover:from-primary-700 hover:to-purple-700"
                 title={copy.composerAccess}
               >

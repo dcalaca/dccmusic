@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import * as db from '@/lib/db'
 import { Suspense } from 'react'
 import { cookies, headers } from 'next/headers'
@@ -117,8 +118,43 @@ async function StudioPricingSection({ country }: { country: DccCountry }) {
     return [{ plan, priceQuote: { ...getStudioPlanPriceQuote(plan.price, country), source: 'fallback' as const } }]
   })
 
+  // Reuse the exact offers rendered below; no extra pricing requests or free-plan claim.
+  const applicationOffers = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    '@id': 'https://www.dccmusic.online/studio-ia#application',
+    name: 'DCC Studio IA',
+    offers: [
+      {
+        '@type': 'Offer',
+        name: t('studioLanding.pricing.topup.oneSong'),
+        url: 'https://www.dccmusic.online/studio-ia#planos',
+        price: topupTiers[0].unitPrice,
+        priceCurrency: topupCurrency,
+      },
+      ...plansWithPrices.map(({ plan, priceQuote }) => ({
+        '@type': 'Offer',
+        name: plan.name,
+        url: 'https://www.dccmusic.online/studio-ia#planos',
+        price: priceQuote.amount,
+        priceCurrency: priceQuote.currency,
+        priceSpecification: {
+          '@type': 'UnitPriceSpecification',
+          price: priceQuote.amount,
+          priceCurrency: priceQuote.currency,
+          billingDuration: `P${plan.durationMonths}M`,
+        },
+      })),
+    ],
+  }
+
   return (
     <section id="planos" className="scroll-mt-24 py-6 sm:py-10">
+      <script
+        id="dcc-studio-offers-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(applicationOffers).replace(/</g, '\\u003c') }}
+      />
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-6 text-center sm:mb-8">
           <h2 className="text-2xl font-black sm:text-3xl"><span className="gradient-text">{t('studioLanding.pricing.title')}</span></h2>
@@ -199,7 +235,7 @@ async function StudioPricingSection({ country }: { country: DccCountry }) {
   )
 }
 
-export async function generateMetadata() {
+export async function generateMetadata(): Promise<Metadata> {
   const country = getRequestCountry()
   const t = await getTranslator(country)
   return {
@@ -218,6 +254,15 @@ export async function generateMetadata() {
       description: t('studioLanding.meta.ogDescription'),
       url: 'https://www.dccmusic.online/studio-ia',
       type: 'website',
+      siteName: 'DCC Music',
+      locale: getLocaleForCountry(country).replace('-', '_'),
+      images: [{ url: '/logopng.png', width: 880, height: 409, alt: 'DCC Music' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: t('studioLanding.meta.ogTitle'),
+      description: t('studioLanding.meta.ogDescription'),
+      images: ['/logopng.png'],
     },
   }
 }
@@ -260,7 +305,7 @@ export default async function StudioIALandingPage() {
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-purple-400/40 bg-purple-950/50 px-4 py-2 text-xs font-bold text-purple-100">
               <FiCpu /> {t('studioLanding.hero.badge')}
             </div>
-            <h1 className="mb-3 text-3xl font-black leading-tight sm:text-5xl"><span className="gradient-text">DCC Studio IA</span></h1>
+            <h1 className="mb-3 text-3xl font-black leading-tight sm:text-5xl"><span className="gradient-text">{t('studioLanding.hero.heading')}</span></h1>
             <p className="mx-auto mb-2 max-w-3xl text-base font-semibold leading-snug text-gray-100 sm:text-xl">{t('studioLanding.hero.title')}</p>
             <p className="mx-auto mb-5 max-w-3xl text-sm leading-relaxed text-gray-400">{t('studioLanding.hero.description')}</p>
             <StudioHeroActions />

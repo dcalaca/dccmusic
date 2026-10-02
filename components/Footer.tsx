@@ -55,6 +55,7 @@ export default function Footer() {
               <a
                 href="https://carimbo.tec.br/v/3b5746ccfca8bb56c26b056cebdf424e"
                 title={t('footer.auditTitle')}
+                aria-label={t('footer.auditTitle')}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e) => e.stopPropagation()}
