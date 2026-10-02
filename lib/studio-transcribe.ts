@@ -11,10 +11,11 @@ export type StudioTimedLyricSegment = {
 const YOUTUBE_SPAM_RE =
   /inscreva[- ]se no canal|ative o sininho|subscribe to (the|my) channel|turn on (the )?notifications|deixe seu like|compartilhe (esse|este) v[ií]deo/i
 
-export function looksLikeTranscriptionSpam(text: string) {
+function getTranscriptionRejection(text: string) {
   const normalized = String(text || '').trim()
-  if (!normalized) return true
-  if (YOUTUBE_SPAM_RE.test(normalized)) return true
+  if (!normalized) return { reason: 'empty_text' }
+  const spamMatch = normalized.match(YOUTUBE_SPAM_RE)
+  if (spamMatch) return { reason: 'promotional_phrase', matchedPhrase: spamMatch[0] }
   // Repetição suspeita da mesma frase curta muitas vezes
   const sentences = normalized.split(/[.!?]\s+/).map((part) => part.trim().toLowerCase()).filter(Boolean)
   if (sentences.length >= 4) {
@@ -23,9 +24,15 @@ export function looksLikeTranscriptionSpam(text: string) {
       counts.set(sentence, (counts.get(sentence) || 0) + 1)
     }
     const max = Math.max(...counts.values())
-    if (max / sentences.length >= 0.6) return true
+    if (max / sentences.length >= 0.6) {
+      return { reason: 'repeated_sentences', sentenceCount: sentences.length, repeatedSentenceCount: max, repetitionRatio: max / sentences.length }
+    }
   }
-  return false
+  return null
+}
+
+export function looksLikeTranscriptionSpam(text: string) {
+  return getTranscriptionRejection(text) !== null
 }
 
 export async function transcribeStudioAudioFile(file: File | Blob, fileName = 'audio.mp3') {
@@ -41,35 +48,91 @@ export async function transcribeStudioAudioFile(file: File | Blob, fileName = 'a
     throw new Error('O áudio para transcrição precisa ter no máximo 25 MB.')
   }
 
+  const model = process.env.OPENAI_TRANSCRIPTION_MODEL || 'whisper-1'
+  const startedAt = Date.now()
+  const diagnostic = { model, fileName, sizeBytes: file.size, contentType: file.type }
   const openAiFormData = new FormData()
   openAiFormData.set('file', file, fileName)
-  openAiFormData.set('model', process.env.OPENAI_TRANSCRIPTION_MODEL || 'whisper-1')
+  openAiFormData.set('model', model)
   openAiFormData.set('language', 'pt')
   openAiFormData.set(
     'prompt',
     'Transcreva somente a letra cantada em português brasileiro desta música. Preserve versos e repetições reais da canção. Ignore instrumentos, vinhetas, falas de YouTube, "inscreva-se no canal", "ative o sininho", pedidos de like e qualquer texto que não seja a letra cantada.'
   )
 
-  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: openAiFormData,
-  })
+  let response: Response
+  try {
+    response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: openAiFormData,
+    })
+  } catch (error: any) {
+    console.error('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
+      ...diagnostic,
+      reason: 'network_error',
+      elapsedMs: Date.now() - startedAt,
+      errorMessage: error?.message || 'Falha de conexão',
+    }))
+    throw error
+  }
 
-  const data = await response.json().catch(() => null)
+  const requestId = response.headers.get('x-request-id')
+  let data: any
+  try {
+    data = await response.json()
+  } catch {
+    console.error('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
+      ...diagnostic,
+      requestId,
+      httpStatus: response.status,
+      reason: 'invalid_json_response',
+      elapsedMs: Date.now() - startedAt,
+    }))
+    throw new Error('Não consegui entender esse áudio agora.')
+  }
+
   if (!response.ok) {
+    console.error('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
+      ...diagnostic,
+      requestId,
+      httpStatus: response.status,
+      reason: 'provider_error',
+      providerError: data?.error,
+      elapsedMs: Date.now() - startedAt,
+    }))
     throw new Error(data?.error?.message || 'Não consegui entender esse áudio agora.')
   }
 
-  const text = String(data?.text || '').trim()
-  if (!text) {
-    throw new Error('Não consegui encontrar texto nesse áudio. Tente cantar mais perto do microfone.')
-  }
-  if (looksLikeTranscriptionSpam(text)) {
+  const rawText = String(data?.text || '')
+  const text = rawText.trim()
+  const rejection = getTranscriptionRejection(text)
+  if (rejection) {
+    console.error('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
+      ...diagnostic,
+      requestId,
+      httpStatus: response.status,
+      ...rejection,
+      rawText,
+      textLength: rawText.length,
+      elapsedMs: Date.now() - startedAt,
+    }))
+    if (rejection.reason === 'empty_text') {
+      throw new Error('Não consegui encontrar texto nesse áudio. Tente cantar mais perto do microfone.')
+    }
     throw new Error('Não consegui capturar a letra cantada nesse áudio. Tente um áudio mais limpo, só com a voz da música.')
   }
+
+  console.info('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
+    ...diagnostic,
+    requestId,
+    httpStatus: response.status,
+    reason: 'accepted',
+    textLength: rawText.length,
+    elapsedMs: Date.now() - startedAt,
+  }))
 
   return formatTranscribedLyric(text)
 }
