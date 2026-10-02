@@ -1250,6 +1250,7 @@
           "translationRequired": "To adapt to another language, paste the translated or adapted lyrics into the Song lyrics field.",
           "maxDuration": "This audio is longer than 4 minutes 30 seconds. Upload a shorter version.",
           "improve": "Could not improve the song.",
+          "lyricNotUnderstood": "We could not understand the song lyrics. Could you paste them manually into the “Song lyrics” field and try again?",
           "prepareUpload": "Could not prepare the audio upload.",
           "upload": "Could not upload the audio. Please try again."
         },

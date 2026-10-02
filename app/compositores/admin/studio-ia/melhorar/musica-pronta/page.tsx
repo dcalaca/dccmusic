@@ -284,7 +284,11 @@ export default function ImproveReadyMusicPage() {
         }),
       })
       const data = await readApiResponse(response)
-      if (!response.ok) throw new Error(t('studio.tools.ready.errors.improve'))
+      if (!response.ok) {
+        throw new Error(t(data.code === 'ENHANCE_LYRIC_REQUIRED'
+          ? 'studio.tools.ready.errors.lyricNotUnderstood'
+          : 'studio.tools.ready.errors.improve'))
+      }
 
       window.dispatchEvent(new Event('studioBalanceChange'))
       setMessage(

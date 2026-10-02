@@ -1250,6 +1250,7 @@
           "translationRequired": "Para adaptar a otro idioma, pega la letra ya traducida o adaptada en el campo Letra de la canción.",
           "maxDuration": "Este audio supera 4 minutos y 30 segundos. Envía una versión más corta.",
           "improve": "Error al mejorar la canción.",
+          "lyricNotUnderstood": "No pudimos entender la letra de la canción. ¿Podrías pegarla manualmente en el campo “Letra de la canción” e intentarlo de nuevo?",
           "prepareUpload": "No se pudo preparar el envío del audio.",
           "upload": "No se pudo subir el audio. Inténtalo de nuevo."
         },
