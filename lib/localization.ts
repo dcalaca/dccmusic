@@ -5,6 +5,7 @@ export const DEFAULT_COUNTRY: DccCountry = 'BR'
 export const DEFAULT_LOCALE: DccLocale = 'pt-BR'
 
 export const COUNTRY_COOKIE = 'dcc_country'
+export const LOCALE_COOKIE = 'dcc_locale'
 
 type CountryRuntimeConfig = {
   country: string

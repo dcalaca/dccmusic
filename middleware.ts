@@ -1,6 +1,7 @@
+import { isSupportedLocale } from '@/i18n/config'
 import { NextRequest, NextResponse } from 'next/server'
 import { isBlogHost, MAIN_SITE_PATH_PREFIXES } from '@/lib/blog/site'
-import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
+import { COUNTRY_COOKIE, LOCALE_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 const SITE_URL = 'https://www.dccmusic.online'
 const BLOG_URL = 'https://blog.dccmusic.online'
@@ -31,7 +32,8 @@ function resolveCountry(request: NextRequest) {
 
 function applyCountryToRequest(request: NextRequest, requestHeaders: Headers, country: ReturnType<typeof normalizeCountry>) {
   requestHeaders.set('x-dcc-country', country)
-  requestHeaders.set('x-dcc-locale', getLocaleForCountry(country))
+  const preferredLocale = request.cookies.get(LOCALE_COOKIE)?.value
+  requestHeaders.set('x-dcc-locale', isSupportedLocale(preferredLocale) ? preferredLocale : getLocaleForCountry(country))
   // Garante que Server Components, APIs e middleware leiam o mesmo país,
   // mesmo se o navegador tiver deixado cookies duplicados/antigos.
   requestHeaders.set('cookie', canonicalCookieHeader(request, country))

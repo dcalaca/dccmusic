@@ -1,3 +1,4 @@
+import { isSupportedLocale } from '@/i18n/config'
 import type { Metadata, Viewport } from 'next'
 import { Suspense } from 'react'
 import { headers } from 'next/headers'
@@ -30,7 +31,8 @@ export async function generateMetadata(): Promise<Metadata> {
     requestHeaders.get('x-vercel-ip-country') ||
     requestHeaders.get('cf-ipcountry')
   )
-  const locale = getLocaleForCountry(country)
+  const preferredLocale = headers().get('x-dcc-locale')
+  const locale = isSupportedLocale(preferredLocale) ? preferredLocale : getLocaleForCountry(country)
   const i18n = await createDccI18n(locale)
   const t = i18n.t.bind(i18n)
   const title = t('home.metadata.title')
@@ -211,7 +213,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   const country = normalizeCountry(headers().get('x-dcc-country'))
-  const locale = getLocaleForCountry(country)
+  const preferredLocale = headers().get('x-dcc-locale')
+  const locale = isSupportedLocale(preferredLocale) ? preferredLocale : getLocaleForCountry(country)
   return (
     <html lang={locale} data-country={country} className="dark">
       <head>
@@ -326,7 +329,7 @@ export default function RootLayout({
             alt=""
           />
         </noscript>
-        <LocalizationProvider initialCountry={country}>
+        <LocalizationProvider initialCountry={country} initialLocale={locale}>
         <div className="min-h-screen flex flex-col bg-black text-white">
           <Header />
           <ActivityHeartbeat />

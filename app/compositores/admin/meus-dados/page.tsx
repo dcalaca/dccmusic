@@ -24,6 +24,7 @@ import {
   FiX,
   FiZap,
 } from 'react-icons/fi'
+import AccountCountrySettings from '@/components/AccountCountrySettings'
 import ComposerPublicNameEditor from '@/components/ComposerPublicNameEditor'
 import PremiumDirectoryVisibilityCard from './PremiumDirectoryVisibilityCard'
 
@@ -807,6 +808,8 @@ export default function ComposerMyDataPage() {
               </div>
             </section>
           </div>
+
+          <AccountCountrySettings />
 
           <StatementSection statement={statement} />
 

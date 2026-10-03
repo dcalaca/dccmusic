@@ -7,7 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { FiMusic, FiPlayCircle, FiHome, FiCompass, FiShield, FiUsers, FiUser, FiLogOut, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe, FiBookOpen } from 'react-icons/fi'
 import NotificationBell from './NotificationBell'
-import CountrySelector from './CountrySelector'
+import LanguageSelector from './LanguageSelector'
 import {
   clearComposerSessionCookie,
   isComposerBlogSubdomain,
@@ -287,7 +287,7 @@ export default function Header() {
             </Link>
 
             <div className="shrink-0 md:hidden">
-              <CountrySelector compact />
+              <LanguageSelector compact />
             </div>
 
             {/* Navegação à esquerda */}
@@ -315,7 +315,7 @@ export default function Header() {
 
           {/* Botões à direita */}
           <nav className="hidden shrink-0 items-center space-x-2 md:flex">
-            <CountrySelector />
+            <LanguageSelector />
             {mounted && composer ? (
               <>
               {composerHasToken ? (
