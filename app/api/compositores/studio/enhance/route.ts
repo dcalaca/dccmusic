@@ -1,3 +1,4 @@
+import { isSambaCancao, getStudioGenreDirection, getStudioGenreNegativeTags } from '@/lib/studio-genre-direction'
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import {
@@ -111,7 +112,7 @@ function getStyle(input: {
     input.avoidInstruments ? `instrumentos a evitar: ${String(input.avoidInstruments).trim()}` : null,
   ].filter(Boolean).join(', ')
   return [
-    style || 'produção musical brasileira profissional',
+    getStudioGenreDirection(style) || 'produção musical brasileira profissional',
     improvement,
     details || null,
     additionalInstructions ? `INSTRUÇÕES ADICIONAIS: ${additionalInstructions}` : null,
@@ -362,8 +363,8 @@ export async function POST(request: NextRequest) {
 
     const improvementPrompt = getImprovementPrompt(improvement)
     const explicitVoiceChange = voice === 'male' || voice === 'female'
-    const audioWeight = explicitVoiceChange ? 0.72 : 0.85
-    const styleWeight = explicitVoiceChange ? 0.52 : 0.38
+    const audioWeight = isSambaCancao(style) ? 0.55 : explicitVoiceChange ? 0.72 : 0.85
+    const styleWeight = isSambaCancao(style) ? 0.7 : explicitVoiceChange ? 0.52 : 0.38
 
     const payload: any = lyric ? {
       uploadUrl,
@@ -378,15 +379,15 @@ export async function POST(request: NextRequest) {
       audioWeight,
       styleWeight,
       weirdnessConstraint: 0.28,
-      negativeTags: MAX_STUDIO_MUSIC_NEGATIVE_TAGS,
+      negativeTags: [MAX_STUDIO_MUSIC_NEGATIVE_TAGS, ...getStudioGenreNegativeTags(style)].join(', '),
     } : {
       uploadUrl,
       customMode: false,
       instrumental: false,
       prompt: [
-        improvementPrompt,
         getSongLanguagePrompt(songLanguage),
-        style || null,
+        getStudioGenreDirection(style) || null,
+        improvementPrompt,
         mood ? `clima ${mood}` : null,
         voiceTone !== 'Deixar a IA escolher' ? `característica vocal ${voiceTone}` : null,
         structure ? `estrutura ${structure}` : null,
@@ -402,7 +403,7 @@ export async function POST(request: NextRequest) {
       audioWeight,
       styleWeight,
       weirdnessConstraint: 0.28,
-      negativeTags: MAX_STUDIO_MUSIC_NEGATIVE_TAGS,
+      negativeTags: [MAX_STUDIO_MUSIC_NEGATIVE_TAGS, ...getStudioGenreNegativeTags(style)].join(', '),
     }
 
     const response = await fetch('https://api.sunoapi.org/api/v1/generate/upload-cover', {

@@ -1,3 +1,4 @@
+import { isSambaCancao, getStudioGenreDirection, getStudioGenreNegativeTags } from '@/lib/studio-genre-direction'
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import {
@@ -193,7 +194,7 @@ function getVoiceNegativeTags(style?: string | null, description?: string | null
     return ''
   }
 
-  return MAX_STUDIO_MUSIC_NEGATIVE_TAGS
+  return [MAX_STUDIO_MUSIC_NEGATIVE_TAGS, ...getStudioGenreNegativeTags(style)].join(', ')
 }
 
 function getInspirationInstruction(description?: string | null) {
@@ -381,6 +382,8 @@ function getBrazilianStylePrompt(style?: string | null, description?: string | n
     if (country === 'PY') return 'Paraguayan popular music'
     return 'Brazilian popular music'
   }
+
+  if (isSambaCancao(style)) return getStudioGenreDirection(style)
 
   // Fora do Brasil, nunca converte "pop", "rock" ou "trap" para a versão brasileira.
   // Isso evita o vazamento cultural que já aconteceu nas primeiras localizações.
@@ -810,7 +813,7 @@ export async function POST(request: NextRequest) {
     const useOwnPrompt = ownPrompt.length > 0
     const baseSunoStyle = useOwnPrompt ? '' : buildSunoStyle(project.style, project.mood, descriptionWithExtraInstructions)
     const customVoiceDirection = useOwnPrompt ? '' : getCustomVoiceDirection(selectedVoice)
-    const sunoStyleWeight = useOwnPrompt ? null : getSunoStyleWeight(descriptionWithExtraInstructions)
+    const sunoStyleWeight = useOwnPrompt ? null : (isSambaCancao(project.style) ? 0.7 : getSunoStyleWeight(descriptionWithExtraInstructions))
     const sunoWeirdnessConstraint = useOwnPrompt ? null : getSunoWeirdnessConstraint(descriptionWithExtraInstructions)
 
     const sunoPayload: any = {
