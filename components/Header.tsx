@@ -314,7 +314,7 @@ export default function Header() {
           </div>
 
           {/* Botões à direita */}
-          <nav className="hidden shrink-0 items-center space-x-2 md:flex">
+          <nav className="hidden shrink-0 items-center space-x-2 md:flex md:-translate-y-1.5">
             <LanguageSelector />
             {mounted && composer ? (
               <>
