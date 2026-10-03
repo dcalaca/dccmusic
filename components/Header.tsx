@@ -314,7 +314,7 @@ export default function Header() {
           </div>
 
           {/* Botões à direita */}
-          <nav className="hidden shrink-0 items-center space-x-2 md:flex md:-translate-y-1.5">
+          <nav className="hidden shrink-0 items-center space-x-2 md:flex relative md:-top-1.5">
             <LanguageSelector />
             {mounted && composer ? (
               <>
@@ -352,7 +352,7 @@ export default function Header() {
                     <Link
                       href="/compositores/admin/studio-ia/projetos"
                       onClick={() => setShowUserMenu(false)}
-                      className="flex items-center space-x-2 border-b border-gray-800 px-4 py-3 transition-colors hover:bg-gray-800"
+                      className="flex cursor-pointer items-center space-x-2 border-b border-gray-800 px-4 py-3 transition-colors hover:bg-gray-800"
                     >
                       <FiZap className="w-4 h-4" />
                       <span>{copy.myStudio}</span>
@@ -366,7 +366,7 @@ export default function Header() {
                           <Link
                             href="/compositores/admin/musicas/nova"
                             onClick={() => setShowUserMenu(false)}
-                            className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
+                            className="flex cursor-pointer items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                           >
                             <FiPlusCircle className="w-4 h-4" />
                             <span>{copy.addSong}</span>
@@ -374,7 +374,7 @@ export default function Header() {
                           <Link
                             href="/compositores/admin/musicas"
                             onClick={() => setShowUserMenu(false)}
-                            className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
+                            className="flex cursor-pointer items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                           >
                             <FiMusic className="w-4 h-4" />
                             <span>{copy.mySongs}</span>
@@ -382,7 +382,7 @@ export default function Header() {
                           <Link
                             href="/compositores/admin/videos"
                             onClick={() => setShowUserMenu(false)}
-                            className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
+                            className="flex cursor-pointer items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                           >
                             <FiPlayCircle className="w-4 h-4" />
                             <span>{copy.myVideos}</span>
@@ -406,14 +406,14 @@ export default function Header() {
                       <Link
                         href="/compositores/admin/meus-dados"
                         onClick={() => setShowUserMenu(false)}
-                        className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
+                        className="flex cursor-pointer items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                       >
                         <FiUser className="w-4 h-4" />
                         <span>{copy.account}</span>
                       </Link>
                       <button
                         onClick={handleComposerLogout}
-                        className="flex w-full items-center space-x-2 px-4 py-2.5 text-left text-red-400 transition-colors hover:bg-gray-800"
+                        className="flex w-full cursor-pointer items-center space-x-2 px-4 py-2.5 text-left text-red-400 transition-colors hover:bg-gray-800"
                       >
                         <FiLogOut className="w-4 h-4" />
                         <span>{copy.logout}</span>
@@ -495,7 +495,7 @@ export default function Header() {
                     <Link
                       href="/compositores/admin/studio-ia/projetos"
                       onClick={() => setShowUserMenu(false)}
-                      className="flex items-center space-x-2 border-b border-gray-800 px-4 py-3 transition-colors hover:bg-gray-800"
+                      className="flex cursor-pointer items-center space-x-2 border-b border-gray-800 px-4 py-3 transition-colors hover:bg-gray-800"
                     >
                       <FiZap className="w-4 h-4" />
                       <span>{copy.myStudio}</span>
@@ -509,7 +509,7 @@ export default function Header() {
                           <Link
                             href="/compositores/admin/musicas/nova"
                             onClick={() => setShowUserMenu(false)}
-                            className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
+                            className="flex cursor-pointer items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                           >
                             <FiPlusCircle className="w-4 h-4" />
                             <span>{copy.addSong}</span>
@@ -517,7 +517,7 @@ export default function Header() {
                           <Link
                             href="/compositores/admin/musicas"
                             onClick={() => setShowUserMenu(false)}
-                            className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
+                            className="flex cursor-pointer items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                           >
                             <FiMusic className="w-4 h-4" />
                             <span>{copy.mySongs}</span>
@@ -525,7 +525,7 @@ export default function Header() {
                           <Link
                             href="/compositores/admin/videos"
                             onClick={() => setShowUserMenu(false)}
-                            className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
+                            className="flex cursor-pointer items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                           >
                             <FiPlayCircle className="w-4 h-4" />
                             <span>{copy.myVideos}</span>
@@ -549,14 +549,14 @@ export default function Header() {
                       <Link
                         href="/compositores/admin/meus-dados"
                         onClick={() => setShowUserMenu(false)}
-                        className="flex items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
+                        className="flex cursor-pointer items-center space-x-2 px-4 py-2.5 transition-colors hover:bg-gray-800"
                       >
                         <FiUser className="w-4 h-4" />
                         <span>{copy.account}</span>
                       </Link>
                       <button
                         onClick={handleComposerLogout}
-                        className="flex w-full items-center space-x-2 px-4 py-2.5 text-left text-red-400 transition-colors hover:bg-gray-800"
+                        className="flex w-full cursor-pointer items-center space-x-2 px-4 py-2.5 text-left text-red-400 transition-colors hover:bg-gray-800"
                       >
                         <FiLogOut className="w-4 h-4" />
                         <span>{copy.logout}</span>
