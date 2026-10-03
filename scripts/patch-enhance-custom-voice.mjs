@@ -79,8 +79,8 @@ patchFile(apiPath, [
   },
   {
     marker: '// custom-voice-enhance:weights',
-    anchor: "    const explicitVoiceChange = voice === 'male' || voice === 'female'\n    const audioWeight = explicitVoiceChange ? 0.72 : 0.85\n",
-    replacement: "    // custom-voice-enhance:weights\n    const explicitVoiceChange = Boolean(selectedVoiceProfile) || voice === 'male' || voice === 'female'\n    const audioWeight = explicitVoiceChange ? 0.72 : 0.85\n",
+    anchor: "    const explicitVoiceChange = voice === 'male' || voice === 'female'\n    const audioWeight = isSambaCancao(style) ? 0.55 : explicitVoiceChange ? 0.72 : 0.85\n",
+    replacement: "    // custom-voice-enhance:weights\n    const explicitVoiceChange = Boolean(selectedVoiceProfile) || voice === 'male' || voice === 'female'\n    const audioWeight = isSambaCancao(style) ? 0.55 : explicitVoiceChange ? 0.72 : 0.85\n",
   },
   {
     marker: '// custom-voice-enhance:persona',
