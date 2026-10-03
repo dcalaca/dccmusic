@@ -9,7 +9,10 @@ export type StudioTimedLyricSegment = {
 }
 
 const YOUTUBE_SPAM_RE =
-  /inscreva[- ]se no canal|ative o sininho|subscribe to (the|my) channel|turn on (the )?notifications|deixe seu like|compartilhe (esse|este) v[ií]deo|obrigad[oa] por (ter )?assistid[oa]|muito obrigad[oa] por experienciar|essa demonstra[cç][aã]o/i
+  /inscreva[- ]se no canal|ative o sininho|subscribe to (the|my) channel|turn on (the )?notifications|deixe seu like|compartilhe (esse|este) v[ií]deo/i
+
+const LIVE_RECORDING_HALLUCINATION_RE =
+  /obrigad[oa] por (ter )?assistid[oa]|muito obrigad[oa] por experienciar|essa demonstra[cç][aã]o|at[eé] a pr[oó]xima/i
 
 function getTranscriptionRejection(text: string) {
   const normalized = String(text || '').trim()
@@ -128,7 +131,11 @@ async function transcribeStudioAudioWithOpenAI(file: File | Blob, fileName = 'au
 
   const rawText = String(data?.text || '')
   const text = rawText.trim()
-  const rejection = getTranscriptionRejection(text)
+  const isLiveRecording = /^gravacao-dcc-music\./i.test(fileName)
+  const liveRecordingHallucination = isLiveRecording ? text.match(LIVE_RECORDING_HALLUCINATION_RE) : null
+  const rejection = liveRecordingHallucination
+    ? { reason: 'live_recording_hallucination', matchedPhrase: liveRecordingHallucination[0] }
+    : getTranscriptionRejection(text)
   if (rejection) {
     console.error('[Studio IA] Diagnóstico de transcrição:', JSON.stringify({
       ...diagnostic,
