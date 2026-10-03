@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
-import { createDccI18n } from '@/i18n'
+import { createDccI18n } from '@/i18n/server'
 import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export const metadata: Metadata = {

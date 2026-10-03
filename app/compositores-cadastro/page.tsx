@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import ComposerSignupCta from '@/components/ComposerSignupCta'
-import { createDccI18n } from '@/i18n/i18next'
+import { createDccI18n } from '@/i18n/server'
 import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 async function getPageI18n() {

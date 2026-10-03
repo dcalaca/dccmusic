@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import StudioPreviewPlayer from '@/components/StudioPreviewPlayer'
 import { getStudioVersionAudioUrls } from '@/lib/studio-audio-backup'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
-import { createDccI18n } from '@/i18n'
+import { createDccI18n } from '@/i18n/server'
 import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'

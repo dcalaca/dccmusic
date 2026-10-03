@@ -2,7 +2,7 @@ import Image from 'next/image'
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 import { headers } from 'next/headers'
-import { createDccI18n } from '@/i18n/i18next'
+import { createDccI18n } from '@/i18n/server'
 import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 import {
   FiArrowRight,

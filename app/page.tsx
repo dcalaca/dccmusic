@@ -9,7 +9,7 @@ import { cookies, headers } from 'next/headers'
 import Link from 'next/link'
 import { FiMusic, FiArrowRight, FiZap } from 'react-icons/fi'
 import { COUNTRY_COOKIE, COUNTRY_CONFIG, getLocaleForCountry, normalizeCountry, type DccCountry } from '@/lib/localization'
-import { createDccI18n } from '@/i18n/i18next'
+import { createDccI18n } from '@/i18n/server'
 
 export async function generateMetadata() {
   const requestHeaders = headers()

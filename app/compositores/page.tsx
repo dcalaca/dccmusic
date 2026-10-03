@@ -5,7 +5,7 @@ import { FaCrown } from 'react-icons/fa'
 import { FiMusic, FiSearch, FiStar, FiUsers } from 'react-icons/fi'
 import ComposersDirectory from './ComposersDirectory'
 import { headers } from 'next/headers'
-import { createDccI18n } from '@/i18n/i18next'
+import { createDccI18n } from '@/i18n/server'
 import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'

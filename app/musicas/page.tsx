@@ -7,7 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { headers } from 'next/headers'
 import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
-import { createDccI18n } from '@/i18n/i18next'
+import { createDccI18n } from '@/i18n/server'
 import Link from 'next/link'
 import { FiPlayCircle } from 'react-icons/fi'
 

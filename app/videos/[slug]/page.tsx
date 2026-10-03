@@ -7,7 +7,7 @@ import VideoEmbed from '@/components/VideoEmbed'
 import CopyButton from '@/components/CopyButton'
 import RatingAndComments from '@/components/RatingAndComments'
 import { cookies, headers } from 'next/headers'
-import { createDccI18n } from '@/i18n'
+import { createDccI18n } from '@/i18n/server'
 import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 async function getVideoDetailTranslator() {

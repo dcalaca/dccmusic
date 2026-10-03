@@ -14,7 +14,7 @@ import TikTokTestPageView from '@/components/TikTokTestPageView'
 import GtmPageEvents from '@/components/GtmEvents'
 import LocalizationProvider from '@/components/LocalizationProvider'
 import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
-import { createDccI18n } from '@/i18n/i18next'
+import { createDccI18n } from '@/i18n/server'
 
 const inter = Inter({ subsets: ['latin'] })
 

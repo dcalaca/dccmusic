@@ -8,7 +8,7 @@ import { StudioCouponButton } from '@/app/studio-ia/StudioActions'
 import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 import { getStudioPlanPriceFromPricing, getStudioPlanPricesFromPricing, getStudioTopupTiersFromPricing } from '@/lib/studio-pricing-server'
 import type { StudioTopupCurrency } from '@/lib/studio-topups'
-import { createDccI18n } from '@/i18n/i18next'
+import { createDccI18n } from '@/i18n/server'
 
 
 export const metadata: Metadata = {

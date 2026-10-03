@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { FiHome } from 'react-icons/fi'
-import { createDccI18n } from '@/i18n/i18next'
+import { createDccI18n } from '@/i18n/server'
 import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 import { headers } from 'next/headers'
 

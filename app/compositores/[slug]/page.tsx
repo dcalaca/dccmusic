@@ -7,7 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { getComposerAvatarApiPath, PROFILE_PHOTO_MISSING } from '@/lib/composer-profile-photo'
 import { getStudioCoverImageUrl } from '@/lib/studio-cover-url'
 import { headers } from 'next/headers'
-import { createDccI18n } from '@/i18n/i18next'
+import { createDccI18n } from '@/i18n/server'
 import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'

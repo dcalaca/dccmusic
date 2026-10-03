@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { cookies, headers } from 'next/headers'
 import { recordEmailOptOut } from '@/lib/email-opt-outs'
-import { createDccI18n } from '@/i18n'
+import { createDccI18n } from '@/i18n/server'
 import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 
 export const dynamic = 'force-dynamic'
