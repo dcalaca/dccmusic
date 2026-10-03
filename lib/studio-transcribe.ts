@@ -9,7 +9,7 @@ export type StudioTimedLyricSegment = {
 }
 
 const YOUTUBE_SPAM_RE =
-  /inscreva[- ]se no canal|ative o sininho|subscribe to (the|my) channel|turn on (the )?notifications|deixe seu like|compartilhe (esse|este) v[ií]deo/i
+  /inscreva[- ]se no canal|ative o sininho|subscribe to (the|my) channel|turn on (the )?notifications|deixe seu like|compartilhe (esse|este) v[ií]deo|obrigad[oa] por (ter )?assistid[oa]|muito obrigad[oa] por experienciar|essa demonstra[cç][aã]o/i
 
 function getTranscriptionRejection(text: string) {
   const normalized = String(text || '').trim()

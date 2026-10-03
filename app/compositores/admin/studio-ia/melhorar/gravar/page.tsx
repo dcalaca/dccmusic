@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { FiArrowLeft, FiCheckCircle, FiEdit3, FiLoader, FiMic, FiMusic, FiPause, FiPlay, FiRefreshCw, FiZap } from 'react-icons/fi'
+import { FiArrowLeft, FiEdit3, FiLoader, FiMic, FiMusic, FiPause, FiPlay, FiRefreshCw, FiZap } from 'react-icons/fi'
 
 const MAX_RECORDING_MS = 4.5 * 60 * 1000
 
@@ -206,7 +206,7 @@ export default function RecordMusicPage() {
     }
   }
 
-  const createMusic = async (mode: 'complete' | 'ready') => {
+  const createMusic = async () => {
     const token = ensureLoggedIn()
     if (!token) return
     const audioFile = createAudioFile()
@@ -232,7 +232,9 @@ export default function RecordMusicPage() {
       formData.set('style', style.trim())
       formData.set('audio', audioFile)
       formData.set('lyric', lyric.trim())
-      formData.set('improvement', mode === 'complete' ? 'professional' : 'similar')
+      formData.set('improvement', 'professional')
+      formData.set('lyricReviewed', 'true')
+      if (notes.trim()) formData.set('additionalInstructions', notes.trim())
 
       const response = await fetch('/api/compositores/studio/enhance', {
         method: 'POST',
@@ -242,10 +244,15 @@ export default function RecordMusicPage() {
       const data = await readApiResponse(response)
       if (!response.ok) throw new Error(t('studio.tools.record.errors.create'))
 
+      const createdProjectId = String(data.projectId || '').trim()
+      if (!createdProjectId || createdProjectId === 'undefined' || createdProjectId === 'null') {
+        throw new Error(t('studio.tools.record.errors.create'))
+      }
+
       window.dispatchEvent(new Event('studioBalanceChange'))
       setMessage(t('studio.tools.record.messages.started'))
       window.setTimeout(() => {
-        router.push(`/compositores/admin/studio-ia/projetos/${data.projectId}`)
+        router.push(`/compositores/admin/studio-ia/projetos/${createdProjectId}`)
       }, 900)
     } catch (err: any) {
       setError(err.message || t('studio.tools.record.errors.create'))
@@ -361,8 +368,7 @@ export default function RecordMusicPage() {
 
           <section className="mt-4 rounded-[1.75rem] border border-purple-300/15 bg-gradient-to-br from-purple-950/30 via-gray-950 to-black p-4 sm:p-5">
             <h2 className="text-xl font-black text-white">{t('studio.tools.record.step3')}</h2>
-            <p className="mt-1 text-sm text-gray-400">{t('studio.tools.record.step3Hint')}</p>
-            <div className="mt-4 grid gap-3 lg:grid-cols-3">
+            <div className="mt-4 grid gap-3 lg:grid-cols-2">
               <button
                 type="button"
                 onClick={completeLyric}
@@ -374,16 +380,7 @@ export default function RecordMusicPage() {
               </button>
               <button
                 type="button"
-                onClick={() => createMusic('ready')}
-                disabled={Boolean(busy)}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-4 font-black text-white disabled:opacity-60"
-              >
-                {busy === 'creating' ? <FiLoader className="animate-spin" /> : <FiCheckCircle />}
-                {t('studio.tools.record.ready')}
-              </button>
-              <button
-                type="button"
-                onClick={() => createMusic('complete')}
+                onClick={createMusic}
                 disabled={Boolean(busy)}
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-5 py-4 font-black text-white disabled:opacity-60"
               >
