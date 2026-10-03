@@ -64,6 +64,23 @@ async function readApiResponse(response: Response) {
   }
 }
 
+function looksLikeClearlyBadTranscript(value: unknown) {
+  const text = String(value || '').toLowerCase()
+  if (!text.trim()) return true
+
+  const suspiciousPatterns = [
+    /obrigad[oa] por (ter )?assistid[oa]/,
+    /obrigad[oa] por experienciar/,
+    /essa demonstra[cç][aã]o/,
+    /at[eé] a pr[oó]xima/,
+    /inscreva[- ]se no canal/,
+    /ative o sininho/,
+    /deixe seu like/,
+  ]
+
+  return suspiciousPatterns.filter((pattern) => pattern.test(text)).length >= 2
+}
+
 function getAudioDurationSeconds(file: File) {
   return new Promise<number | null>((resolve) => {
     const audio = document.createElement('audio')
@@ -227,6 +244,9 @@ export default function ImproveReadyMusicPage() {
       })
       const data = await readApiResponse(response)
       if (!response.ok) throw new Error(t('studio.tools.ready.errors.transcribe'))
+      if (looksLikeClearlyBadTranscript(data.text)) {
+        throw new Error(t('studio.tools.ready.errors.lyricNotUnderstood'))
+      }
       setLyric(data.text || '')
       setReviewReady(true)
       window.dispatchEvent(new Event('studioBalanceChange'))
@@ -316,6 +336,13 @@ export default function ImproveReadyMusicPage() {
       }
 
       if (data.reviewRequired) {
+        if (looksLikeClearlyBadTranscript(data.text)) {
+          setLyric('')
+          setReviewReady(false)
+          setError(t('studio.tools.ready.errors.lyricNotUnderstood'))
+          setMessage('')
+          return
+        }
         setLyric(data.text || '')
         showLyricReview()
         return
@@ -327,8 +354,15 @@ export default function ImproveReadyMusicPage() {
           ? t('studio.tools.ready.messages.transcribedStarted')
           : t('studio.tools.ready.messages.started')
       )
+      const createdProjectId = String(data.projectId || '').trim()
+      if (!createdProjectId || createdProjectId === 'undefined' || createdProjectId === 'null') {
+        setError(t('studio.tools.ready.errors.improve'))
+        setMessage('')
+        return
+      }
+
       window.setTimeout(() => {
-        router.push(`/compositores/admin/studio-ia/projetos/${data.projectId}`)
+        router.push(`/compositores/admin/studio-ia/projetos/${createdProjectId}`)
       }, 900)
     } catch (err: any) {
       setError(err.message || t('studio.tools.ready.errors.improve'))
