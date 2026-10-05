@@ -236,6 +236,7 @@ export async function associateAccountToComposer(
         email: normalizedEmail,
         password_hash: passwordHash,
         name: formattedComposerName,
+        signup_provider: 'email',
         ...(country ? { country } : {}),
       })
       .eq('id', composerId)
@@ -320,6 +321,7 @@ export async function createComposerAccount(
       slug: slug,
       email: normalizedEmail,
       password_hash: passwordHash,
+      signup_provider: 'email',
       ...(country ? { country } : {}),
     }
 
