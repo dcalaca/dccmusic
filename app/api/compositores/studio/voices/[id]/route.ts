@@ -317,11 +317,14 @@ export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  let voiceForFailure: any = null
+
   try {
     const composer = getComposerFromRequest(request)
     if (!composer) return NextResponse.json({ error: 'Não autorizado', errorCode: 'unauthorized' }, { status: 401 })
 
     const voice = await getVoice(params.id, composer.composerId)
+    voiceForFailure = voice
     if (!voice) return NextResponse.json({ error: 'Voz não encontrada', errorCode: 'voiceNotFound' }, { status: 404 })
     if (!voice.validation_task_id || !voice.validate_info) {
       return NextResponse.json({ error: 'A frase de verificação ainda não está pronta. Clique em atualizar status.', errorCode: 'validationPhraseNotReady' }, { status: 400 })
@@ -399,6 +402,48 @@ export async function POST(
     if (error) throw error
     return NextResponse.json({ voice: await mapVoice(updatedVoice) })
   } catch (error: any) {
+    const providerMessage = String(error?.providerMessage || error?.message || '')
+    const errorCode = studioVoiceErrorCode(providerMessage)
+
+    // If the provider expires/rejects the verification phrase, keep the base
+    // voice visible in the user's list. The existing UI then offers the free
+    // "generate a new phrase" recovery action instead of leaving a stale flow.
+    if (voiceForFailure && errorCode === 'verificationPhraseExpired') {
+      const { data: failedVoice, error: persistError } = await supabaseAdmin
+        .from('studio_voice_profiles')
+        .update({
+          status: 'failed',
+          is_available: false,
+          error_message: providerMessage || 'Verification phrase expired or not found. Please request a new phrase.',
+          provider_payload: {
+            ...(voiceForFailure.provider_payload || {}),
+            verificationFailure: {
+              message: providerMessage || 'Verification phrase expired or not found. Please request a new phrase.',
+              at: new Date().toISOString(),
+            },
+          },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', voiceForFailure.id)
+        .select('*')
+        .single()
+
+      if (!persistError && failedVoice) {
+        return NextResponse.json(
+          {
+            error: translateStudioVoiceError(providerMessage) || 'A frase de verificação expirou. Gere uma nova frase gratuitamente.',
+            errorCode: 'verificationPhraseExpired',
+            voice: await mapVoice(failedVoice),
+          },
+          { status: 409 }
+        )
+      }
+
+      if (persistError) {
+        console.error('[Studio Voice] Erro preservar voz após frase expirada:', persistError)
+      }
+    }
+
     console.error('[Studio Voice] Erro enviar verificação:', error)
     return NextResponse.json({ error: error.message || 'Erro ao enviar verificação da voz', errorCode: 'sendVerification' }, { status: 500 })
   }
