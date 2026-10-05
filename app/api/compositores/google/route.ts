@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import { supabaseAdmin } from '@/lib/supabase'
 import { googleCanVerifyEmail, verifyGoogleIdentity } from '@/lib/google-identity'
-import { hasComposerAccountDeletionBlock } from '@/lib/dcc-emails'
+import { hasDeletedComposerIdentity } from '@/lib/composer-account-deletion'
 import { getDetectedCountry } from '@/lib/localization'
 import { normalizeName, formatDisplayName } from '@/lib/normalize'
 import { PARTNER_COOKIE, PARTNER_SESSION_COOKIE, applyComposerPartnerAttribution } from '@/lib/partners'
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         if (updateError || !data) throw new Error('invalid')
         composer = data
       } else {
-        if (await hasComposerAccountDeletionBlock(email)) return reply({ code: 'deletedAccount' }, 403)
+        if (await hasDeletedComposerIdentity({ email, googleSub: identity.sub })) return reply({ code: 'deletedAccount' }, 403)
         const suffix = randomUUID().slice(0, 8)
         const name = formatDisplayName(identity.name?.trim().slice(0, 100) || email.split('@')[0])
         // Keep hash-based password storage; the random password is never disclosed.
