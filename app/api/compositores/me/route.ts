@@ -8,7 +8,8 @@ import {
   getComposerVideoCount,
 } from '@/lib/db'
 import { getFreeMusicUsage, getStudioAccess, getStudioCreditUsage, STUDIO_MUSIC_CREDITS } from '@/lib/studio'
-import { registerComposerAccountDeletionBlock, sendComposerAccountDeletedEmail } from '@/lib/dcc-emails'
+import { sendComposerAccountDeletedEmail } from '@/lib/dcc-emails'
+import { prepareComposerAccountDeletion } from '@/lib/composer-account-deletion'
 import { getComposerStatement } from '@/lib/composer-statement'
 import { getStudioCampaignState } from '@/lib/studio-campaigns'
 import { getComposerAvatarApiPath } from '@/lib/composer-profile-photo'
@@ -169,17 +170,11 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
+    const prepared = await prepareComposerAccountDeletion(composerToken.composerId, 'self_service')
     const deletedComposer = await deleteComposer(composerToken.composerId)
     let emailSent = false
 
     if (deletedComposer.email) {
-      await registerComposerAccountDeletionBlock({
-        composerId: deletedComposer.id,
-        name: deletedComposer.name,
-        email: deletedComposer.email,
-        source: 'self_service',
-      })
-
       try {
         const result = await sendComposerAccountDeletedEmail({
           composerId: deletedComposer.id,
