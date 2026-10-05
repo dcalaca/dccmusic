@@ -254,7 +254,6 @@ export default function EmailCampaignsAdmin() {
           mode: 'count',
           country: targetCountry,
           targetMode,
-          targetCountry: targetCountry || null,
           audience,
           from: targetFrom,
           to: targetMode === 'inactive' ? '' : targetTo,
