@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         const name = formatDisplayName(identity.name?.trim().slice(0, 100) || email.split('@')[0])
         // Keep hash-based password storage; the random password is never disclosed.
         const passwordHash = await bcrypt.hash(randomBytes(48).toString('base64url'), 10)
-        const payload = { name, account_name: name, slug: `${normalizeName(name).replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'compositor'}-${suffix}`, email, password_hash: passwordHash, google_sub: identity.sub, email_verified: true, email_verified_at: new Date().toISOString(), country: getDetectedCountry(request.headers) }
+        const payload = { name, account_name: name, slug: `${normalizeName(name).replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'compositor'}-${suffix}`, email, password_hash: passwordHash, google_sub: identity.sub, signup_provider: 'google', email_verified: true, email_verified_at: new Date().toISOString(), country: getDetectedCountry(request.headers) }
         let { data, error: insertError } = await supabaseAdmin.from('dccmusic_composers').insert(payload).select('*').single()
         if (insertError?.code === '23505' && /name/i.test(insertError.message + insertError.details)) {
           const retry = await supabaseAdmin.from('dccmusic_composers').insert({ ...payload, name: `${name} ${suffix}` }).select('*').single()
