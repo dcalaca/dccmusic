@@ -671,7 +671,10 @@ export default function StudioProjectDetailPage() {
   }
 
   const saveLyric = async () => {
+    if (!lyric.trim() || processing) return
     const token = localStorage.getItem('composer_token')
+    setError('')
+    setMessage('')
     setProcessing(t('studio.project.detail.savingLyrics'))
     try {
       const response = await fetch(`/api/compositores/studio/projects/${projectId}`, {
@@ -682,9 +685,9 @@ export default function StudioProjectDetailPage() {
         },
         body: JSON.stringify({ lyric }),
       })
-      const data = await response.json()
+      await response.json()
       if (!response.ok) throw new Error(t('studio.project.detail.saveLyricsError'))
-      setMessage(t('studio.project.detail.lyricsSaved'))
+      setMessage(t('studio.savedLyrics.saved'))
     } catch {
       setError(t('studio.project.detail.saveLyricsError'))
     } finally {
@@ -1947,16 +1950,18 @@ export default function StudioProjectDetailPage() {
                     </section>
                   )}
 
-                  <section className="mt-5 rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:rounded-[1.75rem] sm:p-5">
+                  <section id="letra" className="mt-5 scroll-mt-40 rounded-[1.5rem] border border-white/10 bg-gray-950/80 p-4 shadow-2xl shadow-black/20 sm:rounded-[1.75rem] sm:p-5">
                     <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div>
                         <h2 className="text-xl font-black text-white sm:text-2xl">{t('studio.project.lyrics.title')}</h2>
-                        <p className="mt-1 text-xs text-gray-400">{t('studio.project.lyrics.description')}</p>
+                        <p className="mt-1 text-xs text-gray-400">{t('studio.savedLyrics.editHint')}</p>
                       </div>
                       <div className="flex flex-wrap gap-2 sm:justify-end">
-                        <button onClick={saveLyric} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-bold text-gray-100 hover:bg-white/[0.09] sm:w-auto">
+                        <button disabled={Boolean(processing) || !lyric.trim()} onClick={saveLyric} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-bold text-gray-100 hover:bg-white/[0.09] disabled:opacity-40 sm:w-auto">
                           <FiSave /> {t('studio.project.lyrics.save')}
                         </button>
+                        <div className="w-full sm:w-auto"><CopyButton text={lyric} label={t('studio.savedLyrics.copy')} /></div>
+                        <Link href="/compositores/admin/studio-ia/letras-salvas" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm font-bold text-primary-300 hover:bg-white/[0.06] sm:w-auto"><FiFileText />{t('studio.savedLyrics.title')}</Link>
                       </div>
                     </div>
                     <textarea

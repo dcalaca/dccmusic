@@ -10,7 +10,8 @@
       "copy": "Copy",
       "copied": "Copied!",
       "delete": "Delete",
-      "understood": "Got it"
+      "understood": "Got it",
+      "copyFailed": "Could not copy. Try again."
     },
     "status": {
       "loading": "Loading...",
@@ -1510,6 +1511,19 @@
       },
       "instruments": "Instruments you want (optional)",
       "freeLyrics": "Free lyrics"
+    },
+    "savedLyrics": {
+      "title": "Saved lyrics",
+      "description": "The current lyrics of your projects, ready to read and copy.",
+      "copy": "Copy lyrics",
+      "openProject": "Open project / edit",
+      "view": "View full lyrics",
+      "empty": "No saved lyrics yet. Create a project with lyrics or click Save lyrics in a project.",
+      "loadError": "Could not load lyrics. Please try again.",
+      "previous": "Previous",
+      "next": "Next",
+      "saved": "Lyrics saved! You can find them in Saved lyrics.",
+      "editHint": "Save your changes to find them in Saved lyrics. This does not change audio already generated."
     }
   },
   "footer": {

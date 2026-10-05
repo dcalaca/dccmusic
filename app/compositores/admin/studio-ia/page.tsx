@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { FiArrowLeft, FiBarChart2, FiCreditCard, FiFolder, FiImage, FiMic, FiMusic, FiPlus, FiZap } from 'react-icons/fi'
+import { FiArrowLeft, FiBarChart2, FiCreditCard, FiFolder, FiFileText, FiImage, FiMic, FiMusic, FiPlus, FiZap } from 'react-icons/fi'
 
 type Project = {
   id: string
@@ -229,7 +229,7 @@ export default function StudioDashboardPage() {
                 <p className="max-w-3xl text-base text-gray-300 sm:text-xl">
                   {t('studio.entry.heroDescription')}
                 </p>
-                <div className="mt-8 flex flex-col sm:flex-row gap-3">
+                <div className="mt-8 flex flex-col sm:flex-row sm:flex-wrap gap-3">
                   <Link href="/compositores/admin/studio-ia/novo" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-6 py-4 font-bold hover:scale-[1.01] transition">
                     <FiPlus /> {t('studio.entry.createSong')}
                   </Link>
@@ -241,6 +241,9 @@ export default function StudioDashboardPage() {
                   </Link>
                   <Link href="/compositores/admin/minhas-vozes" className="inline-flex items-center justify-center gap-2 rounded-xl bg-fuchsia-900/70 px-6 py-4 font-semibold hover:bg-fuchsia-800 transition">
                     <FiMic /> {t('studio.entry.myVoices')}
+                  </Link>
+                  <Link href="/compositores/admin/studio-ia/letras-salvas" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-800 px-6 py-4 font-semibold hover:bg-gray-700 transition">
+                    <FiFileText /> {t('studio.savedLyrics.title')}
                   </Link>
                   <Link href="/compositores/admin/studio-ia/projetos" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-800 px-6 py-4 font-semibold hover:bg-gray-700 transition">
                     <FiFolder /> {t('studio.entry.myProjects')}

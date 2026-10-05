@@ -10,7 +10,8 @@
       "copy": "Copiar",
       "copied": "Copiado!",
       "delete": "Excluir",
-      "understood": "Entendi"
+      "understood": "Entendi",
+      "copyFailed": "Não foi possível copiar. Tente novamente."
     },
     "status": {
       "loading": "Carregando...",
@@ -1510,6 +1511,19 @@
       },
       "instruments": "Instrumentos que você quer (opcional)",
       "freeLyrics": "Letra grátis"
+    },
+    "savedLyrics": {
+      "title": "Letras salvas",
+      "description": "As letras atuais dos seus projetos, prontas para consultar e copiar.",
+      "copy": "Copiar letra",
+      "openProject": "Abrir projeto / editar",
+      "view": "Ver letra completa",
+      "empty": "Nenhuma letra salva ainda. Crie um projeto com uma letra ou clique em Salvar letra no projeto.",
+      "loadError": "Não foi possível carregar as letras. Tente novamente.",
+      "previous": "Anterior",
+      "next": "Próxima",
+      "saved": "Letra salva! Você pode acessá-la em Letras salvas.",
+      "editHint": "Salve suas alterações para encontrá-las em Letras salvas. Isso não altera o áudio já gerado."
     }
   },
   "footer": {

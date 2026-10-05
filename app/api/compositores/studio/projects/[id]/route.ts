@@ -431,13 +431,8 @@ export async function PUT(
     if (error) throw error
 
     if (typeof body.lyric === 'string') {
-      await supabaseAdmin
-        .from('studio_lyrics')
-        .update({ is_current: false, updated_at: new Date().toISOString() })
-        .eq('project_id', params.id)
-        .eq('composer_id', composer.composerId)
-
-      await supabaseAdmin
+      // Store the new text first: a failed insert must not hide the old lyric.
+      const { data: savedLyric, error: lyricError } = await supabaseAdmin
         .from('studio_lyrics')
         .insert({
           project_id: params.id,
@@ -445,6 +440,19 @@ export async function PUT(
           content: body.lyric,
           is_current: true,
         })
+        .select('id, created_at')
+        .single()
+      if (lyricError) throw lyricError
+
+      const { error: previousLyricsError } = await supabaseAdmin
+        .from('studio_lyrics')
+        .update({ is_current: false })
+        .eq('project_id', params.id)
+        .eq('composer_id', composer.composerId)
+        .eq('is_current', true)
+        .neq('id', savedLyric.id)
+        .lte('created_at', savedLyric.created_at)
+      if (previousLyricsError) throw previousLyricsError
     }
 
     return NextResponse.json({ project: mapStudioProject(data) })

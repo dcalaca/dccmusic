@@ -357,6 +357,9 @@ export default function Header() {
                       <FiZap className="w-4 h-4" />
                       <span>{copy.myStudio}</span>
                     </Link>
+                    <Link href="/compositores/admin/studio-ia/letras-salvas" onClick={() => setShowUserMenu(false)} className="flex cursor-pointer items-center space-x-2 border-b border-gray-800 px-4 py-3 transition-colors hover:bg-gray-800">
+                      <FiFileText className="w-4 h-4" /><span>{t('studio.savedLyrics.title')}</span>
+                    </Link>
                     <div className="border-b border-gray-800 py-2">
                       <div className="px-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-500">
                         {copy.compositions}
@@ -499,6 +502,9 @@ export default function Header() {
                     >
                       <FiZap className="w-4 h-4" />
                       <span>{copy.myStudio}</span>
+                    </Link>
+                    <Link href="/compositores/admin/studio-ia/letras-salvas" onClick={() => setShowUserMenu(false)} className="flex cursor-pointer items-center space-x-2 border-b border-gray-800 px-4 py-3 transition-colors hover:bg-gray-800">
+                      <FiFileText className="w-4 h-4" /><span>{t('studio.savedLyrics.title')}</span>
                     </Link>
                     <div className="border-b border-gray-800 py-2">
                       <div className="px-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-500">
