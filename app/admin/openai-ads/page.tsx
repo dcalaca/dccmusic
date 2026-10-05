@@ -103,7 +103,11 @@ async function getCampaigns(key: string) {
 }
 
 async function getInsights(key: string) {
-  const end = Math.floor(Date.now() / 1000)
+  // A OpenAI Ads exige início/fim exatamente em hora cheia no fuso da conta.
+  // Como America/Sao_Paulo tem offset em horas inteiras, alinhar o Unix timestamp
+  // para múltiplos de 3600 garante minuto=0 e segundo=0 também no horário local.
+  const now = Math.floor(Date.now() / 1000)
+  const end = Math.floor(now / 3600) * 3600
   const start = end - 30 * 24 * 60 * 60
   const params = new URLSearchParams()
   params.set('time_granularity', 'none')
