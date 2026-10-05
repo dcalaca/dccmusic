@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { notifyMusicReady } from './notifications'
 import { supabaseAdmin } from './supabase'
 import { buildDccEmailHtml, dccEmailButton } from './dcc-email-template'
@@ -904,34 +905,38 @@ export async function sendComposerAccountDeletedEmail(input: ComposerEmailInput)
   })
 }
 
-export async function registerComposerAccountDeletionBlock(input: ComposerEmailInput & {
-  source?: string
-}) {
+export async function registerComposerAccountDeletionBlock(input: ComposerEmailInput & { source?: string }) {
+  const normalizedEmail = String(input.email || '').trim().toLowerCase()
+  if (!normalizedEmail) return
+
+  const emailHash = createHash('sha256')
+    .update(`dccmusic:deleted-account:email:${normalizedEmail}`)
+    .digest('hex')
+
   const { error } = await supabaseAdmin.from('composer_account_deletion_blocks').upsert({
-    composer_id: input.composerId,
-    email: input.email,
-    name: input.name,
+    email_hash: emailHash,
     source: input.source || 'unknown',
     blocked_at: new Date().toISOString(),
-  }, { onConflict: 'email' })
+  }, { onConflict: 'email_hash' })
 
-  if (error && !String(error.message || '').includes('schema cache')) {
-    console.warn('[DCC EMAIL] Falha ao registrar bloqueio de conta excluída:', error.message)
-  }
+  if (error) console.warn('[DCC EMAIL] Falha ao registrar bloqueio de conta excluída:', error.message)
 }
 
 export async function hasComposerAccountDeletionBlock(email: string) {
   const normalizedEmail = String(email || '').trim().toLowerCase()
   if (!normalizedEmail) return false
 
+  const emailHash = createHash('sha256')
+    .update(`dccmusic:deleted-account:email:${normalizedEmail}`)
+    .digest('hex')
+
   const { data, error } = await supabaseAdmin
     .from('composer_account_deletion_blocks')
     .select('id')
-    .eq('email', normalizedEmail)
+    .eq('email_hash', emailHash)
     .maybeSingle()
 
   if (error) {
-    if (String(error.message || '').includes('schema cache')) return false
     console.warn('[DCC EMAIL] Falha ao checar bloqueio de conta excluída:', error.message)
     return false
   }
