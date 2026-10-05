@@ -48,9 +48,17 @@ export async function GET(
       db.getComposerVideoCount(params.id),
       db.getComposerMusicCount(params.id),
       db.getComposerTotalViews(params.id),
-      supabaseAdmin.from('studio_lyrics').select('id', { count: 'exact', head: true }).eq('composer_id', params.id),
+      // Count projects with a current lyric, not every historical save.
+      supabaseAdmin.from('studio_projects')
+        .select('id, studio_lyrics!inner(id)', { count: 'exact', head: true })
+        .eq('composer_id', params.id)
+        .eq('studio_lyrics.composer_id', params.id)
+        .eq('studio_lyrics.is_current', true)
+        .neq('studio_lyrics.content', ''),
       supabaseAdmin.from('studio_generations').select('id', { count: 'exact', head: true }).eq('composer_id', params.id).neq('status', 'failed'),
     ])
+
+    if (studioLyrics.error) throw studioLyrics.error
 
     return NextResponse.json({
       ...composer,

@@ -8,9 +8,10 @@ interface CopyButtonProps {
   text: string
   label?: string
   copiedLabel?: string
+  iconOnly?: boolean
 }
 
-export default function CopyButton({ text, label, copiedLabel }: CopyButtonProps) {
+export default function CopyButton({ text, label, copiedLabel, iconOnly = false }: CopyButtonProps) {
   const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -49,16 +50,18 @@ export default function CopyButton({ text, label, copiedLabel }: CopyButtonProps
   }
 
   return (
-    <button type="button" disabled={!text.trim()} onClick={handleCopy} aria-live="polite" className="flex items-center justify-center space-x-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors w-full disabled:opacity-40">
+    <button type="button" disabled={!text.trim()} onClick={handleCopy} aria-live="polite" title={failed ? t('common.actions.copyFailed') : copied ? copiedLabel || t('common.actions.copied') : label || t('common.actions.copy')} className={iconOnly
+      ? 'inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-gray-400 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 disabled:opacity-40 sm:h-8 sm:w-8'
+      : 'flex items-center justify-center space-x-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors w-full disabled:opacity-40'}>
       {copied ? (
         <>
           <FiCheck className="w-4 h-4 text-green-400" />
-          <span>{copiedLabel || t('common.actions.copied')}</span>
+          <span className={iconOnly ? 'sr-only' : undefined}>{copiedLabel || t('common.actions.copied')}</span>
         </>
       ) : (
         <>
           <FiCopy className="w-4 h-4" />
-          <span>{failed ? t('common.actions.copyFailed') : label || t('common.actions.copy')}</span>
+          <span className={iconOnly ? 'sr-only' : undefined}>{failed ? t('common.actions.copyFailed') : label || t('common.actions.copy')}</span>
         </>
       )}
     </button>
