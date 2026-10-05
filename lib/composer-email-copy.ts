@@ -9,7 +9,7 @@ const COPY = {
     commentSubject: 'Novo comentário em sua música', commentTitle: 'Novo comentário recebido', commentedOn: 'comentou em', viewSong: 'Ver música',
     paymentSubject: 'Pagamento confirmado na DCC Music', paymentTitle: 'Pagamento confirmado', paymentBody: 'Confirmamos o pagamento de', value: 'Valor', paymentId: 'ID do pagamento',
     subscriptionSubject: 'Seu plano DCC Music está perto do vencimento', subscriptionTitle: 'Seu plano está perto do vencimento', subscriptionBody: 'Seu plano', expires: 'vence em', days: 'dia(s)', plans: 'Ver planos',
-    deletedSubject: 'Sua conta foi excluída da DCC Music', deletedTitle: 'Conta excluída conforme solicitado', deletedBody: 'Confirmamos que sua conta de compositor foi excluída da DCC Music.',
+    deletedSubject: 'Sua conta foi excluída da DCC Music', deletedTitle: 'Conta excluída conforme solicitado', deletedBody: 'Confirmamos que sua conta e seu acesso foram excluídos da DCC Music e não podem ser restaurados. Conteúdo técnico eventualmente preservado internamente permanece desvinculado do perfil excluído.',
   },
   en: {
     greeting: 'Hi', welcomeSubject: 'Welcome to DCC Music', welcomeTitle: 'Welcome', welcomeBody: 'Your email has been confirmed and your songwriter account is ready.', dashboard: 'Open my dashboard',
@@ -19,7 +19,7 @@ const COPY = {
     commentSubject: 'New comment on your song', commentTitle: 'New comment received', commentedOn: 'commented on', viewSong: 'View song',
     paymentSubject: 'Payment confirmed at DCC Music', paymentTitle: 'Payment confirmed', paymentBody: 'We have confirmed your payment for', value: 'Amount', paymentId: 'Payment ID',
     subscriptionSubject: 'Your DCC Music plan is close to expiring', subscriptionTitle: 'Your plan is close to expiring', subscriptionBody: 'Your', expires: 'plan expires in', days: 'day(s)', plans: 'View plans',
-    deletedSubject: 'Your DCC Music account was deleted', deletedTitle: 'Account deleted as requested', deletedBody: 'We have confirmed that your DCC Music songwriter account was deleted.',
+    deletedSubject: 'Your DCC Music account was deleted', deletedTitle: 'Account deleted as requested', deletedBody: 'We confirm that your DCC Music account and access were deleted and cannot be restored. Any technical content retained internally remains detached from the deleted profile.',
   },
   es: {
     greeting: 'Hola', welcomeSubject: 'Bienvenido a DCC Music', welcomeTitle: 'Bienvenido', welcomeBody: 'Tu correo fue confirmado y tu cuenta de compositor está lista.', dashboard: 'Acceder a mi panel',
@@ -29,7 +29,7 @@ const COPY = {
     commentSubject: 'Nuevo comentario en tu canción', commentTitle: 'Nuevo comentario recibido', commentedOn: 'comentó en', viewSong: 'Ver canción',
     paymentSubject: 'Pago confirmado en DCC Music', paymentTitle: 'Pago confirmado', paymentBody: 'Confirmamos el pago de', value: 'Valor', paymentId: 'ID del pago',
     subscriptionSubject: 'Tu plan de DCC Music está cerca de vencer', subscriptionTitle: 'Tu plan está cerca de vencer', subscriptionBody: 'Tu plan', expires: 'vence en', days: 'día(s)', plans: 'Ver planes',
-    deletedSubject: 'Tu cuenta de DCC Music fue eliminada', deletedTitle: 'Cuenta eliminada según lo solicitado', deletedBody: 'Confirmamos que tu cuenta de compositor de DCC Music fue eliminada.',
+    deletedSubject: 'Tu cuenta de DCC Music fue eliminada', deletedTitle: 'Cuenta eliminada según lo solicitado', deletedBody: 'Confirmamos que tu cuenta y acceso a DCC Music fueron eliminados y no pueden restaurarse. Cualquier contenido técnico conservado internamente permanece desvinculado del perfil eliminado.',
   },
 } as const
 
