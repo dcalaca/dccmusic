@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth-helpers'
 import { supabaseAdmin } from '@/lib/supabase'
 import {
   CAMPAIGN_BATCH_SIZE,
+  normalizeCampaignCountry,
   calculateNextRunAt,
   countRecipientLanguages,
   getCampaignRecipients,
@@ -201,6 +202,7 @@ export async function GET(request: NextRequest) {
         audience,
         status: 'draft',
         target_mode: targetMode === 'pending_email' || targetMode === 'inactive' ? targetMode : 'audience',
+        target_country: normalizeCampaignCountry(request.nextUrl.searchParams.get('country')),
         target_from: targetFrom,
         target_to: targetTo,
         exclude_previously_sent: excludePreviouslySent,
@@ -231,14 +233,10 @@ export async function GET(request: NextRequest) {
     const livePendingCounts = new Map<string, number>()
     await Promise.all(
       campaigns.map(async (campaign: any) => {
-        if (campaign.frozen_at || !campaign.target_from) return
-        if (campaign.target_mode !== 'pending_email' && campaign.target_mode !== 'inactive') return
+        if (campaign.frozen_at) return
+        if (!campaign.target_country && !campaign.exclude_previously_sent && campaign.target_mode !== 'pending_email' && campaign.target_mode !== 'inactive') return
 
-        const recipients = campaign.target_mode === 'inactive'
-          ? await getInactiveComposerRecipients(campaign.target_from)
-          : campaign.target_to
-            ? await getPendingEmailRecipients(campaign.target_from, campaign.target_to)
-            : []
+        const recipients = await getRecipientsForCampaign(campaign)
         livePendingCounts.set(campaign.id, recipients.length)
       })
     )
@@ -252,6 +250,7 @@ export async function GET(request: NextRequest) {
         deliveries: stats.get(campaign.id) || { sent: 0, failed: 0, skipped: 0, pending: 0, reserved: 0 },
         clicks: clickStats.get(campaign.id) || { total: 0, human: 0, bot: 0, unknown: 0 },
       })),
+      countries: Array.from(new Set(allRecipients.map((recipient) => normalizeCampaignCountry(recipient.country)).filter(Boolean))).sort(),
       audienceCounts: {
         all: allRecipients.length,
         composers: composerRecipients.length,
@@ -322,6 +321,7 @@ export async function POST(request: NextRequest) {
       recurring_enabled: recurringEnabled,
       next_run_at: status === 'scheduled' ? scheduledAt : null,
       target_mode: targetMode,
+      target_country: normalizeCampaignCountry(body.targetCountry),
       target_from: targetFrom,
       target_to: targetTo,
       target_count: 0,
@@ -436,6 +436,7 @@ export async function PATCH(request: NextRequest) {
           cta_url: cleanText(body.ctaUrl, 500) || null,
           audience: targetMode === 'pending_email' || targetMode === 'inactive' ? 'composers' : normalizeAudience(body.audience),
           target_mode: targetMode,
+      target_country: normalizeCampaignCountry(body.targetCountry),
           target_from: targetFrom,
           target_to: targetTo,
           exclude_previously_sent: excludePreviouslySent,

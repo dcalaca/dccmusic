@@ -23,6 +23,7 @@ export type EmailCampaign = {
   target_mode?: 'audience' | 'pending_email' | 'inactive'
   target_from?: string | null
   target_to?: string | null
+  target_country?: string | null
   target_count?: number
   frozen_at?: string | null
   exclude_previously_sent?: boolean
@@ -75,6 +76,18 @@ async function fetchAllRows<T>(
     if (page.length < SUPABASE_PAGE_SIZE) break
   }
   return rows
+}
+
+export function normalizeCampaignCountry(value?: unknown): string | null {
+  const code = String(value || '').trim().toUpperCase()
+  if (!code) return null
+  if (!/^[A-Z]{2}$/.test(code)) throw new Error('País inválido.')
+  return code === 'UK' ? 'GB' : code
+}
+
+export function filterRecipientsByCountry<T extends { country?: string | null }>(recipients: T[], country?: string | null): T[] {
+  const selected = normalizeCampaignCountry(country)
+  return selected ? recipients.filter((recipient) => normalizeCampaignCountry(recipient.country) === selected) : recipients
 }
 
 export function marketingLanguageForCountry(country?: string | null): MarketingLanguage {
@@ -428,6 +441,8 @@ export async function getRecipientsForCampaign(campaign: EmailCampaign) {
   } else {
     recipients = await getCampaignRecipients(campaign.audience)
   }
+
+  recipients = filterRecipientsByCountry(recipients, campaign.target_country)
 
   if (campaign.exclude_previously_sent && campaign.sent_filter_from && campaign.sent_filter_to) {
     const sentRows = await fetchAllRows<any>((from, to) =>

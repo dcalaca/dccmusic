@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslation } from 'react-i18next'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { FiCalendar, FiCheckCircle, FiClock, FiEye, FiEyeOff, FiLoader, FiMail, FiPauseCircle, FiSend, FiX } from 'react-icons/fi'
 
@@ -21,6 +22,7 @@ type Campaign = {
   target_mode?: 'audience' | 'pending_email' | 'inactive'
   target_from?: string | null
   target_to?: string | null
+  target_country?: string | null
   target_count?: number
   frozen_at?: string | null
   exclude_previously_sent?: boolean
@@ -141,6 +143,14 @@ function defaultPendingRange() {
 }
 
 export default function EmailCampaignsAdmin() {
+  const { t, i18n } = useTranslation()
+  const [targetCountry, setTargetCountry] = useState('')
+  const [countries, setCountries] = useState<string[]>([])
+  const countryCopy = (pt: string, es: string, en: string) => (i18n.language || 'pt').startsWith('es') ? es : (i18n.language || 'pt').startsWith('en') ? en : pt
+  const countryName = (code: string) => {
+    try { return new Intl.DisplayNames([i18n.language || 'pt-BR'], { type: 'region' }).of(code) || code }
+    catch { return code }
+  }
   const initialPendingRange = useMemo(defaultPendingRange, [])
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [audienceCounts, setAudienceCounts] = useState({ all: 0, composers: 0, site_users: 0 })
@@ -178,8 +188,8 @@ export default function EmailCampaignsAdmin() {
   const [createScheduled, setCreateScheduled] = useState(false)
   const [scheduledAt, setScheduledAt] = useState(localDateTimeValue(new Date(Date.now() + 60 * 60 * 1000)))
 
-  const selectedAudienceCount = targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent ? (targetCount ?? 0) : (audienceCounts[audience] || 0)
-  const selectedLanguageCounts = targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent ? targetLanguageCounts : audienceLanguageCounts[audience]
+  const selectedAudienceCount = Boolean(targetCountry) || targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent ? (targetCount ?? 0) : (audienceCounts[audience] || 0)
+  const selectedLanguageCounts = Boolean(targetCountry) || targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent ? targetLanguageCounts : audienceLanguageCounts[audience]
   const audienceSelectValue = targetMode === 'inactive' ? 'inactive' : targetMode === 'pending_email' ? 'pending_email' : audience
   const previewLines = useMemo(() => body.split('\n').filter(Boolean).slice(0, 4), [body])
 
@@ -200,6 +210,7 @@ export default function EmailCampaignsAdmin() {
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Erro ao carregar campanhas')
       setCampaigns(data.campaigns || [])
+      setCountries(data.countries || [])
       setAudienceCounts(data.audienceCounts || { all: 0, composers: 0, site_users: 0 })
       setAudienceLanguageCounts(data.audienceLanguageCounts || {
         all: { pt: 0, es: 0, en: 0 },
@@ -229,7 +240,7 @@ export default function EmailCampaignsAdmin() {
   }, [hasSendingCampaign, showHidden])
 
   useEffect(() => {
-    const needsDynamicCount = targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent
+    const needsDynamicCount = Boolean(targetCountry) || targetMode === 'pending_email' || targetMode === 'inactive' || excludePreviouslySent
     if (!needsDynamicCount) {
       setTargetCount(null)
       setTargetLanguageCounts({ pt: 0, es: 0, en: 0 })
@@ -241,7 +252,9 @@ export default function EmailCampaignsAdmin() {
         setTargetCountLoading(true)
         const params = new URLSearchParams({
           mode: 'count',
+          country: targetCountry,
           targetMode,
+          targetCountry: targetCountry || null,
           audience,
           from: targetFrom,
           to: targetMode === 'inactive' ? '' : targetTo,
@@ -264,7 +277,7 @@ export default function EmailCampaignsAdmin() {
       }
     }, 250)
     return () => { window.clearTimeout(timer); controller.abort() }
-  }, [targetMode, targetFrom, targetTo, audience, excludePreviouslySent, sentFilterFrom, sentFilterTo])
+  }, [targetCountry, targetMode, targetFrom, targetTo, audience, excludePreviouslySent, sentFilterFrom, sentFilterTo])
 
   const applyIdea = (idea: Idea) => {
     setEditingDraftId('')
@@ -303,6 +316,7 @@ export default function EmailCampaignsAdmin() {
     setBody('')
     setCtaLabel('')
     setCtaUrl('')
+    setTargetCountry('')
     setAudience('all')
     setTargetMode('audience')
     setTargetFrom(initialPendingRange.from)
@@ -357,6 +371,7 @@ export default function EmailCampaignsAdmin() {
     setBody(campaign.body || '')
     setCtaLabel(campaign.cta_label || '')
     setCtaUrl(campaign.cta_url || '')
+    setTargetCountry(campaign.target_country || '')
     setAudience(campaign.audience)
     setTargetMode(campaign.target_mode || 'audience')
     setTargetFrom(campaign.target_from?.slice(0, 10) || initialPendingRange.from)
@@ -403,7 +418,7 @@ export default function EmailCampaignsAdmin() {
     const confirmMessage = action === 'send'
       ? sentSoFar > 0 || pending > 0
         ? `Retomar a campanha "${campaign.name}" e continuar automaticamente até terminar a lista? Quem já foi processado não recebe novamente.`
-        : `Iniciar a campanha "${campaign.name}" para ${targetLabel}? A lista será congelada e o envio seguirá automaticamente, em ordem, até concluir.`
+        : `Iniciar a campanha "${campaign.name}" para ${targetLabel}${campaign.target_country ? ` (${countryName(campaign.target_country)})` : ''}? A lista será congelada e o envio seguirá automaticamente, em ordem, até concluir.`
       : action === 'cancel'
         ? `Cancelar a campanha "${campaign.name}"? Ela não será enviada.`
         : `Pausar a campanha "${campaign.name}"?`
@@ -561,6 +576,14 @@ export default function EmailCampaignsAdmin() {
                   <option value="pending_email">Cadastros com e-mail pendente</option>
                 </select>
               </label>
+              <label className="mt-3 block">
+                <span className="mb-1.5 block text-sm font-bold text-gray-200">{t('campaignCountryLabel', { defaultValue: countryCopy('País dos destinatários', 'País de los destinatarios', 'Recipient country') })}</span>
+                <select value={targetCountry} onChange={(e) => { setTargetCountry(e.target.value); setTargetCount(null) }} className="w-full rounded-xl border border-gray-700 bg-black px-4 py-3">
+                  <option value="">{t('campaignAllCountries', { defaultValue: countryCopy('Todos os países', 'Todos los países', 'All countries') })}</option>
+                  {Array.from(new Set([...countries, ...(targetCountry ? [targetCountry] : [])])).sort((a, b) => countryName(a).localeCompare(countryName(b))).map((code) => <option key={code} value={code}>{countryName(code)}</option>)}
+                </select>
+                <p className="mt-2 text-xs text-gray-400">{t('campaignCountryHelp', { defaultValue: countryCopy('Usa o país do cadastro e combina com os outros filtros. Cadastros sem país só entram em Todos os países.', 'Usa el país del registro y se combina con los otros filtros. Los registros sin país solo se incluyen en Todos los países.', 'Uses the signup country and combines with other filters. Accounts without a country are only included in All countries.') })}</p>
+              </label>
               {targetMode === 'inactive' && (
                 <div className="mt-4 rounded-xl border border-cyan-800/60 bg-cyan-950/20 p-3">
                   <p className="text-sm font-semibold text-cyan-100">Sem criação desde</p>
@@ -585,7 +608,7 @@ export default function EmailCampaignsAdmin() {
                   <p className="mt-2 text-xs text-gray-400">{targetCountLoading ? 'Calculando público...' : `${targetCount ?? 0} cadastros`}</p>
                 </div>
               )}
-              <p className="mt-3 text-xs text-gray-500">Estimativa: {selectedAudienceCount} destinatário(s). A lista será congelada no primeiro envio.</p>
+              <p className="mt-3 text-xs text-gray-500">Estimativa: {targetCountLoading ? '...' : selectedAudienceCount} destinatário(s). A lista será congelada no primeiro envio.</p>
               <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                 <div className="rounded-lg border border-gray-800 bg-black/50 px-3 py-2"><strong className="block text-white">{selectedLanguageCounts.pt}</strong><span className="text-gray-400">Português</span></div>
                 <div className="rounded-lg border border-gray-800 bg-black/50 px-3 py-2"><strong className="block text-white">{selectedLanguageCounts.es}</strong><span className="text-gray-400">Español</span></div>
@@ -644,7 +667,7 @@ export default function EmailCampaignsAdmin() {
               const isFrozen = Boolean(campaign.frozen_at) || queueTotal > 0
               const estimatedTotal = isFrozen
                 ? Number(campaign.target_count || queueTotal)
-                : (campaign.target_mode === 'pending_email' || campaign.target_mode === 'inactive' ? Number(campaign.target_count || 0) : audienceCounts[campaign.audience] || 0)
+                : (campaign.target_country || campaign.exclude_previously_sent || campaign.target_mode === 'pending_email' || campaign.target_mode === 'inactive' ? Number(campaign.target_count || 0) : audienceCounts[campaign.audience] || 0)
               const remaining = isFrozen ? pendingCount + reservedCount : estimatedTotal
               const processedCount = sentCount + failedCount + skippedCount
               const progressPercent = estimatedTotal > 0 ? Math.min(100, Math.round((processedCount / estimatedTotal) * 100)) : 0
@@ -659,6 +682,7 @@ export default function EmailCampaignsAdmin() {
                       <div className="mb-2 flex flex-wrap items-center gap-2">
                         <span className="rounded-full border border-gray-700 bg-gray-900 px-3 py-1 text-xs font-bold text-gray-200">{statusLabels[campaign.status]}</span>
                         <span className="rounded-full border border-fuchsia-800 bg-fuchsia-950/30 px-3 py-1 text-xs font-bold text-fuchsia-100">{campaign.target_mode === 'pending_email' ? 'E-mail pendente' : campaign.target_mode === 'inactive' ? 'Sem criação recente' : audienceLabels[campaign.audience]}</span>
+                        {campaign.target_country && <span className="rounded-full border border-cyan-800 bg-cyan-950/30 px-3 py-1 text-xs font-bold text-cyan-100">{countryName(campaign.target_country)}</span>}
                         {isFrozen && <span className="rounded-full border border-emerald-800 bg-emerald-950/30 px-3 py-1 text-xs font-bold text-emerald-100">Lista congelada: {estimatedTotal}</span>}
                       </div>
                       <h3 className="text-lg font-black text-white">{campaign.name}</h3>
