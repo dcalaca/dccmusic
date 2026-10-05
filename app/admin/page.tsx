@@ -221,10 +221,18 @@ const adminGroups = [
       },
       {
         href: '/admin/ads',
-        title: 'Configuração Ads',
+        title: 'Meta Ads',
         description: 'Analisar Meta Ads, custo por cadastro e pausar anúncios ruins',
         icon: FiSettings,
         accent: 'blue',
+      },
+      {
+        href: '/admin/openai-ads',
+        title: 'OpenAI Ads',
+        description: 'Ver conta, campanhas, revisão, orçamento e desempenho no ChatGPT',
+        icon: FiZap,
+        accent: 'purple',
+        primaryAdminOnly: true,
       },
     ],
   },
@@ -258,7 +266,11 @@ function AdminCard({ item }: { item: typeof adminGroups[number]['items'][number]
 }
 
 export default async function AdminPage() {
-  await requireAuth()
+  const session = await requireAuth()
+  const isPrimaryAdmin = Boolean(
+    process.env.ADMIN_EMAIL &&
+    session?.user?.email?.toLowerCase() === process.env.ADMIN_EMAIL.toLowerCase()
+  )
 
   return (
     <div className="min-h-screen py-8">
@@ -295,9 +307,11 @@ export default async function AdminPage() {
                 <p className="mt-1 text-sm text-gray-400">{group.description}</p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                {group.items.map((item) => (
-                  <AdminCard key={item.href} item={item} />
-                ))}
+                {group.items
+                  .filter((item) => !('primaryAdminOnly' in item) || !item.primaryAdminOnly || isPrimaryAdmin)
+                  .map((item) => (
+                    <AdminCard key={item.href} item={item} />
+                  ))}
               </div>
             </section>
           ))}
