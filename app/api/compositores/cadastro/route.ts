@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import * as composerAuth from '@/lib/composer-auth'
 import { ComposerSignupError } from '@/lib/composer-auth'
 import { getComposerEmailLanguage, sendComposerVerificationEmail } from '@/lib/composer-email-verification'
-import { hasComposerAccountDeletionBlock } from '@/lib/dcc-emails'
+import { hasDeletedComposerIdentity } from '@/lib/composer-account-deletion'
 import { validateSignupEmail } from '@/lib/email-validation'
 import { PARTNER_SESSION_COOKIE, applyComposerPartnerAttribution } from '@/lib/partners'
 import { sendMetaCompleteRegistrationEvent } from '@/lib/meta-conversions'
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
     const normalizedEmail = emailValidation.email
 
-    const emailWasDeleted = await hasComposerAccountDeletionBlock(normalizedEmail)
+    const emailWasDeleted = await hasDeletedComposerIdentity({ email: normalizedEmail })
     if (emailWasDeleted) {
       return NextResponse.json(
         {
