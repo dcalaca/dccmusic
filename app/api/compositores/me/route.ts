@@ -170,7 +170,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const prepared = await prepareComposerAccountDeletion(composerToken.composerId, 'self_service')
+    await prepareComposerAccountDeletion(composerToken.composerId, 'self_service')
     const deletedComposer = await deleteComposer(composerToken.composerId)
     let emailSent = false
 
