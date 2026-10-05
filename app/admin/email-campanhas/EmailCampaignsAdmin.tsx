@@ -340,6 +340,7 @@ export default function EmailCampaignsAdmin() {
         body: JSON.stringify({
           ...(editingDraftId ? { id: editingDraftId, action: 'save_draft' } : {}),
           name, subject, preview, body, ctaLabel, ctaUrl, audience,
+          targetCountry: targetCountry || null,
           targetMode,
           targetFrom: targetMode === 'pending_email' || targetMode === 'inactive' ? targetFrom : null,
           targetTo: targetMode === 'pending_email' ? targetTo : null,
@@ -406,6 +407,10 @@ export default function EmailCampaignsAdmin() {
   }
 
   const runAction = async (campaign: Campaign, action: 'send' | 'pause' | 'cancel') => {
+    if (action === 'send' && editingDraftId === campaign.id) {
+      setError(t('campaignSaveBeforeSend', { defaultValue: countryCopy('Salve as alterações do rascunho antes de iniciar o envio.', 'Guarda los cambios del borrador antes de iniciar el envío.', 'Save your draft changes before starting delivery.') }))
+      return
+    }
     const sentSoFar = campaign.deliveries?.sent || campaign.sent_count || 0
     const pending = (campaign.deliveries?.pending || 0) + (campaign.deliveries?.reserved || 0)
     const targetLabel = campaign.target_mode === 'pending_email'
@@ -414,10 +419,14 @@ export default function EmailCampaignsAdmin() {
         ? `${campaign.target_count || pending || 'os'} compositores sem criação recente`
       : audienceLabels[campaign.audience]
 
+    const countryTargetLabel = campaign.target_country
+      ? `${campaign.target_count ?? 0} destinatário(s) de ${countryName(campaign.target_country)} (${targetLabel})`
+      : targetLabel
+
     const confirmMessage = action === 'send'
       ? sentSoFar > 0 || pending > 0
         ? `Retomar a campanha "${campaign.name}" e continuar automaticamente até terminar a lista? Quem já foi processado não recebe novamente.`
-        : `Iniciar a campanha "${campaign.name}" para ${targetLabel}${campaign.target_country ? ` (${countryName(campaign.target_country)})` : ''}? A lista será congelada e o envio seguirá automaticamente, em ordem, até concluir.`
+        : `Iniciar a campanha "${campaign.name}" para ${countryTargetLabel}? A lista será congelada e o envio seguirá automaticamente, em ordem, até concluir.`
       : action === 'cancel'
         ? `Cancelar a campanha "${campaign.name}"? Ela não será enviada.`
         : `Pausar a campanha "${campaign.name}"?`
