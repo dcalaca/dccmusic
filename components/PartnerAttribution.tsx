@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation'
 const STORAGE_KEY = 'dcc_partner_attribution'
 const MARKETING_ATTRIBUTION_COOKIE = 'dcc_marketing_attribution'
 const ATTRIBUTION_MAX_AGE_SECONDS = 90 * 24 * 60 * 60
+const OPENAI_ADS_PIXEL_ID = '7P9kR7YDnZBmFo76pXpiAq'
 
 function clean(value: string | null, max = 240) {
   const normalized = String(value || '').trim()
@@ -69,6 +70,63 @@ function syncAttributionWithServer(attribution: any) {
   }
 }
 
+type ComposerJwtPayload = {
+  composerId?: string
+  email?: string
+}
+
+function readComposerJwtPayload(): ComposerJwtPayload | null {
+  try {
+    const token = localStorage.getItem('composer_token')
+    if (!token) return null
+    const payload = token.split('.')[1]
+    if (!payload) return null
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+    return JSON.parse(atob(padded)) as ComposerJwtPayload
+  } catch {
+    return null
+  }
+}
+
+async function sha256Hex(value: string) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value))
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+async function syncOpenAIAdsUserData() {
+  try {
+    const payload = readComposerJwtPayload()
+    const externalId = String(payload?.composerId || '').trim()
+    if (!externalId || typeof crypto?.subtle?.digest !== 'function') return
+
+    const externalIdHash = await sha256Hex(externalId)
+    const dedupeKey = 'dcc_openai_user_init'
+    if (sessionStorage.getItem(dedupeKey) === externalIdHash) return
+
+    const email = String(payload?.email || '').trim().toLowerCase()
+    const emailHash = email ? await sha256Hex(email) : null
+    const country = String(document.documentElement.dataset.country || '').trim().toUpperCase()
+    const oaiq = (window as any).oaiq
+    if (typeof oaiq !== 'function') return
+
+    oaiq('init', {
+      pixelId: OPENAI_ADS_PIXEL_ID,
+      user: {
+        external_id_sha256: externalIdHash,
+        ...(emailHash ? { email_sha256: emailHash } : {}),
+        ...(country.length === 2 ? { country } : {}),
+      },
+    })
+
+    sessionStorage.setItem(dedupeKey, externalIdHash)
+  } catch {
+    // Ads matching must never block navigation or authentication.
+  }
+}
+
 function getExternalReferrer() {
   try {
     if (!document.referrer) return null
@@ -114,6 +172,10 @@ export default function PartnerAttribution() {
       attributedEntryRef.current = null
     }
   }, [pathname, searchParams])
+
+  useEffect(() => {
+    void syncOpenAIAdsUserData()
+  }, [pathname])
 
   useEffect(() => {
     const utmSource = clean(searchParams.get('utm_source'), 120)
