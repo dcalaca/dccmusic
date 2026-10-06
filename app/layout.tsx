@@ -13,6 +13,7 @@ import PartnerAttribution from '@/components/PartnerAttribution'
 import TikTokTestPageView from '@/components/TikTokTestPageView'
 import GtmPageEvents from '@/components/GtmEvents'
 import LocalizationProvider from '@/components/LocalizationProvider'
+import InstallAppPrompt from '@/components/InstallAppPrompt'
 import { getLocaleForCountry, normalizeCountry } from '@/lib/localization'
 import { createDccI18n } from '@/i18n/server'
 
@@ -339,6 +340,7 @@ export default function RootLayout({
             <TikTokTestPageView />
           </Suspense>
           <NoticeBoard />
+          <InstallAppPrompt />
           <main className="flex-1">{children}</main>
           <Footer />
         </div>
