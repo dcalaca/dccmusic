@@ -42,7 +42,7 @@ export default function CountrySelector({ compact = false }: { compact?: boolean
       </button>
 
       {open ? (
-        <div role="menu" className="absolute right-0 top-12 z-[80] w-56 overflow-hidden rounded-2xl border border-gray-700 bg-gray-950 p-2 shadow-2xl shadow-black/70">
+        <div role="menu" className="absolute left-0 top-full z-[80] mt-2 w-56 overflow-hidden rounded-2xl border border-gray-700 bg-gray-950 p-2 shadow-2xl shadow-black/70">
           <p className="px-3 pb-2 pt-1 text-[11px] font-bold uppercase tracking-[0.12em] text-gray-500">{t('global.country.choose')}</p>
           {Object.keys(COUNTRY_CONFIG).map((rawCode) => {
             const item = COUNTRY_CONFIG[rawCode]
