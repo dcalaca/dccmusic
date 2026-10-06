@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { useLocalization } from '@/components/LocalizationProvider'
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -164,26 +163,26 @@ const portugalStyleOptions = [...portugalStyles, customStyleOption]
 const mexicoStyleOptions = [...mexicoStyles, customStyleOptionEs]
 const spainStyleOptions = [...spainStyles, customStyleOptionEs]
 
-function getStudioCountryPreset(country: string) {
-  if (country === 'US') {
+function getStudioLocalePreset(locale: string) {
+  if (locale === 'en-US') {
     return { language: 'English (United States)', defaultStyle: 'Pop', styleOptions: unitedStatesStyles, isSpanish: false }
   }
-  if (country === 'GB') {
+  if (locale === 'en-GB') {
     return { language: 'English (United Kingdom)', defaultStyle: 'UK Pop', styleOptions: unitedKingdomStyles, isSpanish: false }
   }
-  if (country === 'PY') {
+  if (locale === 'es-PY') {
     return { language: 'Español (Paraguay)', defaultStyle: 'Guarania paraguaya', styleOptions: paraguayStyleOptions, isSpanish: true }
   }
-  if (country === 'CO') {
+  if (locale === 'es-CO') {
     return { language: 'Español (Colombia)', defaultStyle: 'Música popular colombiana', styleOptions: colombiaStyleOptions, isSpanish: true }
   }
-  if (country === 'PT') {
+  if (locale === 'pt-PT') {
     return { language: 'Português (Portugal)', defaultStyle: 'Pop português', styleOptions: portugalStyleOptions, isSpanish: false }
   }
-  if (country === 'MX') {
+  if (locale === 'es-MX') {
     return { language: 'Español (México)', defaultStyle: 'Regional mexicano', styleOptions: mexicoStyleOptions, isSpanish: true }
   }
-  if (country === 'ES') {
+  if (locale === 'es-ES') {
     return { language: 'Español (España)', defaultStyle: 'Flamenco pop', styleOptions: spainStyleOptions, isSpanish: true }
   }
   return { language: 'Português (Brasil)', defaultStyle: 'Sertanejo', styleOptions: null as string[] | null, isSpanish: false }
@@ -244,9 +243,8 @@ async function getComposerBalanceStatus(token: string) {
 export default function NewStudioMusicPage() {
   const { t, i18n } = useTranslation()
   const router = useRouter()
-  const { country } = useLocalization()
-  const countryPreset = getStudioCountryPreset(country)
-  const isSpanish = countryPreset.isSpanish
+  const localePreset = getStudioLocalePreset(i18n.language)
+  const isSpanish = localePreset.isSpanish
   const localizedStructures = isSpanish
     ? ['Estándar', 'A/B/Estribillo/C/Estribillo', 'A/Estribillo/A/Estribillo']
     : structures
@@ -275,7 +273,7 @@ export default function NewStudioMusicPage() {
   const [selectedTheme, setSelectedTheme] = useState('')
   const [form, setForm] = useState({
     title: '',
-    style: countryPreset.defaultStyle,
+    style: localePreset.defaultStyle,
     customStyle: '',
     mood: 'Sofrência',
     structure: isSpanish ? 'Estándar' : 'Padrão',
@@ -295,12 +293,12 @@ export default function NewStudioMusicPage() {
     extraInstructions: '',
     useOwnPrompt: false,
     ownPrompt: '',
-    songLanguage: countryPreset.language,
+    songLanguage: localePreset.language,
   })
   const isCustomStyle = form.style === customStyleOption || form.style === customStyleOptionEs || form.style === customStyleOptionEn
 
   useEffect(() => {
-    const preset = getStudioCountryPreset(country)
+    const preset = getStudioLocalePreset(i18n.language)
     if (preset.styleOptions) setStyles(preset.styleOptions)
     setForm((current) => ({
       ...current,
@@ -312,7 +310,7 @@ export default function NewStudioMusicPage() {
         ? (current.structure === 'Padrão' ? 'Estándar' : current.structure)
         : (current.structure === 'Estándar' ? 'Padrão' : current.structure),
     }))
-  }, [country])
+  }, [i18n.language])
 
   useEffect(() => {
     const token = localStorage.getItem('composer_token')
@@ -359,7 +357,7 @@ export default function NewStudioMusicPage() {
         const genreNames = (data || [])
           .map((genre: any) => String(genre.name || '').trim())
           .filter(Boolean)
-        const preset = getStudioCountryPreset(country)
+        const preset = getStudioLocalePreset(i18n.language)
 
         if (preset.styleOptions) {
           setStyles(preset.styleOptions)
@@ -390,7 +388,7 @@ export default function NewStudioMusicPage() {
     }
 
     fetchGenres()
-  }, [country])
+  }, [i18n.language])
 
   useEffect(() => {
     const token = localStorage.getItem('composer_token')
