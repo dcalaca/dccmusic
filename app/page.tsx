@@ -8,7 +8,8 @@ import { Suspense } from 'react'
 import { cookies, headers } from 'next/headers'
 import Link from 'next/link'
 import { FiMusic, FiArrowRight, FiZap } from 'react-icons/fi'
-import { COUNTRY_COOKIE, COUNTRY_CONFIG, getLocaleForCountry, normalizeCountry, type DccCountry } from '@/lib/localization'
+import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry, type DccCountry, type DccLocale } from '@/lib/localization'
+import { isSupportedLocale } from '@/i18n/config'
 import { createDccI18n } from '@/i18n/server'
 
 export async function generateMetadata() {
@@ -131,7 +132,7 @@ async function countPublicRows(table: string) {
   }
 }
 
-async function getPublicAiMusicDays(country: DccCountry) {
+async function getPublicAiMusicDays(locale: DccLocale) {
   const todayKey = formatDayKey(new Date())
   const startDate = addDays(new Date(`${todayKey}T00:00:00-03:00`), -13)
   const endExclusive = addDays(new Date(`${todayKey}T00:00:00-03:00`), 1)
@@ -141,7 +142,7 @@ async function getPublicAiMusicDays(country: DccCountry) {
     const date = formatDayKey(current)
     buckets.set(date, {
       date,
-      label: formatDayLabel(date, COUNTRY_CONFIG[String(country)].locale),
+      label: formatDayLabel(date, locale),
       deliveredMusics: 0,
     })
   }
@@ -191,7 +192,7 @@ async function getFeaturedContent() {
   }
 }
 
-async function getSiteSummaryStats(country: DccCountry) {
+async function getSiteSummaryStats(locale: DccLocale) {
   const [
     rVideos,
     rMusics,
@@ -211,7 +212,7 @@ async function getSiteSummaryStats(country: DccCountry) {
     countPublicRows('dccmusic_comments'),
     countPublicRows('dccmusic_ratings'),
     countPublicRows('studio_versions'),
-    getPublicAiMusicDays(country),
+    getPublicAiMusicDays(locale),
   ])
 
   return {
@@ -227,12 +228,12 @@ async function getSiteSummaryStats(country: DccCountry) {
   }
 }
 
-async function HomeDynamicContent({ country }: { country: DccCountry }) {
-  const i18n = await createDccI18n(getLocaleForCountry(country))
+async function HomeDynamicContent({ country, locale }: { country: DccCountry; locale: DccLocale }) {
+  const i18n = await createDccI18n(locale)
   const t = i18n.t.bind(i18n)
   const [{ featuredMusics }, siteStats] = await Promise.all([
     getFeaturedContent(),
-    getSiteSummaryStats(country),
+    getSiteSummaryStats(locale),
   ])
 
   return (
@@ -252,7 +253,7 @@ async function HomeDynamicContent({ country }: { country: DccCountry }) {
       )}
 
       <SiteStatsCompact
-        locale={COUNTRY_CONFIG[String(country)].locale}
+        locale={locale}
         totalVideos={siteStats.totalVideos}
         videoViews={siteStats.videoViews}
         totalMusics={siteStats.totalMusics}
@@ -279,7 +280,9 @@ async function HomeDynamicContent({ country }: { country: DccCountry }) {
 export default async function Home() {
   const requestHeaders = headers()
   const country = normalizeCountry(cookies().get(COUNTRY_COOKIE)?.value || requestHeaders.get('x-dcc-country') || requestHeaders.get('x-vercel-ip-country') || requestHeaders.get('cf-ipcountry'))
-  const i18n = await createDccI18n(getLocaleForCountry(country))
+  const preferredLocale = requestHeaders.get('x-dcc-locale')
+  const locale = (isSupportedLocale(preferredLocale) ? preferredLocale : getLocaleForCountry(country)) as DccLocale
+  const i18n = await createDccI18n(locale)
   const t = i18n.t.bind(i18n)
   return (
     <div className="min-h-screen">
@@ -346,7 +349,7 @@ export default async function Home() {
       </section>
 
       <Suspense fallback={null}>
-        <HomeDynamicContent country={country} />
+        <HomeDynamicContent country={country} locale={locale} />
       </Suspense>
     </div>
   )
