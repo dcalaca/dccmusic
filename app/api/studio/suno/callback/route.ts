@@ -349,6 +349,6 @@ export async function POST(request: Request) {
       eventKey: `studio-callback-error/${Date.now()}`,
       metadata: { error: error.message },
     }).catch(() => null)
-    return NextResponse.json({ received: true, processed: false, error: error.message }, { status: 500 })
+    return NextResponse.json({ received: true, processed: false, error: 'internal_error' }, { status: 500 })
   }
 }
