@@ -52,6 +52,31 @@ async function getTranslator(country: DccCountry) {
   return i18n.t.bind(i18n)
 }
 
+function getCommercialUseCopy(locale: string) {
+  if (locale.startsWith('en')) {
+    return {
+      eyebrow: 'Commercial use',
+      title: 'Create here. Release anywhere.',
+      description: 'Songs created in DCC AI Studio may be commercially used by the user, including on streaming platforms, social networks, videos, presentations, and other commercial projects. DCC Music does not require a share of the royalties earned by the user from those songs.',
+      note: 'Use must comply with applicable law, third-party rights, and distribution-platform rules. DCC Music does not promise exclusive copyright protection for AI-generated content.',
+    }
+  }
+  if (locale.startsWith('es')) {
+    return {
+      eyebrow: 'Uso comercial',
+      title: 'Créala aquí. Lánzala donde quieras.',
+      description: 'Las canciones creadas en DCC Studio IA pueden ser utilizadas comercialmente por el usuario, incluso en plataformas de streaming, redes sociales, vídeos, presentaciones y otros proyectos comerciales. DCC Music no exige una participación en los royalties obtenidos por el usuario con esas canciones.',
+      note: 'El uso debe respetar la legislación aplicable, los derechos de terceros y las reglas de las plataformas de distribución. DCC Music no promete protección exclusiva de derechos de autor sobre contenido generado por IA.',
+    }
+  }
+  return {
+    eyebrow: 'Uso comercial',
+    title: 'Crie aqui. Lance onde quiser.',
+    description: 'As músicas criadas no DCC Studio IA podem ser usadas comercialmente pelo usuário, inclusive em plataformas de streaming, redes sociais, vídeos, apresentações e outros projetos comerciais. A DCC Music não exige participação nos royalties obtidos pelo usuário com a exploração dessas músicas.',
+    note: 'O uso deve respeitar as leis aplicáveis, direitos de terceiros e as regras das plataformas de distribuição. A DCC Music não promete exclusividade de direitos autorais sobre conteúdo gerado por IA.',
+  }
+}
+
 function isStudioPlan(plan: db.Plan) {
   const identity = `${plan.name || ''} ${plan.slug || ''}`.toLowerCase()
   return studioPlanSlugs.includes(plan.slug) || identity.includes('studio ia') || identity.includes('dcc studio')
@@ -270,6 +295,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function StudioIALandingPage() {
   const country = getRequestCountry()
   const t = await getTranslator(country)
+  const commercialUse = getCommercialUseCopy(getLocaleForCountry(country))
   const features = featureDefinitions.map(({ icon, key }) => ({
     icon,
     title: t(`studioLanding.features.${key}.title`),
@@ -408,6 +434,22 @@ export default async function StudioIALandingPage() {
                 <h2 className="text-xl font-black sm:text-2xl">{t('studioLanding.history.title')}</h2>
                 <p className="mt-3 text-sm leading-relaxed text-gray-300">{t('studioLanding.history.description')}</p>
                 <p className="mt-3 text-xs text-gray-500">{t('studioLanding.history.note')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-6 sm:py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-5xl rounded-[1.5rem] border border-green-700/40 bg-gradient-to-br from-green-950/20 via-gray-950 to-black p-5 sm:p-7">
+            <div className="flex flex-col gap-4 md:flex-row md:items-start">
+              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-green-600/20 text-green-200"><FiShare2 className="h-6 w-6" /></div>
+              <div>
+                <p className="mb-2 text-sm font-bold uppercase tracking-wide text-green-300">{commercialUse.eyebrow}</p>
+                <h2 className="text-xl font-black sm:text-2xl">{commercialUse.title}</h2>
+                <p className="mt-3 text-sm leading-relaxed text-gray-300">{commercialUse.description}</p>
+                <p className="mt-3 text-xs text-gray-500">{commercialUse.note}</p>
               </div>
             </div>
           </div>
