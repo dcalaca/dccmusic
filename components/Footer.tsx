@@ -133,7 +133,12 @@ export default function Footer() {
           </div>
 
           <div className="mt-8 pt-8 border-t border-gray-800 text-center text-sm text-gray-400">
-            <Link href="/politica-de-privacidade" className="mb-3 inline-block text-gray-400 hover:text-white">{t('privacy.title')}</Link>
+            <div className="mb-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+              <Link href="/politica-de-privacidade" className="text-gray-400 hover:text-white">{t('privacy.title')}</Link>
+              <Link href="/termos-de-uso" className="text-gray-400 hover:text-white">
+                {i18n.language.startsWith('en') ? 'Terms of Use' : i18n.language.startsWith('es') ? 'Términos de Uso' : 'Termos de Uso'}
+              </Link>
+            </div>
             <p>&copy; {currentYear} DCC Music. {t('footer.rights')}</p>
           </div>
         </div>

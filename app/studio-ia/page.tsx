@@ -450,6 +450,9 @@ export default async function StudioIALandingPage() {
                 <h2 className="text-xl font-black sm:text-2xl">{commercialUse.title}</h2>
                 <p className="mt-3 text-sm leading-relaxed text-gray-300">{commercialUse.description}</p>
                 <p className="mt-3 text-xs text-gray-500">{commercialUse.note}</p>
+                <a href="/termos-de-uso" className="mt-4 inline-block text-sm font-semibold text-green-300 hover:text-green-200 hover:underline">
+                  {getLocaleForCountry(country).startsWith('en') ? 'Terms of Use' : getLocaleForCountry(country).startsWith('es') ? 'Términos de Uso' : 'Termos de Uso'}
+                </a>
               </div>
             </div>
           </div>
