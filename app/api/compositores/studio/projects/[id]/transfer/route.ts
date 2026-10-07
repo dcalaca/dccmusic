@@ -59,6 +59,6 @@ export async function POST(
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro transferir projeto:', error)
-    return NextResponse.json({ error: error.message || 'Não foi possível transferir o projeto.' }, { status: 500 })
+    return NextResponse.json({ error: 'Não foi possível transferir o projeto.' }, { status: 500 })
   }
 }
