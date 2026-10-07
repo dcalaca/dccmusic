@@ -23,7 +23,7 @@ async function mapVoice(row: any) {
     vocalStartS: row.vocal_start_s,
     vocalEndS: row.vocal_end_s,
     validateInfo: row.validate_info,
-    voiceId: row.voice_id,
+    isReady: Boolean(row.status === 'ready' && row.is_available && row.voice_id),
     isAvailable: Boolean(row.is_available),
     errorMessage: translateStudioVoiceError(row.error_message),
     errorCode: studioVoiceErrorCode(row.error_message),
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ voices, recoverableVoices, limit: MAX_ACTIVE_VOICES })
   } catch (error: any) {
     console.error('[Studio Voice] Erro listar vozes:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao listar vozes', errorCode: 'load' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao listar vozes', errorCode: 'load' }, { status: 500 })
   }
 }
 
@@ -252,6 +252,6 @@ export async function POST(request: NextRequest) {
         // Evita mascarar o erro principal retornado para a tela.
       }
     }
-    return NextResponse.json({ error: error.message || 'Erro ao criar voz', errorCode: 'sendVoice' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao criar voz', errorCode: 'sendVoice' }, { status: 500 })
   }
 }

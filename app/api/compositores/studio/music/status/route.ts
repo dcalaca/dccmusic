@@ -320,20 +320,25 @@ export async function GET(request: NextRequest) {
     const versionAudio = version ? await getStudioVersionAudioUrls(version) : null
     const coverImageUrl = cover ? await getStudioCoverImageUrl(cover) : null
 
-    const generationForUser = freshGeneration?.status === 'failed'
-      ? {
-          ...freshGeneration,
-          error_message: getStudioMusicGenerationFailureMessage(
+    // IMPORTANT: never serialize the raw generation row to the browser.
+    // It contains provider names, provider task IDs, callback URLs/secrets and raw
+    // request/response payloads. Only expose the fields the UI actually needs.
+    const generationForUser = freshGeneration ? {
+      id: freshGeneration.id,
+      status: freshGeneration.status,
+      error_message: freshGeneration.status === 'failed'
+        ? getStudioMusicGenerationFailureMessage(
             getStudioGenerationProviderError(freshGeneration.response_payload) || freshGeneration.error_message,
             country,
             freshGeneration.request_payload?.feature,
-          ),
-        }
-      : freshGeneration
+          )
+        : null,
+      created_at: freshGeneration.created_at,
+      updated_at: freshGeneration.updated_at,
+    } : null
 
     return NextResponse.json({
       generation: generationForUser,
-      providerStatus,
       awaitingAudioSync: Boolean(providerFinished && !hasAnyAudio),
       version: version ? {
         id: version.id,
@@ -345,9 +350,14 @@ export async function GET(request: NextRequest) {
         imageUrl: coverImageUrl,
         isPremium: cover.is_premium,
       } : null,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, private',
+        'Pragma': 'no-cache',
+      },
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro consultar música:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao consultar música' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao consultar música' }, { status: 500 })
   }
 }

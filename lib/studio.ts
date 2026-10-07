@@ -2,6 +2,7 @@ import * as db from '@/lib/db'
 import { reportPaymentFailure } from '@/lib/payment-failure-alert'
 import { supabaseAdmin } from '@/lib/supabase'
 import { slugify } from '@/lib/utils'
+import { timingSafeEqual } from 'crypto'
 
 export const STUDIO_PLAN_SLUGS = ['studio-start', 'studio-pro', 'studio-elite', 'dcc-studio-ia']
 export const STUDIO_MUSIC_CREDITS = 10
@@ -1015,14 +1016,25 @@ export function getStudioCallbackUrl(path: string) {
   return `${url}${separator}secret=${encodeURIComponent(secret)}`
 }
 
+function callbackSecretMatches(provided: string | null, expected: string): boolean {
+  if (!provided) return false
+
+  const providedBuffer = Buffer.from(provided)
+  const expectedBuffer = Buffer.from(expected)
+  if (providedBuffer.length !== expectedBuffer.length) return false
+
+  return timingSafeEqual(providedBuffer, expectedBuffer)
+}
+
 /**
- * Valida o segredo recebido em um callback do Studio (Suno).
- * - Se STUDIO_CALLBACK_SECRET não estiver configurado, não bloqueia (compatibilidade).
- * - Se estiver configurado, exige o segredo via query string (?secret=) ou header (x-callback-secret).
+ * Valida o segredo recebido em callbacks do Studio.
+ * Em produção a validação é fail-closed: callback sem segredo configurado é recusado.
+ * O header é aceito para integrações que o suportem; a query continua disponível para
+ * provedores que só permitem informar uma URL de callback.
  */
 export function isValidStudioCallback(request: Request): boolean {
   const secret = process.env.STUDIO_CALLBACK_SECRET?.trim()
-  if (!secret) return true
+  if (!secret) return process.env.NODE_ENV !== 'production'
 
   let providedFromQuery: string | null = null
   try {
@@ -1032,5 +1044,6 @@ export function isValidStudioCallback(request: Request): boolean {
   }
   const providedFromHeader = request.headers.get('x-callback-secret')
 
-  return providedFromQuery === secret || providedFromHeader === secret
+  return callbackSecretMatches(providedFromHeader, secret) ||
+    callbackSecretMatches(providedFromQuery, secret)
 }

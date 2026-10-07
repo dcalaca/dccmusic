@@ -59,6 +59,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, processed: true })
   } catch (error: any) {
     console.error('[Studio Voice] Callback validação erro:', error)
-    return NextResponse.json({ received: true, processed: false, error: error.message }, { status: 500 })
+    return NextResponse.json({ received: true, processed: false, error: 'internal_error' }, { status: 500 })
   }
 }

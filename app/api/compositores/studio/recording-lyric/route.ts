@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     const data = await response.json().catch(() => null)
     if (!response.ok) {
       console.error('[Studio IA] Erro ao completar letra:', data)
-      return NextResponse.json({ error: data?.error?.message || 'Não consegui completar a letra agora.' }, { status: 500 })
+      return NextResponse.json({ error: 'Não consegui completar a letra agora.' }, { status: 500 })
     }
 
     const completedLyric = String(data?.choices?.[0]?.message?.content || '').trim()
@@ -124,6 +124,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ lyric: completedLyric })
   } catch (error: any) {
     console.error('[Studio IA] Erro completar letra gravada:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao completar letra' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao completar letra' }, { status: 500 })
   }
 }

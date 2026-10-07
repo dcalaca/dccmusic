@@ -13,6 +13,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ assets })
   } catch (error: any) {
     console.error('[Studio Playbacks] Erro ao listar arquivos salvos:', error)
-    return NextResponse.json({ error: error?.message || 'Erro ao carregar playbacks salvos.' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao carregar playbacks salvos.' }, { status: 500 })
   }
 }

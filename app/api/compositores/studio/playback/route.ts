@@ -83,7 +83,6 @@ export async function GET(request: NextRequest) {
       saved: true,
       playbackUrl,
       vocalUrl,
-      provider: savedAsset.metadata.separationProvider || null,
       createdAt: savedAsset.created_at || null,
     })
   } catch (error: any) {
@@ -191,7 +190,6 @@ export async function POST(request: NextRequest) {
       saved: Boolean(projectId && versionId),
       playbackUrl,
       vocalUrl,
-      provider: playback.separationProvider,
       creditsCharged: STUDIO_MUSIC_CREDITS,
       creditsRemaining: usageAfter.remaining,
     })

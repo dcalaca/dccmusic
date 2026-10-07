@@ -314,7 +314,6 @@ export async function GET(
         imageUrl,
         isPremium: Boolean(item.is_premium),
         isCurrent: Boolean(item.is_current),
-        provider: item.provider || null,
         createdAt: item.created_at,
       }
     }))).filter(Boolean)
@@ -328,7 +327,6 @@ export async function GET(
         duration: item.duration,
         versionName: item.version_name,
         style: item.style,
-        model: item.model,
         isCurrent: Boolean(item.is_current),
         isPublished: Boolean(item.is_published),
         createdAt: item.created_at,
@@ -370,7 +368,6 @@ export async function GET(
           sourceMood: inspirationSourceProject?.mood || inspirationRequest.request_payload?.sourceMood || null,
           variation: inspirationRequest.request_payload?.variation || 'similar',
           variationLabel: inspirationRequest.request_payload?.variationLabel || 'Manter parecido',
-          providerTaskId: inspirationRequest.provider_task_id,
           createdAt: inspirationRequest.created_at,
         } : null,
       }),
@@ -392,7 +389,7 @@ export async function GET(
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro buscar projeto:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao buscar projeto' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao buscar projeto' }, { status: 500 })
   }
 }
 
@@ -458,7 +455,7 @@ export async function PUT(
     return NextResponse.json({ project: mapStudioProject(data) })
   } catch (error: any) {
     console.error('[Studio IA] Erro atualizar projeto:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao atualizar projeto' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao atualizar projeto' }, { status: 500 })
   }
 }
 
@@ -492,6 +489,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error: any) {
     console.error('[Studio IA] Erro descartar rascunho:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao descartar rascunho' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao descartar rascunho' }, { status: 500 })
   }
 }

@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('[Studio IA] Erro status:', error)
     return NextResponse.json(
-      { error: error.message || 'Erro ao carregar Studio IA', errorCode: 'load' },
+      { error: 'Erro ao carregar Studio IA', errorCode: 'load' },
       { status: 500 }
     )
   }

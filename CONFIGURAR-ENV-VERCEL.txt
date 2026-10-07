@@ -1,73 +1,20 @@
-===========================================
 CONFIGURAR VARIÁVEIS DE AMBIENTE NO VERCEL
-===========================================
 
-O deploy foi concluído com sucesso! ✅
+As credenciais de produção NÃO devem ser armazenadas neste repositório.
+Configure valores reais somente em Vercel → Project → Settings → Environment Variables.
 
-URLs do site:
-- https://dccmusic.vercel.app
-- https://dccmusic-ln44hm8ly-douglas-projects-0a1abb80.vercel.app
+Variáveis principais:
 
-===========================================
-PASSO 1: Configurar Variáveis de Ambiente
-===========================================
+NEXT_PUBLIC_SUPABASE_URL=<public-url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<publishable-anon-key>
+SUPABASE_SERVICE_ROLE_KEY=<server-only-service-role-key>
+NEXTAUTH_URL=https://www.dccmusic.online
+NEXTAUTH_SECRET=<server-only-random-secret>
+ADMIN_EMAIL=<admin-email>
+ADMIN_PASSWORD=<server-only-strong-password>
 
-Acesse o Dashboard do Vercel:
-https://vercel.com/douglas-projects-0a1abb80/dccmusic/settings/environment-variables
-
-Ou via CLI (execute um por vez):
-
-vercel env add NEXT_PUBLIC_SUPABASE_URL
-Valor: https://hsduizbqsrfhhulcrmye.supabase.co
-Ambiente: Production, Preview, Development
-
-vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY
-Valor: sb_publishable_0k6BjCY9Ze0Myj1vSR01BA_WhUjarA_
-Ambiente: Production, Preview, Development
-
-vercel env add SUPABASE_SERVICE_ROLE_KEY
-Valor: sb_publishable_0k6BjCY9Ze0Myj1vSR01BA_WhUjarA_
-Ambiente: Production, Preview, Development
-
-vercel env add NEXTAUTH_URL
-Valor: https://dccmusic.vercel.app
-Ambiente: Production, Preview, Development
-
-vercel env add NEXTAUTH_SECRET
-Valor: callcenter-secret-key-change-in-production-813663756
-Ambiente: Production, Preview, Development
-
-vercel env add ADMIN_EMAIL
-Valor: dcalaca@gmail.com
-Ambiente: Production, Preview, Development
-
-vercel env add ADMIN_PASSWORD
-Valor: 5778
-Ambiente: Production, Preview, Development
-
-===========================================
-PASSO 2: Fazer Redeploy
-===========================================
-
-Após configurar as variáveis, execute:
-
-vercel --prod
-
-Ou aguarde alguns minutos para o redeploy automático.
-
-===========================================
-PASSO 3: Executar SQL de Migração
-===========================================
-
-IMPORTANTE: Execute o SQL no Supabase antes de usar:
-
-1. Acesse: Supabase Dashboard → SQL Editor
-2. Execute: SQL-MIGRAR-GENEROS-DINAMICOS.sql
-3. Isso adiciona a coluna 'genre' nas tabelas
-
-===========================================
-PRONTO! 🎉
-===========================================
-
-Após configurar as variáveis e executar o SQL,
-seu site estará funcionando completamente!
+Regras:
+- Nunca commitar senhas, tokens, API keys, service-role keys ou webhook secrets.
+- Variáveis secretas devem ser server-only e cadastradas como Sensitive no Vercel.
+- Somente valores realmente públicos podem usar o prefixo NEXT_PUBLIC_.
+- Após trocar uma credencial, faça um novo deployment para que a produção use o novo valor.

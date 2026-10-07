@@ -63,7 +63,6 @@ export async function POST(request: NextRequest) {
           imageUrl: await getStudioCoverImageUrl(selected),
           isPremium: Boolean(selected.is_premium),
           isCurrent: true,
-          provider: selected.provider || null,
           createdAt: selected.created_at,
         },
       })
@@ -88,7 +87,6 @@ export async function POST(request: NextRequest) {
           imageUrl: await getStudioCoverImageUrl(restored),
           isPremium: Boolean(restored.is_premium),
           isCurrent: Boolean(restored.is_current),
-          provider: restored.provider || null,
           createdAt: restored.created_at,
         },
       })
@@ -145,7 +143,6 @@ export async function POST(request: NextRequest) {
           imageUrl: await getStudioCoverImageUrl(nextCurrent),
           isPremium: Boolean(nextCurrent.is_premium),
           isCurrent: true,
-          provider: nextCurrent.provider || null,
           createdAt: nextCurrent.created_at,
         }
       : null
@@ -153,6 +150,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, currentCover })
   } catch (error: any) {
     console.error('[Studio IA] Erro ao gerenciar capa:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao gerenciar capa' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao gerenciar capa' }, { status: 500 })
   }
 }

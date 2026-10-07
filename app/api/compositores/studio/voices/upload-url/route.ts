@@ -28,6 +28,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio Voice] Erro ao criar URL de upload:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao preparar upload da voz', errorCode: 'prepareUpload' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao preparar upload da voz', errorCode: 'prepareUpload' }, { status: 500 })
   }
 }

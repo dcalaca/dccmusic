@@ -206,6 +206,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro capa premium:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao gerar capa premium' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao gerar capa premium' }, { status: 500 })
   }
 }
