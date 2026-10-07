@@ -640,7 +640,7 @@ export default function StudioProjectDetailPage() {
       })
       const data = await response.json()
       if (response.ok) {
-        setVoices((data.voices || []).filter((voice: any) => voice.status === 'ready' && voice.isAvailable && voice.voiceId))
+        setVoices((data.voices || []).filter((voice: any) => voice.status === 'ready' && voice.isAvailable && voice.isReady))
       }
     } catch {
       setVoices([])
