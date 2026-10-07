@@ -77,7 +77,7 @@ async function mapVoice(row: any) {
     vocalStartS: row.vocal_start_s,
     vocalEndS: row.vocal_end_s,
     validateInfo: row.validate_info,
-    voiceId: row.voice_id,
+    isReady: Boolean(row.status === 'ready' && row.is_available && row.voice_id),
     isAvailable: Boolean(row.is_available),
     errorMessage: translateStudioVoiceError(row.error_message),
     errorCode: studioVoiceErrorCode(row.error_message),
