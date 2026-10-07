@@ -235,7 +235,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ projects: responseProjects })
   } catch (error: any) {
     console.error('[Studio IA] Erro listar projetos:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao listar projetos', errorCode: 'load' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao listar projetos', errorCode: 'load' }, { status: 500 })
   }
 }
 
@@ -322,6 +322,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ project: mapStudioProject(data) })
   } catch (error: any) {
     console.error('[Studio IA] Erro criar projeto:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao criar projeto' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao criar projeto' }, { status: 500 })
   }
 }
