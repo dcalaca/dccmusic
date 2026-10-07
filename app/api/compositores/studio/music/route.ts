@@ -1014,7 +1014,6 @@ export async function POST(request: NextRequest) {
         {
           error: 'Já existe uma geração desta música em andamento. Aguarde ela terminar antes de criar outra versão.',
           generationId: activeGeneration?.id || null,
-          taskId: activeGeneration?.provider_task_id || null,
           duplicatePrevented: true,
         },
         { status: 409 }
@@ -1157,7 +1156,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       generationId: generation.id,
-      taskId,
       lyric: lyricForGeneration,
       lyricNormalized: lyricNormalization.changed,
       message: lyricNormalization.changed
