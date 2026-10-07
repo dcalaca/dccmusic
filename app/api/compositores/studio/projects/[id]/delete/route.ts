@@ -32,7 +32,7 @@ export async function DELETE(
   } catch (error: any) {
     console.error('[Studio IA] Erro excluir projeto:', error)
     return NextResponse.json(
-      { error: error.message || 'Não foi possível excluir o projeto' },
+      { error: 'Não foi possível excluir o projeto' },
       { status: 500 }
     )
   }
