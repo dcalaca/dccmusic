@@ -7,13 +7,38 @@ import { useTranslation } from 'react-i18next'
 type FaqCategory = { category: string; questions: { question: string; answer: string }[] }
 
 export default function FAQPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const localizedFaqs = t('faqPage.sections', { returnObjects: true }) as unknown as FaqCategory[]
+  const language = i18n.language || 'pt-BR'
+  const commercialFaq = language.startsWith('en')
+    ? {
+        category: 'AI Studio — commercial use',
+        questions: [{
+          question: 'Can I commercially use and release on Spotify a song created in AI Studio?',
+          answer: 'Yes. You may commercially use songs created in AI Studio, including distributing them on platforms such as Spotify, Apple Music, YouTube, TikTok, and others. DCC Music does not take a share of the royalties you earn from exploiting the song. Your use remains subject to applicable law, third-party rights, and the rules of the distributor and platforms where you publish.',
+        }],
+      }
+    : language.startsWith('es')
+      ? {
+          category: 'Studio IA — uso comercial',
+          questions: [{
+            question: '¿Puedo usar comercialmente y lanzar en Spotify una canción creada en Studio IA?',
+            answer: 'Sí. Puedes usar comercialmente las canciones creadas en Studio IA, incluida su distribución en plataformas como Spotify, Apple Music, YouTube, TikTok y otras. DCC Music no cobra una participación de los royalties que obtengas por explotar la canción. El uso sigue sujeto a la legislación aplicable, los derechos de terceros y las reglas de la distribuidora y de las plataformas donde publiques.',
+          }],
+        }
+      : {
+          category: 'Studio IA — uso comercial',
+          questions: [{
+            question: 'Posso usar comercialmente e lançar no Spotify uma música criada no Studio IA?',
+            answer: 'Sim. Você pode usar comercialmente as músicas criadas no Studio IA, inclusive distribuí-las em plataformas como Spotify, Apple Music, YouTube, TikTok e outras. A DCC Music não cobra participação nos royalties obtidos por você com a exploração da música. O uso continua sujeito às leis aplicáveis, aos direitos de terceiros e às regras da distribuidora e das plataformas onde você publicar.',
+          }],
+        }
+  const faqsWithCommercialUse = [...localizedFaqs, commercialFaq]
 
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
-    mainEntity: localizedFaqs.flatMap((category) =>
+    mainEntity: faqsWithCommercialUse.flatMap((category) =>
       category.questions.map((faq) => ({
         '@type': 'Question',
         name: faq.question,
@@ -55,7 +80,7 @@ export default function FAQPage() {
           </div>
 
           <div className="mx-auto max-w-4xl space-y-8">
-            {localizedFaqs.map((category, categoryIndex) => (
+            {faqsWithCommercialUse.map((category, categoryIndex) => (
               <div key={categoryIndex} className="rounded-lg border border-gray-800 bg-gray-900/50 p-6">
                 <h2 className="mb-6 text-2xl font-bold text-primary-400">{category.category}</h2>
                 <div className="space-y-4">
