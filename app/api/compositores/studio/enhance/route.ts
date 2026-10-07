@@ -421,7 +421,7 @@ export async function POST(request: NextRequest) {
         .from('studio_projects')
         .update({ status: 'draft', updated_at: new Date().toISOString() })
         .eq('id', project.id)
-      return NextResponse.json({ error: result?.msg || 'Não conseguimos iniciar a melhoria da música agora.' }, { status: 500 })
+      return NextResponse.json({ error: 'Não conseguimos iniciar a melhoria da música agora.' }, { status: 500 })
     }
 
     const taskId = result.data.taskId
