@@ -138,6 +138,6 @@ export async function POST(
     return NextResponse.json({ project: mapStudioProject(targetProject) })
   } catch (error: any) {
     console.error('[Studio IA] Erro criar inspiração:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao usar música como inspiração' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao usar música como inspiração' }, { status: 500 })
   }
 }
