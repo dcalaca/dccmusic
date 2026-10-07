@@ -2,7 +2,14 @@ import { NextResponse } from 'next/server'
 import * as composerAuth from '@/lib/composer-auth'
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+function getJwtSecret() {
+  const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET
+  if (secret) return secret
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('NEXTAUTH_SECRET/JWT_SECRET não configurado')
+  }
+  return 'dccmusic-development-only-secret'
+}
 
 export async function POST(request: Request) {
   try {
@@ -30,7 +37,7 @@ export async function POST(request: Request) {
         name: result.composer.name,
         requiresPasswordChange: result.requiresPasswordChange || false,
       },
-      JWT_SECRET,
+      getJwtSecret(),
       { expiresIn: '30d' }
     )
 

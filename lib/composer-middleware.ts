@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { supabaseAdmin } from '@/lib/supabase'
 
-const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+function getJwtSecret() {
+  const secret = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET
+  if (secret) return secret
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('NEXTAUTH_SECRET/JWT_SECRET não configurado')
+  }
+  return 'dccmusic-development-only-secret'
+}
 
 export interface ComposerToken {
   composerId: string
@@ -18,7 +25,7 @@ export type ResolvedComposer = {
 
 export function verifyComposerToken(token: string): ComposerToken | null {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as ComposerToken
+    const decoded = jwt.verify(token, getJwtSecret()) as ComposerToken
     return decoded
   } catch (error) {
     return null

@@ -17,6 +17,27 @@ export function canCreateStudioMusicWithCredits(usage: { remaining: number }) {
   return usage.remaining >= STUDIO_MUSIC_CREDITS
 }
 
+export async function claimStudioGenerationLock(composerId: string, requestId: string) {
+  const { data, error } = await supabaseAdmin.rpc('claim_studio_generation_lock', {
+    p_composer_id: composerId,
+    p_request_id: requestId,
+    p_ttl_seconds: 90,
+  })
+
+  if (error) throw error
+  return data === true
+}
+
+export async function releaseStudioGenerationLock(composerId: string, requestId: string) {
+  const { data, error } = await supabaseAdmin.rpc('release_studio_generation_lock', {
+    p_composer_id: composerId,
+    p_request_id: requestId,
+  })
+
+  if (error) throw error
+  return data === true
+}
+
 export function canTranscribeStudioAudioWithCredits(usage: { remaining: number }) {
   return usage.remaining >= STUDIO_TRANSCRIBE_CREDITS
 }

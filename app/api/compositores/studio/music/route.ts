@@ -1,15 +1,18 @@
 import { isSambaCancao, getStudioGenreDirection, getStudioGenreNegativeTags } from '@/lib/studio-genre-direction'
+import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import {
   addStudioCreditTransaction,
   canCreateStudioMusicWithCredits,
+  claimStudioGenerationLock,
   getFreeMusicUsage,
   getCurrentProjectAssets,
   getProjectForComposer,
   getStudioCallbackUrl,
   getStudioAccess,
   getStudioCreditUsage,
+  releaseStudioGenerationLock,
   STUDIO_MUSIC_CREDITS,
 } from '@/lib/studio'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -662,10 +665,22 @@ export async function POST(request: NextRequest) {
   let claimedProjectId: string | null = null
   let previousProjectStatus: string | null = null
   let providerRequestAccepted = false
+  let generationLockRequestId: string | null = null
+  let generationLockComposerId: string | null = null
 
   try {
     const composer = getComposerFromRequest(request)
     if (!composer) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+
+    generationLockRequestId = randomUUID()
+    generationLockComposerId = composer.composerId
+    const generationLockClaimed = await claimStudioGenerationLock(composer.composerId, generationLockRequestId)
+    if (!generationLockClaimed) {
+      return NextResponse.json(
+        { error: 'Outra geração está sendo iniciada nesta conta. Aguarde alguns segundos e tente novamente.' },
+        { status: 409 }
+      )
+    }
 
     const { hasAccess, limits } = await getStudioAccess(composer.composerId)
     const [usage, freeMusicUsage] = await Promise.all([
@@ -1177,5 +1192,11 @@ export async function POST(request: NextRequest) {
 
     console.error('[Studio IA] Erro criar música:', error)
     return NextResponse.json({ error: MUSIC_CREATION_UNAVAILABLE_MESSAGE }, { status: 500 })
+  } finally {
+    if (generationLockComposerId && generationLockRequestId) {
+      await releaseStudioGenerationLock(generationLockComposerId, generationLockRequestId).catch((lockError) => {
+        console.error('[Studio IA] Erro ao liberar trava de geração:', lockError)
+      })
+    }
   }
 }
