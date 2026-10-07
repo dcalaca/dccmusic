@@ -273,10 +273,7 @@ export async function getComposerSavedPlaybackAssets(composerId: string) {
       versionId: metadata.versionId || null,
       versionName: version?.version_name || null,
       createdAt: row.created_at || null,
-      separationProvider: metadata.separationProvider || null,
       recovered: metadata.separationProvider === 'legacy-recovered',
-      playbackPath: metadata.playbackPath || null,
-      vocalPath: metadata.vocalPath || null,
       playbackUrl: await createStudioAudioSignedUrl(metadata.playbackPath, metadata.playbackProvider).catch(() => null),
       vocalUrl: await createStudioAudioSignedUrl(metadata.vocalPath, metadata.vocalProvider || metadata.playbackProvider).catch(() => null),
     }
