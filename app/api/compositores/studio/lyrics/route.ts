@@ -427,6 +427,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ lyric: data.content, title: finalTitle })
   } catch (error: any) {
     console.error('[Studio IA] Erro gerar letra:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao gerar letra' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao gerar letra' }, { status: 500 })
   }
 }
