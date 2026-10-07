@@ -65,6 +65,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro despublicar:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao despublicar música' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao despublicar música' }, { status: 500 })
   }
 }
