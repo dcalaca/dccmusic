@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { chargeStudioVoiceCreationOnce, getStudioCallbackUrl, isValidStudioCallback } from '@/lib/studio'
 import { translateStudioVoiceError } from '@/lib/studio-voice-errors'
 import { extractSunoVoiceId } from '@/lib/suno-voice'
+import { claimStudioCallbackEvent } from '@/lib/studio-callback-idempotency'
 
 export const dynamic = 'force-dynamic'
 
@@ -116,6 +117,15 @@ export async function POST(request: Request) {
 
     if (!taskId) {
       return NextResponse.json({ received: true, processed: false, error: 'taskId ausente' })
+    }
+
+    const claimedCallback = await claimStudioCallbackEvent({
+      callbackKind: 'voice-generation',
+      taskId: String(taskId),
+      body,
+    })
+    if (!claimedCallback) {
+      return NextResponse.json({ received: true, processed: false, duplicate: true })
     }
 
     const nextStatus = failed ? 'failed' : success && voiceId ? 'ready' : 'voice_processing'

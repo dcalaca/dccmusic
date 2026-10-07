@@ -19,6 +19,7 @@ import {
   releaseStudioProjectFromFailedGeneration,
 } from '@/lib/studio-generation-timeout'
 import { startLyriaFallbackForSunoGeneration } from '@/lib/studio-lyria-fallback'
+import { claimStudioCallbackEvent } from '@/lib/studio-callback-idempotency'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -58,6 +59,15 @@ export async function POST(request: Request) {
 
     if (!taskId) {
       return NextResponse.json({ received: true, processed: false, error: 'taskId ausente' })
+    }
+
+    const claimedCallback = await claimStudioCallbackEvent({
+      callbackKind: 'music',
+      taskId: String(taskId),
+      body,
+    })
+    if (!claimedCallback) {
+      return NextResponse.json({ received: true, processed: false, duplicate: true })
     }
 
     const { data: generation } = await supabaseAdmin
