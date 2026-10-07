@@ -483,6 +483,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error: any) {
     console.error('[Studio IA] Erro melhorar música:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao melhorar música' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao melhorar música' }, { status: 500 })
   }
 }
