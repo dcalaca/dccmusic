@@ -309,7 +309,7 @@ export async function PATCH(
     return NextResponse.json({ voice: await mapVoice(updatedVoice) })
   } catch (error: any) {
     console.error('[Studio Voice] Erro atualizar voz:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao atualizar voz', errorCode: 'refresh' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao atualizar voz', errorCode: 'refresh' }, { status: 500 })
   }
 }
 
@@ -445,7 +445,7 @@ export async function POST(
     }
 
     console.error('[Studio Voice] Erro enviar verificação:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao enviar verificação da voz', errorCode: 'sendVerification' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao enviar verificação da voz', errorCode: 'sendVerification' }, { status: 500 })
   }
 }
 
@@ -472,6 +472,6 @@ export async function DELETE(
     return NextResponse.json({ ok: true })
   } catch (error: any) {
     console.error('[Studio Voice] Erro remover voz:', error)
-    return NextResponse.json({ error: error.message || 'Erro ao remover voz', errorCode: 'delete' }, { status: 500 })
+    return NextResponse.json({ error: 'Erro ao remover voz', errorCode: 'delete' }, { status: 500 })
   }
 }
