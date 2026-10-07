@@ -402,7 +402,7 @@ export default function NewStudioMusicPage() {
         })
         const data = await response.json()
         if (response.ok) {
-          setVoices((data.voices || []).filter((voice: any) => voice.status === 'ready' && voice.voiceId))
+          setVoices((data.voices || []).filter((voice: any) => voice.status === 'ready' && voice.isReady))
         }
       } catch {
         setVoices([])
