@@ -27,7 +27,8 @@ function StudioTopupPendingContent() {
 
     const value = Number(data?.amount) || 0
     const currency = data?.currency || 'BRL'
-    const eventId = paymentId || topupId
+    // Stable across pending/success pages, regardless of payment URL parameters.
+    const eventId = `topup_${topupId}`
     if (value <= 0) return
     const fbq = (window as any).fbq
 
