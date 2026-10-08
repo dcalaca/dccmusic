@@ -85,7 +85,7 @@ function sanitizeCoverDownloadName(value: string) {
     .toLowerCase() || 'capa-dcc-music'}.jpg`
 }
 
-function StudioAudioPlayer({ src, label }: { src: string; label?: string }) {
+function StudioAudioPlayer({ src, label, downloadFilename }: { src: string; label?: string; downloadFilename?: string }) {
   const { t } = useTranslation()
   const resolvedLabel = label || t('studio.project.audio.listen')
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -188,7 +188,7 @@ function StudioAudioPlayer({ src, label }: { src: string; label?: string }) {
             <span className="w-10 text-right text-xs text-gray-400">{duration ? formatGenerationTime(Math.floor(duration)) : '--:--'}</span>
           </div>
         </div>
-        <MediaDownloadButton src={src} filename={sanitizeDownloadName(resolvedLabel)} mediaType="audio"
+        <MediaDownloadButton src={src} filename={downloadFilename || sanitizeDownloadName(resolvedLabel)} mediaType="audio"
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-gray-700 bg-gray-900 text-gray-200 hover:border-primary-500 hover:text-white" />
       </div>
     </div>
@@ -1621,7 +1621,7 @@ export default function StudioProjectDetailPage() {
                           </div>
 
                           {versionAudioUrl ? (
-                            <StudioAudioPlayer src={versionAudioUrl} label={t('studio.project.versions.generatedSongNumber', { number: versionNumber })} />
+                            <StudioAudioPlayer src={versionAudioUrl} label={t('studio.project.versions.generatedSongNumber', { number: versionNumber })} downloadFilename={sanitizeDownloadName(`${project?.title || 'dcc-music'}-v${versionNumber}`)} />
                           ) : (
                             <p className="rounded-2xl border border-gray-800 bg-gray-950/70 p-4 text-sm text-gray-500">{t('studio.project.versions.noAudio')}</p>
                           )}
@@ -1921,7 +1921,7 @@ export default function StudioProjectDetailPage() {
                                 </div>
                               </div>
                               {versionAudioUrl ? (
-                                <StudioAudioPlayer src={versionAudioUrl} label={t('studio.project.versions.versionNumber', { number: versionNumber })} />
+                                <StudioAudioPlayer src={versionAudioUrl} label={t('studio.project.versions.versionNumber', { number: versionNumber })} downloadFilename={sanitizeDownloadName(`${project?.title || 'dcc-music'}-v${versionNumber}`)} />
                               ) : (
                                 <p className="rounded-2xl border border-cyan-400/20 bg-cyan-950/20 p-4 text-sm text-cyan-100"><FiLoader className="mr-2 inline animate-spin" />{t('studio.project.versions.finalizingAudio')}</p>
                               )}
