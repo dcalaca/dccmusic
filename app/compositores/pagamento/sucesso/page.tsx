@@ -28,7 +28,7 @@ function PaymentSuccessContent() {
       try {
         const params = new URLSearchParams()
         if (subscriptionId) params.set('subscription_id', subscriptionId)
-        if (paymentId && !paymentId.startsWith('pref_')) params.set('payment_id', paymentId)
+        if (!subscriptionId && paymentId) params.set('payment_id', paymentId)
         const response = await fetch('/api/compositores/analytics/purchase?' + params.toString(), {
           headers: { Authorization: 'Bearer ' + token },
           cache: 'no-store',
