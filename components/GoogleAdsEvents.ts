@@ -93,6 +93,11 @@ export function trackGoogleAdsPurchaseConversion(input: PurchaseTrackInput) {
   if (typeof window === 'undefined') return
 
   const tx = String(input.transactionId || '').trim()
+  // Never emit a PURCHASE without a verified, stable transaction ID and value.
+  // GA4 cannot reliably deduplicate anonymous purchase events.
+  if (!tx || tx === 'unknown' || tx === 'composer_plan' || tx === 'studio_topup') return
+  if (typeof input.value !== 'number' || !Number.isFinite(input.value) || input.value <= 0) return
+  if (!/^[A-Z]{3}$/.test(String(input.currency || '').toUpperCase())) return
   const dedupeKey = `google_ads_purchase:${tx || 'unknown'}`
   try {
     if (tx && sessionStorage.getItem(dedupeKey)) return

@@ -23,75 +23,62 @@ function PaymentSuccessContent() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const transactionId = paymentId || subscriptionId || 'composer_plan'
-
     const trackPurchase = async (token: string | null) => {
-      let value: number | undefined
-      let currency = 'BRL'
-
-      if (token) {
-        try {
-          const response = await fetch('/api/compositores/me', {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-          if (response.ok) {
-            const data = await response.json()
-            const price = Number(data?.plan?.price ?? data?.subscription?.plan?.price)
-            if (Number.isFinite(price) && price > 0) value = price
-            if (data?.subscription?.currency) currency = String(data.subscription.currency)
-          }
-        } catch {
-          // segue sem valor se a API falhar
-        }
-      }
-
-      const gtag = (window as any).gtag
-      if (typeof gtag === 'function') {
-        gtag('event', 'compra_plano', {
-          event_category: 'purchase',
-          event_label: subscriptionId || 'composer_plan',
-          ...(typeof value === 'number' ? { value, currency } : {}),
+      if (!token || (!paymentId && !subscriptionId)) return
+      try {
+        const params = new URLSearchParams()
+        if (subscriptionId) params.set('subscription_id', subscriptionId)
+        if (!subscriptionId && paymentId) params.set('payment_id', paymentId)
+        const response = await fetch('/api/compositores/analytics/purchase?' + params.toString(), {
+          headers: { Authorization: 'Bearer ' + token },
+          cache: 'no-store',
         })
-      }
+        if (!response.ok) return
+        const payment = await response.json()
+        if (payment.status !== 'paid' || !payment.transactionId) return
+        const transactionId = String(payment.transactionId)
+        const value = Number(payment.value)
+        const currency = String(payment.currency)
+        if (!Number.isFinite(value) || value <= 0) return
 
-      trackGoogleAdsPurchaseConversion({
-        transactionId,
-        value,
-        currency,
-      })
+        const gtag = (window as any).gtag
+        if (typeof gtag === 'function') {
+          gtag('event', 'compra_plano', {
+            event_category: 'purchase',
+            event_label: subscriptionId || transactionId,
+            value,
+            currency,
+          })
+        }
 
-      pushGtmEvent('dcc_purchase', {
-        product_id: 'composer_plan',
-        product_name: 'Plano de compositor',
-        product_type: 'subscription',
-        transaction_id: transactionId,
-        event_id: transactionId,
-        currency,
-        ...(typeof value === 'number' ? { value } : {}),
-        ...blogAttributionEventPayload(),
-      })
+        trackGoogleAdsPurchaseConversion({ transactionId, value, currency })
+        pushGtmEvent('dcc_purchase', {
+          product_id: 'composer_plan',
+          product_name: 'Plano de compositor',
+          product_type: 'subscription',
+          transaction_id: transactionId,
+          event_id: transactionId,
+          value,
+          currency,
+          ...blogAttributionEventPayload(),
+        })
 
-      const oaiq = (window as any).oaiq
-      if (typeof oaiq === 'function' && transactionId !== 'composer_plan') {
-        const amount = typeof value === 'number' && value > 0 ? Math.round(value * 100) : undefined
-        const eventData: Record<string, any> = {
-          type: 'contents',
-          contents: [
-            {
+        const oaiq = (window as any).oaiq
+        if (typeof oaiq === 'function') {
+          oaiq('measure', 'order_created', {
+            type: 'contents',
+            amount: Math.round(value * 100),
+            currency: currency.toUpperCase(),
+            contents: [{
               id: 'composer_plan',
               name: 'Plano de compositor',
               content_type: 'product',
               quantity: 1,
-            },
-          ],
+            }],
+          }, { event_id: 'dcc_order_' + transactionId })
         }
-        if (typeof amount === 'number') {
-          eventData.amount = amount
-          eventData.currency = currency.toUpperCase()
-        }
-        oaiq('measure', 'order_created', eventData, {
-          event_id: `dcc_order_${transactionId}`,
-        })
+      } catch {
+        // Analytics must not fire when the payment cannot be verified.
       }
     }
 
