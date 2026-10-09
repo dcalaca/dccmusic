@@ -1,3 +1,4 @@
+import { createInstance } from 'i18next'
 import type { ComposerEmailLanguage } from './composer-email-language'
 
 const COPY = {
@@ -33,6 +34,23 @@ const COPY = {
   },
 } as const
 
+const emailI18n = createInstance()
+void emailI18n.init({
+  initAsync: false,
+  lng: 'pt',
+  fallbackLng: 'pt',
+  supportedLngs: ['pt', 'en', 'es'],
+  resources: Object.fromEntries(Object.entries(COPY).map(([locale, messages]) => [
+    locale, { email: messages },
+  ])),
+  ns: ['email'],
+  defaultNS: 'email',
+  interpolation: { escapeValue: false },
+})
+
 export function getComposerEmailCopy(language: ComposerEmailLanguage) {
-  return COPY[language]
+  const source = COPY[language]
+  return Object.fromEntries(
+    Object.keys(source).map(key => [key, emailI18n.t(key, { lng: language, ns: 'email' })])
+  ) as unknown as typeof COPY['pt']
 }
