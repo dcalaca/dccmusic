@@ -8,7 +8,7 @@ const COPY = {
     lowCreditsSubject: 'Seu saldo do Studio IA está baixo', lowCreditsTitle: 'Saldo baixo no Studio IA', lowCreditsBody: 'Seu saldo atual é de', credits: 'créditos', about: 'cerca de', topups: 'Ver recargas',
     readySubject: 'Sua música "%s" ficou pronta', readyTitle: 'Sua música ficou pronta', readyBody: 'A música', readyAvailable: 'já está disponível no seu Studio IA.', projectCode: 'Código do projeto', openStudio: 'Abrir Studio IA',
     commentSubject: 'Novo comentário em sua música', commentTitle: 'Novo comentário recebido', commentedOn: 'comentou em', viewSong: 'Ver música',
-    paymentSubject: 'Pagamento confirmado na DCC Music', paymentTitle: 'Pagamento confirmado', paymentBody: 'Confirmamos o pagamento de', value: 'Valor', paymentId: 'ID do pagamento',
+    topupSingular: 'Recarga avulsa Studio IA - 1 música', topupPlural: 'Recarga avulsa Studio IA - {{count}} músicas', paymentSubject: 'Pagamento confirmado na DCC Music', paymentTitle: 'Pagamento confirmado', paymentBody: 'Confirmamos o pagamento de', value: 'Valor', paymentId: 'ID do pagamento',
     subscriptionSubject: 'Seu plano DCC Music está perto do vencimento', subscriptionTitle: 'Seu plano está perto do vencimento', subscriptionBody: 'Seu plano', expires: 'vence em', days: 'dia(s)', plans: 'Ver planos',
     deletedSubject: 'Sua conta foi excluída da DCC Music', deletedTitle: 'Conta excluída conforme solicitado', deletedBody: 'Confirmamos que sua conta e seu acesso foram excluídos da DCC Music e não podem ser restaurados. Conteúdo técnico eventualmente preservado internamente permanece desvinculado do perfil excluído.',
   },
@@ -18,7 +18,7 @@ const COPY = {
     lowCreditsSubject: 'Your AI Studio balance is low', lowCreditsTitle: 'Low AI Studio balance', lowCreditsBody: 'Your current balance is', credits: 'credits', about: 'about', topups: 'View top-ups',
     readySubject: 'Your song "%s" is ready', readyTitle: 'Your song is ready', readyBody: 'Your song', readyAvailable: 'is now available in your AI Studio.', projectCode: 'Project code', openStudio: 'Open AI Studio',
     commentSubject: 'New comment on your song', commentTitle: 'New comment received', commentedOn: 'commented on', viewSong: 'View song',
-    paymentSubject: 'Payment confirmed at DCC Music', paymentTitle: 'Payment confirmed', paymentBody: 'We have confirmed your payment for', value: 'Amount', paymentId: 'Payment ID',
+    topupSingular: 'AI Studio top-up - 1 song', topupPlural: 'AI Studio top-up - {{count}} songs', paymentSubject: 'Payment confirmed at DCC Music', paymentTitle: 'Payment confirmed', paymentBody: 'We have confirmed your payment for', value: 'Amount', paymentId: 'Payment ID',
     subscriptionSubject: 'Your DCC Music plan is close to expiring', subscriptionTitle: 'Your plan is close to expiring', subscriptionBody: 'Your', expires: 'plan expires in', days: 'day(s)', plans: 'View plans',
     deletedSubject: 'Your DCC Music account was deleted', deletedTitle: 'Account deleted as requested', deletedBody: 'We confirm that your DCC Music account and access were deleted and cannot be restored. Any technical content retained internally remains detached from the deleted profile.',
   },
@@ -28,7 +28,7 @@ const COPY = {
     lowCreditsSubject: 'Tu saldo de Studio IA está bajo', lowCreditsTitle: 'Saldo bajo en Studio IA', lowCreditsBody: 'Tu saldo actual es de', credits: 'créditos', about: 'aproximadamente', topups: 'Ver recargas',
     readySubject: 'Tu canción "%s" está lista', readyTitle: 'Tu canción está lista', readyBody: 'La canción', readyAvailable: 'ya está disponible en tu Studio IA.', projectCode: 'Código del proyecto', openStudio: 'Abrir Studio IA',
     commentSubject: 'Nuevo comentario en tu canción', commentTitle: 'Nuevo comentario recibido', commentedOn: 'comentó en', viewSong: 'Ver canción',
-    paymentSubject: 'Pago confirmado en DCC Music', paymentTitle: 'Pago confirmado', paymentBody: 'Confirmamos el pago de', value: 'Valor', paymentId: 'ID del pago',
+    topupSingular: 'Recarga de Studio IA - 1 canción', topupPlural: 'Recarga de Studio IA - {{count}} canciones', paymentSubject: 'Pago confirmado en DCC Music', paymentTitle: 'Pago confirmado', paymentBody: 'Confirmamos el pago de', value: 'Valor', paymentId: 'ID del pago',
     subscriptionSubject: 'Tu plan de DCC Music está cerca de vencer', subscriptionTitle: 'Tu plan está cerca de vencer', subscriptionBody: 'Tu plan', expires: 'vence en', days: 'día(s)', plans: 'Ver planes',
     deletedSubject: 'Tu cuenta de DCC Music fue eliminada', deletedTitle: 'Cuenta eliminada según lo solicitado', deletedBody: 'Confirmamos que tu cuenta y acceso a DCC Music fueron eliminados y no pueden restaurarse. Cualquier contenido técnico conservado internamente permanece desvinculado del perfil eliminado.',
   },
@@ -53,4 +53,9 @@ export function getComposerEmailCopy(language: ComposerEmailLanguage) {
   return Object.fromEntries(
     Object.keys(source).map(key => [key, emailI18n.t(key, { lng: language, ns: 'email' })])
   ) as unknown as typeof COPY['pt']
+}
+
+export function getStudioTopupEmailDescription(language: ComposerEmailLanguage, quantity: number) {
+  const count = Number.isFinite(quantity) && quantity > 0 ? Math.floor(quantity) : 1
+  return emailI18n.t(count === 1 ? 'topupSingular' : 'topupPlural', { lng: language, ns: 'email', count })
 }
