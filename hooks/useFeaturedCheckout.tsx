@@ -1,0 +1,52 @@
+'use client'
+
+import { useState } from 'react'
+import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
+
+export function useFeaturedCheckout(contentType: 'music' | 'video', contentId: string, onPaid?: () => void) {
+  const [session, setSession] = useState<{ featuredId: string; amount: number; email: string | null } | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const authenticatedFetch = async (url: string, init?: RequestInit) => {
+    const token = localStorage.getItem('composer_token')
+    if (!token) throw new Error('Faça login para destacar')
+    const response = await fetch(url, { ...init, headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...(init?.headers || {}),
+    } })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(data.error || 'Falha ao processar pagamento')
+    return data
+  }
+
+  const startCheckout = async () => {
+    if (loading) return
+    setLoading(true)
+    try {
+      const data = await authenticatedFetch('/api/compositores/featured/intent', {
+        method: 'POST', body: JSON.stringify({ contentType, contentId }),
+      })
+      setSession({ featuredId: data.featuredId, amount: Number(data.amount), email: data.email })
+    } catch (error: any) {
+      alert(error?.message || 'Não foi possível abrir o pagamento')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const checkoutUi = session ? (
+    <MercadoPagoPaymentOverlay
+      amount={session.amount}
+      email={session.email}
+      onSubmitPayment={(formData) => authenticatedFetch('/api/compositores/featured/payment', {
+        method: 'POST', body: JSON.stringify({ featuredId: session.featuredId, formData }),
+      })}
+      onCheckStatus={() => authenticatedFetch(`/api/compositores/featured/check?featuredId=${encodeURIComponent(session.featuredId)}`)}
+      onPaid={() => { setSession(null); onPaid?.(); window.location.reload() }}
+      onClose={() => setSession(null)}
+    />
+  ) : null
+
+  return { startCheckout, checkoutUi, loading }
+}

@@ -1,5 +1,7 @@
 'use client'
 
+import { useFeaturedCheckout } from '@/hooks/useFeaturedCheckout'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FiStar, FiX, FiCheckCircle } from 'react-icons/fi'
@@ -25,52 +27,11 @@ export default function FeaturedOfferModal({
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
-  const handlePayFeatured = async () => {
-    let paymentError = t('featured.errors.processPayment')
-    setLoading(true)
-    try {
-      const token = localStorage.getItem('composer_token')
-      if (!token) {
-        alert(t('featured.loginRequired'))
-        return
-      }
-
-      const response = await fetch('/api/compositores/featured/preferencia', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          contentType,
-          contentId,
-        }),
-      })
-
-      const data = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        paymentError = featuredPaymentError(t, data, response.status)
-        throw new Error(paymentError)
-      }
-
-      // Redirecionar para Mercado Pago
-      const initPoint = data.initPoint || data.sandboxInitPoint
-      if (initPoint) {
-        window.location.href = initPoint
-      } else {
-        paymentError = t('featured.errors.missingCheckout')
-        throw new Error(paymentError)
-      }
-    } catch (error: any) {
-      console.error('Erro ao pagar destaque:', error)
-      alert(paymentError)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { startCheckout, checkoutUi, loading: checkoutLoading } = useFeaturedCheckout(contentType, contentId)
+  const handlePayFeatured = startCheckout
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-gray-900 border border-gray-800 rounded-lg max-w-md w-full p-6 relative">
         <button
@@ -116,10 +77,10 @@ export default function FeaturedOfferModal({
           </button>
           <button
             onClick={handlePayFeatured}
-            disabled={loading}
+            disabled={checkoutLoading}
             className="flex-1 px-4 py-3 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-700 hover:to-yellow-600 rounded-lg transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
-            {loading ? (
+            {checkoutLoading ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 <span>{t('featured.processing')}</span>
@@ -134,5 +95,7 @@ export default function FeaturedOfferModal({
         </div>
       </div>
     </div>
+    {checkoutUi}
+    </>
   )
 }

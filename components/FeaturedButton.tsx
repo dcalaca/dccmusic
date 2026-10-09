@@ -1,5 +1,7 @@
 'use client'
 
+import { useFeaturedCheckout } from '@/hooks/useFeaturedCheckout'
+
 import { useState, useEffect } from 'react'
 import { FiStar, FiCheckCircle, FiClock } from 'react-icons/fi'
 import { useTranslation } from 'react-i18next'
@@ -57,52 +59,8 @@ export default function FeaturedButton({
     }
   }
 
-  const handlePayFeatured = async () => {
-    if (loading) return
-
-    let paymentError = t('featured.errors.processPayment')
-    setLoading(true)
-    try {
-      const token = localStorage.getItem('composer_token')
-      if (!token) {
-        alert(t('featured.loginRequired'))
-        return
-      }
-
-      const response = await fetch('/api/compositores/featured/preferencia', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          contentType,
-          contentId,
-        }),
-      })
-
-      const data = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        paymentError = featuredPaymentError(t, data, response.status)
-        throw new Error(paymentError)
-      }
-
-      // Redirecionar para Mercado Pago
-      const initPoint = data.initPoint || data.sandboxInitPoint
-      if (initPoint) {
-        window.location.href = initPoint
-      } else {
-        paymentError = t('featured.errors.missingCheckout')
-        throw new Error(paymentError)
-      }
-    } catch (error: any) {
-      console.error('Erro ao pagar destaque:', error)
-      alert(paymentError)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { startCheckout, checkoutUi, loading: checkoutLoading } = useFeaturedCheckout(contentType, contentId)
+  const handlePayFeatured = startCheckout
 
   const formatExpirationDate = (date: Date) => {
     return new Intl.DateTimeFormat(i18n.language, {
@@ -144,14 +102,16 @@ export default function FeaturedButton({
   }
 
   return (
-    <button
-      onClick={handlePayFeatured}
-      disabled={loading}
+    <>
+    <button onClick={handlePayFeatured}
+      disabled={checkoutLoading}
       className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-700 hover:to-yellow-600 rounded-lg transition-all font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
       title={t('featured.buttonTitle', { price: featuredPrice(i18n.language) })}
     >
       <FiStar className="w-4 h-4" />
-      <span>{loading ? t('featured.processing') : t('featured.highlightPrice', { price: featuredPrice(i18n.language) })}</span>
+      <span>{checkoutLoading ? t('featured.processing') : t('featured.highlightPrice', { price: featuredPrice(i18n.language) })}</span>
     </button>
+    {checkoutUi}
+    </>
   )
 }

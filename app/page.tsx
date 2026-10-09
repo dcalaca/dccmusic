@@ -178,18 +178,41 @@ async function getPublicAiMusicDays(locale: DccLocale) {
 }
 
 async function getFeaturedContent() {
-  try {
-    const result = await db.getMusics({ ordem: 'recentes', limit: 100 })
-    const mostPlayed = Array.isArray(result)
-      ? [...result].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0)).slice(0, 8)
-      : []
-    return {
-      featuredMusics: mostPlayed,
-    }
-  } catch (error) {
-    console.error('Erro ao buscar músicas em destaque:', error)
-    return { featuredMusics: [] }
+  // Mais ouvidas: mantém a seleção existente, agora limitada a cinco.
+  const [musicResult, paidFeaturedResult] = await Promise.allSettled([
+    db.getMusics({ ordem: 'recentes', limit: 100 }),
+    supabaseAdmin
+      .from('dccmusic_featured_payments')
+      .select('content_id, created_at')
+      .eq('content_type', 'music')
+      .eq('payment_status', 'approved')
+      .eq('is_active', true)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+      .limit(30),
+  ])
+
+  const musicRows = musicResult.status === 'fulfilled' && Array.isArray(musicResult.value)
+    ? musicResult.value : []
+  const mostPlayedMusics = [...musicRows]
+    .sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+    .slice(0, 5)
+
+  const paidRows = paidFeaturedResult.status === 'fulfilled' && !paidFeaturedResult.value.error
+    ? paidFeaturedResult.value.data || [] : []
+  if (paidFeaturedResult.status === 'rejected' || (paidFeaturedResult.status === 'fulfilled' && paidFeaturedResult.value.error)) {
+    console.error('[HOME] Erro ao buscar destaques pagos')
   }
+
+  // Busca as músicas pelos IDs: um destaque pode ser de uma música antiga.
+  const featuredIds = Array.from(new Set(paidRows.map((row) => row.content_id))).slice(0, 5)
+  const resolved = await Promise.allSettled(featuredIds.map((id) => db.getMusicById(id)))
+  const paidFeaturedMusics = resolved
+    .filter((result): result is PromiseFulfilledResult<Awaited<ReturnType<typeof db.getMusicById>>> => result.status === 'fulfilled')
+    .map((result) => result.value)
+    .filter((music): music is NonNullable<typeof music> => Boolean(music))
+
+  return { mostPlayedMusics, paidFeaturedMusics }
 }
 
 async function getSiteSummaryStats(locale: DccLocale) {
@@ -231,22 +254,36 @@ async function getSiteSummaryStats(locale: DccLocale) {
 async function HomeDynamicContent({ country, locale }: { country: DccCountry; locale: DccLocale }) {
   const i18n = await createDccI18n(locale)
   const t = i18n.t.bind(i18n)
-  const [{ featuredMusics }, siteStats] = await Promise.all([
+  const [{ mostPlayedMusics, paidFeaturedMusics }, siteStats] = await Promise.all([
     getFeaturedContent(),
     getSiteSummaryStats(locale),
   ])
 
   return (
     <>
-      {featuredMusics.length > 0 && (
+      {mostPlayedMusics.length > 0 && (
         <section className="bg-black py-9 sm:py-10">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">Músicas mais ouvidas</span></h2>
+              <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300">Explorar todas <FiArrowRight className="h-5 w-5" /></Link>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+              {mostPlayedMusics.map((music) => <MusicCard key={music.id} music={music} />)}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {paidFeaturedMusics.length > 0 && (
+        <section className="bg-black pb-9 pt-2 sm:pb-10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-5 flex items-center justify-between gap-3">
               <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{t('home.featured.title')}</span></h2>
               <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{t('home.featured.exploreAll')}</span><FiArrowRight className="h-5 w-5" /></Link>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-              {featuredMusics.map((music) => <MusicCard key={music.id} music={music} />)}
+              {paidFeaturedMusics.map((music) => <MusicCard key={music.id} music={music} />)}
             </div>
           </div>
         </section>
