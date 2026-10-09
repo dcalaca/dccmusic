@@ -1,5 +1,6 @@
-import { useFeaturedCheckout } from '@/hooks/useFeaturedCheckout'
 'use client'
+
+import { useFeaturedCheckout } from '@/hooks/useFeaturedCheckout'
 
 import { useState, useEffect } from 'react'
 import { FiStar, FiCheckCircle, FiClock } from 'react-icons/fi'

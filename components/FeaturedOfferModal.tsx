@@ -1,5 +1,6 @@
-import { useFeaturedCheckout } from '@/hooks/useFeaturedCheckout'
 'use client'
+
+import { useFeaturedCheckout } from '@/hooks/useFeaturedCheckout'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
