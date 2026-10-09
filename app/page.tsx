@@ -367,24 +367,6 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="border-y border-purple-900/60 bg-gradient-to-r from-purple-950/50 via-black to-primary-950/40">
-        <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 py-5 text-center sm:flex-row sm:px-6 sm:py-6 sm:text-left lg:px-8">
-          <div>
-            <p className="text-base font-bold text-white sm:text-lg">{t('home.cta.title')}</p>
-            <p className="mt-1 text-sm text-gray-300">{t('home.cta.subtitle')}</p>
-          </div>
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
-            <Link href="/studio-ia" className="inline-flex min-h-[42px] items-center justify-center rounded-lg bg-purple-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-purple-500">
-              {t('home.cta.start')}
-              <FiArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-            <Link href="/musicas" className="inline-flex min-h-[42px] items-center justify-center rounded-lg border border-gray-600 px-5 py-2.5 text-sm font-semibold text-gray-200 transition hover:border-purple-400 hover:text-white">
-              {t('home.cta.explore')}
-            </Link>
-          </div>
-        </div>
-      </section>
-
       <Suspense fallback={null}>
         <HomeDynamicContent country={country} locale={locale} />
       </Suspense>
