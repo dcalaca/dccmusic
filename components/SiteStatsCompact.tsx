@@ -44,7 +44,7 @@ export default async function SiteStatsCompact({
         <div className="mx-auto max-w-6xl min-w-0">
           <div className="mb-5 text-center">
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-300/80">{t('siteStats.badge')}</p>
-            <h2 className="mx-auto mt-1.5 max-w-2xl text-lg font-semibold leading-snug tracking-tight text-white sm:text-xl">
+            <h2 className="mx-auto mt-1.5 max-w-2xl text-xl font-semibold leading-snug tracking-tight text-white sm:text-2xl">
               {t('siteStats.title')}
             </h2>
             <p className="mx-auto mt-1.5 max-w-xl text-xs leading-relaxed text-gray-400 sm:text-[13px]">
