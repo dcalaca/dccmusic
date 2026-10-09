@@ -21,9 +21,10 @@ interface MusicCardProps {
     viewCount?: number
   }
   view?: 'lista' | 'grid'
+  homeLayout?: boolean
 }
 
-export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
+export default function MusicCard({ music, view = 'lista', homeLayout = false }: MusicCardProps) {
   const { t, i18n } = useTranslation()
   const hasSpotify = isSpotifyUrl(music.spotifyUrl)
   const href = music.href || `/musicas/${music.slug}`
@@ -72,6 +73,39 @@ export default function MusicCard({ music, view = 'lista' }: MusicCardProps) {
         })
     }
   }, [imageUrl, canLoadPlatformImage, music.spotifyUrl, loadingImage, hasTriedLoadingImage])
+
+  // Card horizontal exclusivo da Home: evita que visualizações disputem espaço
+  // com título, gênero, data e Spotify no celular.
+  if (view === 'lista' && homeLayout) {
+    return (
+      <Link href={href} className="block h-full">
+        <article className="group flex h-full min-w-0 items-start gap-3 rounded-xl border border-gray-800 bg-gray-900 p-4 transition-colors hover:border-primary-500 sm:items-center sm:gap-4">
+          <div className="h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-gray-800 sm:h-28 sm:w-28">
+            {imageUrl ? (
+              <Image src={imageUrl} alt={music.title} width={112} height={112} unoptimized className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-primary-600/20"><FiMusic className="h-8 w-8 text-primary-400" /></div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="line-clamp-2 text-base font-semibold leading-snug text-white group-hover:text-primary-400 sm:text-lg">{music.title}</h3>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-400 sm:text-sm">
+              {music.genre && <span className="rounded border border-primary-800 bg-primary-900/50 px-2 py-1 text-primary-300">{music.genre}</span>}
+              {mounted && <span className="whitespace-nowrap">{formattedDate}</span>}
+              {hasSpotify && <span className="rounded border border-green-800 bg-green-900/50 px-2 py-1 text-green-300">Spotify</span>}
+              {music.sourceLabel && <span className="rounded border border-purple-800 bg-purple-900/50 px-2 py-1 text-purple-200">{music.sourceLabel}</span>}
+            </div>
+            {mounted && viewCount > 0 && (
+              <div className="mt-2 flex items-center gap-1.5 text-xs text-gray-400 sm:text-sm">
+                <FiEye className="h-4 w-4 shrink-0" />
+                <span>{formattedViews} {t('musicCard.views')}</span>
+              </div>
+            )}
+          </div>
+        </article>
+      </Link>
+    )
+  }
 
   if (view === 'lista') {
     return (

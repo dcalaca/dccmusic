@@ -269,7 +269,7 @@ async function HomeDynamicContent({ country, locale }: { country: DccCountry; lo
               <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300">Explorar todas <FiArrowRight className="h-5 w-5" /></Link>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-              {mostPlayedMusics.map((music) => <MusicCard key={music.id} music={music} />)}
+              {mostPlayedMusics.map((music) => <MusicCard key={music.id} music={music} homeLayout />)}
             </div>
           </div>
         </section>
@@ -283,7 +283,7 @@ async function HomeDynamicContent({ country, locale }: { country: DccCountry; lo
               <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{t('home.featured.exploreAll')}</span><FiArrowRight className="h-5 w-5" /></Link>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-              {paidFeaturedMusics.map((music) => <MusicCard key={music.id} music={music} />)}
+              {paidFeaturedMusics.map((music) => <MusicCard key={music.id} music={music} homeLayout />)}
             </div>
           </div>
         </section>
