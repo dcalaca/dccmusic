@@ -1,3 +1,4 @@
+import { ga4CheckoutMetadata } from '@/lib/ga4-server-purchase'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { getComposerFromRequest, resolveComposerToken } from '@/lib/composer-middleware'
@@ -69,9 +70,10 @@ export async function POST(request: NextRequest) {
       body: params,
       headers: { 'Idempotency-Key': `studio-topup-stripe-${topup.id}` },
     })
+    const ga4 = ga4CheckoutMetadata(request)
     await supabaseAdmin.from('studio_credit_topups').update({
       payment_gateway: 'stripe',
-      metadata: { ...(topup.metadata || {}), checkout_type: 'stripe_embedded', stripe_session_id: session.id },
+      metadata: { ...(topup.metadata || {}), checkout_type: 'stripe_embedded', stripe_session_id: session.id, ...(ga4.client_id ? { ga4 } : {}) },
       updated_at: new Date().toISOString(),
     }).eq('id', topup.id)
 
