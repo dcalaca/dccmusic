@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '@/lib/supabase'
 import { paymentClient } from '@/lib/mercadopago'
+import { sendFeaturedActivationEmail } from '@/lib/featured-activation-email'
 import { getComposerEmailIdentity, sendAdminPaymentNotificationEmail, sendPaymentConfirmationEmail } from '@/lib/dcc-emails'
 
 export async function reconcileFeaturedPayment(featuredId: string, paymentId: string) {
@@ -21,6 +22,9 @@ export async function reconcileFeaturedPayment(featuredId: string, paymentId: st
     throw new Error('Destaque vinculado a outra transação')
   }
   if (featured.payment_status === 'approved') {
+    if (featured.is_active) {
+      try { await sendFeaturedActivationEmail(featured) } catch (error) { console.error('[FEATURED] Falha no email de ativação:', error) }
+    }
     return { status: 'paid', featured, payment }
   }
   if (payment.status === 'approved') {
@@ -31,6 +35,7 @@ export async function reconcileFeaturedPayment(featuredId: string, paymentId: st
       .eq('id', featured.id).eq('payment_status', 'pending').select('*').maybeSingle()
     if (updateError) throw updateError
     if (updated) {
+      try { await sendFeaturedActivationEmail(updated) } catch (error) { console.error('[FEATURED] Falha no email de ativação:', error) }
       try {
         const composer = await getComposerEmailIdentity(updated.composer_id)
         if (composer) {

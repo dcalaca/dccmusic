@@ -2259,6 +2259,17 @@
     }
   },
   "featured": {
+    "activation": {    "subject": "¡Enhorabuena! Tu canción “{{title}}” está destacada",
+    "heading": "¡Tu canción está destacada!",
+    "preview": "Tu canción aparecerá destacada durante 10 días.",
+    "greeting": "¡Hola, {{name}}!",
+    "message": "¡Enhorabuena! Tu canción “{{title}}” ya está destacada en la página principal de DCC Music.",
+    "duration": "Tu destaque dura 10 días desde la activación.",
+    "expiry": "El destaque termina el {{date}} (hora de Brasilia).",
+    "button": "Ver mi canción",
+    "closing": "¡Gracias por confiar en DCC Music!",
+    "fallbackTitle": "Tu canción"
+    },
     "loginRequired": "Inicia sesión para continuar",
     "active": "Destacado",
     "daysRemaining_one": "Queda {{count}} día",

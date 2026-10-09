@@ -2259,6 +2259,17 @@
     }
   },
   "featured": {
+    "activation": {    "subject": "Congratulations! Your song “{{title}}” is featured",
+    "heading": "Your song is now featured!",
+    "preview": "Your song will be featured for 10 days.",
+    "greeting": "Hello, {{name}}!",
+    "message": "Congratulations! Your song “{{title}}” is now featured on the DCC Music home page.",
+    "duration": "Your feature lasts 10 days from activation.",
+    "expiry": "Your feature ends on {{date}} (Brasília time).",
+    "button": "View my song",
+    "closing": "Thank you for choosing DCC Music!",
+    "fallbackTitle": "Your song"
+    },
     "loginRequired": "Sign in to continue",
     "active": "Featured",
     "daysRemaining_one": "{{count}} day remaining",
