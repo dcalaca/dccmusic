@@ -18,7 +18,7 @@ export function useFeaturedCheckout(contentType: 'music' | 'video', contentId: s
       ...(init?.headers || {}),
     } })
     const data = await response.json().catch(() => ({}))
-    if (!response.ok) throw new Error(data.error || 'Falha ao processar pagamento')
+    if (!response.ok) throw new Error(data.errorCode === 'audioRequired' ? t('featured.errors.audioRequired') : (data.error || t('featured.errors.processPayment')))
     return data
   }
 

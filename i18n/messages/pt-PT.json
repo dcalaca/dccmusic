@@ -2281,6 +2281,7 @@
     "highlightPrice": "Destacar ({{price}})",
     "close": "Fechar",
     "errors": {
+      "audioRequired": "Esta música ainda não tem áudio publicado. Adicione um link válido do Spotify ou Apple Music antes de comprar o destaque.",
       "unauthorized": "Inicie sessão novamente para começar o pagamento.",
       "missingFields": "Não foi possível identificar o conteúdo a destacar.",
       "invalidType": "Tipo de conteúdo inválido para destaque.",

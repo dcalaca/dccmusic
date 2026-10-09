@@ -14,6 +14,12 @@ export async function POST(request: NextRequest) {
     }
     const content = contentType === 'music' ? await db.getMusicById(contentId) : await db.getVideoById(contentId)
     if (!content) return NextResponse.json({ error: 'Conteúdo não encontrado' }, { status: 404 })
+    // Nunca cobrar destaque de música sem áudio reproduzível.
+    if (contentType === 'music' && !(
+      content.spotifyUrl || content.spotifyEmbed || content.appleMusicUrl || content.appleMusicEmbed
+    )) {
+      return NextResponse.json({ errorCode: 'audioRequired' }, { status: 422 })
+    }
     if (await db.hasActiveFeatured(contentType, contentId)) {
       return NextResponse.json({ error: 'Conteúdo já destacado' }, { status: 409 })
     }
