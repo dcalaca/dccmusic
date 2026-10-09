@@ -635,6 +635,14 @@ export async function sendPaymentConfirmationEmail(input: ComposerEmailInput & {
 }) {
   const language = await getEmailLanguage(input)
   const copy = getComposerEmailCopy(language)
+  const quantity = Number(input.musicQuantity || String(input.description).match(/(\d+)\s*música/i)?.[1] || 1)
+  const localizedDescription = input.productType === 'studio_topup'
+    ? language === 'es'
+      ? `Recarga de Studio IA - ${quantity} ${quantity === 1 ? 'canción' : 'canciones'}`
+      : language === 'en'
+        ? `AI Studio top-up - ${quantity} ${quantity === 1 ? 'song' : 'songs'}`
+        : `Recarga avulsa Studio IA - ${quantity} ${quantity === 1 ? 'música' : 'músicas'}`
+    : input.description
   return sendDccEmail({
     to: input.email,
     subject: copy.paymentSubject,
@@ -645,7 +653,7 @@ export async function sendPaymentConfirmationEmail(input: ComposerEmailInput & {
     metadata: { composerId: input.composerId, paymentId: String(input.paymentId), productType: input.productType, currency: input.currency || 'BRL' },
     contentHtml: `
       <p>${copy.greeting}, ${escapeHtml(input.name)}.</p>
-      <p>${copy.paymentBody} <strong>${escapeHtml(input.description)}</strong>.</p>
+      <p>${copy.paymentBody} <strong>${escapeHtml(localizedDescription)}</strong>.</p>
       <p><strong>${copy.value}:</strong> ${formatMoney(input.amount, input.currency, getEmailLocale(language))}</p>
       <p><strong>${copy.paymentId}:</strong> ${escapeHtml(input.paymentId)}</p>
     `,
