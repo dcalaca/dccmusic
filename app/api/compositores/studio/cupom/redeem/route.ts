@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { preferenceClient } from '@/lib/mercadopago'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import {
   addStudioCreditTransaction,
-  getSiteUrl,
   STUDIO_MUSIC_CREDITS,
   studioMonthKey,
 } from '@/lib/studio'
@@ -177,66 +175,13 @@ export async function POST(request: NextRequest) {
 
     if (topupError) throw topupError
 
-    const baseUrl = getSiteUrl()
-    const preference = await preferenceClient.create({
-      body: {
-        items: [
-          {
-            id: `studio-coupon-${coupon.code}`,
-            title: packageName,
-            description: `${musicQuantity} músicas (${credits} créditos) - cupom ${coupon.code}`,
-            quantity: 1,
-            unit_price: Number(price.toFixed(2)),
-            currency_id: 'BRL',
-          },
-        ],
-        payer: { email: composerData?.email || undefined },
-        back_urls: {
-          success: `${baseUrl}/compositores/admin/studio-ia/recarga/sucesso?topup_id=${topup.id}`,
-          failure: `${baseUrl}/compositores/admin/studio-ia/recarga/falha?topup_id=${topup.id}`,
-          pending: `${baseUrl}/compositores/admin/studio-ia/recarga/pendente?topup_id=${topup.id}`,
-        },
-        auto_return: 'approved',
-        external_reference: reference,
-        notification_url: `${baseUrl}/api/compositores/pagamento/webhook`,
-        statement_descriptor: 'DCC Music',
-        metadata: {
-          type: 'studio_topup',
-          topup_id: topup.id,
-          composer_id: composer.composerId,
-          package_slug: `coupon-${coupon.code}`,
-          credits,
-          music_quantity: musicQuantity,
-          coupon_id: coupon.id,
-          coupon_code: coupon.code,
-        },
-        payment_methods: {
-          excluded_payment_types: [],
-          excluded_payment_methods: [],
-          installments: 6,
-        },
-        binary_mode: false,
-        expires: true,
-        expiration_date_from: new Date().toISOString(),
-        expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        additional_info: `Cupom DCC Studio IA ${coupon.code} para ${composerData?.name || 'compositor'}`,
-      },
-    })
-
-    await supabaseAdmin
-      .from('studio_credit_topups')
-      .update({ payment_preference_id: preference.id, updated_at: new Date().toISOString() })
-      .eq('id', topup.id)
-
     return NextResponse.json({
       success: true,
       type: 'paid',
       topupId: topup.id,
-      preferenceId: preference.id,
-      initPoint: preference.init_point,
-      sandboxInitPoint: preference.sandbox_init_point,
       musicQuantity,
       amount: Number(price.toFixed(2)),
+      email: composerData?.email || null,
     })
   } catch (error: any) {
     console.error('[CUPOM] Erro ao resgatar:', error)
