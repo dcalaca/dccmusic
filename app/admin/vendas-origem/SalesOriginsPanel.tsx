@@ -39,6 +39,17 @@ export default function SalesOriginsPanel() {
   }, [period])
 
   const groups = useMemo(() => summarizeOrigins(rows), [rows])
+  const metaChannels = useMemo(() => {
+    const instagram = groups.find(group => group.origin === 'Instagram')
+    const facebook = groups.find(group => group.origin === 'Meta / Facebook' || group.origin === 'Meta')
+    const amounts: Record<string, number> = {}
+    for (const group of [instagram, facebook]) {
+      if (!group) continue
+      for (const [currency, amount] of Object.entries(group.amounts)) amounts[currency] = (amounts[currency] || 0) + amount
+    }
+    return { count: (instagram?.count || 0) + (facebook?.count || 0), amounts, instagram: instagram?.count || 0, facebook: facebook?.count || 0 }
+  }, [groups])
+  const directCount = useMemo(() => groups.find(group => group.origin === 'Acesso direto')?.count || 0, [groups])
   const filtered = useMemo(() => rows.filter(row => !origin || row.origin === origin), [rows, origin])
   const totals = useMemo(() => {
     const amounts: Record<string, number> = {}
@@ -80,6 +91,18 @@ export default function SalesOriginsPanel() {
         <label className="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center">Origem <select className={control + " max-w-full"} value={origin} onChange={event => { setOrigin(event.target.value); setPage(1) }}><option value="">Todas</option>{groups.map(group => <option key={group.origin}>{group.origin}</option>)}</select></label>
         <button className={control + " w-full sm:w-auto"} onClick={download} disabled={!filtered.length}>Exportar CSV</button>
       </div>
+      {!origin && <section className="min-w-0 rounded-xl border border-primary-700/40 bg-gray-900 p-4 sm:p-5" aria-label="Resumo de canais Meta identificados">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div><h2 className="text-lg font-semibold text-white">Meta: Instagram + Facebook</h2><p className="mt-1 text-xs text-gray-400">Canais registrados nas vendas do DCC — não é o total atribuído pelo Gerenciador de Anúncios.</p></div>
+          <div className="text-right"><p className="text-2xl font-bold">{metaChannels.count} vendas</p><p className="text-sm text-gray-300">{amountsText(metaChannels.amounts) || 'Sem vendas identificadas'}</p></div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 border-t border-gray-800 pt-3 text-sm text-gray-300">
+          <span>Instagram: <strong className="text-white">{metaChannels.instagram}</strong></span>
+          <span>Facebook: <strong className="text-white">{metaChannels.facebook}</strong></span>
+          <span>Acesso direto (origem publicitária não confirmada): <strong className="text-white">{directCount}</strong></span>
+        </div>
+        <p className="mt-3 text-xs leading-relaxed text-gray-400">O Meta Ads pode atribuir compras feitas após retorno direto ao site. Este relatório não deduz quantas compras diretas vieram dos anúncios e não reproduz a atribuição do Meta.</p>
+      </section>}
       <div className="space-y-3 md:hidden" aria-label="Resumo por origem">
         {groups.filter(group => !origin || group.origin === origin).map(group => <div key={group.origin} className="min-w-0 rounded-xl border border-gray-800 bg-gray-900/70 p-4">
           <div className="flex min-w-0 items-start justify-between gap-3">
