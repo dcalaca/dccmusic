@@ -2264,6 +2264,7 @@
     "daysRemaining_one": "Queda {{count}} día",
     "daysRemaining_other": "Quedan {{count}} días",
     "pending": "Pago pendiente",
+    "durationNotice": "El contenido aparecerá destacado en la página principal durante 10 días desde la aprobación del pago. Después, el destaque finalizará automáticamente.",
     "buttonTitle": "Pagar {{price}} para destacar durante 10 días",
     "processing": "Procesando...",
     "highlightPrice": "Destacar ({{price}})",
@@ -2290,13 +2291,14 @@
     }
   },
   "home": {
+    "mostPlayedTitle": "Canciones más escuchadas",
     "metadata": {
       "title": "Crear Música con IA Online | DCC Music",
       "description": "Crea música con inteligencia artificial a partir de una idea o letra. Usa el Studio IA de DCC Music y prueba tu primera creación gratis.",
       "openGraphDescription": "Escribe tu idea o letra y conviértela en una canción completa con inteligencia artificial."
     },
     "featured": {
-      "title": "Canciones más escuchadas",
+      "title": "Canciones destacadas",
       "exploreAll": "Explorar todas las canciones"
     },
     "composer": {

@@ -62,6 +62,7 @@ export default function FeaturedOfferModal({
           <p className="text-gray-300 text-sm mb-3">
             {contentType === 'music' ? t('featured.modal.descriptionMusic') : t('featured.modal.descriptionVideo')}
           </p>
+          <p className="mb-3 rounded-lg border border-yellow-600/50 bg-yellow-600/10 p-3 text-sm font-medium text-yellow-100">{t('featured.durationNotice')}</p>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-bold text-yellow-400">{featuredPrice(i18n.language)}</span>
             <span className="text-gray-400 text-sm">{t('featured.modal.pricePeriod')}</span>

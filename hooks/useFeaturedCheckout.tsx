@@ -1,9 +1,11 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
 
 export function useFeaturedCheckout(contentType: 'music' | 'video', contentId: string, onPaid?: () => void) {
+  const { t } = useTranslation()
   const [session, setSession] = useState<{ featuredId: string; amount: number; email: string | null } | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -37,6 +39,7 @@ export function useFeaturedCheckout(contentType: 'music' | 'video', contentId: s
 
   const checkoutUi = session ? (
     <MercadoPagoPaymentOverlay
+      notice={t('featured.durationNotice')}
       amount={session.amount}
       email={session.email}
       onSubmitPayment={(formData) => authenticatedFetch('/api/compositores/featured/payment', {

@@ -327,6 +327,7 @@ export function MercadoPagoPaymentOverlay({
   onPaid,
   onClose,
   onUseFallback,
+  notice,
 }: {
   amount: number
   email?: string | null
@@ -335,6 +336,7 @@ export function MercadoPagoPaymentOverlay({
   onPaid: (result: any) => void
   onClose: () => void
   onUseFallback?: () => void | Promise<void>
+  notice?: string
 }) {
   const { t } = useTranslation()
   const [fallbackLoading, setFallbackLoading] = useState(false)
@@ -365,6 +367,7 @@ export function MercadoPagoPaymentOverlay({
           <FiX className="h-5 w-5" />
         </button>
         <h2 className="mb-4 pr-8 text-xl font-black text-white">{t('payment.overlay.title')}</h2>
+        {notice ? <p className="mb-4 rounded-lg border border-yellow-600/60 bg-yellow-500/10 p-3 text-sm font-semibold text-yellow-100">{notice}</p> : null}
         <MercadoPagoPaymentBrick
           amount={amount}
           email={email}

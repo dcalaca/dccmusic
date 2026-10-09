@@ -2264,6 +2264,7 @@
     "daysRemaining_one": "{{count}} day remaining",
     "daysRemaining_other": "{{count}} days remaining",
     "pending": "Payment pending",
+    "durationNotice": "Your content will be featured on the home page for 10 days from payment approval. After that, the feature ends automatically.",
     "buttonTitle": "Pay {{price}} to feature for 10 days",
     "processing": "Processing...",
     "highlightPrice": "Feature ({{price}})",
@@ -2290,13 +2291,14 @@
     }
   },
   "home": {
+    "mostPlayedTitle": "Most-played songs",
     "metadata": {
       "title": "Create Music with AI Online | DCC Music",
       "description": "Create music with artificial intelligence from an idea or lyrics. Use DCC Music's AI Studio and try your first creation free.",
       "openGraphDescription": "Type your idea or lyrics and turn them into a complete song with artificial intelligence."
     },
     "featured": {
-      "title": "Most-played songs",
+      "title": "Featured songs",
       "exploreAll": "Explore all songs"
     },
     "composer": {

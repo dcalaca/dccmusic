@@ -111,6 +111,7 @@ export default function FeaturedButton({
       <FiStar className="w-4 h-4" />
       <span>{checkoutLoading ? t('featured.processing') : t('featured.highlightPrice', { price: featuredPrice(i18n.language) })}</span>
     </button>
+    <p className="mt-1 text-xs text-yellow-200">{t('featured.durationNotice')}</p>
     {checkoutUi}
     </>
   )
