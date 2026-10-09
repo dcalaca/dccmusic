@@ -25,11 +25,12 @@ async function composerAlreadyUsedCoupon(composerId: string, couponId: string, i
     return Boolean(data?.length)
   }
 
+  // Uma tentativa pendente não equivale a cupom utilizado.
   const { data } = await supabaseAdmin
     .from('studio_credit_topups')
     .select('id')
     .eq('composer_id', composerId)
-    .in('status', ['pending', 'paid'])
+    .eq('status', 'paid')
     .contains('metadata', { couponId })
     .limit(1)
 

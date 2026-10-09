@@ -29,11 +29,12 @@ async function composerAlreadyUsedCoupon(composerId: string, couponId: string, i
     return Boolean(data?.length)
   }
 
+  // Uma tentativa pendente não equivale a cupom utilizado.
   const { data } = await supabaseAdmin
     .from('studio_credit_topups')
     .select('id')
     .eq('composer_id', composerId)
-    .in('status', ['pending', 'paid'])
+    .eq('status', 'paid')
     .contains('metadata', { couponId })
     .limit(1)
 
@@ -134,6 +135,36 @@ export async function POST(request: NextRequest) {
         { errorCode: 'alreadyUsedPaid' },
         { status: 400 }
       )
+    }
+
+    // Reaproveita a recarga pendente, inclusive as criadas pelo checkout antigo.
+    // Não gera várias intenções para o mesmo cupom e permite retomar o pagamento.
+    const { data: pendingTopups, error: pendingError } = await supabaseAdmin
+      .from('studio_credit_topups')
+      .select('id,amount,currency,music_quantity,credits,metadata,payment_id')
+      .eq('composer_id', composer.composerId)
+      .eq('status', 'pending')
+      .contains('metadata', { couponId: coupon.id })
+      .order('created_at', { ascending: false })
+      .limit(1)
+    if (pendingError) throw pendingError
+    const pendingTopup = pendingTopups?.[0]
+    if (pendingTopup) {
+      if (Math.abs(Number(pendingTopup.amount) - price) > 0.01 ||
+          pendingTopup.currency !== 'BRL' ||
+          Number(pendingTopup.music_quantity) !== musicQuantity ||
+          Number(pendingTopup.credits) !== credits ||
+          pendingTopup.metadata?.couponCode !== coupon.code) {
+        return NextResponse.json({ errorCode: 'paymentUnavailable' }, { status: 409 })
+      }
+      if (pendingTopup.payment_id) {
+        return NextResponse.json({ errorCode: 'paymentPending' }, { status: 409 })
+      }
+      return NextResponse.json({
+        success: true, type: 'paid', resumed: true,
+        topupId: pendingTopup.id, musicQuantity,
+        amount: price,
+      })
     }
 
     if (!process.env.MERCADOPAGO_ACCESS_TOKEN) {
