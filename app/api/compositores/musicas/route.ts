@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import * as db from '@/lib/db'
@@ -60,21 +61,33 @@ export async function POST(request: NextRequest) {
       composers: composerNames,
     })
 
-    const music = await db.createMusic({
-      title,
-      slug: slug || title.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
-      genre: genre || null,
-      spotifyUrl: spotifyUrl || null,
-      spotifyEmbed: spotifyEmbed || null,
-      appleMusicUrl: null,
-      appleMusicEmbed: null,
-      tags: tags || null,
-      description: description || null,
-      coverUrl: null,
-      featured: false, // Destaque só pode ser ativado via pagamento
-      publishedAt: new Date(publishedAt || new Date()),
-      composers: composerNames,
-    })
+    const baseSlug = String(slug || title.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')).trim() || 'musica'
+    let music: Awaited<ReturnType<typeof db.createMusic>> | undefined
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        music = await db.createMusic({
+          title,
+          slug: attempt === 0 ? baseSlug : `${baseSlug.slice(0, 100)}-${randomUUID().slice(0, 8)}`,
+          genre: genre || null,
+          spotifyUrl: spotifyUrl || null,
+          spotifyEmbed: spotifyEmbed || null,
+          appleMusicUrl: null,
+          appleMusicEmbed: null,
+          tags: tags || null,
+          description: description || null,
+          coverUrl: null,
+          featured: false, // Destaque só pode ser ativado via pagamento
+          publishedAt: new Date(publishedAt || new Date()),
+          composers: composerNames,
+        })
+        break
+      } catch (error: any) {
+        // Só repetir quando o INSERT falhou pela restrição de slug.
+        // Outros erros podem ter ocorrido após a criação da música.
+        if (attempt === 2 || !String(error?.message || '').includes('musics_slug_key')) throw error
+      }
+    }
+    if (!music) throw new Error('Não foi possível cadastrar a música.')
 
     console.log('[API] Música criada com sucesso:', music?.id)
 
