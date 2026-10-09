@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
 
-export function useFeaturedCheckout(contentType: 'music' | 'video', contentId: string, onPaid?: () => void) {
+export function useFeaturedCheckout(contentType: 'music' | 'video' | 'studio_music', contentId: string, onPaid?: () => void) {
   const { t } = useTranslation()
   const [session, setSession] = useState<{ featuredId: string; amount: number; email: string | null } | null>(null)
   const [loading, setLoading] = useState(false)
@@ -18,7 +18,7 @@ export function useFeaturedCheckout(contentType: 'music' | 'video', contentId: s
       ...(init?.headers || {}),
     } })
     const data = await response.json().catch(() => ({}))
-    if (!response.ok) throw new Error(data.errorCode === 'audioRequired' ? t('featured.errors.audioRequired') : (data.error || t('featured.errors.processPayment')))
+    if (!response.ok) throw new Error(data.errorCode === 'audioRequired' ? t('featured.errors.audioRequired') : data.errorCode === 'studioNotEligible' ? t('featured.errors.studioNotEligible') : (data.error || t('featured.errors.processPayment')))
     return data
   }
 

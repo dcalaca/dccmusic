@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const contentType = searchParams.get('contentType') as 'music' | 'video'
+    const contentType = searchParams.get('contentType') as 'music' | 'video' | 'studio_music'
     const contentId = searchParams.get('contentId')
 
     if (!contentType || !contentId) {

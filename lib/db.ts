@@ -4989,7 +4989,7 @@ function mapFeaturedPayment(data: any): FeaturedPayment {
 
 // Criar registro de destaque pago (antes do pagamento)
 export async function createFeaturedPayment(
-  contentType: 'music' | 'video',
+  contentType: 'music' | 'video' | 'studio_music',
   contentId: string,
   composerId: string,
   preferenceId: string
@@ -5070,7 +5070,7 @@ export async function updateFeaturedPaymentStatus(
 
 // Verificar se conteúdo tem destaque ativo
 export async function hasActiveFeatured(
-  contentType: 'music' | 'video',
+  contentType: 'music' | 'video' | 'studio_music',
   contentId: string
 ): Promise<boolean> {
   try {
@@ -5097,7 +5097,7 @@ export async function hasActiveFeatured(
 
 // Buscar destaque ativo de um conteúdo
 export async function getActiveFeatured(
-  contentType: 'music' | 'video',
+  contentType: 'music' | 'video' | 'studio_music',
   contentId: string
 ): Promise<FeaturedPayment | null> {
   try {
