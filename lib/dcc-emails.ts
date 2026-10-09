@@ -93,10 +93,11 @@ function escapeHtml(value: any) {
     .replace(/'/g, '&#039;')
 }
 
-function formatMoney(value?: number | null) {
-  return Number(value || 0).toLocaleString('pt-BR', {
+function formatMoney(value?: number | null, currency = 'BRL', locale = 'pt-BR') {
+  const normalizedCurrency = /^[A-Z]{3}$/.test(currency.toUpperCase()) ? currency.toUpperCase() : 'BRL'
+  return Number(value || 0).toLocaleString(locale, {
     style: 'currency',
-    currency: 'BRL',
+    currency: normalizedCurrency,
   })
 }
 
@@ -629,6 +630,7 @@ export async function sendPaymentConfirmationEmail(input: ComposerEmailInput & {
   productType: string
   description: string
   amount: number
+  currency?: string
   paidAt?: Date
 }) {
   const language = await getEmailLanguage(input)
@@ -640,11 +642,11 @@ export async function sendPaymentConfirmationEmail(input: ComposerEmailInput & {
     category: 'payment_confirmation',
     locale: getEmailLocale(language),
     eventKey: `payment/${input.paymentId}`,
-    metadata: { composerId: input.composerId, paymentId: String(input.paymentId), productType: input.productType },
+    metadata: { composerId: input.composerId, paymentId: String(input.paymentId), productType: input.productType, currency: input.currency || 'BRL' },
     contentHtml: `
       <p>${copy.greeting}, ${escapeHtml(input.name)}.</p>
       <p>${copy.paymentBody} <strong>${escapeHtml(input.description)}</strong>.</p>
-      <p><strong>${copy.value}:</strong> ${formatMoney(input.amount)}</p>
+      <p><strong>${copy.value}:</strong> ${formatMoney(input.amount, input.currency, getEmailLocale(language))}</p>
       <p><strong>${copy.paymentId}:</strong> ${escapeHtml(input.paymentId)}</p>
     `,
   })
@@ -657,6 +659,7 @@ export async function sendAdminPaymentNotificationEmail(input: {
   productType: string
   description: string
   amount: number
+  currency?: string
 }) {
   if (!await isAdminEmailEnabled('admin_email.payment_confirmed')) return { sent: false, reason: 'admin_notification_disabled' }
 
@@ -673,7 +676,7 @@ export async function sendAdminPaymentNotificationEmail(input: {
     contentHtml: `
       <p><strong>Compositor:</strong> ${escapeHtml(input.composerName)} (${escapeHtml(input.composerEmail || '')})</p>
       <p><strong>Produto:</strong> ${escapeHtml(input.description)}</p>
-      <p><strong>Valor:</strong> ${formatMoney(input.amount)}</p>
+      <p><strong>Valor:</strong> ${formatMoney(input.amount, input.currency)}</p>
       <p><strong>ID:</strong> ${escapeHtml(input.paymentId)}</p>
     `,
   })
