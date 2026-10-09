@@ -1,6 +1,7 @@
 import * as db from '@/lib/db'
 import { supabaseAdmin } from '@/lib/supabase'
 import MusicCard from '@/components/MusicCard'
+import { getStudioFeaturedMusicCard } from '@/lib/featured-studio'
 import SiteStatsCompact from '@/components/SiteStatsCompact'
 import ComposerSignupCta from '@/components/ComposerSignupCta'
 import HeroImageCarousel from '@/components/HeroImageCarousel'
@@ -183,8 +184,8 @@ async function getFeaturedContent() {
     db.getMusics({ ordem: 'recentes', limit: 100 }),
     supabaseAdmin
       .from('dccmusic_featured_payments')
-      .select('content_id, created_at')
-      .eq('content_type', 'music')
+      .select('content_id, content_type, created_at')
+      .in('content_type', ['music', 'studio_music'])
       .eq('payment_status', 'approved')
       .eq('is_active', true)
       .gt('expires_at', new Date().toISOString())
@@ -204,13 +205,18 @@ async function getFeaturedContent() {
     console.error('[HOME] Erro ao buscar destaques pagos')
   }
 
-  // Busca as músicas pelos IDs: um destaque pode ser de uma música antiga.
-  const featuredIds = Array.from(new Set(paidRows.map((row) => row.content_id))).slice(0, 5)
-  const resolved = await Promise.allSettled(featuredIds.map((id) => db.getMusicById(id)))
-  const paidFeaturedMusics = resolved
-    .filter((result): result is PromiseFulfilledResult<Awaited<ReturnType<typeof db.getMusicById>>> => result.status === 'fulfilled')
-    .map((result) => result.value)
-    .filter((music): music is NonNullable<typeof music> => Boolean(music))
+  // Concatena os dois catálogos mantendo a ordem das compras recentes.
+  const featuredRows = paidRows.filter((row, index, rows) =>
+    rows.findIndex(item => item.content_id === row.content_id && item.content_type === row.content_type) === index
+  ).slice(0, 15)
+  const resolved = await Promise.allSettled(featuredRows.map(row =>
+    row.content_type === 'studio_music'
+      ? getStudioFeaturedMusicCard(row.content_id)
+      : db.getMusicById(row.content_id)
+  ))
+  const paidFeaturedMusics = resolved.flatMap(result =>
+    result.status === 'fulfilled' && result.value ? [result.value] : []
+  ).slice(0, 5)
 
   return { mostPlayedMusics, paidFeaturedMusics }
 }

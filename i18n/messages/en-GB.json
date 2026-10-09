@@ -2281,6 +2281,7 @@
     "highlightPrice": "Feature ({{price}})",
     "close": "Close",
     "errors": {
+      "studioNotEligible": "Publish your song with lyrics and audio in the AI Studio before featuring it.",
       "audioRequired": "This song has no published audio yet. Add a valid Spotify or Apple Music link before purchasing a feature.",
       "unauthorized": "Sign in again to start payment.",
       "missingFields": "We could not identify the item to feature.",

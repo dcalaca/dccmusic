@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { featuredPaymentError, featuredPrice } from '@/lib/featured-payment-ui'
 
 interface FeaturedButtonProps {
-  contentType: 'music' | 'video'
+  contentType: 'music' | 'video' | 'studio_music'
   contentId: string
   composerId: string
   currentFeatured?: boolean
