@@ -279,7 +279,7 @@ async function HomeDynamicContent({ country, locale }: { country: DccCountry; lo
         <section className="bg-black pb-9 pt-2 sm:pb-10">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{t('home.featured.title')}</span></h2>
+              <h2 className="text-2xl font-bold sm:text-3xl"><span className="gradient-text">{locale.startsWith('pt') ? 'Músicas em destaque' : locale.startsWith('es') ? 'Músicas destacadas' : 'Featured music'}</span></h2>
               <Link href="/musicas" className="flex items-center space-x-2 text-primary-400 transition-colors hover:text-primary-300"><span>{t('home.featured.exploreAll')}</span><FiArrowRight className="h-5 w-5" /></Link>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
