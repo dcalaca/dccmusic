@@ -39,15 +39,15 @@ export default async function SiteStatsCompact({
   const formatInteger = (value: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)
 
   return (
-    <section className="overflow-hidden bg-black py-8 sm:py-12">
+    <section className="overflow-hidden bg-black py-6 sm:py-8">
       <div className="container mx-auto px-3 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-6xl min-w-0">
-          <div className="mb-6 text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary-300">{t('siteStats.badge')}</p>
-            <h2 className="mt-2 text-2xl font-black text-white sm:text-3xl">
+          <div className="mb-5 text-center">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-primary-300/80">{t('siteStats.badge')}</p>
+            <h2 className="mx-auto mt-1.5 max-w-2xl text-lg font-semibold leading-snug tracking-tight text-white sm:text-xl">
               {t('siteStats.title')}
             </h2>
-            <p className="mx-auto mt-2 max-w-2xl text-sm text-gray-400">
+            <p className="mx-auto mt-1.5 max-w-xl text-xs leading-relaxed text-gray-400 sm:text-[13px]">
               {t('siteStats.subtitle')}
             </p>
           </div>
