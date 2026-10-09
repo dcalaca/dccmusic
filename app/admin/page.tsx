@@ -37,6 +37,13 @@ const adminGroups = [
         accent: 'green',
       },
       {
+        href: '/admin/vendas-origem',
+        title: 'Vendas por origem',
+        description: 'Consultar vendas por Google, Meta, Bing, e-mail e outros canais',
+        icon: FiTrendingUp,
+        accent: 'cyan',
+      },
+      {
         href: '/admin/tipos-pagamento',
         title: 'Tipos de pagamento',
         description: 'Pagamentos novos x recorrentes: valores e quantidades',
