@@ -4,7 +4,7 @@ import { supabaseAdmin } from './supabase'
 import { buildDccEmailHtml, dccEmailButton } from './dcc-email-template'
 import { getAppBooleanSetting } from './app-settings'
 import { getComposerEmailLanguage, type ComposerEmailLanguage } from './composer-email-language'
-import { getComposerEmailCopy } from './composer-email-copy'
+import { getComposerEmailCopy, getStudioTopupEmailDescription } from './composer-email-copy'
 
 type EmailResult = {
   sent: boolean
@@ -637,11 +637,7 @@ export async function sendPaymentConfirmationEmail(input: ComposerEmailInput & {
   const copy = getComposerEmailCopy(language)
   const quantity = Number(input.musicQuantity || String(input.description).match(/(\d+)\s*música/i)?.[1] || 1)
   const localizedDescription = input.productType === 'studio_topup'
-    ? language === 'es'
-      ? `Recarga de Studio IA - ${quantity} ${quantity === 1 ? 'canción' : 'canciones'}`
-      : language === 'en'
-        ? `AI Studio top-up - ${quantity} ${quantity === 1 ? 'song' : 'songs'}`
-        : `Recarga avulsa Studio IA - ${quantity} ${quantity === 1 ? 'música' : 'músicas'}`
+    ? getStudioTopupEmailDescription(language, quantity)
     : input.description
   return sendDccEmail({
     to: input.email,
