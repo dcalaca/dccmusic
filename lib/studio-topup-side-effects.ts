@@ -36,6 +36,7 @@ export async function sendApprovedStudioTopupSideEffects(
       productType: 'studio_topup',
       description: `Recarga avulsa Studio IA - ${topup.music_quantity} música(s)`,
       amount: topup.amount,
+      currency: topup.currency || 'BRL',
       paidAt: new Date(),
     }),
     sendAdminPaymentNotificationEmail({
@@ -45,6 +46,7 @@ export async function sendApprovedStudioTopupSideEffects(
       productType: 'studio_topup',
       description: `Recarga avulsa Studio IA - ${topup.music_quantity} música(s)`,
       amount: topup.amount,
+      currency: topup.currency || 'BRL',
     }),
   ])
 }
