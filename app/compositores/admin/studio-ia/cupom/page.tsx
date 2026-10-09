@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
+import { MercadoPagoPaymentOverlay } from '@/components/MercadoPagoCheckout'
 import { FiArrowLeft, FiArrowRight, FiCheck, FiGift, FiLoader, FiSearch } from 'react-icons/fi'
 
 type CouponPreview = {
@@ -34,6 +35,7 @@ export default function StudioCouponPage() {
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState('')
   const [preview, setPreview] = useState<CouponPreview | null>(null)
+  const [checkout, setCheckout] = useState<{ topupId: string; amount: number; email: string | null } | null>(null)
   const [freeSuccess, setFreeSuccess] = useState<{ musicQuantity: number } | null>(null)
   const formatMoney = (value: number, currency: string) => new Intl.NumberFormat(i18n.language, { style: 'currency', currency }).format(Number(value || 0))
   const formatDate = (value: string | null) => value ? new Date(value).toLocaleDateString(i18n.language) : null
@@ -107,13 +109,24 @@ export default function StudioCouponPage() {
         return
       }
 
-      const checkoutUrl = data.initPoint || data.sandboxInitPoint
-      if (!checkoutUrl) throw new Error(t('studio.tools.coupon.errors.payment'))
-      window.location.href = checkoutUrl
+      if (!data.topupId) throw new Error(t('studio.tools.coupon.errors.payment'))
+      setCheckout({ topupId: data.topupId, amount: Number(data.amount), email: data.email || null })
+      setConfirming(false)
     } catch (err: any) {
       setError(err.message || t('studio.tools.coupon.errors.apply'))
       setConfirming(false)
     }
+  }
+
+  const couponApi = async (url: string, options?: RequestInit) => {
+    const token = localStorage.getItem('composer_token')
+    const response = await fetch(url, { ...options, headers: {
+      Authorization: `Bearer ${token || ''}`, 'Content-Type': 'application/json',
+      ...(options?.headers || {}),
+    } })
+    const data = await response.json().catch(() => ({}))
+    if (!response.ok) throw new Error(getCouponError(t, data, 'studio.tools.coupon.errors.payment'))
+    return data
   }
 
   const resetPreview = () => {
@@ -280,6 +293,19 @@ export default function StudioCouponPage() {
           </div>
         </div>
       </div>
+      {checkout && (
+        <MercadoPagoPaymentOverlay
+          amount={checkout.amount}
+          email={checkout.email}
+          onSubmitPayment={(formData) => couponApi('/api/compositores/studio/topup/payment', {
+            method: 'POST', body: JSON.stringify({ topupId: checkout.topupId, formData }),
+          })}
+          onCheckStatus={() => couponApi(`/api/compositores/studio/topup/status?topupId=${encodeURIComponent(checkout.topupId)}`)}
+          onPaid={() => router.push(`/compositores/admin/studio-ia/recarga/sucesso?topup_id=${encodeURIComponent(checkout.topupId)}`)}
+          onClose={() => setCheckout(null)}
+        />
+      )}
+
     </div>
   )
 }

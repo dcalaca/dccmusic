@@ -113,9 +113,24 @@ export async function POST(request: NextRequest) {
     }
 
     const quote = getStudioTopupQuote(Number(currentTopup.music_quantity) || 0)
-    const expectedAmount = Number(quote.totalPrice)
     const storedAmount = Number(currentTopup.amount) || 0
-
+    let expectedAmount = Number(quote.totalPrice)
+    const couponId = currentTopup.metadata?.source === 'coupon_paid'
+      ? String(currentTopup.metadata?.couponId || '') : ''
+    if (couponId) {
+      const { data: coupon, error: couponError } = await supabaseAdmin.from('studio_coupons')
+        .select('id,code,price,music_quantity')
+        .eq('id', couponId).maybeSingle()
+      if (couponError) throw couponError
+      if (!coupon || String(coupon.code) !== String(currentTopup.metadata?.couponCode) ||
+          Number(coupon.music_quantity) !== Number(currentTopup.music_quantity) ||
+          Number(currentTopup.credits) !== Number(currentTopup.music_quantity) * 10 ||
+          currentTopup.currency !== 'BRL' ||
+          currentTopup.package_slug !== `coupon-${coupon.code}`) {
+        return NextResponse.json({ errorCode: 'amountChanged' }, { status: 400 })
+      }
+      expectedAmount = Number(coupon.price)
+    }
     if (expectedAmount <= 0 || Math.abs(expectedAmount - storedAmount) > 0.01) {
       return NextResponse.json({ errorCode: 'amountChanged' }, { status: 400 })
     }
