@@ -7,8 +7,8 @@ import { OriginSale, salesOrigin, summarizeOrigins } from '@/lib/sales-origins'
 export const dynamic = 'force-dynamic'
 
 const specs = [
-  { table: 'dccmusic_payments', status: 'status', value: 'paid', date: 'paid_at', product: 'Assinatura', fields: 'id,composer_id,amount,currency,paid_at,gateway_payment_id,attribution_source,attribution_medium,attribution_campaign,attribution_click_ids', gateway: 'gateway_payment_id' },
-  { table: 'studio_credit_topups', status: 'status', value: 'paid', date: 'paid_at', product: 'Recarga Studio', fields: 'id,composer_id,amount,currency,paid_at,payment_id,attribution_source,attribution_medium,attribution_campaign,attribution_click_ids', gateway: 'payment_id' },
+  { table: 'dccmusic_payments', status: 'status', value: 'paid', date: 'paid_at', product: 'Assinatura', fields: 'id,composer_id,amount,currency,paid_at,gateway_payment_id,attribution_source,attribution_medium,attribution_campaign,attribution_first_source,attribution_click_ids', gateway: 'gateway_payment_id' },
+  { table: 'studio_credit_topups', status: 'status', value: 'paid', date: 'paid_at', product: 'Recarga Studio', fields: 'id,composer_id,amount,currency,paid_at,payment_id,attribution_source,attribution_medium,attribution_campaign,attribution_first_source,attribution_click_ids', gateway: 'payment_id' },
   { table: 'dccmusic_featured_payments', status: 'payment_status', value: 'approved', date: 'created_at', product: 'Destaque', fields: 'id,composer_id,amount,created_at,mercado_pago_payment_id', gateway: 'mercado_pago_payment_id' },
   { table: 'studio_video_requests', status: '', value: '', date: 'paid_at', product: 'Vídeo', fields: 'id,composer_id,amount,paid_at,payment_id', gateway: 'payment_id' },
 ]
@@ -47,18 +47,28 @@ export async function GET(request: NextRequest) {
     }))
     const payments = batches.flat()
     const ids = Array.from(new Set(payments.map(row => row.composer_id).filter(Boolean)))
-    const buyers = new Map<string, { name: string; email: string }>()
+    const buyers = new Map<string, { name: string; email: string; marketing_attribution?: any }>()
     for (let i = 0; i < ids.length; i += 200) {
-      const { data, error } = await supabaseAdmin.from('dccmusic_composers').select('id,name,email').in('id', ids.slice(i, i + 200))
+      const { data, error } = await supabaseAdmin.from('dccmusic_composers').select('id,name,email,marketing_attribution').in('id', ids.slice(i, i + 200))
       if (error) throw error
       for (const row of data || []) buyers.set(row.id, row)
     }
-    const rows: OriginSale[] = payments.map(row => ({
+    const rows: OriginSale[] = payments.map(row => {
+      const profile = buyers.get(row.composer_id)?.marketing_attribution
+      const firstSource = row.attribution_first_source || profile?.first_touch?.source || ''
+      const lastSource = row.attribution_source || profile?.last_touch?.source || ''
+      const ids = row.attribution_click_ids && typeof row.attribution_click_ids === 'object' ? row.attribution_click_ids : {}
+      const clickIdTypes = ['gclid', 'gbraid', 'wbraid', 'fbclid', 'ttclid', 'msclkid'].filter(key => typeof ids[key] === 'string' && ids[key].trim())
+      return ({
       id: row.key, buyer: buyers.get(row.composer_id)?.name || 'Sem nome', email: buyers.get(row.composer_id)?.email || '',
       paidAt: row.date, product: row.product, origin: salesOrigin(row.attribution_source, row.attribution_click_ids),
       rawSource: row.attribution_source || '', medium: row.attribution_medium || '', campaign: row.attribution_campaign || '',
+      firstOrigin: firstSource ? salesOrigin(firstSource) : 'Não identificada',
+      lastOrigin: lastSource ? salesOrigin(lastSource, ids) : 'Não identificada',
+      attributionFirstEvidence: row.attribution_first_source ? 'Pagamento' : firstSource ? 'Perfil (pode ser posterior)' : 'Ausente',
+      clickIdTypes,
       amount: Number(row.amount), currency: String(row.currency || 'BRL').toUpperCase(),
-    })).sort((a, b) => b.paidAt.localeCompare(a.paidAt))
+    }) }).sort((a, b) => b.paidAt.localeCompare(a.paidAt))
     return NextResponse.json({ rows, groups: summarizeOrigins(rows) }, { headers: { 'Cache-Control': 'private, no-store' } })
   } catch (error) {
     console.error('[Sales origins]', error)

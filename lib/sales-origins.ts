@@ -23,6 +23,7 @@ export function salesOrigin(source: unknown, clickIds?: Record<string, unknown> 
 export type OriginSale = {
   id: string; buyer: string; email: string; paidAt: string; product: string
   origin: string; rawSource: string; medium: string; campaign: string
+  firstOrigin: string; lastOrigin: string; attributionFirstEvidence: string; clickIdTypes: string[]
   amount: number; currency: string
 }
 
