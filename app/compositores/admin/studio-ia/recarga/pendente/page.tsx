@@ -65,6 +65,34 @@ function StudioTopupPendingContent() {
       value,
       currency,
     })
+
+    // OpenAI Ads uses an independent key: Meta/Google tracking must never suppress it.
+    // This is called only after /topup/sync has verified status === 'paid'.
+    const openAiValue = Number(data?.amount) || 0
+    const openAiTopupId = String(data?.topupId || searchParams.get('topup_id') || '').trim()
+    const openAiCurrency = String(data?.currency || 'BRL').toUpperCase()
+    const openAiKey = `openai_purchase_studio_topup:${openAiTopupId}`
+    const oaiq = (window as any).oaiq
+    if (
+      openAiTopupId &&
+      openAiValue > 0 &&
+      /^[A-Z]{3}$/.test(openAiCurrency) &&
+      typeof oaiq === 'function' &&
+      !sessionStorage.getItem(openAiKey)
+    ) {
+      oaiq('measure', 'order_created', {
+        type: 'contents',
+        amount: Math.round(openAiValue * 100),
+        currency: openAiCurrency,
+        contents: [{
+          id: 'studio_topup',
+          name: 'Recarga Studio IA',
+          content_type: 'product',
+          quantity: Math.max(1, Math.round(Number(data?.musicQuantity) || 1)),
+        }],
+      }, { event_id: `dcc_order_topup_${openAiTopupId}` })
+      sessionStorage.setItem(openAiKey, '1')
+    }
   }
 
   useEffect(() => {
