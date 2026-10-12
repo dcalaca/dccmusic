@@ -144,7 +144,7 @@ export function buildMetaCapiMetadata(
     if (!value) return 'missing'
     const ip = value.trim()
     if (/^[0-9a-fA-F:]+$/.test(ip) && ip.includes(':')) return 'ipv6'
-    if (/^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(ip)) return 'ipv4'
+    if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(ip)) return 'ipv4'
     return 'other'
   }
   console.info('[Meta IP family diagnostic]', {
