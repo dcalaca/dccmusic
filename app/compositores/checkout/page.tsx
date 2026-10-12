@@ -26,6 +26,7 @@ function CheckoutContent() {
   const [checkingAccess, setCheckingAccess] = useState(true)
   const [alreadyHasStudioPlan, setAlreadyHasStudioPlan] = useState(false)
   const [currentStudioPlanName, setCurrentStudioPlanName] = useState('')
+  const [stripeFallbackLoading, setStripeFallbackLoading] = useState(false)
   const [inSiteCheckout, setInSiteCheckout] = useState<{
     subscriptionId: string
     amount: number
@@ -478,6 +479,31 @@ function CheckoutContent() {
           amount={inSiteCheckout.amount}
           email={inSiteCheckout.email}
           onClose={() => setInSiteCheckout(null)}
+          onUseFallback={async () => {
+            if (stripeFallbackLoading) return
+            setStripeFallbackLoading(true)
+            try {
+              const token = localStorage.getItem('composer_token')
+              if (!token) throw new Error(t('payment.checkout.errors.start'))
+              const response = await fetch('/api/compositores/pagamento/stripe/session', {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ planId: planSlug, subscriptionId: inSiteCheckout.subscriptionId }),
+              })
+              const stripe = await response.json()
+              if (!response.ok) throw new Error(stripe?.error || t('payment.checkout.errors.openStripe'))
+              setInSiteCheckout({
+                subscriptionId: stripe.subscriptionId,
+                amount: Number(stripe.amount || inSiteCheckout.amount),
+                email: inSiteCheckout.email,
+                provider: 'stripe',
+                stripeClientSecret: stripe.clientSecret,
+                stripePublishableKey: stripe.publishableKey,
+              })
+            } finally {
+              setStripeFallbackLoading(false)
+            }
+          }}
           onSubmitPayment={async (formData) => {
             const token = localStorage.getItem('composer_token')
             const response = await fetch('/api/compositores/pagamento/payment', {

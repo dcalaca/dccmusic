@@ -356,8 +356,8 @@ export function MercadoPagoPaymentOverlay({
   }
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/80 p-0 sm:items-center sm:p-4">
-      <div className="relative max-h-[94vh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-gray-700 bg-gray-900 p-5 shadow-2xl sm:rounded-2xl sm:p-6">
+    <div className="fixed inset-0 z-[200] flex w-screen max-w-full items-end justify-center overflow-x-hidden bg-black/80 p-0 sm:items-center sm:p-4">
+      <div className="relative box-border max-h-[94dvh] w-full min-w-0 max-w-lg overflow-x-hidden overflow-y-auto rounded-t-3xl border border-gray-700 bg-gray-900 p-3 shadow-2xl sm:rounded-2xl sm:p-6">
         <button
           type="button"
           onClick={onClose}

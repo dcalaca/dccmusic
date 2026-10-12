@@ -38,7 +38,6 @@ export async function POST(request: NextRequest) {
       request.headers.get('cf-ipcountry')
     )
     const customerCountryCode = String(customerCountry)
-    if (customerCountryCode === 'BR') return NextResponse.json({ error: 'Stripe internacional disponível apenas fora do Brasil' }, { status: 400 })
     const customerLocale = getCustomerLocale(customerCountryCode)
 
     const body = await request.json()
