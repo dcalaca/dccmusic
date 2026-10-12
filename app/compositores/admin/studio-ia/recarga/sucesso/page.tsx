@@ -55,7 +55,9 @@ function StudioTopupSuccessContent() {
 
     const value = Number(data?.amount) || 0
     const currency = data?.currency || 'BRL'
-    // Stable across pending/success pages, regardless of payment URL parameters.
+    // Match the CAPI Purchase event_id (provider payment ID) for Pixel deduplication.
+    // Keep the previous fallback only if the confirmed payment ID is unavailable.
+    const metaEventId = paymentId ? String(paymentId) : `topup_${topupId}`
     const eventId = `topup_${topupId}`
     const quantity = Math.max(1, Math.round(Number(data?.musicQuantity) || 1))
     if (value <= 0) return
@@ -72,7 +74,7 @@ function StudioTopupSuccessContent() {
         currency,
         value,
       }, {
-        eventID: eventId,
+        eventID: metaEventId,
       })
     }
 
