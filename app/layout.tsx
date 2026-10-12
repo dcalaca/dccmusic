@@ -306,6 +306,20 @@ export default function RootLayout({
             })(window, document, "clarity", "script", "y5zbvxwvh2");
           `}
         </Script>
+        {/* Preserve Meta click attribution before Pixel initialization. */}
+        <Script id="meta-fbc-attribution" strategy="beforeInteractive">
+          {`
+            (function () {
+              try {
+                var fbclid = new URLSearchParams(window.location.search).get('fbclid');
+                if (!fbclid || !/^[A-Za-z0-9_\\-]+$/.test(fbclid)) return;
+                if (/(?:^|;\\s*)_fbc=/.test(document.cookie)) return;
+                var fbc = 'fb.1.' + Date.now() + '.' + fbclid;
+                document.cookie = '_fbc=' + encodeURIComponent(fbc) + '; path=/; max-age=7776000; SameSite=Lax; Secure';
+              } catch (_) {}
+            })();
+          `}
+        </Script>
         {/* Meta Pixel */}
         <Script id="meta-pixel" strategy="afterInteractive">
           {`
