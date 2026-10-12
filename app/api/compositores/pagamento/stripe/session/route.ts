@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     const session = await stripeRequest<any>('/checkout/sessions', {
       method: 'POST',
       body: params,
-      headers: { 'Idempotency-Key': `composer-plan-stripe-${subscription.id}` },
+      headers: { 'Idempotency-Key': `composer-plan-stripe-${subscription.id}-${crypto.createHash('sha256').update(params.toString()).digest('hex').slice(0, 24)}` },
     })
 
     await supabaseAdmin.from('dccmusic_subscriptions').update({
