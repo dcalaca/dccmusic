@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     params.set('ui_mode', 'embedded_page')
     params.set('redirect_on_completion', 'never')
     params.set('adaptive_pricing[enabled]', 'true')
-    params.set('locale', customerCountryCode === 'US' || customerCountryCode === 'GB' ? 'en' : customerCountryCode === 'PT' ? 'pt' : 'es')
+    params.set('locale', customerCountryCode === 'BR' || customerCountryCode === 'PT' ? 'pt-BR' : customerCountryCode === 'US' || customerCountryCode === 'GB' ? 'en' : 'es')
     const suffix = crypto.createHash('sha256').update(subscription.id).digest('hex').replace(/[0-9]/g, (digit) => String.fromCharCode(97 + Number(digit))).slice(0, 8)
     params.set('integration_identifier', `dccplan_${suffix}`)
     params.set('line_items[0][price_data][currency]', priceQuote.currency.toLowerCase())
