@@ -4,6 +4,25 @@ import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
 import { OriginSale, salesOrigin, summarizeOrigins } from '@/lib/sales-origins'
 
+// Classificação conservadora, apenas para o relatório. Não altera a atribuição gravada.
+function reportOrigin(source: unknown, medium: unknown, campaign: unknown, clickIds: Record<string, unknown> | null | undefined): string {
+  const src = String(source || '').trim().toLowerCase()
+  const med = String(medium || '').trim().toLowerCase()
+  const camp = String(campaign || '').trim().toLowerCase()
+  const hasClick = (key: string) => typeof clickIds?.[key] === 'string' && String(clickIds[key]).trim().length > 0
+  const isEmail = ['email', 'e-mail', 'e_mail', 'newsletter', 'mail'].includes(med) ||
+    ['email', 'e-mail', 'gmail', 'com.google.android.gm', 'mail.google.com'].includes(src) ||
+    (['resend', 'brevo', 'sendinblue'].includes(src) && (med === 'email' || !!camp))
+  if (isEmail) return 'E-mail / campanha'
+  if (hasClick('gclid') || hasClick('gbraid') || hasClick('wbraid')) return 'Google Ads (clique identificado)'
+  if (['google', 'google.com', 'www.google.com', 'google.com.br', 'www.google.com.br', 'com.google.android.googlequicksearchbox'].includes(src))
+    return 'Google (não confirmado Ads)'
+  // UTM google/cpc sem identificador de clique é indício, não confirmação de conversão do Ads.
+  if (src === 'googleads' || (src === 'google' && ['cpc', 'ppc', 'paid'].includes(med)))
+    return 'Google (não confirmado Ads)'
+  return salesOrigin(source, clickIds)
+}
+
 export const dynamic = 'force-dynamic'
 
 const specs = [
@@ -61,7 +80,7 @@ export async function GET(request: NextRequest) {
       const clickIdTypes = ['gclid', 'gbraid', 'wbraid', 'fbclid', 'ttclid', 'msclkid'].filter(key => typeof ids[key] === 'string' && ids[key].trim())
       return ({
       id: row.key, buyer: buyers.get(row.composer_id)?.name || 'Sem nome', email: buyers.get(row.composer_id)?.email || '',
-      paidAt: row.date, product: row.product, origin: salesOrigin(row.attribution_source, row.attribution_click_ids),
+      paidAt: row.date, product: row.product, origin: reportOrigin(row.attribution_source, row.attribution_medium, row.attribution_campaign, ids),
       rawSource: row.attribution_source || '', medium: row.attribution_medium || '', campaign: row.attribution_campaign || '',
       firstOrigin: firstSource ? salesOrigin(firstSource) : 'Não identificada',
       lastOrigin: lastSource ? salesOrigin(lastSource, ids) : 'Não identificada',
