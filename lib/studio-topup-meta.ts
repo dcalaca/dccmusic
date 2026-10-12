@@ -6,6 +6,34 @@ import {
   type MetaBrowserContext,
 } from '@/lib/meta-conversions'
 import { sendTikTokPurchaseEvent } from '@/lib/tiktok-events'
+import { supabaseAdmin } from '@/lib/supabase'
+
+async function deliverOnce(platform: 'meta' | 'tiktok', paymentId: string, send: () => Promise<{ sent: boolean; [key: string]: any }>) {
+  const { data: claimed, error: claimError } = await supabaseAdmin.rpc('claim_marketing_purchase_event', {
+    p_payment_key: `studio_topup:${paymentId}`,
+    p_platform: platform,
+  })
+  if (claimError) {
+    console.error('[Studio IA] Event delivery claim failed:', { platform, paymentId, error: claimError.message })
+    return { sent: false, reason: 'claim_failed' }
+  }
+  if (!claimed) return { sent: true, reason: 'already_claimed_or_sent' }
+
+  let result: { sent: boolean; [key: string]: any }
+  try {
+    result = await send()
+  } catch (error) {
+    result = { sent: false, reason: 'request_exception', error: String(error) }
+  }
+  const { error: finishError } = await supabaseAdmin.rpc('finish_marketing_purchase_event', {
+    p_payment_key: `studio_topup:${paymentId}`,
+    p_platform: platform,
+    p_sent: result.sent === true,
+  })
+  if (finishError) console.error('[Studio IA] Event delivery completion failed:', { platform, paymentId, error: finishError.message })
+  return result
+}
+
 
 /**
  * Envia Purchase da recarga avulsa para Meta/TikTok.
@@ -51,7 +79,7 @@ export async function sendStudioTopupPurchaseEvents(input: {
   const currency = input.topup?.currency || 'BRL'
 
   const [meta, tiktok] = await Promise.allSettled([
-    sendMetaPurchaseEvent({
+    deliverOnce('meta', paymentId, () => sendMetaPurchaseEvent({
       request: input.request,
       browserContext,
       eventId: paymentId,
@@ -63,8 +91,8 @@ export async function sendStudioTopupPurchaseEvents(input: {
       contentName: 'Recarga Studio IA',
       contentId: 'studio_topup',
       quantity,
-    }),
-    sendTikTokPurchaseEvent({
+    })),
+    deliverOnce('tiktok', paymentId, () => sendTikTokPurchaseEvent({
       request: input.request,
       eventId: paymentId,
       eventSourceUrl,
@@ -75,7 +103,7 @@ export async function sendStudioTopupPurchaseEvents(input: {
       contentName: 'Recarga Studio IA',
       contentId: 'studio_topup',
       quantity,
-    }),
+    })),
   ])
 
   const metaResult = meta.status === 'fulfilled' ? meta.value : { sent: false, reason: 'rejected' }
