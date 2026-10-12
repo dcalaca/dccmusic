@@ -1,4 +1,3 @@
-import { sendConfirmedTopupGa4Purchase } from '@/lib/ga4-server-purchase'
 import {
   buildMetaCapiMetadata,
   mergeMetaBrowserContext,
@@ -51,7 +50,7 @@ export async function sendStudioTopupPurchaseEvents(input: {
   const quantity = Number(input.topup?.music_quantity) || 1
   const currency = input.topup?.currency || 'BRL'
 
-  const [meta, ga4, tiktok] = await Promise.allSettled([
+  const [meta, tiktok] = await Promise.allSettled([
     sendMetaPurchaseEvent({
       request: input.request,
       browserContext,
@@ -65,7 +64,6 @@ export async function sendStudioTopupPurchaseEvents(input: {
       contentId: 'studio_topup',
       quantity,
     }),
-    sendConfirmedTopupGa4Purchase({ request: input.request as any, topup: input.topup }),
     sendTikTokPurchaseEvent({
       request: input.request,
       eventId: paymentId,
@@ -79,11 +77,6 @@ export async function sendStudioTopupPurchaseEvents(input: {
       quantity,
     }),
   ])
-
-  const ga4Result = ga4.status === 'fulfilled' ? ga4.value : { sent: false, reason: 'exception' }
-  if (!ga4Result.sent) {
-    console.warn('[GA4 server purchase] Skipped', { topupId: input.topup?.id, reason: ga4Result.reason })
-  }
 
   const metaResult = meta.status === 'fulfilled' ? meta.value : { sent: false, reason: 'rejected' }
   if (!metaResult.sent) {
