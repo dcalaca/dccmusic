@@ -29,10 +29,11 @@ const workflowStepKeys = ['idea', 'lyrics', 'music', 'publish'] as const
 const previewStepKeys = ['idea', 'lyrics', 'music', 'publish'] as const
 const receiveKeys = ['fullLyrics', 'songWithVocals', 'promoCover', 'savedProject', 'publicLink'] as const
 
-const studioPlanSlugs = ['studio-start', 'studio-pro', 'studio-elite', 'dcc-studio-ia']
+const studioPlanSlugs = ['studio-start', 'studio-pro', 'studio-elite', 'studio-business', 'dcc-studio-ia']
 const planPresentation: Record<string, { idealKey: string; highlightKey?: string; tone: string }> = {
   'studio-start': { idealKey: 'beginnerUsers', tone: 'border-gray-800 bg-gray-950/70' },
   'studio-pro': { idealKey: 'activeComposers', highlightKey: 'mostPopular', tone: 'border-purple-400/70 bg-gradient-to-br from-purple-950/70 via-gray-950 to-black shadow-2xl shadow-purple-950/30 scale-[1.02]' },
+  'studio-business': { idealKey: 'advancedCreators', tone: 'border-emerald-400/70 bg-gradient-to-br from-emerald-950/30 via-purple-950/50 to-black' },
   'studio-elite': { idealKey: 'advancedCreators', tone: 'border-yellow-400/70 bg-gradient-to-br from-yellow-950/40 via-purple-950/50 to-black shadow-2xl shadow-yellow-950/20' },
   'dcc-studio-ia': { idealKey: 'activeComposers', tone: 'border-purple-400/70 bg-gradient-to-br from-purple-950/70 via-gray-950 to-black' },
 }

@@ -4,7 +4,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { slugify } from '@/lib/utils'
 import { timingSafeEqual } from 'crypto'
 
-export const STUDIO_PLAN_SLUGS = ['studio-start', 'studio-pro', 'studio-elite', 'dcc-studio-ia']
+export const STUDIO_PLAN_SLUGS = ['studio-start', 'studio-pro', 'studio-elite', 'studio-business', 'dcc-studio-ia']
 export const STUDIO_MUSIC_CREDITS = 10
 export const STUDIO_VOICE_CREDITS = 2
 export const STUDIO_PREMIUM_COVER_CREDITS = 2
@@ -73,6 +73,7 @@ function isPaidStatus(status?: string | null) {
 function studioPlanCreditsFromIdentity(name?: string | null, slug?: string | null) {
   const identity = `${name || ''} ${slug || ''}`.toLowerCase()
 
+  if (identity.includes('business')) return 2500
   if (identity.includes('elite')) return 300
   if (identity.includes('pro')) return 130
   if (identity.includes('studio')) return 80
@@ -340,6 +341,10 @@ export function isStudioPlan(plan: db.Plan | null) {
 
 export function getStudioPlanLimits(plan: db.Plan | null) {
   const identity = `${plan?.name || ''} ${plan?.slug || ''}`.toLowerCase()
+
+  if (identity.includes('business')) {
+    return { monthlyCredits: 2500, musicLimit: 250, premiumCoverLimit: 30 }
+  }
 
   if (identity.includes('elite')) {
     return {

@@ -5,7 +5,7 @@ import * as db from '@/lib/db'
 
 function isStudioPlan(plan: db.Plan) {
   const identity = `${plan.name || ''} ${plan.slug || ''}`.toLowerCase()
-  return ['studio-start', 'studio-pro', 'studio-elite', 'dcc-studio-ia'].includes(plan.slug) || identity.includes('studio ia') || identity.includes('dcc studio')
+  return ['studio-start', 'studio-pro', 'studio-elite', 'studio-business', 'dcc-studio-ia'].includes(plan.slug) || identity.includes('studio ia') || identity.includes('dcc studio')
 }
 
 export default async function StudioPlanosPage() {
