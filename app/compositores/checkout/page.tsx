@@ -253,7 +253,11 @@ function CheckoutContent() {
 
           // Só interrompe se existir plano Studio IA mensal ativo.
           // Crédito avulso / música grátis não conta como plano.
-          if (statusResponse.ok && status?.hasStudioPlan) {
+          const ranks: Record<string, number> = { 'studio-start': 1, 'studio-pro': 2, 'studio-elite': 3, 'studio-business': 4 }
+          const currentRank = ranks[String(status?.planSlug || '')] || 0
+          const requestedRank = ranks[String(planSlug || '')] || 0
+          // Permite upgrade; mantém bloqueio para renovar ou reduzir o plano ativo.
+          if (statusResponse.ok && status?.hasStudioPlan && !(requestedRank > currentRank && currentRank > 0)) {
             setAlreadyHasStudioPlan(true)
             setCurrentStudioPlanName(status.planName || 'Studio IA')
             setCheckingAccess(false)

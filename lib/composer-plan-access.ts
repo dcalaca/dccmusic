@@ -44,6 +44,29 @@ export async function activateComposerPlanAccess(input: {
 
   if (subscriptionError) throw subscriptionError
   if (composerError) throw composerError
+
+  // Em upgrades pagos, desativa a assinatura Studio anterior; os créditos já
+  // concedidos por pagamentos aprovados permanecem no histórico de movimentos.
+  const { data: activeRows, error: activeError } = await supabaseAdmin
+    .from('dccmusic_subscriptions')
+    .select('id, plan:dccmusic_plans(slug)')
+    .eq('composer_id', input.subscription.composer_id)
+    .eq('status', 'active')
+    .neq('id', input.subscription.id)
+    .gt('end_date', new Date().toISOString())
+  if (activeError) throw activeError
+  const studioSlugs = new Set(['studio-start', 'studio-pro', 'studio-elite', 'studio-business', 'dcc-studio-ia'])
+  const oldStudioIds = (activeRows || []).filter((row: any) => {
+    const p = Array.isArray(row.plan) ? row.plan[0] : row.plan
+    return studioSlugs.has(String(p?.slug || ''))
+  }).map((row: any) => row.id)
+  if (oldStudioIds.length) {
+    const { error: switchError } = await supabaseAdmin
+      .from('dccmusic_subscriptions')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .in('id', oldStudioIds)
+    if (switchError) throw switchError
+  }
 }
 
 export async function revokeComposerPlanAccess(input: {
