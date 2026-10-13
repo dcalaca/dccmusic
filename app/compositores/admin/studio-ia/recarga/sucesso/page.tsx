@@ -49,6 +49,16 @@ function StudioTopupSuccessContent() {
       sessionStorage.setItem(openAiKey, '1')
     }
 
+    // Independent OpenAI server event, verified against the paid topup in Supabase.
+    const composerToken = localStorage.getItem('composer_token')
+    if (composerToken && openAiTopupId) {
+      void fetch('/api/compositores/analytics/openai-conversion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + composerToken },
+        body: JSON.stringify({ kind: 'topup', id: openAiTopupId }),
+      }).catch(() => {})
+    }
+
     const eventKey = `meta_purchase_studio_topup:${topupId}:${paymentId}`
     if (sessionStorage.getItem(eventKey)) return
     sessionStorage.setItem(eventKey, '1')
