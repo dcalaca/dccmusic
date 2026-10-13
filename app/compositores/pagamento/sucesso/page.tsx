@@ -41,6 +41,13 @@ function PaymentSuccessContent() {
         const currency = String(payment.currency)
         if (!Number.isFinite(value) || value <= 0) return
 
+        // CAPI complements the browser pixel; payment and value are verified server-side.
+        void fetch('/api/compositores/analytics/openai-conversion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify({ kind: 'plan', id: transactionId.replace(/^plan_/, '') }),
+        }).catch(() => {})
+
         const gtag = (window as any).gtag
         if (typeof gtag === 'function') {
           gtag('event', 'compra_plano', {
