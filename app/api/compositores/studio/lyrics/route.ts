@@ -233,12 +233,6 @@ ${getStyleSpecificLyricInstruction(input.style)}
 ${actionInstruction ? `Pedido de edição: ${actionInstruction}` : ''}
 ${existingLyric ? `\nLetra atual para reescrever/melhorar:\n${existingLyric}` : ''}
 
-REGRAS DE SAÍDA OBRIGATÓRIAS:
-- Retorne exclusivamente as palavras que deverão ser cantadas e etiquetas de seção musical, como [Verso], [Refrão], [Ponte], [Final].
-- NUNCA adicione comentários ao compositor, explicações, apresentações, justificativas, avaliações da letra ou mensagens após a composição.
-- NUNCA escreva frases como "Esse é o seu refrão", "Deixei mais curto e forte", "Aqui está sua letra" ou "Espero que goste".
-- Não inclua markdown explicativo, asteriscos, texto fora da letra nem introdução ou conclusão conversacional.
-- Se a letra fornecida para edição contiver comentários sobre a composição, não os reproduza como versos; preserve o conteúdo musical e a intenção do compositor.
 Responda somente com a letra completa, organizada por partes.
 `.trim()
 }
