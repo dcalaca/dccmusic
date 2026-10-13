@@ -47,6 +47,7 @@ const siteNavItems = [
   { id: 'create-song', href: '/studio-ia', labelKey: 'menu.createSong', mobileLabelKey: 'menu.createSongMobile', icon: FiZap },
   { id: 'distribution', href: '/distribuicao-digital', labelKey: 'menu.spotifyPlatforms', mobileLabelKey: 'menu.spotify', icon: FiGlobe },
   { id: 'plans', href: '/compositores/planos', labelKey: 'menu.plans', icon: FiCreditCard },
+  { id: 'referrals', href: '/indique-e-ganhe', labelKey: 'referrals.title', icon: FiGift },
   { id: 'explore', href: '/musicas', labelKey: 'menu.explore', icon: FiCompass },
   { id: 'chords', href: '/transcricao-musical', labelKey: 'menu.songChords', mobileLabelKey: 'menu.chords', icon: FiFileText },
   { id: 'premium-composers', href: '/compositores', labelKey: 'menu.premiumComposers', mobileLabelKey: 'menu.composers', icon: FiUsers },

@@ -8,7 +8,7 @@ import HeroImageCarousel from '@/components/HeroImageCarousel'
 import { Suspense } from 'react'
 import { cookies, headers } from 'next/headers'
 import Link from 'next/link'
-import { FiMusic, FiArrowRight, FiZap } from 'react-icons/fi'
+import { FiMusic, FiArrowRight, FiZap, FiGift } from 'react-icons/fi'
 import { COUNTRY_COOKIE, getLocaleForCountry, normalizeCountry, type DccCountry, type DccLocale } from '@/lib/localization'
 import { isSupportedLocale } from '@/i18n/config'
 import { createDccI18n } from '@/i18n/server'
@@ -356,6 +356,14 @@ export default async function Home() {
                   >
                     <FiZap className="mr-2 h-5 w-5 shrink-0" />
                     {t('home.hero.create')}
+                    <FiArrowRight className="ml-2 h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                  <Link
+                    href="/indique-e-ganhe"
+                    className="group inline-flex min-h-[46px] w-full max-w-xs items-center justify-center rounded-lg border border-purple-300/60 bg-purple-950/90 px-7 py-3 text-base font-semibold text-purple-100 transition hover:border-purple-200 hover:bg-purple-900 sm:w-auto"
+                  >
+                    <FiGift className="mr-2 h-5 w-5 shrink-0" />
+                    {t('referrals.title')}
                     <FiArrowRight className="ml-2 h-5 w-5 shrink-0 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                   <Link
