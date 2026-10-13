@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -63,18 +64,37 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'invalid_payment' }, { status: 422 })
   }
 
-  const parsedTime = occurredAt ? Date.parse(occurredAt) : NaN
-  const timestamp_ms = Number.isFinite(parsedTime) ? parsedTime : Date.now()
-  const event = {
-    id: eventId,
-    type: 'order_created',
-    timestamp_ms,
-    action_source: 'web',
-    source_url: sourceUrl,
-    data: { type: 'contents', amount: Math.round(value * 100), currency },
-  }
-
   try {
+    // Preserve the Pixel's opaque references exactly as received in first-party cookies.
+    const readRawCookie = (name: string) => {
+      const entry = (request.headers.get('cookie') || '').split(';')
+        .map((part) => part.trimStart()).find((part) => part.startsWith(name + '='))
+      return entry ? entry.slice(name.length + 1) : undefined
+    }
+    const oppref = readRawCookie('__oppref')
+    const obref = readRawCookie('__obref')
+    const hash = (value: string) => createHash('sha256').update(value, 'utf8').digest('hex')
+    const email = String(composer.email || '').trim().toLowerCase()
+    const userAgent = request.headers.get('user-agent')
+
+    const parsedTime = occurredAt ? Date.parse(occurredAt) : NaN
+    const timestamp_ms = Number.isFinite(parsedTime) ? parsedTime : Date.now()
+    const event = {
+      id: eventId,
+      type: 'order_created',
+      timestamp_ms,
+      action_source: 'web',
+      source_url: sourceUrl,
+      ...(oppref ? { oppref } : {}),
+      user: {
+        external_ids_sha256: [hash(String(composer.composerId).trim())],
+        ...(email ? { emails_sha256: [hash(email)] } : {}),
+        ...(userAgent ? { user_agent: userAgent } : {}),
+        ...(obref ? { obref } : {}),
+      },
+      data: { type: 'contents', amount: Math.round(value * 100), currency },
+    }
+
     const response = await fetch(EVENT_URL + '?pid=' + encodeURIComponent(PIXEL_ID), {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
