@@ -33,7 +33,8 @@ export default function FAQPage() {
             answer: 'Sim. Você pode usar comercialmente as músicas criadas no Studio IA, inclusive distribuí-las em plataformas como Spotify, Apple Music, YouTube, TikTok e outras. A DCC Music não cobra participação nos royalties obtidos por você com a exploração da música. O uso continua sujeito às leis aplicáveis, aos direitos de terceiros e às regras da distribuidora e das plataformas onde você publicar.',
           }],
         }
-  const faqsWithCommercialUse = [...localizedFaqs, commercialFaq]
+  const referralFaq = { category: t('referrals.title'), questions: t('referralHelp.questions', { returnObjects: true }) as { question: string; answer: string }[] }
+  const faqsWithCommercialUse = [...localizedFaqs, commercialFaq, referralFaq]
 
   const faqSchema = {
     '@context': 'https://schema.org',

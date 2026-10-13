@@ -48,6 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/compositores/planos`, changeFrequency: 'monthly', priority: 0.7 },
     { url: `${baseUrl}/sobre`, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${baseUrl}/faq`, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/indique-e-ganhe`, changeFrequency: 'monthly', priority: 0.7 },
   ]
 
   // Carregamos o conteúdo uma única vez para que as mesmas regras de qualidade

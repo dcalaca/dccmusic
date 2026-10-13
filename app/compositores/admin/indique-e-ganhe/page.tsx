@@ -131,6 +131,7 @@ export default function ReferralPage() {
         </section>
 
         <details className="mt-5 rounded-2xl border border-white/10 bg-gray-900/30 px-5 py-4 text-sm"><summary className="cursor-pointer font-medium text-gray-300">{t('referrals.rulesTitle')}</summary><ul className="mt-4 space-y-2 pl-4 text-xs leading-relaxed text-gray-400">{['ruleBonus', 'ruleFirstPurchase', 'ruleLimit', 'ruleWindow', 'ruleVerification', 'ruleRefund', 'ruleCredits'].map(key => <li key={key} className="list-disc">{t(`referrals.${key}`)}</li>)}</ul></details>
+        <Link href="/indique-e-ganhe" className="mt-4 inline-flex text-sm text-purple-300 underline underline-offset-4">{t('referralHelp.questionsTitle')}</Link>
         <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-gray-500"><FiInfo className="mt-0.5 shrink-0" />{t('referrals.dateExplanation')}</p>
       </>}
     </main>

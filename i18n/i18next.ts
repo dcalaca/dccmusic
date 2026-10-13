@@ -13,6 +13,7 @@ import { localizationPreferenceMessages } from './localization-preference-messag
 import { studioAudioMessages } from './studio-audio-messages'
 import { studioVideoMessages } from './studio-video-messages'
 import { referralMessages } from './referral-messages'
+import { referralHelpMessages } from './referral-help-messages'
 
 export const translationNamespace = 'translation' as const
 
@@ -20,6 +21,7 @@ function withStudioMessages(messages: any, locale: keyof typeof studioAudioMessa
   return {
     ...messages,
     referrals: referralMessages[locale],
+    referralHelp: referralHelpMessages[locale],
     global: {
       ...messages.global,
       language: localizationPreferenceMessages[locale].language,

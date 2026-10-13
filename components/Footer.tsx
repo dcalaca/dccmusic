@@ -82,6 +82,7 @@ export default function Footer() {
                 <li><Link href="/compositores" className="text-gray-400 hover:text-white transition-colors">{t('footer.links.composers')}</Link></li>
                 {showBlog ? <li><Link href="/blog" className="text-gray-400 hover:text-white transition-colors">{t('footer.links.blog')}</Link></li> : null}
                 <li><Link href="/sobre" className="text-gray-400 hover:text-white transition-colors">{t('footer.links.about')}</Link></li>
+                <li><Link href="/indique-e-ganhe" className="text-gray-400 hover:text-white transition-colors">{t('referrals.title')}</Link></li>
                 <li><Link href="/faq" className="text-gray-400 hover:text-white transition-colors">{t('footer.links.faq')}</Link></li>
               </ul>
             </div>

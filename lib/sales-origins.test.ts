@@ -13,6 +13,10 @@ describe('sales attribution', () => {
     expect(salesOrigin(null, { msclkid: 'click' })).toBe('Bing')
     expect(salesOrigin('email', { gclid: 'older-click' })).toBe('E-mail')
   })
+  it('shows referral acquisition even when earlier ad click IDs remain saved', () => {
+    expect(salesOrigin('indicacao', { gclid: 'previous-ad-click' })).toBe('Indicação')
+    expect(salesOrigin('google', { gclid: 'previous-ad-click' })).toBe('Google')
+  })
   it('counts purchases without mixing currencies', () => {
     const rows = [{ origin: 'Google', currency: 'BRL', amount: 10 }, { origin: 'Google', currency: 'USD', amount: 5 }, { origin: 'Google', currency: 'BRL', amount: 20 }] as OriginSale[]
     expect(summarizeOrigins(rows)).toEqual([{ origin: 'Google', count: 3, amounts: { BRL: 30, USD: 5 } }])

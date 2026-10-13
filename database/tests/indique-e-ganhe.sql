@@ -37,6 +37,14 @@ begin
       if (select status from public.dcc_referrals where referee_id=friend_id)<>'registered' then raise exception 'Pending payment qualified'; end if;
       update public.studio_credit_topups set status='paid',paid_at=now() where id=v_payment_id;
     end if;
+    if i in (3,7) then
+      if (select referral_source from public.dccmusic_payments where id=v_payment_id) is distinct from 'indicacao' then raise exception 'Plan origin not referral'; end if;
+    else
+      if (select referral_source from public.studio_credit_topups where id=v_payment_id) is distinct from 'indicacao' then raise exception 'Topup origin not referral'; end if;
+      update public.studio_credit_topups set attribution_source='google',attribution_click_ids=jsonb_build_object('gclid','qa-click') where id=v_payment_id;
+      update public.studio_credit_topups set status='paid' where id=v_payment_id;
+      if not exists(select 1 from public.studio_credit_topups where id=v_payment_id and referral_source='indicacao' and attribution_source='google' and attribution_click_ids->>'gclid'='qa-click') then raise exception 'Referral origin changed ad attribution'; end if;
+    end if;
     if i=1 then
       pending_friend:=friend_id; pending_payment:=v_payment_id;
       if (select status from public.dcc_referrals where referee_id=friend_id)<>'pending' then raise exception 'Unverified email released reward'; end if;

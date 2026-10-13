@@ -6,6 +6,7 @@ export function salesOrigin(source: unknown, clickIds?: Record<string, unknown> 
     if (clickIds.fbclid) return 'Meta'
     if (clickIds.ttclid) return 'TikTok'
   }
+  if (value === 'indicacao') return 'Indicação'
   if (!value) return 'Não identificada'
   if (['direct', '(direct)'].includes(value)) return 'Acesso direto'
   if (['ig', 'instagram', 'instagram.com', 'l.instagram.com'].includes(value)) return 'Instagram'
