@@ -64,7 +64,8 @@ function PaymentSuccessContent() {
         })
 
         const oaiq = (window as any).oaiq
-        if (typeof oaiq === 'function') {
+        const openAiEventKey = 'openai_purchase_plan:' + transactionId
+        if (typeof oaiq === 'function' && !sessionStorage.getItem(openAiEventKey)) {
           oaiq('measure', 'order_created', {
             type: 'contents',
             amount: Math.round(value * 100),
@@ -76,6 +77,7 @@ function PaymentSuccessContent() {
               quantity: 1,
             }],
           }, { event_id: 'dcc_order_' + transactionId })
+          sessionStorage.setItem(openAiEventKey, '1')
         }
       } catch {
         // Analytics must not fire when the payment cannot be verified.
