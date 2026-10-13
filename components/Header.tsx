@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
-import { FiMusic, FiPlayCircle, FiHome, FiCompass, FiShield, FiUsers, FiUser, FiLogOut, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe, FiBookOpen } from 'react-icons/fi'
+import { FiMusic, FiPlayCircle, FiHome, FiCompass, FiShield, FiUsers, FiUser, FiLogOut, FiZap, FiPlusCircle, FiLock, FiCreditCard, FiFileText, FiGlobe, FiBookOpen, FiGift } from 'react-icons/fi'
 import NotificationBell from './NotificationBell'
 import LanguageSelector from './LanguageSelector'
 import {
@@ -246,7 +246,7 @@ export default function Header() {
         label: t(item.labelKey),
         mobileLabel: t('mobileLabelKey' in item && typeof item.mobileLabelKey === 'string' ? item.mobileLabelKey : item.labelKey),
       })),
-    ...(showBlog ? [{ id: 'blog', href: blogHomeHref, label: t('menu.blog'), mobileLabel: t('menu.blog'), icon: FiBookOpen }] : []),
+    ...(showBlog ? [{ id: 'blog', href: blogHomeHref, label: t('menu.blog'), mobileLabel: t('menu.blog'), icon: FiBookOpen, FiGift }] : []),
   ]
   const logoHref = surface === 'blog' ? (pathname.startsWith('/blog') ? '/blog' : '/') : '/'
 
@@ -359,6 +359,9 @@ export default function Header() {
                     </Link>
                     <Link href="/compositores/admin/studio-ia/letras-salvas" onClick={() => setShowUserMenu(false)} className="flex cursor-pointer items-center space-x-2 border-b border-gray-800 px-4 py-3 transition-colors hover:bg-gray-800">
                       <FiFileText className="w-4 h-4" /><span>{t('studio.savedLyrics.title')}</span>
+                    </Link>
+                    <Link href="/compositores/admin/indique-e-ganhe" onClick={() => setShowUserMenu(false)} className="flex cursor-pointer items-center space-x-2 border-b border-gray-800 px-4 py-3 text-purple-200 transition-colors hover:bg-gray-800">
+                      <FiGift className="w-4 h-4" /><span>{t('referrals.title')}</span>
                     </Link>
                     <div className="border-b border-gray-800 py-2">
                       <div className="px-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-500">
@@ -505,6 +508,9 @@ export default function Header() {
                     </Link>
                     <Link href="/compositores/admin/studio-ia/letras-salvas" onClick={() => setShowUserMenu(false)} className="flex cursor-pointer items-center space-x-2 border-b border-gray-800 px-4 py-3 transition-colors hover:bg-gray-800">
                       <FiFileText className="w-4 h-4" /><span>{t('studio.savedLyrics.title')}</span>
+                    </Link>
+                    <Link href="/compositores/admin/indique-e-ganhe" onClick={() => setShowUserMenu(false)} className="flex cursor-pointer items-center space-x-2 border-b border-gray-800 px-4 py-3 text-purple-200 transition-colors hover:bg-gray-800">
+                      <FiGift className="w-4 h-4" /><span>{t('referrals.title')}</span>
                     </Link>
                     <div className="border-b border-gray-800 py-2">
                       <div className="px-4 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-500">

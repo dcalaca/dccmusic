@@ -12,12 +12,14 @@ import esPY from './messages/es-PY.json'
 import { localizationPreferenceMessages } from './localization-preference-messages'
 import { studioAudioMessages } from './studio-audio-messages'
 import { studioVideoMessages } from './studio-video-messages'
+import { referralMessages } from './referral-messages'
 
 export const translationNamespace = 'translation' as const
 
 function withStudioMessages(messages: any, locale: keyof typeof studioAudioMessages) {
   return {
     ...messages,
+    referrals: referralMessages[locale],
     global: {
       ...messages.global,
       language: localizationPreferenceMessages[locale].language,

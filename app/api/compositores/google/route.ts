@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { attributeNewComposerReferral } from '@/lib/referrals'
 import { randomBytes, randomUUID } from 'crypto'
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
         if (insertError || !data) throw new Error('unavailable')
         composer = data
         created = true
+        await attributeNewComposerReferral(request, composer.id).catch(error => console.error('[GOOGLE LOGIN] Referral attribution failed', error))
         const partnerCode = typeof body.partnerAttribution?.code === 'string' ? body.partnerAttribution.code : request.cookies.get(PARTNER_COOKIE)?.value
         if (partnerCode) await applyComposerPartnerAttribution({ composerId: composer.id, partnerCode, sessionId: request.cookies.get(PARTNER_SESSION_COOKIE)?.value || null }).catch(() => console.warn('[GOOGLE LOGIN] Partner attribution failed'))
         await sendMetaCompleteRegistrationEvent({ request, eventId: `composer_registration:${composer.id}`, eventSourceUrl: request.headers.get('referer') || request.url, email, externalId: composer.id, contentName: 'Cadastro de compositor' }).catch(() => console.warn('[GOOGLE LOGIN] Registration event failed'))

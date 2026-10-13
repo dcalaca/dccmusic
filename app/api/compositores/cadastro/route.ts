@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { attributeNewComposerReferral } from '@/lib/referrals'
 import * as composerAuth from '@/lib/composer-auth'
 import { ComposerSignupError } from '@/lib/composer-auth'
 import { getComposerEmailLanguage, sendComposerVerificationEmail } from '@/lib/composer-email-verification'
@@ -65,6 +66,10 @@ export async function POST(request: NextRequest) {
         { error: 'Erro ao criar compositor', code: 'SIGNUP_FAILED' },
         { status: 500 }
       )
+    }
+
+    if (!result.wasExisting) {
+      await attributeNewComposerReferral(request, result.composer.id).catch(error => console.error('[CADASTRO] Referral attribution failed', error))
     }
 
     const partnerCode = partnerAttribution?.code ? String(partnerAttribution.code) : null
