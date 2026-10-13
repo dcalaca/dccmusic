@@ -21,53 +21,13 @@ function StudioTopupSuccessContent() {
 
     const topupId = data?.topupId || searchParams.get('topup_id') || 'studio_topup'
     const paymentId = data?.paymentId || searchParams.get('payment_id') || searchParams.get('collection_id') || ''
-    // OpenAI Ads uses an independent key: Meta/Google tracking must never suppress it.
-    // This is called only after /topup/sync has verified status === 'paid'.
-    const openAiValue = Number(data?.amount) || 0
-    const openAiTopupId = String(data?.topupId || searchParams.get('topup_id') || '').trim()
-    const openAiCurrency = String(data?.currency || 'BRL').toUpperCase()
-    const openAiKey = `openai_purchase_studio_topup:${openAiTopupId}`
-    const oaiq = (window as any).oaiq
-    if (
-      openAiTopupId &&
-      openAiValue > 0 &&
-      /^[A-Z]{3}$/.test(openAiCurrency) &&
-      typeof oaiq === 'function' &&
-      !sessionStorage.getItem(openAiKey)
-    ) {
-      oaiq('measure', 'order_created', {
-        type: 'contents',
-        amount: Math.round(openAiValue * 100),
-        currency: openAiCurrency,
-        contents: [{
-          id: 'studio_topup',
-          name: 'Recarga Studio IA',
-          content_type: 'product',
-          quantity: Math.max(1, Math.round(Number(data?.musicQuantity) || 1)),
-        }],
-      }, { event_id: `dcc_order_topup_${openAiTopupId}` })
-      sessionStorage.setItem(openAiKey, '1')
-    }
-
-    // Independent OpenAI server event, verified against the paid topup in Supabase.
-    const composerToken = localStorage.getItem('composer_token')
-    if (composerToken && openAiTopupId) {
-      void fetch('/api/compositores/analytics/openai-conversion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + composerToken },
-        body: JSON.stringify({ kind: 'topup', id: openAiTopupId }),
-      }).catch(() => {})
-    }
-
     const eventKey = `meta_purchase_studio_topup:${topupId}:${paymentId}`
     if (sessionStorage.getItem(eventKey)) return
     sessionStorage.setItem(eventKey, '1')
 
     const value = Number(data?.amount) || 0
     const currency = data?.currency || 'BRL'
-    // Match the CAPI Purchase event_id (provider payment ID) for Pixel deduplication.
-    // Keep the previous fallback only if the confirmed payment ID is unavailable.
-    const metaEventId = paymentId ? String(paymentId) : `topup_${topupId}`
+    // Stable across pending/success pages, regardless of payment URL parameters.
     const eventId = `topup_${topupId}`
     const quantity = Math.max(1, Math.round(Number(data?.musicQuantity) || 1))
     if (value <= 0) return
@@ -84,7 +44,7 @@ function StudioTopupSuccessContent() {
         currency,
         value,
       }, {
-        eventID: metaEventId,
+        eventID: eventId,
       })
     }
 
@@ -118,7 +78,24 @@ function StudioTopupSuccessContent() {
       currency,
     })
 
-
+    const oaiq = (window as any).oaiq
+    if (typeof oaiq === 'function') {
+      oaiq('measure', 'order_created', {
+        type: 'contents',
+        amount: Math.round(value * 100),
+        currency: String(currency).toUpperCase(),
+        contents: [
+          {
+            id: 'studio_topup',
+            name: 'Recarga Studio IA',
+            content_type: 'product',
+            quantity,
+          },
+        ],
+      }, {
+        event_id: `dcc_order_${eventId}`,
+      })
+    }
   }
 
   useEffect(() => {

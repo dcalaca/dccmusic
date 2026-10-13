@@ -1,7 +1,10 @@
 'use client'
 
+/** Conta Google Ads (tag global). */
+const GOOGLE_ADS_ID = 'AW-18367449265'
+
 /** Evento da ação PURCHASE do assistente do Google Ads. */
-const GOOGLE_ADS_PURCHASE_EVENT = 'conversion_event_purchase_1'
+const GOOGLE_ADS_PURCHASE_EVENT = 'conversion_event_purchase'
 
 type PurchaseTrackInput = {
   transactionId?: string | null
@@ -59,6 +62,7 @@ function firePurchaseEvents(
   const hasValue = typeof value === 'number' && Number.isFinite(value) && value > 0
 
   const eventParams: Record<string, string | number> = {
+    send_to: GOOGLE_ADS_ID,
     transaction_id: tx,
   }
   if (hasValue) {
@@ -66,7 +70,7 @@ function firePurchaseEvents(
     eventParams.currency = safeCurrency
   }
 
-  // Evento configurado na nova ação de compra do Google Ads (via Google tag).
+  // Nova conversão do assistente do Ads (PURCHASE)
   gtag('event', GOOGLE_ADS_PURCHASE_EVENT, eventParams)
 
   // GA4 purchase padrão (importação Ads ← GA4)

@@ -41,13 +41,6 @@ function PaymentSuccessContent() {
         const currency = String(payment.currency)
         if (!Number.isFinite(value) || value <= 0) return
 
-        // CAPI complements the browser pixel; payment and value are verified server-side.
-        void fetch('/api/compositores/analytics/openai-conversion', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-          body: JSON.stringify({ kind: 'plan', id: transactionId.replace(/^plan_/, '') }),
-        }).catch(() => {})
-
         const gtag = (window as any).gtag
         if (typeof gtag === 'function') {
           gtag('event', 'compra_plano', {
@@ -71,8 +64,7 @@ function PaymentSuccessContent() {
         })
 
         const oaiq = (window as any).oaiq
-        const openAiEventKey = 'openai_purchase_plan:' + transactionId
-        if (typeof oaiq === 'function' && !sessionStorage.getItem(openAiEventKey)) {
+        if (typeof oaiq === 'function') {
           oaiq('measure', 'order_created', {
             type: 'contents',
             amount: Math.round(value * 100),
@@ -84,7 +76,6 @@ function PaymentSuccessContent() {
               quantity: 1,
             }],
           }, { event_id: 'dcc_order_' + transactionId })
-          sessionStorage.setItem(openAiEventKey, '1')
         }
       } catch {
         // Analytics must not fire when the payment cannot be verified.

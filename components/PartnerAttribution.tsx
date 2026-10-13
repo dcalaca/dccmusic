@@ -96,9 +96,6 @@ async function sha256Hex(value: string) {
     .join('')
 }
 
-// User data belongs to this page's Pixel instance, not the whole browser session.
-let openAIUserSignature = ''
-
 async function syncOpenAIAdsUserData() {
   try {
     const payload = readComposerJwtPayload()
@@ -106,11 +103,12 @@ async function syncOpenAIAdsUserData() {
     if (!externalId || typeof crypto?.subtle?.digest !== 'function') return
 
     const externalIdHash = await sha256Hex(externalId)
+    const dedupeKey = 'dcc_openai_user_init'
+    if (sessionStorage.getItem(dedupeKey) === externalIdHash) return
+
     const email = String(payload?.email || '').trim().toLowerCase()
     const emailHash = email ? await sha256Hex(email) : null
     const country = String(document.documentElement.dataset.country || '').trim().toUpperCase()
-    const signature = [externalIdHash, emailHash || '', country].join(':')
-    if (openAIUserSignature === signature) return
     const oaiq = (window as any).oaiq
     if (typeof oaiq !== 'function') return
 
@@ -123,7 +121,7 @@ async function syncOpenAIAdsUserData() {
       },
     })
 
-    openAIUserSignature = signature
+    sessionStorage.setItem(dedupeKey, externalIdHash)
   } catch {
     // Ads matching must never block navigation or authentication.
   }

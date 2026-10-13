@@ -138,21 +138,6 @@ export function buildMetaCapiMetadata(
   extra?: { email?: string | null; externalId?: string | null; eventSourceUrl?: string | null }
 ) {
   const fromRequest = extractMetaBrowserContext(request)
-  // Privacy-safe diagnostic: only log IP families, never addresses or header values.
-  // Compare the edge-provided client IP with the address selected for Meta CAPI.
-  const ipFamily = (value: string | null | undefined) => {
-    if (!value) return 'missing'
-    const ip = value.trim()
-    if (/^[0-9a-fA-F:]+$/.test(ip) && ip.includes(':')) return 'ipv6'
-    if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(ip)) return 'ipv4'
-    return 'other'
-  }
-  console.info('[Meta IP family diagnostic]', {
-    selected: ipFamily(fromRequest.client_ip_address),
-    forwarded: ipFamily(request.headers.get('x-forwarded-for')?.split(',')[0]),
-    real: ipFamily(request.headers.get('x-real-ip')),
-    cloudflare: ipFamily(request.headers.get('cf-connecting-ip')),
-  })
   return {
     fbp: fromRequest.fbp,
     fbc: fromRequest.fbc,
