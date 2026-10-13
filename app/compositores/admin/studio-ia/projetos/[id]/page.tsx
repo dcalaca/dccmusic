@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { FiAlertTriangle, FiArrowLeft, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiCloud, FiCode, FiCreditCard, FiDownload, FiExternalLink, FiEyeOff, FiFileText, FiHeadphones, FiHeart, FiLoader, FiLock, FiMic, FiMusic, FiPause, FiPlay, FiSave, FiShield, FiVideo, FiX, FiZap } from 'react-icons/fi'
+import { FiAlertTriangle, FiArrowLeft, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiCloud, FiCode, FiCreditCard, FiDownload, FiEdit2, FiExternalLink, FiEyeOff, FiFileText, FiHeadphones, FiHeart, FiLoader, FiLock, FiMic, FiMusic, FiPause, FiPlay, FiSave, FiShield, FiVideo, FiX, FiZap } from 'react-icons/fi'
 import CopyButton from '@/components/CopyButton'
 import FeaturedButton from '@/components/FeaturedButton'
 import MediaDownloadButton from '@/components/MediaDownloadButton'
@@ -353,6 +353,10 @@ export default function StudioProjectDetailPage() {
   const studioVoiceInvalidMessage = t('studio.project.generation.voiceInvalid')
   const publishPlanRequiredMessage = t('studio.project.publish.planRequired')
   const [project, setProject] = useState<any>(null)
+  const [renaming, setRenaming] = useState(false)
+  const [renameTitle, setRenameTitle] = useState('')
+  const [renameSaving, setRenameSaving] = useState(false)
+  const [renameError, setRenameError] = useState('')
   const [lyric, setLyric] = useState('')
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState('')
@@ -669,6 +673,30 @@ export default function StudioProjectDetailPage() {
     }
 
     localStorage.setItem(`studio_extra_instructions:${projectId}`, nextValue)
+  }
+
+  const saveProjectTitle = async () => {
+    const title = renameTitle.trim()
+    if (!title || renameSaving) return
+    setRenameSaving(true)
+    setRenameError('')
+    try {
+      const token = localStorage.getItem('composer_token')
+      const response = await fetch(`/api/compositores/studio/projects/${projectId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.project?.title) throw new Error('rename failed')
+      setProject((current: any) => ({ ...current, title: data.project.title }))
+      setRenaming(false)
+      setMessage(t('studio.project.rename.saved'))
+    } catch {
+      setRenameError(t('studio.project.rename.error'))
+    } finally {
+      setRenameSaving(false)
+    }
   }
 
   const saveLyric = async () => {
@@ -1800,9 +1828,30 @@ export default function StudioProjectDetailPage() {
 
                 <div className="p-4 sm:p-5">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="mb-1 text-xs font-black uppercase tracking-[0.18em] text-purple-200">{t('studio.project.detail.songProject')}</p>
                       <h1 className="text-2xl font-black leading-tight text-white sm:text-3xl">{project.title}</h1>
+                      {renaming ? (
+                        <form className="mt-3 space-y-3" onSubmit={(event) => { event.preventDefault(); void saveProjectTitle() }}>
+                          <label htmlFor="project-title" className="block text-sm font-semibold text-gray-200">{t('studio.project.rename.label')}</label>
+                          <input id="project-title" autoFocus required maxLength={30} value={renameTitle}
+                            disabled={renameSaving} onChange={(event) => setRenameTitle(event.target.value)}
+                            onKeyDown={(event) => { if (event.key === 'Escape' && !renameSaving) setRenaming(false) }}
+                            aria-describedby={renameError ? 'project-title-error' : undefined}
+                            className="w-full min-w-0 rounded-xl border border-purple-400/40 bg-gray-950 px-3 py-2.5 text-base text-white focus:outline-none focus:ring-2 focus:ring-purple-400" />
+                          {renameError && <p id="project-title-error" role="alert" className="text-sm text-red-300">{renameError}</p>}
+                          <div className="flex flex-wrap gap-2">
+                            <button type="submit" disabled={renameSaving || !renameTitle.trim()} className="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-4 py-2 text-sm font-bold text-white hover:bg-purple-500 disabled:opacity-50">
+                              {renameSaving ? <FiLoader className="animate-spin" /> : <FiSave />}{t('common.actions.save')}
+                            </button>
+                            <button type="button" disabled={renameSaving} onClick={() => setRenaming(false)} className="rounded-xl border border-white/15 px-4 py-2 text-sm font-semibold text-gray-200 disabled:opacity-50">{t('common.actions.cancel')}</button>
+                          </div>
+                        </form>
+                      ) : (
+                        <button type="button" onClick={() => { setRenameTitle(project.title || ''); setRenameError(''); setRenaming(true) }} className="mt-2 inline-flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-semibold text-purple-200 hover:bg-white/[0.06]">
+                          <FiEdit2 />{t('studio.project.rename.action')}
+                        </button>
+                      )}
                       <p className="mt-1 text-sm text-gray-400">{project.style || t('studio.project.detail.free')} · {project.mood || t('studio.project.detail.noMood')}</p>
                     </div>
                     <FiHeart className={`h-6 w-6 ${project.favorite ? 'fill-red-400 text-red-400' : 'text-gray-500'}`} />

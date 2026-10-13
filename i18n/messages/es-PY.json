@@ -367,6 +367,12 @@
   },
   "studio": {
     "project": {
+      "rename": {
+        "action": "Renombrar proyecto",
+        "label": "Nombre del proyecto",
+        "saved": "¡Nombre del proyecto actualizado!",
+        "error": "No se pudo cambiar el nombre del proyecto. Inténtalo de nuevo."
+      },
       "detail": {
         "coverPrimary": "PRINCIPAL",
         "coverPro": "PRO",

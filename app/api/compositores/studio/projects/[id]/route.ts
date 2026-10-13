@@ -409,7 +409,13 @@ export async function PUT(
       updated_at: new Date().toISOString(),
     }
 
-    if (typeof body.title === 'string') updates.title = formatMusicTitle(body.title.trim().slice(0, STUDIO_TITLE_MAX_LENGTH))
+    if (typeof body.title === 'string') {
+      const title = body.title.trim()
+      if (!title || title.length > STUDIO_TITLE_MAX_LENGTH) {
+        return NextResponse.json({ error: 'Nome inválido' }, { status: 400 })
+      }
+      updates.title = formatMusicTitle(title)
+    }
     if (typeof body.style === 'string') updates.style = body.style
     if (typeof body.mood === 'string') updates.mood = body.mood
     if (typeof body.structure === 'string') updates.structure = body.structure
