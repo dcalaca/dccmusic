@@ -1827,6 +1827,26 @@ export default function StudioProjectDetailPage() {
                     </div>
                   )}
 
+                  {audioUrl && (
+                    <div className="absolute inset-x-3 bottom-3 z-30 rounded-2xl border border-white/20 bg-gray-950/90 p-2.5 shadow-xl backdrop-blur-md sm:inset-x-5 sm:bottom-5">
+                      <input ref={coverUploadRef} type="file" accept="image/jpeg,image/png,image/webp"
+                          className="hidden" aria-label={i18n.language.startsWith('es') ? 'Subir portada propia' : i18n.language.startsWith('en') ? 'Upload your own cover' : 'Enviar minha própria capa'}
+                          onChange={(event) => void uploadOwnCover(event.target.files?.[0])} />
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                        <button type="button" onClick={() => coverUploadRef.current?.click()} disabled={Boolean(processing)} className="flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600 disabled:opacity-60">
+                          <FiUploadCloud /> {i18n.language.startsWith('es') ? 'Subir mi portada — gratis' : i18n.language.startsWith('en') ? 'Upload my cover — free' : 'Enviar minha capa — grátis'}
+                        </button>
+                        <button type="button" onClick={improveCover} disabled={Boolean(processing) || !canGeneratePremiumCover} className="flex items-center justify-center gap-2 rounded-xl bg-purple-700 px-3 py-2 text-xs font-bold text-white hover:bg-purple-600 disabled:opacity-60">
+                          <FiZap /> {t('studio.project.detail.createProfessionalCover')}
+                        </button>
+                        <button type="button" onClick={() => downloadCoverImage()} disabled={!project.cover?.imageUrl} className="flex items-center justify-center gap-2 rounded-xl bg-gray-700 px-3 py-2 text-xs font-bold text-white hover:bg-gray-600 disabled:opacity-60">
+                          <FiDownload /> {t('studio.project.detail.downloadCover')}
+                        </button>
+                      </div>
+                      {premiumCoverLimit > 0 && <p className="mt-2 text-center text-[11px] text-gray-300">{t('studio.project.detail.premiumCoverUsage', { used: premiumCoverGenerations, limit: premiumCoverLimit })}</p>}
+                    </div>
+                  )}
+
                   {isGeneratingCover && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 px-8 text-center backdrop-blur-sm">
                       <FiLoader className="mb-4 h-12 w-12 animate-spin text-purple-300" />
@@ -2315,53 +2335,6 @@ export default function StudioProjectDetailPage() {
                     )}
                     {audioUrl && (
                       <>
-                      <div className="mb-3">
-                        <input ref={coverUploadRef} type="file" accept="image/jpeg,image/png,image/webp"
-                          className="hidden" aria-label={i18n.language.startsWith('es') ? 'Subir portada propia' : i18n.language.startsWith('en') ? 'Upload your own cover' : 'Enviar minha própria capa'}
-                          onChange={(event) => void uploadOwnCover(event.target.files?.[0])} />
-                        <button type="button" onClick={() => coverUploadRef.current?.click()} disabled={Boolean(processing)}
-                          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-400/40 bg-emerald-950/30 px-4 py-3 font-bold text-emerald-100 hover:bg-emerald-950/60 disabled:opacity-60">
-                          <FiUploadCloud />
-                          {i18n.language.startsWith('es') ? 'Subir mi portada — gratis' : i18n.language.startsWith('en') ? 'Upload my cover — free' : 'Enviar minha capa — grátis'}
-                        </button>
-                        <p className="mt-1 text-center text-xs text-gray-400">
-                          {i18n.language.startsWith('es') ? 'JPG, PNG o WEBP · máximo 5 MB · 0 créditos' : i18n.language.startsWith('en') ? 'JPG, PNG or WEBP · max 5 MB · 0 credits' : 'JPG, PNG ou WEBP · até 5 MB · 0 créditos'}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={improveCover} disabled={Boolean(processing) || !canGeneratePremiumCover} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100 transition hover:border-purple-400/40 hover:bg-white/[0.09] disabled:opacity-60">
-                          {isGeneratingCover ? (
-                            <>
-                              <FiLoader className="animate-spin" /> {t('studio.project.detail.generatingCover')}
-                            </>
-                          ) : (
-                            <>
-                              <FiZap /> {t('studio.project.detail.createProfessionalCover')}
-                            </>
-                          )}
-                        </button>
-                        <div className="group relative">
-                          <button
-                            type="button"
-                            aria-label={t('studio.project.detail.coverInfo')}
-                            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-gray-900 text-sm font-black text-gray-300 hover:border-purple-500 hover:text-white"
-                          >
-                            ?
-                          </button>
-                          <div className="pointer-events-none absolute bottom-full right-0 z-20 mb-2 hidden w-64 rounded-xl border border-purple-700/60 bg-gray-950 px-4 py-3 text-xs leading-relaxed text-purple-100 shadow-xl shadow-black/40 group-hover:block">
-                            {t('studio.project.cover.professionalHint')}
-                          </div>
-                        </div>
-                      </div>
-                      {!studioStatus ? (
-                        <p className="text-center text-xs text-gray-500">
-                          {t('studio.project.cover.loadingPermissions')}
-                        </p>
-                      ) : (
-                        premiumCoverLimit > 0 && <p className="text-center text-xs text-gray-500">
-                          {t('studio.project.detail.premiumCoverUsage', { used: premiumCoverGenerations, limit: premiumCoverLimit })}
-                        </p>
-                      )}
                       {project.status === 'published' ? (
                         <div className="flex flex-col gap-3">
                           {hasProjectReadyAudio && <FeaturedButton contentType="studio_music" contentId={String(projectId)} composerId={String(project?.composerId || '')} />}
@@ -2407,16 +2380,6 @@ export default function StudioProjectDetailPage() {
                       <Link href={`/studio/${project.publicSlug}`} target="_blank" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100">
                         <FiExternalLink /> {t('studio.project.publish.viewPublic')}
                       </Link>
-                    )}
-                    {project.cover?.imageUrl && (
-                      <button type="button" onClick={() => downloadCoverImage()} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100">
-                        <FiDownload /> {t('studio.project.detail.downloadCover')}
-                      </button>
-                    )}
-                    {audioUrl && (
-                      <MediaDownloadButton src={audioUrl} filename={sanitizeDownloadName(project?.title || 'dcc-music')} mediaType="audio" className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100">
-                        <FiDownload /> {t('studio.project.detail.downloadMp3')}
-                      </MediaDownloadButton>
                     )}
                   </div>
                 </div>
