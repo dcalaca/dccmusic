@@ -271,7 +271,7 @@ function StackedCoversChart({ data }: { data: ChartDay[] }) {
   return (
     <DailyStackedBarChart
       title="Capas por dia"
-      description="Barra empilhada: padrão, premium e personalizada."
+      description="Capas distintas: padrão, premium e personalizada. Repetições da mesma capa não aumentam a contagem."
       data={data}
       series={segments}
     />

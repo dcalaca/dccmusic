@@ -179,10 +179,12 @@ export async function GET(request: NextRequest) {
         .range(from, to)
       ),
       safeFetchPaged<any>('Capas padrão e premium', (from, to) => supabaseAdmin
-        .from('studio_covers')
+        .from('studio_cover_generation_events')
         .select('id, is_premium, created_at')
         .gte('created_at', startIso)
         .lt('created_at', endIso)
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })
         .range(from, to)
       ),
       safeFetchPaged<any>('Capas personalizadas', (from, to) => supabaseAdmin
