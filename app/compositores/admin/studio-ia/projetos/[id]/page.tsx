@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { FiAlertTriangle, FiArrowLeft, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiCloud, FiCode, FiCreditCard, FiDownload, FiEdit2, FiExternalLink, FiEyeOff, FiFileText, FiHeadphones, FiHeart, FiLoader, FiLock, FiMic, FiMusic, FiPause, FiPlay, FiSave, FiShield, FiVideo, FiX, FiZap } from 'react-icons/fi'
+import { FiAlertTriangle, FiArrowLeft, FiCheckCircle, FiChevronLeft, FiChevronRight, FiClock, FiCloud, FiCode, FiCreditCard, FiDownload, FiEdit2, FiExternalLink, FiEyeOff, FiFileText, FiHeadphones, FiHeart, FiLoader, FiLock, FiMic, FiMusic, FiPause, FiPlay, FiSave, FiShield, FiVideo, FiX, FiZap, FiUploadCloud } from 'react-icons/fi'
 import CopyButton from '@/components/CopyButton'
 import FeaturedButton from '@/components/FeaturedButton'
 import MediaDownloadButton from '@/components/MediaDownloadButton'
@@ -385,6 +385,7 @@ export default function StudioProjectDetailPage() {
   const backgroundMessageRef = useRef<HTMLDivElement | null>(null)
   const inspirationPickerRef = useRef<HTMLDivElement | null>(null)
   const coverCarouselRef = useRef<HTMLDivElement | null>(null)
+  const coverUploadRef = useRef<HTMLInputElement | null>(null)
   const lastFocusedMessageRef = useRef('')
 
   useEffect(() => {
@@ -1089,6 +1090,42 @@ export default function StudioProjectDetailPage() {
     if (currentGenerationId) {
       await checkGeneration(currentGenerationId)
       await loadProject({ silent: true, notifyReady: true })
+    }
+  }
+
+  const uploadOwnCover = async (file?: File) => {
+    if (!file) return
+    const language = i18n.language.split('-')[0]
+    const messages = language === 'es'
+      ? { invalid: 'Sube una imagen JPG, PNG o WEBP de hasta 5 MB.', uploading: 'Subiendo portada...', success: '¡Tu portada fue guardada sin usar créditos!', error: 'No se pudo subir la portada.' }
+      : language === 'en'
+        ? { invalid: 'Upload a JPG, PNG or WEBP image up to 5 MB.', uploading: 'Uploading cover...', success: 'Your cover was saved without using credits!', error: 'Could not upload cover.' }
+        : { invalid: 'Envie uma imagem JPG, PNG ou WEBP de até 5 MB.', uploading: 'Enviando capa...', success: 'Sua capa foi salva sem gastar créditos!', error: 'Não foi possível enviar a capa.' }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size === 0 || file.size > 5 * 1024 * 1024) {
+      setError(messages.invalid)
+      return
+    }
+    setError('')
+    setMessage('')
+    setProcessing(messages.uploading)
+    try {
+      const form = new FormData()
+      form.append('projectId', projectId)
+      form.append('image', file)
+      const response = await fetch('/api/compositores/studio/covers/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${localStorage.getItem('composer_token') || ''}` },
+        body: form,
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || messages.error)
+      await loadProject({ silent: true, skipGenerationCheck: true, suppressError: true })
+      setMessage(messages.success)
+    } catch (uploadError: any) {
+      setError(uploadError?.message || messages.error)
+    } finally {
+      if (coverUploadRef.current) coverUploadRef.current.value = ''
+      setProcessing('')
     }
   }
 
@@ -2268,6 +2305,19 @@ export default function StudioProjectDetailPage() {
                     )}
                     {audioUrl && (
                       <>
+                      <div className="mb-3">
+                        <input ref={coverUploadRef} type="file" accept="image/jpeg,image/png,image/webp"
+                          className="hidden" aria-label={i18n.language.startsWith('es') ? 'Subir portada propia' : i18n.language.startsWith('en') ? 'Upload your own cover' : 'Enviar minha própria capa'}
+                          onChange={(event) => void uploadOwnCover(event.target.files?.[0])} />
+                        <button type="button" onClick={() => coverUploadRef.current?.click()} disabled={Boolean(processing)}
+                          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-400/40 bg-emerald-950/30 px-4 py-3 font-bold text-emerald-100 hover:bg-emerald-950/60 disabled:opacity-60">
+                          <FiUploadCloud />
+                          {i18n.language.startsWith('es') ? 'Subir mi portada — gratis' : i18n.language.startsWith('en') ? 'Upload my cover — free' : 'Enviar minha capa — grátis'}
+                        </button>
+                        <p className="mt-1 text-center text-xs text-gray-400">
+                          {i18n.language.startsWith('es') ? 'JPG, PNG o WEBP · máximo 5 MB · 0 créditos' : i18n.language.startsWith('en') ? 'JPG, PNG or WEBP · max 5 MB · 0 credits' : 'JPG, PNG ou WEBP · até 5 MB · 0 créditos'}
+                        </p>
+                      </div>
                       <div className="flex items-center gap-2">
                         <button onClick={improveCover} disabled={Boolean(processing) || !canGeneratePremiumCover} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 font-bold text-gray-100 transition hover:border-purple-400/40 hover:bg-white/[0.09] disabled:opacity-60">
                           {isGeneratingCover ? (
