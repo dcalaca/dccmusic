@@ -1530,7 +1530,17 @@ export default function StudioProjectDetailPage() {
             <FiArrowLeft /> {t('studio.project.detail.myProjects')}
           </Link>
 
-          {(processing || (generationId && !generationBackgroundMode)) && (
+          {processing.startsWith('Enviando capa') || processing.startsWith('Uploading cover') || processing.startsWith('Subiendo portada') ? (
+            <div role="status" aria-live="polite" className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm">
+              <div className="w-full max-w-sm rounded-3xl border border-purple-500/50 bg-gray-950 p-8 text-center shadow-2xl">
+                <FiUploadCloud className="mx-auto mb-4 h-10 w-10 animate-pulse text-purple-300" />
+                <p className="text-xl font-black text-white">{processing}</p>
+                <p className="mt-3 text-sm text-gray-400">
+                  {i18n.language.startsWith('es') ? 'Guardando tu imagen, sin generación por IA ni gasto de créditos.' : i18n.language.startsWith('en') ? 'Saving your image without AI generation or credit charges.' : 'Salvando sua imagem, sem gerar com IA e sem gastar créditos.'}
+                </p>
+              </div>
+            </div>
+          ) : (processing || (generationId && !generationBackgroundMode)) && (
             <StudioProcessing
               message={processing || generationMessage}
               description={generationId && !processing ? t('studio.project.detail.backgroundHint') : undefined}
