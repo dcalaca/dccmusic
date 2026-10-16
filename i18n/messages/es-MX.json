@@ -1176,7 +1176,8 @@
           "loadSaved": "No se pudo cargar el instrumental guardado.",
           "sourceRequired": "Elige una versión o sube una canción.",
           "insufficientCredits": "Necesitas {{count}} créditos para crear el instrumental.",
-          "playbackUnavailable": "No pudimos crear el instrumental ahora. Inténtalo de nuevo."
+          "playbackUnavailable": "No pudimos crear el instrumental ahora. Inténtalo de nuevo.",
+          "audioCatalogMatch": "No pudimos crear el instrumental porque el sistema detectó similitud con una grabación ya existente en el catálogo. Esto puede ocurrir incluso con canciones de tu autoría. Si la canción es tuya o tienes autorización para usarla, contacta con nuestro soporte para evaluar alternativas."
         },
         "loadingVersion": "Cargando la versión elegida...",
         "mySong": "Mi canción",

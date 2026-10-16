@@ -1176,7 +1176,8 @@
           "loadSaved": "Não foi possível carregar o playback guardado.",
           "sourceRequired": "Escolha uma versão ou envie uma música.",
           "insufficientCredits": "Precisa de {{count}} créditos para criar o playback.",
-          "playbackUnavailable": "Não foi possível criar o playback agora. Tente novamente."
+          "playbackUnavailable": "Não foi possível criar o playback agora. Tente novamente.",
+          "audioCatalogMatch": "Não foi possível criar o playback porque o sistema identificou semelhança com uma gravação já existente no catálogo. Isto pode acontecer mesmo com músicas da sua autoria. Se a música é sua ou tem autorização para a utilizar, contacte o nosso suporte para avaliar alternativas."
         },
         "loadingVersion": "Carregando a versão escolhida...",
         "mySong": "Minha música",

@@ -1176,7 +1176,8 @@
           "loadSaved": "Could not load the saved instrumental.",
           "sourceRequired": "Choose a version or upload a song.",
           "insufficientCredits": "You need {{count}} credits to create the instrumental.",
-          "playbackUnavailable": "We could not create the instrumental right now. Please try again."
+          "playbackUnavailable": "We could not create the instrumental right now. Please try again.",
+          "audioCatalogMatch": "We could not create the instrumental because the system detected a match with an existing recording in the catalog. This can happen even with your own songs. If you own the song or have permission to use it, contact our support to discuss alternatives."
         },
         "loadingVersion": "Loading the selected version...",
         "mySong": "My song",

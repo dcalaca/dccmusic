@@ -15,6 +15,7 @@ import {
   validateStudioInputUploadedAsset,
 } from '@/lib/studio-audio-backup'
 import { supabaseAdmin } from '@/lib/supabase'
+import { studioVoiceErrorCode } from '@/lib/studio-voice-errors'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300
@@ -211,9 +212,10 @@ export async function POST(request: NextRequest) {
         console.error('[Studio Playback] Falha ao estornar créditos:', refundError)
       }
     }
+    const catalogMatch = studioVoiceErrorCode(error?.message) === 'audioCatalogMatch'
     return NextResponse.json({
-      errorCode: charged ? 'playbackUnavailable' : 'create',
+      errorCode: catalogMatch ? 'audioCatalogMatch' : charged ? 'playbackUnavailable' : 'create',
       creditsRefunded: refunded ? STUDIO_MUSIC_CREDITS : 0,
-    }, { status: 500 })
+    }, { status: catalogMatch ? 422 : 500 })
   }
 }
