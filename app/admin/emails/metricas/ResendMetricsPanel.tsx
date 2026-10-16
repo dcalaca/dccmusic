@@ -42,10 +42,10 @@ export default function ResendMetricsPanel() {
     } catch (err: any) { if (!current.signal.aborted) setError(err.message || 'Falha ao consultar métricas.') }
     finally { if (!current.signal.aborted) setLoading(false) }
   }
-  useEffect(() => { load(reportPresetRange('thisMonth')); return () => controller.current?.abort() }, [])
+  useEffect(() => () => controller.current?.abort(), [])
   function selectPreset(value: ReportPreset) {
     setPreset(value)
-    if (value !== 'custom') { const nextRange = reportPresetRange(value); setRange(nextRange); load(nextRange) }
+    if (value !== 'custom') { const nextRange = reportPresetRange(value); setRange(nextRange) }
   }
   const filtered = (report?.categories || []).filter(row => `${row.label} ${row.category}`.toLowerCase().includes(search.toLowerCase().trim()))
   const field = 'w-full rounded-xl border border-gray-700 bg-gray-950 px-3 py-2.5 text-white focus:border-fuchsia-500 focus:outline-none'
@@ -62,6 +62,7 @@ export default function ResendMetricsPanel() {
     </section>
     {error && <div role="alert" className="mt-5 rounded-xl border border-red-900 bg-red-950/30 p-4 text-red-200">{error}</div>}
     {loading && <div role="status" className="mt-6 flex items-center gap-3 rounded-2xl border border-gray-800 p-6 text-gray-400"><FiRefreshCw className="animate-spin" />Consultando métricas e identificando os tipos de email…</div>}
+    {!report && !loading && !error && <div className="mt-6 rounded-2xl border border-gray-800 p-6 text-sm text-gray-400">Escolha o período e clique em <strong className="text-gray-200">Aplicar período</strong> para consultar. Nenhuma consulta é iniciada automaticamente.</div>}
     {report && <>
       <div className="my-5 flex flex-wrap items-center justify-between gap-3 text-sm"><p className="font-semibold">{date(report.range.startDate)} a {date(report.range.endDate)}</p><p className="inline-flex items-center gap-2 text-xs text-gray-500"><FiCheckCircle className="text-emerald-400" />Consultado em {dateTime(report.meta.checkedAt)}</p></div>
       {report.meta.retentionLimited && <p className="mb-4 rounded-xl border border-amber-900 bg-amber-950/20 p-4 text-sm text-amber-200">O histórico disponível no plano do Resend começa em {dateTime(report.actualRange.start)}. Parte do período selecionado não está disponível.</p>}
