@@ -4,6 +4,8 @@ import { useEffect } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { getStoredPartnerAttribution } from '@/components/PartnerAttribution'
 
+import { syncGa4UserId } from '@/lib/ga4-user-id'
+
 type GtmEventPayload = Record<string, string | number | boolean | null | undefined>
 
 function getComposerContext() {
@@ -59,12 +61,24 @@ export function pushGtmEvent(event: string, payload: GtmEventPayload = {}) {
     }
   }
 
+  syncGa4UserId()
   w.gtag('event', event, eventPayload)
 }
 
 export default function GtmPageEvents() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
+
+  useEffect(() => {
+    syncGa4UserId()
+    const sync = () => syncGa4UserId()
+    window.addEventListener('authChange', sync)
+    window.addEventListener('storage', sync)
+    return () => {
+      window.removeEventListener('authChange', sync)
+      window.removeEventListener('storage', sync)
+    }
+  }, [pathname])
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {

@@ -1,5 +1,7 @@
 'use client'
 
+import { syncGa4UserId } from '@/lib/ga4-user-id'
+
 /** Conta Google Ads (tag global). */
 const GOOGLE_ADS_ID = 'AW-18367449265'
 
@@ -72,6 +74,8 @@ function firePurchaseEvents(
 
   // Nova conversão do assistente do Ads (PURCHASE)
   gtag('event', GOOGLE_ADS_PURCHASE_EVENT, eventParams)
+
+  syncGa4UserId()
 
   // GA4 purchase padrão (importação Ads ← GA4)
   gtag('event', 'purchase', {

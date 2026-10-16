@@ -3494,7 +3494,7 @@
       },
       {
         "title": "6. Cookies and browser storage",
-        "body": "We use cookies and local storage for country and language preferences, sign-in sessions, authentication protection and referral attribution. Analytics and campaign tools may also use measurement technologies. You can control cookies and clear data through browser settings; this may sign you out and affect features or preferences."
+        "body": "We use cookies and local storage for country and language preferences, sign-in sessions, authentication protection and referral attribution. Analytics and campaign tools may also use measurement technologies. You can control cookies and clear data through browser settings; this may sign you out and affect features or preferences. We also send Google Analytics a pseudonymous internal identifier (User-ID) to associate account activity across sessions and devices and measure registrations and purchases. We do not use names, email addresses or phone numbers as User-ID."
       },
       {
         "title": "7. Security and retention",

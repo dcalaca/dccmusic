@@ -1,3 +1,4 @@
+import { validGa4UserId } from '@/lib/ga4-user-id'
 import type { NextRequest } from 'next/server'
 
 /**
@@ -73,7 +74,7 @@ export async function sendConfirmedTopupGa4Purchase(input: {
       encodeURIComponent(MEASUREMENT_ID) + '&api_secret=' + encodeURIComponent(secret), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: clientId, events: [{ name: 'purchase', params }] }),
+      body: JSON.stringify({ client_id: clientId, ...(validGa4UserId(topup.composer_id) ? { user_id: topup.composer_id } : {}), events: [{ name: 'purchase', params }] }),
       signal: AbortSignal.timeout(6000),
       cache: 'no-store',
     })

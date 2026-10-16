@@ -3494,7 +3494,7 @@
       },
       {
         "title": "6. Cookies y almacenamiento del navegador",
-        "body": "Usamos cookies y almacenamiento local para preferencias de país e idioma, sesiones de acceso, protección de la autenticación y atribución de recomendaciones. Las herramientas de análisis y campañas también pueden utilizar tecnologías de medición. Puedes controlar las cookies y borrar los datos desde la configuración del navegador; esto puede cerrar tu sesión y afectar funciones o preferencias."
+        "body": "Usamos cookies y almacenamiento local para preferencias de país e idioma, sesiones de acceso, protección de la autenticación y atribución de recomendaciones. Las herramientas de análisis y campañas también pueden utilizar tecnologías de medición. Puedes controlar las cookies y borrar los datos desde la configuración del navegador; esto puede cerrar tu sesión y afectar funciones o preferencias. También enviamos a Google Analytics un identificador interno seudónimo (User-ID) para asociar la actividad de la cuenta entre sesiones y dispositivos y medir registros y compras. No usamos nombres, correos electrónicos ni teléfonos como User-ID."
       },
       {
         "title": "7. Seguridad y conservación",

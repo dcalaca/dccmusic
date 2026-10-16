@@ -288,7 +288,13 @@ export default function RootLayout({
             function gtag(){dataLayer.push(arguments);}
             window.gtag = gtag;
             gtag('js', new Date());
-            gtag('config', 'G-CNBQFWQ9QT');
+            var ga4UserId = null;
+            try {
+              var composer = JSON.parse(localStorage.getItem('composer_data') || 'null');
+              if (localStorage.getItem('composer_token') && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(composer?.id || '')) ga4UserId = composer.id;
+            } catch (_) {}
+            gtag('config', 'G-CNBQFWQ9QT', { user_id: ga4UserId });
+            window.__dccGa4UserId = ga4UserId;
             gtag('config', 'AW-18367449265');
           `}
         </Script>
