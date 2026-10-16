@@ -85,6 +85,13 @@ const adminGroups = [
         accent: 'fuchsia',
       },
       {
+        href: '/admin/emails/metricas',
+        title: 'Controle de Emails · Resend',
+        description: 'Entregas, bounce, spam, aberturas e cliques por tipo e período',
+        icon: FiMail,
+        accent: 'fuchsia',
+      },
+      {
         href: '/admin/email-campanhas',
         title: 'Campanhas de E-mail',
         description: 'Enviar e agendar e-mails para compositores e usuários cadastrados',

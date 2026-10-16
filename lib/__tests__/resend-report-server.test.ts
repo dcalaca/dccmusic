@@ -1,0 +1,41 @@
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+vi.mock('server-only', () => ({}))
+const { lookup } = vi.hoisted(() => ({ lookup: vi.fn() }))
+vi.mock('../supabase', () => ({ supabaseAdmin: { from: (table: string) => ({ select: () => ({ in: (column: string, ids: string[]) => lookup(table, column, ids) }) }) } }))
+const range = { startDate: '2026-10-01', endDate: '2026-10-16' }
+beforeEach(() => {
+  vi.resetModules(); vi.stubEnv('RESEND_API_KEY', 'test-only-api-key'); lookup.mockReset()
+  lookup.mockImplementation((table, _column, ids) => Promise.resolve({ data: table === 'dccmusic_email_events' ? ids.filter((id: string) => id !== 'unmatched').map((id: string) => ({ provider_id: id, category: 'studio_music_ready' })) : [], error: null }))
+})
+afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs() })
+describe('Resend report provider integration', () => {
+  it('queries the real metrics endpoint shape and joins all IDs in bounded chunks', async () => {
+    const rows = Array.from({ length: 1201 }, (_, i) => ({ email_id: `e${i}`, sent: 1, delivered: 1, unique_opened: 1, opened: 2 }))
+    const provider = vi.fn(async () => new Response(JSON.stringify({ start_date: '2026-10-01T03:00:00Z', end_date: '2026-10-16T22:00:00Z', totals: { sent: 1201, opened: 2402, unique_opened: 1201 }, data: rows })))
+    vi.stubGlobal('fetch', provider)
+    const { getResendReport } = await import('../resend-report-server')
+    const result = await getResendReport(range)
+    expect(result.categories[0].metrics.sent).toBe(1201)
+    expect(result.categories[0].metrics.opened).toBe(2402)
+    expect(lookup.mock.calls.every(call => call[2].length <= 150)).toBe(true)
+    expect(lookup.mock.calls.length).toBe(27)
+    const url = new URL(provider.mock.calls[0][0] as string)
+    expect(url.pathname).toBe('/emails/metrics'); expect(url.searchParams.get('dimensions')).toBe('email')
+    expect(url.searchParams.get('timezone')).toBe('America/Sao_Paulo')
+    expect(JSON.stringify(result)).not.toContain('test-only-api-key')
+    await getResendReport(range); expect(provider).toHaveBeenCalledTimes(1)
+  })
+  it('preserves provider totals when a category lookup is unavailable', async () => {
+    lookup.mockResolvedValue({ data: null, error: { message: 'Unavailable' } })
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ totals: { sent: 1, bounced: 1 }, data: [{ email_id: 'unmatched', sent: 1, bounced: 1 }] }))))
+    const { getResendReport } = await import('../resend-report-server')
+    const result = await getResendReport(range)
+    expect(result.totals.bounced).toBe(1); expect(result.categories[0].category).toBe('unclassified')
+    expect(result.meta.warnings).toHaveLength(3)
+  })
+  it('reports insufficient key permissions rather than returning invented zeroes', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 403 })))
+    const { getResendReport } = await import('../resend-report-server')
+    await expect(getResendReport(range)).rejects.toThrow('permissão')
+  })
+})

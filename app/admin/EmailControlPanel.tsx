@@ -222,6 +222,7 @@ export default function EmailControlPanel() {
           <p className="text-gray-400 text-sm mt-1">Volume, histórico, filtros, destinatários e campanhas em uma única tela.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href="/admin/emails/metricas" className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-fuchsia-600 text-white hover:bg-fuchsia-500"><FiMail className="w-4 h-4" />Entregas e métricas Resend</Link>
           <Link href="/admin/email-campanhas" className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-fuchsia-900/70 bg-fuchsia-950/30 text-fuchsia-200 hover:border-fuchsia-500 transition-colors"><FiSend className="w-4 h-4" />Campanhas</Link>
           <button type="button" onClick={loadSummary} disabled={loading} className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-gray-700 text-gray-300 hover:border-primary-400 hover:text-primary-300 transition-colors disabled:opacity-60"><FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />Atualizar</button>
         </div>
