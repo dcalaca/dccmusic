@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
             quantity: 1,
             unit_price: quote.totalPrice,
             currency_id: 'BRL',
+            category_id: 'services',
           },
         ],
         payer: {

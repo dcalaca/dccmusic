@@ -183,6 +183,16 @@ export async function POST(request: NextRequest) {
       payment_method_id: formData.payment_method_id,
       issuer_id: formData.issuer_id,
       payer,
+      additional_info: {
+        items: [{
+          id: subscription.plan_id,
+          title: plan?.name || 'Plano DCC Music',
+          description: `Assinatura ${plan?.name || 'DCC Music'} - DCC Music`,
+          unit_price: expectedAmount,
+          category_id: 'services',
+          quantity: 1,
+        }],
+      },
       external_reference: subscription.id,
       metadata: {
         type: 'composer_plan',

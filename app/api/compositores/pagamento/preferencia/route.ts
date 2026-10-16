@@ -354,6 +354,7 @@ export async function POST(request: Request) {
             quantity: 1,
             unit_price: plan.price,
             currency_id: 'BRL',
+            category_id: 'services',
           },
         ],
         

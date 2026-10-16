@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
             quantity: 1,
             unit_price: 9.90,
             currency_id: 'BRL',
+            category_id: 'services',
           },
         ],
         payer: {

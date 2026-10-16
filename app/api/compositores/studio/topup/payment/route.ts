@@ -165,6 +165,16 @@ export async function POST(request: NextRequest) {
       payment_method_id: formData.payment_method_id,
       issuer_id: formData.issuer_id,
       payer,
+      additional_info: {
+        items: [{
+          id: `studio-topup-${currentTopup.music_quantity}`,
+          title: currentTopup.metadata?.package_name || 'Recarga Studio IA',
+          description: `${currentTopup.music_quantity} músicas avulsas (${currentTopup.credits} créditos)`,
+          unit_price: expectedAmount,
+          category_id: 'services',
+          quantity: 1,
+        }],
+      },
       external_reference: currentTopup.external_reference,
       metadata: {
         type: 'studio_topup',

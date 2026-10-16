@@ -36,6 +36,16 @@ export async function POST(request: NextRequest) {
           email: formData.payer?.email || owner?.email,
           identification: formData.payer?.identification || undefined,
         },
+        additional_info: {
+          items: [{
+            id: `${featured.content_type}-${featured.content_id}`,
+            title: 'DCC Music - Destaque por 10 dias',
+            description: `Destaque por 10 dias para ${featured.content_type === 'music' ? 'música' : 'vídeo'} no DCC Music`,
+            unit_price: Number(featured.amount),
+            category_id: 'services',
+            quantity: 1,
+          }],
+        },
         external_reference: `featured:${featured.id}`,
         metadata: { type: 'featured', featured_id: featured.id, composer_id: featured.composer_id,
           content_id: featured.content_id, content_type: featured.content_type },
