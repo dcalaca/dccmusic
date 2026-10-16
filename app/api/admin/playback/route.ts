@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth'
 import { NextRequest, NextResponse } from 'next/server'
 import { authOptions } from '@/lib/auth'
 import { createAdminPlayback } from '@/lib/admin-playback'
+import { createMurekaAdminPlayback } from '@/lib/mureka-playback'
 import { createStudioAudioSignedUrl, getStudioVersionAudioUrls, validateStudioInputUploadedAsset } from '@/lib/studio-audio-backup'
 import { supabaseAdmin } from '@/lib/supabase'
 
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
+    const useMureka = body.provider === 'mureka'
     let sourceUrl = ''
     let title = String(body.title || '').trim()
 
@@ -67,6 +69,9 @@ export async function POST(request: NextRequest) {
       const audio = await getStudioVersionAudioUrls(version)
       sourceUrl = audio.audioUrl || audio.streamAudioUrl || ''
     } else if (body.upload?.path) {
+      if (useMureka && Number(body.upload.sizeBytes) > 10 * 1024 * 1024) {
+        return NextResponse.json({ error: 'Para a Mureka, envie um áudio de até 10 MB.' }, { status: 400 })
+      }
       validateStudioInputUploadedAsset({
         composerId: 'admin-playback',
         path: String(body.upload.path),
@@ -78,7 +83,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (!sourceUrl) return NextResponse.json({ error: 'Escolha ou envie uma música.' }, { status: 400 })
-    const output = await createAdminPlayback({ sourceUrl, title })
+    const output = useMureka
+      ? await createMurekaAdminPlayback({ sourceUrl, title })
+      : await createAdminPlayback({ sourceUrl, title })
     const downloadUrl = await createStudioAudioSignedUrl(output.path, output.provider)
     if (!downloadUrl) throw new Error('Playback criado, mas não foi possível gerar o link de download.')
     const vocalUrl = output.vocal
@@ -89,7 +96,7 @@ export async function POST(request: NextRequest) {
       success: true,
       downloadUrl,
       vocalUrl,
-      fileName: `${title || 'musica'} - Playback.mp3`,
+      fileName: `${title || 'musica'} - Playback.${useMureka ? 'wav' : 'mp3'}`,
       provider: output.separationProvider,
       message: 'Voz retirada! O playback está pronto para ouvir e baixar.',
     })
