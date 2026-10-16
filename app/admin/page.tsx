@@ -78,6 +78,13 @@ const adminGroups = [
     description: 'Campanhas, parceiros, links e métricas de crescimento.',
     items: [
       {
+        href: '/admin/email-prospeccao',
+        title: 'Prospecção por Email',
+        description: 'Importar XLSX ou CSV e apresentar o DCC Music a novos contatos',
+        icon: FiMail,
+        accent: 'fuchsia',
+      },
+      {
         href: '/admin/email-campanhas',
         title: 'Campanhas de E-mail',
         description: 'Enviar e agendar e-mails para compositores e usuários cadastrados',
