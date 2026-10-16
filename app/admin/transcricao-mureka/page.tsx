@@ -30,7 +30,7 @@ export default function AdminMurekaTranscriptionPage() {
   }
 
   return <main className="mx-auto max-w-xl px-5 py-16 text-white">
-    <Link href="/admin" className="text-sm text-purple-300">← Voltar ao admin</Link>
+    <Link href="/admin/ferramentas-audio" className="text-sm text-purple-300">← Ferramentas de áudio</Link>
     <h1 className="mt-6 text-3xl font-bold">Transcrição pelo Mureka</h1>
     <p className="mt-3 text-gray-300">Envie uma música para obter os arquivos de partitura e acordes do Mureka. O serviço usa seu saldo Mureka; não desconta créditos DCC.</p>
     <form onSubmit={submit} className="mt-8 space-y-5 rounded-xl border border-gray-700 bg-gray-900 p-6">

@@ -202,9 +202,9 @@ const adminGroups = [
         accent: 'purple',
       },
       {
-        href: '/admin/playback',
-        title: 'Retirar Voz (Playback)',
-        description: 'Enviar uma música ou escolher uma produção e baixar o instrumental',
+        href: '/admin/ferramentas-audio',
+        title: 'Ferramentas de áudio',
+        description: 'Separar voz e playback, transcrever pela Mureka e limpar metadados',
         icon: FiVolumeX,
         accent: 'purple',
       },
