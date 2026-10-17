@@ -1,4 +1,4 @@
-import { FiMessageCircle, FiMusic, FiPlayCircle, FiUsers, FiZap } from 'react-icons/fi'
+import { FiMessageCircle, FiUsers, FiZap } from 'react-icons/fi'
 import { createDccI18n } from '@/i18n/i18next'
 
 type AiMusicDay = {
@@ -22,10 +22,6 @@ export type SiteStatsCompactProps = {
 
 export default async function SiteStatsCompact({
   locale = 'pt-BR',
-  totalVideos,
-  videoViews,
-  totalMusics,
-  musicViews,
   totalComposers = 0,
   totalComments = 0,
   totalRatings = 0,
@@ -128,43 +124,7 @@ export default async function SiteStatsCompact({
             </div>
           )}
 
-          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-cyan-900/70 bg-gray-950 px-4 py-4">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">{t('siteStats.totalVideos')}</p>
-                <p className="mt-1 text-2xl font-black leading-tight text-white tabular-nums">
-                  {formatInteger(totalVideos)}
-                </p>
-                <p className="mt-1 text-[11px] text-gray-500 tabular-nums sm:text-xs">
-                  {t('siteStats.views', { count: formatInteger(videoViews) })}
-                </p>
-              </div>
-              <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cyan-950 text-cyan-300 sm:h-10 sm:w-10"
-                aria-hidden
-              >
-                <FiPlayCircle className="h-4 w-4 sm:h-[18px] sm:w-[18px]" strokeWidth={2} />
-              </div>
-            </div>
 
-            <div className="flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-primary-900/70 bg-gray-950 px-4 py-4">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[11px] font-bold uppercase tracking-wide text-gray-500 sm:text-xs">{t('siteStats.totalMusics')}</p>
-                <p className="mt-1 text-2xl font-black leading-tight text-white tabular-nums">
-                  {formatInteger(totalMusics)}
-                </p>
-                <p className="mt-1 text-[11px] text-gray-500 tabular-nums sm:text-xs">
-                  {t('siteStats.views', { count: formatInteger(musicViews) })}
-                </p>
-              </div>
-              <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-950 text-primary-300 sm:h-10 sm:w-10"
-                aria-hidden
-              >
-                <FiMusic className="h-4 w-4 sm:h-[18px] sm:w-[18px]" strokeWidth={2} />
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
