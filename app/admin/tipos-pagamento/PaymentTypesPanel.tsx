@@ -32,6 +32,8 @@ type SourceBreakdown = {
 }
 
 type DayBucket = {
+  newCustomers: number
+  returningCustomers: number
   date: string
   label: string
   newCount: number
@@ -45,7 +47,7 @@ type ExportPaymentRow = {
   email: string
   country: string
   amount: number
-  type: 'Novo' | 'Recorrente'
+  type: 'Novo comprador do dia' | 'Comprador que retornou'
 }
 
 type PaymentTypesReport = {
@@ -171,9 +173,9 @@ function ComparisonChart({
   return (
     <div className="rounded-2xl border border-gray-800 bg-gray-950/60 p-5">
       <div className="mb-4">
-        <h3 className="font-bold text-white">Novos x Recorrentes</h3>
+        <h3 className="font-bold text-white">Compras por perfil do comprador</h3>
         <p className="mt-1 text-xs text-gray-500">
-          Eixo X: tipo de usuário. Barras mostram quantidade e valor.
+          As barras mostram pagamentos e valor. Novos: compras no primeiro dia; retornaram: compras em dias posteriores.
         </p>
         <p className="mt-1 text-xs text-gray-600 sm:hidden">Toque em um grupo para ver os números.</p>
       </div>
@@ -182,7 +184,7 @@ function ComparisonChart({
         <div className="mb-4 rounded-xl border border-cyan-800/70 bg-cyan-950/30 px-4 py-3 text-sm text-cyan-50">
           <p className="font-bold text-white">{selected.label}</p>
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-cyan-100">
-            <span>Quantidade: <strong className="text-white">{formatNumber(selected.count)}</strong></span>
+            <span>Pagamentos: <strong className="text-white">{formatNumber(selected.count)}</strong></span>
             <span>Valor: <strong className="text-white">{formatMoney(selected.amount)}</strong></span>
           </div>
         </div>
@@ -193,7 +195,7 @@ function ComparisonChart({
           const countHeight = Math.max(item.count > 0 ? 8 : 0, (item.count / maxCount) * 100)
           const amountHeight = Math.max(item.amount > 0 ? 8 : 0, (item.amount / maxAmount) * 100)
           const isSelected = selectedKey === item.key
-          const tooltip = `${item.label}\nQuantidade: ${formatNumber(item.count)}\nValor: ${formatMoney(item.amount)}`
+          const tooltip = `${item.label}\nPagamentos: ${formatNumber(item.count)}\nValor: ${formatMoney(item.amount)}`
 
           return (
             <button
@@ -214,7 +216,7 @@ function ComparisonChart({
                 <div className="flex gap-3 text-[11px] text-gray-500">
                   <span className="inline-flex items-center gap-1">
                     <span className="h-2 w-2 rounded-full bg-sky-400" />
-                    Qtd
+                    Pagamentos
                   </span>
                   <span className="inline-flex items-center gap-1">
                     <span className="h-2 w-2 rounded-full bg-emerald-400" />
@@ -230,7 +232,7 @@ function ComparisonChart({
                     className="w-full rounded-t-lg bg-sky-400"
                     style={{ height: `${countHeight}%` }}
                   />
-                  <span className="text-[10px] text-gray-500">Qtd</span>
+                  <span className="text-[10px] text-gray-500">Pagamentos</span>
                 </div>
                 <div className="flex h-full w-14 flex-col items-center justify-end gap-2">
                   <span className="text-[11px] font-bold text-white">{formatMoney(item.amount)}</span>
@@ -263,8 +265,8 @@ function DailyChart({ days }: { days: DayBucket[] }) {
     <div className="rounded-2xl border border-gray-800 bg-gray-950/60 p-5">
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="font-bold text-white">Quantidade por dia</h3>
-          <p className="mt-1 text-xs text-gray-500">Barras empilhadas: novos (azul) e recorrentes (verde).</p>
+          <h3 className="font-bold text-white">Pagamentos por dia</h3>
+          <p className="mt-1 text-xs text-gray-500">Pagamentos de novos compradores (azul) e de compradores que retornaram (verde).</p>
           <p className="mt-1 text-xs text-gray-600 sm:hidden">Toque em uma barra para ver a quantidade e o valor.</p>
         </div>
         <div className="flex flex-wrap gap-3 text-xs text-gray-400">
@@ -274,7 +276,7 @@ function DailyChart({ days }: { days: DayBucket[] }) {
           </span>
           <span className="inline-flex items-center gap-1">
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
-            Recorrentes
+            Retornaram
           </span>
         </div>
       </div>
@@ -285,8 +287,8 @@ function DailyChart({ days }: { days: DayBucket[] }) {
             {selectedDay.label} ({formatWeekdayShort(selectedDay.date)}): {formatNumber(selectedDay.newCount + selectedDay.recurringCount)} pagamentos
           </p>
           <div className="mt-2 grid gap-1 text-xs text-cyan-100 sm:grid-cols-2">
-            <span>Novos: <strong className="text-white">{formatNumber(selectedDay.newCount)}</strong> · {formatMoney(selectedDay.newAmount)}</span>
-            <span>Recorrentes: <strong className="text-white">{formatNumber(selectedDay.recurringCount)}</strong> · {formatMoney(selectedDay.recurringAmount)}</span>
+            <span>Novos: <strong className="text-white">{formatNumber(selectedDay.newCount)} pagamentos</strong> · {formatNumber(selectedDay.newCustomers)} clientes · {formatMoney(selectedDay.newAmount)}</span>
+            <span>Retornaram: <strong className="text-white">{formatNumber(selectedDay.recurringCount)} pagamentos</strong> · {formatNumber(selectedDay.returningCustomers)} clientes · {formatMoney(selectedDay.recurringAmount)}</span>
           </div>
         </div>
       )}
@@ -297,8 +299,8 @@ function DailyChart({ days }: { days: DayBucket[] }) {
             const totalCount = day.newCount + day.recurringCount
             const tooltip = [
               `${day.label} (${formatWeekdayShort(day.date)}): ${formatNumber(totalCount)} pagamentos`,
-              `Novos: ${formatNumber(day.newCount)} (${formatMoney(day.newAmount)})`,
-              `Recorrentes: ${formatNumber(day.recurringCount)} (${formatMoney(day.recurringAmount)})`,
+              `Novos: ${formatNumber(day.newCount)} pagamentos · ${formatNumber(day.newCustomers)} clientes (${formatMoney(day.newAmount)})`,
+              `Retornaram: ${formatNumber(day.recurringCount)} pagamentos · ${formatNumber(day.returningCustomers)} clientes (${formatMoney(day.recurringAmount)})`,
             ].join('\n')
             const isSelected = selectedDate === day.date
             const newHeight = day.newCount > 0 ? Math.max(2, (day.newCount / maxCount) * 100) : 0
@@ -425,7 +427,7 @@ export default function PaymentTypesPanel() {
           <p className="text-sm font-bold text-primary-300">Relatórios do admin</p>
           <h1 className="mt-2 text-3xl font-black text-white">Tipos de pagamento</h1>
           <p className="mt-2 text-sm text-gray-400">
-            Separação entre usuário novo (primeiro pagamento) e recorrente (já pagou antes).
+            Todas as compras do primeiro dia contam como novo comprador. A partir do dia seguinte, contam como comprador que retornou. Horário de São Paulo.
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
@@ -518,25 +520,25 @@ export default function PaymentTypesPanel() {
 
           <div className="grid gap-4 rounded-2xl border border-gray-800 bg-black/20 p-4 sm:grid-cols-2">
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-sky-300">Pagamento novo</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-sky-300">Novo comprador do dia</p>
               <p className="mt-2 text-sm text-gray-300">{report.definitions.new}</p>
             </div>
             <div>
-              <p className="text-xs font-bold uppercase tracking-wide text-emerald-300">Pagamento recorrente</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-emerald-300">Comprador que retornou</p>
               <p className="mt-2 text-sm text-gray-300">{report.definitions.recurring}</p>
             </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <SummaryCard
-              label="Pagamentos novos"
+              label="Pagamentos de novos compradores"
               value={formatNumber(newKind?.count || 0)}
-              hint={formatMoney(newKind?.amount || 0)}
+              hint={`${formatNumber(newKind?.uniqueComposers || 0)} clientes únicos · ${formatMoney(newKind?.amount || 0)}`}
             />
             <SummaryCard
-              label="Pagamentos recorrentes"
+              label="Pagamentos de quem retornou"
               value={formatNumber(recurringKind?.count || 0)}
-              hint={formatMoney(recurringKind?.amount || 0)}
+              hint={`${formatNumber(recurringKind?.uniqueComposers || 0)} clientes únicos · ${formatMoney(recurringKind?.amount || 0)}`}
             />
             <SummaryCard
               label="Total de pagamentos"
@@ -544,9 +546,9 @@ export default function PaymentTypesPanel() {
               hint={formatMoney(report.totals.amount)}
             />
             <SummaryCard
-              label="Usuários que pagaram"
+              label="Clientes únicos no período"
               value={formatNumber(report.totals.uniqueComposers)}
-              hint={`${formatNumber(newKind?.uniqueComposers || 0)} novos · ${formatNumber(recurringKind?.uniqueComposers || 0)} recorrentes`}
+              hint={`${formatNumber(newKind?.uniqueComposers || 0)} novos · ${formatNumber(recurringKind?.uniqueComposers || 0)} que retornaram`}
             />
           </div>
 
@@ -555,14 +557,15 @@ export default function PaymentTypesPanel() {
 
           <div className="rounded-2xl border border-gray-800 bg-gray-950/60 p-5">
             <h3 className="mb-4 font-bold text-white">Tabela resumo</h3>
+            <p className="mb-4 text-xs text-gray-400">Em períodos com vários dias, um cliente pode aparecer como novo no primeiro dia e como retorno nos dias seguintes. O total de clientes únicos conta cada pessoa uma vez.</p>
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-sm">
                 <thead>
                   <tr className="border-b border-gray-800 text-xs uppercase tracking-wide text-gray-500">
                     <th className="px-3 py-2 font-semibold">Tipo</th>
-                    <th className="px-3 py-2 font-semibold">Quantidade</th>
+                    <th className="px-3 py-2 font-semibold">Pagamentos</th>
                     <th className="px-3 py-2 font-semibold">Valor</th>
-                    <th className="px-3 py-2 font-semibold">Usuários</th>
+                    <th className="px-3 py-2 font-semibold">Clientes únicos</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -593,10 +596,10 @@ export default function PaymentTypesPanel() {
                   <thead>
                     <tr className="border-b border-gray-800 text-xs uppercase tracking-wide text-gray-500">
                       <th className="px-3 py-2 font-semibold">Origem</th>
-                      <th className="px-3 py-2 font-semibold">Novos (qtd)</th>
+                      <th className="px-3 py-2 font-semibold">Novos (pagamentos)</th>
                       <th className="px-3 py-2 font-semibold">Novos (R$)</th>
-                      <th className="px-3 py-2 font-semibold">Recorrentes (qtd)</th>
-                      <th className="px-3 py-2 font-semibold">Recorrentes (R$)</th>
+                      <th className="px-3 py-2 font-semibold">Retornaram (pagamentos)</th>
+                      <th className="px-3 py-2 font-semibold">Retornaram (R$)</th>
                       <th className="px-3 py-2 font-semibold">Total</th>
                     </tr>
                   </thead>

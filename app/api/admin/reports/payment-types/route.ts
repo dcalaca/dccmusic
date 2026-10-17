@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth-helpers'
 import { supabaseAdmin } from '@/lib/supabase'
 import { getStripeSettlement } from '@/lib/stripe'
+import { createPaymentDayClassifier } from '@/lib/payment-day-cohort'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +26,8 @@ type DayBucket = {
   newAmount: number
   recurringCount: number
   recurringAmount: number
+  newCustomers: number
+  returningCustomers: number
 }
 
 type KindSummary = {
@@ -107,6 +110,8 @@ function buildBuckets(startDate: Date, endExclusive: Date) {
       newAmount: 0,
       recurringCount: 0,
       recurringAmount: 0,
+      newCustomers: 0,
+      returningCustomers: 0,
     })
     current = addDays(current, 1)
   }
@@ -387,18 +392,20 @@ export async function GET(request: NextRequest) {
       fetchComposersByIds(composerIds),
     ])
     const composersSeenInPeriod = new Set<string>()
+    const classifyPayment = createPaymentDayClassifier(composersWithHistory)
+    const dailyCustomers = new Map<string, { new: Set<string>; recurring: Set<string> }>()
 
     const kindSummaries: Record<PaymentKind, KindSummary> = {
       new: {
         kind: 'new',
-        label: 'Pagamento novo',
+        label: 'Compras de novos compradores',
         count: 0,
         amount: 0,
         uniqueComposers: 0,
       },
       recurring: {
         kind: 'recurring',
-        label: 'Pagamento recorrente',
+        label: 'Compras de compradores que retornaram',
         count: 0,
         amount: 0,
         uniqueComposers: 0,
@@ -419,12 +426,13 @@ export async function GET(request: NextRequest) {
       email: string
       country: string
       amount: number
-      type: 'Novo' | 'Recorrente'
+      type: 'Novo comprador do dia' | 'Comprador que retornou'
     }> = []
 
     for (const payment of rawPayments) {
-      const alreadyPaidBefore = composersWithHistory.has(payment.composerId) || composersSeenInPeriod.has(payment.composerId)
-      const kind: PaymentKind = alreadyPaidBefore ? 'recurring' : 'new'
+      const dayKey = toSaoPauloDayKey(payment.paidAt)
+      if (!dayKey) continue
+      const kind: PaymentKind = classifyPayment(payment.composerId, dayKey)
       composersSeenInPeriod.add(payment.composerId)
 
       const summary = kindSummaries[kind]
@@ -440,7 +448,7 @@ export async function GET(request: NextRequest) {
         email: composer?.email || '',
         country: composer?.country || 'BR',
         amount: Number(payment.amount.toFixed(2)),
-        type: kind === 'new' ? 'Novo' : 'Recorrente',
+        type: kind === 'new' ? 'Novo comprador do dia' : 'Comprador que retornou',
       })
 
       const source = sourceMap.get(payment.source)
@@ -456,9 +464,13 @@ export async function GET(request: NextRequest) {
         source.totalAmount += payment.amount
       }
 
-      const dayKey = toSaoPauloDayKey(payment.paidAt)
-      const day = dayKey ? buckets.get(dayKey) : null
+      const day = buckets.get(dayKey)
       if (day) {
+        const customers = dailyCustomers.get(dayKey) || { new: new Set<string>(), recurring: new Set<string>() }
+        customers[kind].add(payment.composerId)
+        dailyCustomers.set(dayKey, customers)
+        day.newCustomers = customers.new.size
+        day.returningCustomers = customers.recurring.size
         if (kind === 'new') {
           day.newCount += 1
           day.newAmount += payment.amount
@@ -475,13 +487,13 @@ export async function GET(request: NextRequest) {
     const comparison = [
       {
         key: 'new',
-        label: 'Novos',
+        label: 'Novos compradores do dia',
         count: kindSummaries.new.count,
         amount: kindSummaries.new.amount,
       },
       {
         key: 'recurring',
-        label: 'Recorrentes',
+        label: 'Compradores que retornaram',
         count: kindSummaries.recurring.count,
         amount: kindSummaries.recurring.amount,
       },
@@ -493,8 +505,8 @@ export async function GET(request: NextRequest) {
         endDate: formatDayKey(endDate),
       },
       definitions: {
-        new: 'Primeiro pagamento aprovado do compositor (assinatura, recarga, destaque ou vídeo).',
-        recurring: 'Pagamento de quem já tinha pago antes (renovação ou nova compra do mesmo usuário).',
+        new: 'Todos os pagamentos aprovados no primeiro dia de compra do cliente, no horário de São Paulo. A data do cadastro não altera a classificação.',
+        recurring: 'Pagamentos de clientes cuja primeira compra foi em um dia anterior. Não significa necessariamente assinatura automática.',
       },
       comparison,
       kinds: [kindSummaries.new, kindSummaries.recurring],
