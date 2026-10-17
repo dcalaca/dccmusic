@@ -12,7 +12,8 @@ import { sendTikTokPurchaseEvent } from '@/lib/tiktok-events'
  * Envia Purchase da recarga avulsa para Meta/TikTok.
  * O chamador deve executar esta função somente depois de conquistar a trava
  * idempotente da recarga (creditStudioTopupOnce retornando credited=true).
- * O event_id continua sendo o paymentId como proteção adicional.
+ * Meta usa topup_<id>, igual ao Pixel das páginas de sucesso e pendente.
+ * O ID do gateway continua sendo usado pelos outros consumidores.
  */
 export async function sendStudioTopupPurchaseEvents(input: {
   request?: Request
@@ -24,6 +25,9 @@ export async function sendStudioTopupPurchaseEvents(input: {
 }) {
   const paymentId = String(input.paymentId || '').trim()
   if (!paymentId) return { sent: false, reason: 'missing_payment_id' }
+  const topupId = String(input.topup?.id || '').trim()
+  if (!topupId) return { sent: false, reason: 'missing_topup_id' }
+  const metaEventId = `topup_${topupId}`
 
   const value = Number(input.topup?.amount) || 0
   if (value <= 0) return { sent: false, reason: 'invalid_value' }
@@ -55,7 +59,7 @@ export async function sendStudioTopupPurchaseEvents(input: {
     sendMetaPurchaseEvent({
       request: input.request,
       browserContext,
-      eventId: paymentId,
+      eventId: metaEventId,
       eventSourceUrl,
       email: input.email,
       externalId: input.topup.composer_id,
@@ -97,6 +101,7 @@ export async function sendStudioTopupPurchaseEvents(input: {
     console.log('[Studio IA] Meta Purchase da recarga enviado:', {
       paymentId,
       topupId: input.topup?.id,
+      eventId: metaEventId,
       hasFbp: Boolean(browserContext.fbp),
       hasFbc: Boolean(browserContext.fbc),
       hasUa: Boolean(browserContext.client_user_agent),
