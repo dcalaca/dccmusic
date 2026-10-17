@@ -258,6 +258,7 @@ export default function NewStudioMusicPage() {
     Object.entries(songLanguageLabelKeys).map(([value, key]) => [value, t(`studio.create.languageLabels.${key}`)])
   )
   const errorRef = useRef<HTMLDivElement>(null)
+  const submissionInFlightRef = useRef(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -440,6 +441,7 @@ export default function NewStudioMusicPage() {
   }
 
   const handleSubmit = async () => {
+    if (submissionInFlightRef.current) return
     setError('')
     if (!form.title.trim()) {
       showError(t('studio.create.validation.title'))
@@ -462,7 +464,9 @@ export default function NewStudioMusicPage() {
       return
     }
 
+    submissionInFlightRef.current = true
     setLoading(true)
+    let navigationStarted = false
     try {
       const effectiveStyle = isCustomStyle ? form.customStyle.trim() : form.style
       const token = localStorage.getItem('composer_token')
@@ -532,6 +536,7 @@ export default function NewStudioMusicPage() {
       }
 
       if (hasOwnLyric) {
+        navigationStarted = true
         router.push(`/compositores/admin/studio-ia/projetos/${projectData.project.id}`)
         return
       }
@@ -549,6 +554,7 @@ export default function NewStudioMusicPage() {
       const lyricData = await lyricResponse.json()
       if (!lyricResponse.ok) throw new Error(lyricData.error || t('studio.create.errors.lyrics'))
 
+      navigationStarted = true
       router.push(`/compositores/admin/studio-ia/projetos/${projectData.project.id}`)
     } catch (err: any) {
       const errorMessage = err.message || t('studio.create.errors.song')
@@ -561,7 +567,10 @@ export default function NewStudioMusicPage() {
       }
       showError(errorMessage)
     } finally {
-      setLoading(false)
+      if (!navigationStarted) {
+        submissionInFlightRef.current = false
+        setLoading(false)
+      }
     }
   }
 
@@ -1038,7 +1047,7 @@ export default function NewStudioMusicPage() {
                       data-studio-create-action={hasOwnLyric ? 'save-own-lyrics' : 'create-with-ai'}
                       onClick={handleSubmit}
                       disabled={loading}
-                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 px-6 py-4 text-base font-black text-white shadow-lg shadow-purple-950/40 transition hover:scale-[1.01] hover:from-primary-400 hover:via-purple-400 hover:to-fuchsia-400 disabled:scale-100 disabled:cursor-not-allowed disabled:opacity-60 lg:w-auto lg:min-w-[280px]"
+                      className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-500 via-purple-500 to-fuchsia-500 px-6 py-4 text-base font-black text-white shadow-lg shadow-purple-950/40 transition hover:scale-[1.01] hover:from-primary-400 hover:via-purple-400 hover:to-fuchsia-400 disabled:scale-100 disabled:cursor-not-allowed disabled:from-purple-950 disabled:via-gray-900 disabled:to-gray-950 disabled:opacity-100 lg:w-auto lg:min-w-[280px]"
                     >
                       {loading ? <FiLoader className="animate-spin" /> : <FiArrowRight />}
                       {t(loading
