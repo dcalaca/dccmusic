@@ -11,6 +11,17 @@ import { pushGtmEvent } from '@/components/GtmEvents'
 import { blogAttributionEventPayload } from '@/lib/blog/attribution'
 import { validateSignupEmail } from '@/lib/email-validation'
 
+const EMAIL_PROVIDER_SHORTCUTS = [
+  'gmail.com',
+  'hotmail.com',
+  'outlook.com',
+  'yahoo.com.br',
+  'icloud.com',
+  'live.com',
+  'outlook.com.br',
+  'yahoo.com',
+] as const
+
 export default function ComposerSignupPage() {
   const { t } = useTranslation()
   const router = useRouter()
@@ -197,6 +208,28 @@ export default function ComposerSignupPage() {
                     }`}
                     placeholder={t('auth.placeholders.email')}
                   />
+                </div>
+              </div>
+
+              <div className="-mt-4">
+                <div className="flex flex-wrap gap-2" aria-label="Provedores de e-mail">
+                  {EMAIL_PROVIDER_SHORTCUTS.map((domain) => (
+                    <button
+                      key={domain}
+                      type="button"
+                      disabled={loading}
+                      onClick={() => {
+                        const localPart = formData.email.trim().split('@')[0]
+                        setFormData((current) => ({ ...current, email: localPart ? `${localPart}@${domain}` : `@${domain}` }))
+                        setError('')
+                        setEmailSuggestion('')
+                        setErrorField('')
+                      }}
+                      className="rounded-full border border-gray-700 bg-gray-800/80 px-2.5 py-1 text-xs text-gray-300 transition-colors hover:border-primary-500 hover:text-white disabled:opacity-50"
+                    >
+                      @{domain}
+                    </button>
+                  ))}
                 </div>
               </div>
 
