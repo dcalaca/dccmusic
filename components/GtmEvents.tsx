@@ -53,6 +53,18 @@ export function pushGtmEvent(event: string, payload: GtmEventPayload = {}) {
     ...payload,
   }
 
+  // Deduplicate GA4 registration by confirmed account, not by browser/session.
+  // Other advertising pixels and their event IDs remain untouched.
+  if (event === 'dcc_complete_registration' && typeof payload.event_id === 'string' && payload.event_id) {
+    try {
+      const key = `dcc_ga4_registration:${payload.event_id}`
+      if (window.sessionStorage.getItem(key) === 'sent') return
+      window.sessionStorage.setItem(key, 'sent')
+    } catch {
+      // Storage may be disabled; never block analytics for that reason.
+    }
+  }
+
   const w = window as any
   w.dataLayer = w.dataLayer || []
   if (typeof w.gtag !== 'function') {
