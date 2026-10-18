@@ -1530,6 +1530,24 @@ export default function StudioProjectDetailPage() {
             <FiArrowLeft /> {t('studio.project.detail.myProjects')}
           </Link>
 
+          {Boolean(studioStatus) && !canCreateMusic && hasProjectReadyAudio && (
+            <section className="mb-5 rounded-2xl border border-purple-500/50 bg-gradient-to-r from-purple-950/70 to-gray-950 p-5 sm:p-6" aria-label={t('studio.entry.continueTitle')}>
+              <h2 className="text-xl font-black text-white">{t('studio.entry.continueTitle')}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-purple-100/85">{t('studio.entry.continueDescription')}</p>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <Link href="/compositores/admin/studio-ia/recarga" className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-4 py-3 font-bold text-white hover:bg-purple-500">
+                  <FiCreditCard /> {t('studio.entry.buyTopup')}
+                </Link>
+                <Link href="/studio-ia#planos" className="inline-flex items-center justify-center rounded-xl border border-purple-400/60 px-4 py-3 font-bold text-purple-100 hover:bg-purple-900/50">
+                  {t('studio.entry.viewPlan')}
+                </Link>
+                <Link href="/compositores/admin/studio-ia/projetos" className="inline-flex items-center justify-center rounded-xl border border-white/20 px-4 py-3 font-bold text-white hover:bg-white/10">
+                  {t('studio.entry.myProjects')}
+                </Link>
+              </div>
+            </section>
+          )}
+
           {processing.startsWith('Enviando capa') || processing.startsWith('Uploading cover') || processing.startsWith('Subiendo portada') ? (
             <div role="status" aria-live="polite" className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm">
               <div className="w-full max-w-sm rounded-3xl border border-purple-500/50 bg-gray-950 p-8 text-center shadow-2xl">
