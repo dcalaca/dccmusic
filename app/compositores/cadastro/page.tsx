@@ -15,11 +15,6 @@ const EMAIL_PROVIDER_SHORTCUTS = [
   'gmail.com',
   'hotmail.com',
   'outlook.com',
-  'yahoo.com.br',
-  'icloud.com',
-  'live.com',
-  'outlook.com.br',
-  'yahoo.com',
 ] as const
 
 export default function ComposerSignupPage() {
