@@ -34,7 +34,6 @@ export default function StudioDashboardPage() {
   const { t } = useTranslation()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [allowed, setAllowed] = useState(false)
   const [status, setStatus] = useState<any>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [error, setError] = useState('')
@@ -76,7 +75,6 @@ export default function StudioDashboardPage() {
         return
       }
 
-      setAllowed(Boolean(statusData.allowed || statusData.canCreateMusic))
       setStatus(statusData)
       if (projectsResponse.status === 401) {
         localStorage.removeItem('composer_token')
@@ -145,58 +143,6 @@ export default function StudioDashboardPage() {
     )
   }
 
-  if (!allowed) {
-    const freeMusicRemaining = status?.stats?.freeMusicRemaining || 0
-    const creditsRemaining = status?.credits?.remaining || 0
-
-    return (
-      <div className="min-h-screen py-6 sm:py-8">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
-            <Link href="/compositores/admin" className="mb-6 inline-flex items-center gap-2 text-primary-400 sm:mb-8">
-              <FiArrowLeft /> {t('studio.entry.back')}
-            </Link>
-            <div className="rounded-2xl border border-purple-700/60 bg-gradient-to-br from-purple-950/60 via-black to-gray-950 p-5 text-center sm:rounded-3xl sm:p-8">
-              <FiZap className="mx-auto mb-4 h-12 w-12 text-purple-300" />
-              <h1 className="mb-3 text-3xl font-black sm:text-4xl">DCC Studio IA</h1>
-              <p className="text-gray-300 mb-6">
-                {t('studio.entry.lockedDescription')}
-              </p>
-              {freeMusicRemaining > 0 && (
-                <Link
-                  href="/compositores/admin/studio-ia/novo"
-                  className="mb-5 block rounded-2xl border border-green-500/50 bg-green-950/30 px-5 py-4 text-green-100 transition hover:border-green-300 hover:bg-green-950/50"
-                >
-                  <span className="block text-lg font-black">{t('studio.entry.freeTrialTitle')}</span>
-                  <span className="mt-1 block text-sm text-green-200/85">
-                    {t('studio.entry.freeTrialDescription')}
-                  </span>
-                </Link>
-              )}
-              {freeMusicRemaining <= 0 && creditsRemaining >= 10 && (
-                <Link
-                  href="/compositores/admin/studio-ia/novo"
-                  className="mb-5 block rounded-2xl border border-green-500/50 bg-green-950/30 px-5 py-4 text-green-100 transition hover:border-green-300 hover:bg-green-950/50"
-                >
-                  <span className="block text-lg font-black">{t('studio.entry.availableCredits', { count: creditsRemaining })}</span>
-                  <span className="mt-1 block text-sm text-green-200/85">
-                    {t('studio.entry.useTopup')}
-                  </span>
-                </Link>
-              )}
-              <Link href="/studio-ia#planos" className="inline-flex w-full justify-center rounded-xl bg-gradient-to-r from-primary-600 to-purple-600 px-6 py-3 font-semibold sm:w-auto">
-                {t('studio.entry.viewPlan')}
-              </Link>
-              <Link href="/compositores/admin/studio-ia/recarga" className="ml-0 mt-3 inline-flex w-full justify-center rounded-xl border border-purple-700 px-6 py-3 font-semibold text-purple-100 hover:bg-purple-950/40 sm:ml-3 sm:mt-0 sm:w-auto">
-                {t('studio.entry.buyTopup')}
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   const credits = status?.credits || { used: 0, limit: 200, remaining: 200 }
   const hasStudioPlan = Boolean(status?.hasStudioPlan)
   const creditPercent = credits.limit > 0 ? Math.min(100, Math.round((credits.used / credits.limit) * 100)) : 0
@@ -210,6 +156,27 @@ export default function StudioDashboardPage() {
           <Link href="/compositores/admin" className="mb-6 inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 sm:mb-8">
             <FiArrowLeft /> {t('studio.entry.back')}
           </Link>
+
+          {!status?.canCreateMusic && (
+            <section className="mb-6 rounded-2xl border border-purple-500/50 bg-gradient-to-r from-purple-950/70 to-gray-950 p-5 sm:p-7" aria-label={t('studio.entry.continueTitle')}>
+              <h2 className="text-xl font-black text-white sm:text-2xl">{t('studio.entry.continueTitle')}</h2>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-purple-100/85 sm:text-base">{t('studio.entry.continueDescription')}</p>
+              {projects.length === 0 && (
+                <p className="mt-2 text-xs text-purple-200/80">{t('studio.entry.freeUsedNote')}</p>
+              )}
+              <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <Link href="/compositores/admin/studio-ia/projetos" className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-3 font-bold text-white hover:bg-purple-500">
+                  <FiFolder /> {t('studio.entry.myProjects')}
+                </Link>
+                <Link href="/compositores/admin/studio-ia/recarga" className="inline-flex items-center justify-center gap-2 rounded-xl border border-purple-400/60 px-5 py-3 font-bold text-purple-100 hover:bg-purple-900/50">
+                  <FiCreditCard /> {t('studio.entry.buyTopup')}
+                </Link>
+                <Link href="/studio-ia#planos" className="inline-flex items-center justify-center rounded-xl border border-white/20 px-5 py-3 font-bold text-white hover:bg-white/10">
+                  {t('studio.entry.viewPlan')}
+                </Link>
+              </div>
+            </section>
+          )}
 
           <motion.section
             initial={{ opacity: 0, y: 18 }}
