@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { DEFAULT_BODY, DEFAULT_SUBJECT, parseProspectRows, personalizeProspect, Prospect } from '@/lib/prospect-import'
 import { buildDccEmailHtml, dccEmailButton, escapeEmailHtml } from '@/lib/dcc-email-template'
+type CampaignTemplate = { id: string; title: string; campaign_name: string; subject: string; body: string; description: string }
 async function api(body?:unknown) {
  const res=await fetch('/api/admin/email-prospecting',body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{cache:'no-store'})
  const data=await res.json(); if(!res.ok) throw new Error(data.error||'Erro na operação'); return data
@@ -11,8 +12,26 @@ function Progress({value,label}:{value:number;label:string}) {return <div classN
 export default function ProspectAdmin() {
  const [name,setName]=useState('Apresentação DCC Music'),[subject,setSubject]=useState(DEFAULT_SUBJECT),[body,setBody]=useState(DEFAULT_BODY)
  const [contacts,setContacts]=useState<Prospect[]>([]),[campaigns,setCampaigns]=useState<any[]>([]),[report,setReport]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false),[progress,setProgress]=useState(0),[phase,setPhase]=useState(''),[draftId,setDraftId]=useState<string|null>(null)
+ const [templates,setTemplates]=useState<CampaignTemplate[]>([]),[templateId,setTemplateId]=useState(''),[loadingTemplates,setLoadingTemplates]=useState(true),[templateError,setTemplateError]=useState('')
  const reload=async()=>{const d=await api();setCampaigns(d.campaigns)}
  useEffect(()=>{let active=true; let timer:ReturnType<typeof setTimeout>; async function tick(){try{const d=await api();if(!active)return;setCampaigns(d.campaigns);for(const c of d.campaigns.filter((c:any)=>c.status==='sending')){if(!active)break;await api({id:c.id,action:'process'})}}catch(e:any){if(active)setError(e.message)}if(active)timer=setTimeout(tick,3000)}tick();return()=>{active=false;clearTimeout(timer)}},[])
+ useEffect(()=>{
+  let active=true
+  fetch('/api/admin/email-prospecting/templates',{cache:'no-store'})
+   .then(async res=>{const data=await res.json();if(!res.ok)throw new Error(data.error||'Falha ao carregar os templates');return data})
+   .then(data=>{if(active)setTemplates(data.templates||[])})
+   .catch((e:Error)=>{if(active)setTemplateError(e.message)})
+   .finally(()=>{if(active)setLoadingTemplates(false)})
+  return()=>{active=false}
+ },[])
+ function chooseTemplate(id:string){
+  setTemplateId(id)
+  const template=templates.find(t=>t.id===id)
+  if(!template||busy||draftId)return
+  setName(template.campaign_name)
+  setSubject(template.subject)
+  setBody(template.body)
+ }
  async function readFile(file:File) {
   setBusy(true);setError('');setProgress(0);setPhase('Lendo planilha');setContacts([]);setDraftId(null)
   try {
@@ -48,6 +67,16 @@ export default function ProspectAdmin() {
  <label className="block">Planilha<input type="file" accept=".csv,.xlsx" disabled={busy} className={input} onChange={e=>{const f=e.target.files?.[0];if(f)readFile(f)}} /></label><p className="text-xs text-gray-400">Até 25 MB. Procura email, e-mail, mail e variações; também reconhece colunas pelo conteúdo. Lê todas as abas e remove repetições. Nome ausente recebe uma saudação neutra.</p>
  {phase&&<Progress value={progress} label={phase}/>}{report&&<p className="text-sm text-purple-200">{report}</p>}
  {contacts.length>0&&<div className="overflow-auto"><table className="text-xs w-full"><thead><tr><th className="text-left">Nome</th><th className="text-left">Email (amostra)</th></tr></thead><tbody>{contacts.slice(0,5).map(c=><tr key={c.email}><td>{c.name||'—'}</td><td>{c.email}</td></tr>)}</tbody></table></div>}
+ <div className="rounded-xl border border-purple-800/60 bg-purple-950/20 p-3">
+  <label htmlFor="prospect-template" className="block font-semibold text-purple-100">Templates de campanhas avulsas</label>
+  <select id="prospect-template" value={templateId} onChange={e=>chooseTemplate(e.target.value)} disabled={busy||!!draftId||loadingTemplates||!templates.length} className={input}>
+   <option value="">{loadingTemplates?'Carregando modelos…':'Escolha um template para preencher os campos'}</option>
+   {templates.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}
+  </select>
+  {templateId&&<p className="text-xs text-purple-200 mt-2">{templates.find(t=>t.id===templateId)?.description}</p>}
+  {templateError&&<p className="text-xs text-red-300 mt-2">Não foi possível carregar os templates: {templateError}. Você ainda pode preencher manualmente.</p>}
+  {!templateError&&<p className="text-xs text-gray-400 mt-2">Ao escolher um modelo, nome, assunto e mensagem são preenchidos automaticamente. Você pode editar antes de salvar.</p>}
+ </div>
  <label className="block">Nome da campanha<input disabled={busy||!!draftId} value={name} onChange={e=>setName(e.target.value)} className={input}/></label>
  <label className="block">Assunto<input maxLength={200} disabled={busy||!!draftId} value={subject} onChange={e=>setSubject(e.target.value)} className={input}/></label>
  <label className="block">Mensagem<textarea maxLength={30000} disabled={busy||!!draftId} rows={14} value={body} onChange={e=>setBody(e.target.value)} className={input}/></label><p className="text-sm text-gray-400">Use {'{nome}'} no assunto ou na mensagem. O template, botão e assinatura DCC Music são aplicados automaticamente.</p>
