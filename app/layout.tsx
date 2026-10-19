@@ -74,10 +74,10 @@ export async function generateMetadata(): Promise<Metadata> {
       description: openGraphDescription,
       images: [
         {
-          url: '/logopng.png',
-          width: 880,
-          height: 409,
-          alt: 'DCC Music Logo',
+          url: '/opengraph-image',
+          width: 1200,
+          height: 630,
+          alt: 'DCC Music — Sua ideia vira música',
         },
       ],
     },
@@ -85,7 +85,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: 'summary_large_image',
       title,
       description: openGraphDescription,
-      images: ['/logopng.png'],
+      images: ['/opengraph-image'],
     },
     robots: {
       index: true,
