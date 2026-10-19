@@ -30,6 +30,11 @@ export async function generateMetadata() {
       description: t('home.metadata.openGraphDescription'),
       url: 'https://www.dccmusic.online',
       type: 'website',
+      images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'DCC Music — Sua ideia vira música' }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      images: ['/opengraph-image'],
     },
   }
 }
