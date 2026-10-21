@@ -381,6 +381,8 @@ export default function StudioProjectDetailPage() {
   const [showPublishPlanModal, setShowPublishPlanModal] = useState(false)
   const [showIncorporateCode, setShowIncorporateCode] = useState(false)
   const [showInspirationPicker, setShowInspirationPicker] = useState(false)
+  const [inspirationReviewVersionId, setInspirationReviewVersionId] = useState('')
+  const [inspirationDraftLyric, setInspirationDraftLyric] = useState('')
   const [preselectedInspirationVersionId, setPreselectedInspirationVersionId] = useState('')
   const backgroundMessageRef = useRef<HTMLDivElement | null>(null)
   const inspirationPickerRef = useRef<HTMLDivElement | null>(null)
@@ -937,7 +939,6 @@ export default function StudioProjectDetailPage() {
   }
 
   const reuseLyricInNewProject = async (sourceVersionId?: string) => {
-    closeInspirationPicker()
     const token = localStorage.getItem('composer_token')
     if (!token) {
       router.push('/compositores/login')
@@ -952,7 +953,7 @@ export default function StudioProjectDetailPage() {
       return
     }
 
-    if (!lyric.trim()) {
+    if (!inspirationDraftLyric.trim()) {
       setError(t('studio.project.generation.noLyricsToReuse'))
       return
     }
@@ -970,13 +971,15 @@ export default function StudioProjectDetailPage() {
         },
         body: JSON.stringify({
           variation: selectedInspirationVariation,
-          lyric,
+          lyric: inspirationDraftLyric.trim(),
           sourceVersionId,
         }),
       })
       const data = await response.json()
       if (!response.ok) throw new Error(t('studio.project.generation.newProjectError'))
 
+      setInspirationReviewVersionId('')
+      closeInspirationPicker()
       router.push(`/compositores/admin/studio-ia/projetos/${data.project.id}`)
     } catch {
       setError(t('studio.project.generation.reuseError'))
@@ -999,12 +1002,19 @@ export default function StudioProjectDetailPage() {
     })
   }
 
+  const reviewInspirationLyric = (versionId: string) => {
+    setInspirationDraftLyric(lyric)
+    setInspirationReviewVersionId(versionId)
+    setError('')
+  }
+
   const openInspirationPickerForVersion = (versionId: string) => {
     setPreselectedInspirationVersionId(versionId)
     setShowInspirationPicker(true)
   }
 
   const closeInspirationPicker = () => {
+    setInspirationReviewVersionId('')
     setShowInspirationPicker(false)
     setPreselectedInspirationVersionId('')
   }
@@ -1722,7 +1732,7 @@ export default function StudioProjectDetailPage() {
 
                           <button
                             type="button"
-                            onClick={() => reuseLyricInNewProject(version.id)}
+                            onClick={() => reviewInspirationLyric(version.id)}
                             disabled={Boolean(processing) || !canReuseLyric || !versionAudioUrl}
                             className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary-600 to-purple-600 px-5 py-3 font-black text-white transition hover:scale-[1.01] disabled:opacity-60"
                           >
@@ -1733,6 +1743,31 @@ export default function StudioProjectDetailPage() {
                       )
                     })}
                   </div>
+                  {inspirationReviewVersionId && (
+                    <section className="mt-4 rounded-2xl border border-purple-400/30 bg-gray-950/90 p-4" aria-label="Revisar letra para inspiração">
+                      <h3 className="text-lg font-black text-white">Revise ou altere sua letra</h3>
+                      <p className="mt-1 text-sm text-gray-300">Altere qualquer verso ou refrão antes de criar o novo projeto. A música original ficará preservada. A geração da nova música utiliza os créditos normais e pode alterar a melodia.</p>
+                      <textarea
+                        value={inspirationDraftLyric}
+                        onChange={(event) => setInspirationDraftLyric(event.target.value)}
+                        rows={9}
+                        maxLength={1000}
+                        className="mt-3 w-full rounded-xl border border-purple-400/30 bg-black/60 p-3 text-sm text-white outline-none focus:border-purple-300"
+                        placeholder="Digite a letra para a nova versão"
+                        aria-label="Letra editável para a nova versão"
+                      />
+                      <p className="mt-1 text-right text-xs text-gray-400">{inspirationDraftLyric.length}/1000</p>
+                      <div className="mt-3 flex flex-wrap justify-end gap-2">
+                        <button type="button" onClick={() => setInspirationReviewVersionId('')} className="rounded-xl border border-white/20 px-4 py-2 font-bold text-white">Voltar</button>
+                        <button
+                          type="button"
+                          disabled={Boolean(processing) || !inspirationDraftLyric.trim()}
+                          onClick={() => reuseLyricInNewProject(inspirationReviewVersionId)}
+                          className="rounded-xl bg-gradient-to-r from-fuchsia-600 to-purple-600 px-4 py-2 font-black text-white disabled:opacity-50"
+                        >{processing ? 'Criando projeto...' : 'Criar projeto com esta letra'}</button>
+                      </div>
+                    </section>
+                  )}
                   <p className="mt-2 text-center text-xs text-gray-500 lg:hidden">
                     {t('studio.project.versions.swipe')}
                   </p>
