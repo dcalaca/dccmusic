@@ -294,7 +294,15 @@ function StatementSection({ statement }: { statement: any }) {
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
           <p className="text-xs font-black uppercase tracking-wide text-gray-500">{t('myData.totalPaid')}</p>
-          <p className="mt-1 text-xl font-black text-green-300">{formatMoney(statement?.summary?.totalPaid, locale)}</p>
+          <div className="mt-1 space-y-1">
+            {Object.entries((statement?.summary?.totalPaidByCurrency || {}) as Record<string, number>)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([currency, amount]) => (
+                <p key={currency} className="text-xl font-black text-green-300">
+                  {formatMoney(amount, locale, currency)}
+                </p>
+              ))}
+          </div>
         </div>
         <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
           <p className="text-xs font-black uppercase tracking-wide text-gray-500">{t('myData.currentBalance')}</p>
