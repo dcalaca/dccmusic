@@ -309,10 +309,8 @@ export async function getComposerStatement(composerId: string) {
         : isRefunded
           ? `${topup.music_quantity || 0} música(s) estornada(s). Créditos removidos do saldo.`
           : `${topup.music_quantity || 0} música(s) solicitada(s), aguardando pagamento`,
-      // Customer receipts must use the original transaction amount and currency.
-      // Settlement amounts are for internal BRL accounting only.
-      amount: Number(topup.amount) || 0,
-      currency: topup.currency || 'BRL',
+      amount: Number(topup.settlement_amount ?? topup.amount) || 0,
+      currency: topup.settlement_currency || topup.currency || 'BRL',
       status: topup.status,
       statusLabel: statusLabel(topup.status),
       paymentId: isPaid ? (topup.payment_id || null) : (topup.payment_preference_id || null),
