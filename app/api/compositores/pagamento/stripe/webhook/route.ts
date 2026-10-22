@@ -122,13 +122,23 @@ export async function POST(request: NextRequest) {
           .eq('gateway_payment_id', paymentId)
           .maybeSingle()
 
+        // Stripe checkout.session is the source of truth for the charged price and currency.
+        const chargedCurrency = String(object.currency || '').toUpperCase()
+        const minorUnits = new Set(['PYG', 'JPY', 'KRW', 'CLP', 'VND', 'XAF', 'XOF', 'XPF'])
+        const amountMinor = Number(object.amount_total)
+        if (!chargedCurrency || !Number.isFinite(amountMinor) || amountMinor < 0) {
+          console.error('[STRIPE WEBHOOK] Checkout missing charged amount/currency', object.id)
+          return NextResponse.json({ error: 'Checkout amount/currency unavailable' }, { status: 422 })
+        }
+        const chargedAmount = amountMinor / (minorUnits.has(chargedCurrency) ? 1 : 100)
+
         let paymentJustConfirmed = false
         if (!existingPayment) {
           const { error: paymentError } = await supabaseAdmin.from('dccmusic_payments').insert({
             subscription_id: subscription.id,
             composer_id: subscription.composer_id,
-            amount: Number(plan.price) || 0,
-            currency: 'BRL',
+            amount: chargedAmount,
+            currency: chargedCurrency,
             status: 'paid',
             payment_method: 'card',
             payment_gateway: 'stripe',
@@ -141,7 +151,7 @@ export async function POST(request: NextRequest) {
         } else if (existingPayment.status !== 'paid') {
           const { error: paymentError } = await supabaseAdmin
             .from('dccmusic_payments')
-            .update({ status: 'paid', gateway_response: sanitizeStripeObject(object), paid_at: new Date().toISOString() })
+            .update({ status: 'paid', amount: chargedAmount, currency: chargedCurrency, gateway_response: sanitizeStripeObject(object), paid_at: new Date().toISOString() })
             .eq('id', existingPayment.id)
           if (paymentError) throw paymentError
           paymentJustConfirmed = true
