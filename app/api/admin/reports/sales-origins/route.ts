@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
-import { OriginSale, salesOrigin, summarizeOrigins } from '@/lib/sales-origins'
+import { OriginSale, salesOrigin, summarizeOrigins, historicalTouch } from '@/lib/sales-origins'
 
 export const dynamic = 'force-dynamic'
 
@@ -55,17 +55,18 @@ export async function GET(request: NextRequest) {
     }
     const rows: OriginSale[] = payments.map(row => {
       const profile = buyers.get(row.composer_id)?.marketing_attribution
-      const firstSource = row.attribution_first_source || profile?.first_touch?.source || ''
-      const lastSource = row.attribution_source || profile?.last_touch?.source || ''
+      const firstTouch = historicalTouch(profile?.first_touch, row.date)
+      const firstSource = row.attribution_first_source || firstTouch?.source || ''
+      const lastSource = row.attribution_source || row.referral_source || ''
       const ids = row.attribution_click_ids && typeof row.attribution_click_ids === 'object' ? row.attribution_click_ids : {}
       const clickIdTypes = ['gclid', 'gbraid', 'wbraid', 'fbclid', 'ttclid', 'msclkid'].filter(key => typeof ids[key] === 'string' && ids[key].trim())
       return ({
       id: row.key, buyer: buyers.get(row.composer_id)?.name || 'Sem nome', email: buyers.get(row.composer_id)?.email || '',
-      paidAt: row.date, product: row.product, origin: salesOrigin(row.referral_source || row.attribution_source, row.attribution_click_ids),
+      paidAt: row.date, product: row.product, origin: salesOrigin(row.attribution_source || row.referral_source, row.attribution_click_ids),
       rawSource: row.attribution_source || '', medium: row.attribution_medium || '', campaign: row.attribution_campaign || '',
       firstOrigin: firstSource ? salesOrigin(firstSource) : 'Não identificada',
       lastOrigin: lastSource ? salesOrigin(lastSource, ids) : 'Não identificada',
-      attributionFirstEvidence: row.attribution_first_source ? 'Pagamento' : firstSource ? 'Perfil (pode ser posterior)' : 'Ausente',
+      attributionFirstEvidence: row.attribution_first_source ? 'Pagamento' : firstSource ? 'Perfil anterior à compra' : 'Ausente',
       clickIdTypes,
       amount: Number(row.amount), currency: String(row.currency || 'BRL').toUpperCase(),
     }) }).sort((a, b) => b.paidAt.localeCompare(a.paidAt))

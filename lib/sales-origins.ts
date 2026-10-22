@@ -38,3 +38,14 @@ export function summarizeOrigins(rows: OriginSale[]) {
   }
   return Array.from(groups.values()).sort((a, b) => b.count - a.count)
 }
+
+// A profile touch may only explain a historical purchase if captured before it.
+export function historicalTouch(touch: any, paidAt: string) {
+  const captured = Date.parse(touch?.captured_at || '')
+  const paid = Date.parse(paidAt)
+  return Number.isFinite(captured) && Number.isFinite(paid) && captured <= paid ? touch : null
+}
+
+export function originForModel(row: OriginSale, model: string): string {
+  return model === 'first' ? row.firstOrigin : row.origin
+}
