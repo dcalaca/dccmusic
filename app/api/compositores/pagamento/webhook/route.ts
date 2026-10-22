@@ -1,3 +1,4 @@
+import { sendOpenAIAdsPlanPurchase } from '@/lib/openai-ads-conversions'
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { reportPaymentFailure } from '@/lib/payment-failure-alert'
@@ -514,6 +515,7 @@ export async function POST(request: Request) {
             readMetaBrowserContextFromMetadata(paymentData?.metadata)
           )
           await Promise.allSettled([
+            sendOpenAIAdsPlanPurchase(String(paymentId), composer.id, subscription.metadata, composer.email),
             sendMetaPurchaseEvent({
               request,
               browserContext,

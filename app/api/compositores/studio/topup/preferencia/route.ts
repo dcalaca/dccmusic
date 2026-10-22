@@ -1,3 +1,4 @@
+import { openAIAdsCheckoutContext } from '@/lib/openai-ads-context'
 import { NextRequest, NextResponse } from 'next/server'
 import { preferenceClient } from '@/lib/mercadopago'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
@@ -72,6 +73,7 @@ export async function POST(request: NextRequest) {
           unit_price: quote.unitPrice,
           tier_label: quote.tierLabel,
           composer_name: composerData?.name || null,
+          openai_ads: openAIAdsCheckoutContext(request),
           meta_capi: metaCapi,
         },
       })

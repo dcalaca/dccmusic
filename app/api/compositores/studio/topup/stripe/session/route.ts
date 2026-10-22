@@ -1,3 +1,4 @@
+import { openAIAdsCheckoutContext } from '@/lib/openai-ads-context'
 import { ga4CheckoutMetadata } from '@/lib/ga4-server-purchase'
 import { NextRequest, NextResponse } from 'next/server'
 import crypto from 'crypto'
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     const ga4 = ga4CheckoutMetadata(request)
     await supabaseAdmin.from('studio_credit_topups').update({
       payment_gateway: 'stripe',
-      metadata: { ...(topup.metadata || {}), checkout_type: 'stripe_embedded', stripe_session_id: session.id, ...(ga4.client_id ? { ga4 } : {}) },
+      metadata: { ...(topup.metadata || {}), openai_ads: openAIAdsCheckoutContext(request), checkout_type: 'stripe_embedded', stripe_session_id: session.id, ...(ga4.client_id ? { ga4 } : {}) },
       updated_at: new Date().toISOString(),
     }).eq('id', topup.id)
 

@@ -1,3 +1,4 @@
+import { openAIAdsCheckoutContext } from '@/lib/openai-ads-context'
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -79,6 +80,7 @@ export async function POST(request: NextRequest) {
     await supabaseAdmin.from('dccmusic_subscriptions').update({
       metadata: {
         ...(subscription.metadata || {}),
+        openai_ads: openAIAdsCheckoutContext(request),
         meta_capi: metaCapi,
         checkout_type: provider === 'stripe' ? 'stripe_embedded' : 'payment_brick',
         customer_country: requestCountry,

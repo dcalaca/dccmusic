@@ -1,3 +1,4 @@
+import { sendOpenAIAdsTopupPurchase } from '@/lib/openai-ads-conversions'
 import { sendConfirmedTopupGa4Purchase } from '@/lib/ga4-server-purchase'
 import {
   buildMetaCapiMetadata,
@@ -82,6 +83,7 @@ export async function sendStudioTopupPurchaseEvents(input: {
       contentId: 'studio_topup',
       quantity,
     }),
+    sendOpenAIAdsTopupPurchase(input.topup, input.email),
   ])
 
   const ga4Result = ga4.status === 'fulfilled' ? ga4.value : { sent: false, reason: 'exception' }

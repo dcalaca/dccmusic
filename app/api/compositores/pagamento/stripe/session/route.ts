@@ -1,3 +1,4 @@
+import { openAIAdsCheckoutContext } from '@/lib/openai-ads-context'
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
     await supabaseAdmin.from('dccmusic_subscriptions').update({
       metadata: {
         ...(subscription.metadata || {}),
+        openai_ads: openAIAdsCheckoutContext(request),
         checkout_type: 'stripe_embedded',
         customer_country: customerCountry,
         customer_locale: customerLocale,

@@ -1,3 +1,4 @@
+import { sendOpenAIAdsPlanPurchase } from '@/lib/openai-ads-conversions'
 import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
@@ -61,6 +62,7 @@ async function sendApprovedPlanSideEffects(request: NextRequest, subscription: a
   )
 
   await Promise.allSettled([
+    sendOpenAIAdsPlanPurchase(paymentId, composer.id, subscription.metadata, composer.email),
     sendMetaPurchaseEvent({
       request,
       browserContext,

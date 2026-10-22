@@ -1,3 +1,4 @@
+import { openAIAdsCheckoutContext } from '@/lib/openai-ads-context'
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest, resolveComposerToken } from '@/lib/composer-middleware'
 import { getStudioTopupQuoteFromPricing } from '@/lib/studio-pricing-server'
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
           checkout_type: provider === 'stripe' ? 'stripe_embedded' : 'payment_brick',
           customer_country: requestCountry,
           customer_locale: requestCountryCode === 'US' ? 'en-US' : requestCountryCode === 'PY' ? 'es-PY' : requestCountryCode === 'CO' ? 'es-CO' : requestCountryCode === 'PT' ? 'pt-PT' : requestCountryCode === 'MX' ? 'es-MX' : 'pt-BR',
+          openai_ads: openAIAdsCheckoutContext(request),
           meta_capi: metaCapi,
           token_composer_id: tokenComposer.composerId,
         },

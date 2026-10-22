@@ -1,3 +1,4 @@
+import { openAIAdsCheckoutContext } from '@/lib/openai-ads-context'
 import { NextResponse } from 'next/server'
 import { preferenceClient, getReturnUrls } from '@/lib/mercadopago'
 import { supabaseAdmin } from '@/lib/supabase'
@@ -326,7 +327,7 @@ export async function POST(request: Request) {
     try {
       const { error: metaSaveError } = await supabaseAdmin
         .from('dccmusic_subscriptions')
-        .update({ metadata: { ...(subscription.metadata || {}), meta_capi: metaCapi } })
+        .update({ metadata: { ...(subscription.metadata || {}), openai_ads: openAIAdsCheckoutContext(request), meta_capi: metaCapi } })
         .eq('id', subscription.id)
       if (metaSaveError) {
         console.warn('[PREFERENCIA] Não foi possível salvar meta_capi na assinatura:', metaSaveError.message)

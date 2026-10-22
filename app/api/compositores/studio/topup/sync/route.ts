@@ -1,3 +1,4 @@
+import { sendOpenAIAdsTopupPurchase } from '@/lib/openai-ads-conversions'
 import { NextRequest, NextResponse } from 'next/server'
 import { getComposerFromRequest } from '@/lib/composer-middleware'
 import { paymentClient } from '@/lib/mercadopago'
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
     const paymentId = requestedPaymentId || String(currentTopup.payment_id || '').trim()
 
     if (currentTopup.status === 'paid') {
+      await sendOpenAIAdsTopupPurchase(currentTopup, composer.email)
       const paidPaymentId = paymentId
       return NextResponse.json({
         success: true,

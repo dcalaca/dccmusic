@@ -1,3 +1,4 @@
+import { sendOpenAIAdsPlanPurchase } from '@/lib/openai-ads-conversions'
 import { NextRequest, NextResponse } from 'next/server'
 import { creditStudioTopupOnce, revokeStudioTopupCreditOnce } from '@/lib/studio'
 import { sendApprovedStudioTopupSideEffects } from '@/lib/studio-topup-side-effects'
@@ -26,6 +27,7 @@ async function sendApprovedPlanSideEffects(request: NextRequest, subscription: a
 
   await recordPartnerPurchase({ composerId: composer.id, purchaseId: paymentId, amount, productType: 'composer_plan' })
   await Promise.allSettled([
+    sendOpenAIAdsPlanPurchase(paymentId, composer.id, subscription.metadata, composer.email),
     sendMetaPurchaseEvent({
       request,
       browserContext,

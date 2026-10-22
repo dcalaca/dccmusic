@@ -1,3 +1,4 @@
+import { openAIAdsCheckoutContext } from '@/lib/openai-ads-context'
 import { ga4CheckoutMetadata } from '@/lib/ga4-server-purchase'
 import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
@@ -147,15 +148,12 @@ export async function POST(request: NextRequest) {
     })
 
     const ga4 = ga4CheckoutMetadata(request)
-    if (ga4.client_id) {
-      // Persist visitor attribution before a delayed webhook completes payment.
-      await supabaseAdmin.from('studio_credit_topups').update({
-        metadata: { ...(currentTopup.metadata || {}), ga4 },
-      }).eq('id', currentTopup.id).eq('composer_id', composer.composerId)
-    }
-    const attributionTopup = ga4.client_id
-      ? { ...currentTopup, metadata: { ...(currentTopup.metadata || {}), ga4 } }
-      : currentTopup
+    const openaiAds = openAIAdsCheckoutContext(request)
+    // Persist visitor attribution before a delayed webhook completes payment.
+    await supabaseAdmin.from('studio_credit_topups').update({
+      metadata: { ...(currentTopup.metadata || {}), ...(ga4.client_id ? { ga4 } : {}), openai_ads: openaiAds },
+    }).eq('id', currentTopup.id).eq('composer_id', composer.composerId)
+    const attributionTopup = { ...currentTopup, metadata: { ...(currentTopup.metadata || {}), ...(ga4.client_id ? { ga4 } : {}), openai_ads: openaiAds } }
 
     const paymentBody = compactObject({
       transaction_amount: expectedAmount,
