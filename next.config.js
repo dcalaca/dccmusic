@@ -8,6 +8,13 @@ const nextConfig = {
     STUDIO_INTERNAL_VIDEO_PILOT: 'false',
     STUDIO_INTERNAL_VIDEO_FALLBACK: 'true',
   },
+  async redirects() {
+    return [{
+      source: '/gratis',
+      destination: '/studio-ia?utm_source=meta&utm_medium=organic_social&utm_campaign=comentario_musica_gratis',
+      permanent: false,
+    }]
+  },
   async headers() {
     return [{
       source: '/favicon-dcc-fundopreto.png',
