@@ -49,6 +49,10 @@ interface SpendingRankingItem {
   topupSpent: number
   featuredSpent: number
   paymentCount: number
+  firstPurchaseAt: string | null
+  lastPurchaseAt: string | null
+  historicalTotalSpent: number
+  historicalPaymentCount: number
 }
 
 const PAGE_SIZE = 100
@@ -94,6 +98,9 @@ export default function AdminComposersPage() {
   const [spendingRankingLoading, setSpendingRankingLoading] = useState(false)
   const [spendingRanking, setSpendingRanking] = useState<SpendingRankingItem[]>([])
   const [spendingTotal, setSpendingTotal] = useState(0)
+  const [spendingRange, setSpendingRange] = useState({ startDate: '', endDate: '' })
+  const [spendingAppliedRange, setSpendingAppliedRange] = useState({ startDate: '', endDate: '' })
+  const [spendingError, setSpendingError] = useState('')
   const [editingComposer, setEditingComposer] = useState<Composer | null>(null)
   const [editForm, setEditForm] = useState({ name: '', slug: '', email: '' })
   const [creditComposer, setCreditComposer] = useState<Composer | null>(null)
@@ -569,12 +576,18 @@ export default function AdminComposersPage() {
     })
   }
 
-  const loadSpendingRanking = async () => {
+  const loadSpendingRanking = async (range = spendingRange) => {
     try {
       setSpendingRankingOpen(true)
       setSpendingRankingLoading(true)
+      setSpendingError('')
+      setSpendingRanking([])
+      setSpendingTotal(0)
 
-      const response = await fetch('/api/admin/composers/spending-ranking', { cache: 'no-store' })
+      const params = new URLSearchParams()
+      if (range.startDate) params.set('startDate', range.startDate)
+      if (range.endDate) params.set('endDate', range.endDate)
+      const response = await fetch('/api/admin/composers/spending-ranking?' + params, { cache: 'no-store' })
       const data = await response.json().catch(() => ({}))
 
       if (!response.ok) {
@@ -583,10 +596,10 @@ export default function AdminComposersPage() {
 
       setSpendingRanking(Array.isArray(data.ranking) ? data.ranking : [])
       setSpendingTotal(Number(data.totalRevenue) || 0)
+      setSpendingAppliedRange({ ...range })
     } catch (error: any) {
       console.error('Erro ao carregar ranking de gastos:', error)
-      alert(`Erro: ${error.message}`)
-      setSpendingRankingOpen(false)
+      setSpendingError(error.message || 'Erro ao carregar ranking')
     } finally {
       setSpendingRankingLoading(false)
     }
@@ -605,11 +618,17 @@ export default function AdminComposersPage() {
         Nome: row.name,
         Email: row.email || 'Sem email',
         Slug: row.slug,
-        'Total gasto': formatMoney(row.totalSpent),
-        'Gasto com planos': formatMoney(row.planSpent),
-        'Gasto com recargas avulsas': formatMoney(row.topupSpent),
-        'Gasto com destaques': formatMoney(row.featuredSpent),
-        'Quantidade de pagamentos': row.paymentCount,
+        'Total gasto no período': row.totalSpent,
+        'Total gasto histórico': row.historicalTotalSpent,
+        'Compras no histórico': row.historicalPaymentCount,
+        'Primeira compra (histórico)': row.firstPurchaseAt ? formatDateTime(new Date(row.firstPurchaseAt)) : '',
+        'Última compra (histórico)': row.lastPurchaseAt ? formatDateTime(new Date(row.lastPurchaseAt)) : '',
+        'Período inicial': spendingAppliedRange.startDate || 'Todo o histórico',
+        'Período final': spendingAppliedRange.endDate || 'Até hoje',
+        'Gasto com planos': row.planSpent,
+        'Gasto com recargas avulsas': row.topupSpent,
+        'Gasto com destaques': row.featuredSpent,
+        'Quantidade de compras no período': row.paymentCount,
         'Data de cadastro': row.createdAt ? formatDateTime(new Date(row.createdAt)) : 'N/A',
       }))
 
@@ -797,7 +816,7 @@ export default function AdminComposersPage() {
             </button>
             <button
               type="button"
-              onClick={loadSpendingRanking}
+              onClick={() => loadSpendingRanking()}
               disabled={spendingRankingLoading}
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-700 bg-emerald-950/40 px-4 py-2 text-sm font-bold text-emerald-100 hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
@@ -1258,7 +1277,7 @@ export default function AdminComposersPage() {
         {/* Modal ranking de gastos */}
         {spendingRankingOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
-            <div className="flex max-h-[88vh] w-full max-w-5xl flex-col rounded-2xl border border-emerald-800 bg-gray-950 shadow-2xl shadow-emerald-950/30">
+            <div className="flex max-h-[88vh] w-full max-w-[1500px] flex-col rounded-2xl border border-emerald-800 bg-gray-950 shadow-2xl shadow-emerald-950/30">
               <div className="border-b border-gray-800 p-5 sm:p-6">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex items-start gap-3">
@@ -1281,6 +1300,30 @@ export default function AdminComposersPage() {
                   </button>
                 </div>
 
+                <div className="mt-4 flex flex-wrap items-end gap-3">
+                  <label className="text-sm text-gray-300">Data inicial
+                    <input type="date" value={spendingRange.startDate} disabled={spendingRankingLoading}
+                      onChange={e => setSpendingRange(r => ({ ...r, startDate: e.target.value }))}
+                      className="mt-1 block rounded-lg border border-gray-700 bg-gray-900 p-2 text-white" />
+                  </label>
+                  <label className="text-sm text-gray-300">Data final
+                    <input type="date" value={spendingRange.endDate} disabled={spendingRankingLoading}
+                      onChange={e => setSpendingRange(r => ({ ...r, endDate: e.target.value }))}
+                      className="mt-1 block rounded-lg border border-gray-700 bg-gray-900 p-2 text-white" />
+                  </label>
+                  <button type="button" disabled={spendingRankingLoading} onClick={() => loadSpendingRanking()}
+                    className="rounded-lg bg-emerald-600 px-4 py-2 font-bold disabled:opacity-50">Aplicar período</button>
+                  <button type="button" disabled={spendingRankingLoading} onClick={() => {
+                    const range = { startDate: '', endDate: '' }
+                    setSpendingRange(range)
+                    loadSpendingRanking(range)
+                  }} className="rounded-lg border border-gray-700 px-4 py-2 disabled:opacity-50">Todo o histórico</button>
+                </div>
+                <p className="mt-3 text-xs text-gray-400">
+                  Período aplicado: {spendingAppliedRange.startDate || 'Início'} até {spendingAppliedRange.endDate || 'hoje'} (horário de Brasília).
+                  Totais e compras consideram esse período. Primeira e última compra consideram todo o histórico.
+                </p>
+                {spendingError && <p role="alert" className="mt-3 text-sm text-red-300">{spendingError}</p>}
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-xl border border-gray-800 bg-black/30 p-4">
                     <p className="text-xs text-gray-500">Total pago</p>
@@ -1311,7 +1354,7 @@ export default function AdminComposersPage() {
                   </div>
                 ) : (
                   <div className="overflow-hidden rounded-xl border border-gray-800">
-                    <table className="w-full min-w-[900px]">
+                    <table className="w-full min-w-[1400px]">
                       <thead className="bg-gray-900">
                         <tr>
                           <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">#</th>
@@ -1320,7 +1363,11 @@ export default function AdminComposersPage() {
                           <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Planos</th>
                           <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Recargas</th>
                           <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Destaques</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Pagamentos</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Compras no período</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Cadastro</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Primeira compra</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Última compra</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Total histórico</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-800 bg-gray-950">
@@ -1336,6 +1383,10 @@ export default function AdminComposersPage() {
                             <td className="px-4 py-3 text-sm text-gray-300">{formatMoney(row.topupSpent)}</td>
                             <td className="px-4 py-3 text-sm text-gray-300">{formatMoney(row.featuredSpent)}</td>
                             <td className="px-4 py-3 text-sm text-gray-300">{row.paymentCount}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{row.createdAt ? formatDateTime(new Date(row.createdAt)) : '—'}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{row.firstPurchaseAt ? formatDateTime(new Date(row.firstPurchaseAt)) : '—'}</td>
+                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{row.lastPurchaseAt ? formatDateTime(new Date(row.lastPurchaseAt)) : '—'}</td>
+                            <td className="px-4 py-3 text-sm text-gray-300">{formatMoney(row.historicalTotalSpent)}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1348,7 +1399,7 @@ export default function AdminComposersPage() {
                 <button
                   type="button"
                   onClick={exportSpendingRankingToXLSX}
-                  disabled={spendingRankingLoading || spendingRanking.length === 0}
+                  disabled={spendingRankingLoading || spendingRanking.length === 0 || spendingRange.startDate !== spendingAppliedRange.startDate || spendingRange.endDate !== spendingAppliedRange.endDate}
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <FiDownload className="h-4 w-4" />
