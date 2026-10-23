@@ -824,10 +824,10 @@ export async function getVideoBySlug(slug: string) {
     .from('dccmusic_videos')
     .select('*')
     .eq('slug', slug)
-    .single()
+    .maybeSingle()
 
   if (error) throw error
-  return await mapVideo(data, true)
+  return data ? await mapVideo(data, true) : null
 }
 
 export async function incrementVideoViews(id: string) {

@@ -30,6 +30,28 @@ function isBackupSchemaMissing(error: any) {
   )
 }
 
+function isTransientStudioDbError(error: any) {
+  const message = [error?.message, error?.details, error?.code].filter(Boolean).join(' ')
+  return /fetch failed|network connection lost|ECONNRESET|UND_ERR_SOCKET|socket disconnected|502|503|504|520|gateway error|bad gateway|service unavailable/i.test(message)
+}
+
+// Only use on reads or on writes that set the same values on every retry.
+// Never use this helper for credit increments, purchases or other side effects.
+async function retryTransientStudioDbRequest<T extends { error?: any }>(
+  operation: () => PromiseLike<T>,
+): Promise<T> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const result = await operation()
+      if (!result.error || !isTransientStudioDbError(result.error) || attempt === 2) return result
+    } catch (error) {
+      if (!isTransientStudioDbError(error) || attempt === 2) throw error
+    }
+    await new Promise((resolve) => setTimeout(resolve, 200 * (attempt + 1)))
+  }
+  throw new Error('Falha transitória ao acessar o banco de áudio')
+}
+
 function getR2Client() {
   const accountId = process.env.CLOUDFLARE_R2_ACCOUNT_ID || process.env.CLOUDFLARE_ACCOUNT_ID || process.env.R2_ACCOUNT_ID
   const accessKeyId = process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || process.env.CLOUDFLARE_R2_ACCESS_KEY || process.env.R2_ACCESS_KEY_ID || process.env.R2_ACCESS_KEY
@@ -502,11 +524,11 @@ export async function backupStudioVersionAudio(input: {
   if (!fullAudioUrl && !streamAudioUrl) return { backedUp: false, reason: 'missing_audio_url' }
 
   try {
-    const { data: version, error: versionError } = await supabaseAdmin
+    const { data: version, error: versionError } = await retryTransientStudioDbRequest(() => supabaseAdmin
       .from('studio_versions')
       .select('id, audio_url, stream_audio_url, audio_path, stream_audio_path, audio_backup_status, audio_storage_provider, stream_audio_storage_provider, provider_payload')
       .eq('id', input.versionId)
-      .maybeSingle()
+      .maybeSingle())
 
     if (versionError) throw versionError
 
@@ -617,7 +639,7 @@ export async function backupStudioVersionAudio(input: {
 
     const durableUrl = audioBackup?.sourceUrl || preferredFullUrl || null
 
-    const { data: updatedVersion, error: updateError } = await supabaseAdmin
+    const { data: updatedVersion, error: updateError } = await retryTransientStudioDbRequest(() => supabaseAdmin
       .from('studio_versions')
       .update({
         audio_url: durableUrl || version?.audio_url || null,
@@ -633,10 +655,22 @@ export async function backupStudioVersionAudio(input: {
       })
       .eq('id', input.versionId)
       .select('id, audio_path, stream_audio_path, audio_storage_provider, stream_audio_storage_provider')
-      .maybeSingle()
+      .maybeSingle())
 
     if (updateError) throw updateError
-    if (audioBackup && (!updatedVersion?.audio_path || updatedVersion.audio_storage_provider !== audioBackup.provider)) {
+    // An occasional delayed/empty response does not mean the uploaded file is lost.
+    // Read back the persisted row before treating the backup as failed.
+    let confirmedVersion = updatedVersion
+    if (audioBackup && (!confirmedVersion?.audio_path || confirmedVersion.audio_storage_provider !== audioBackup.provider)) {
+      const { data: readBack, error: readBackError } = await retryTransientStudioDbRequest(() => supabaseAdmin
+        .from('studio_versions')
+        .select('id, audio_path, audio_storage_provider')
+        .eq('id', input.versionId)
+        .maybeSingle())
+      if (readBackError) throw readBackError
+      confirmedVersion = readBack as typeof updatedVersion
+    }
+    if (audioBackup && (!confirmedVersion?.audio_path || confirmedVersion.audio_storage_provider !== audioBackup.provider)) {
       throw new Error('Backup enviado, mas o Supabase não confirmou a gravação do caminho interno.')
     }
 

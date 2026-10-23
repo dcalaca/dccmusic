@@ -3,7 +3,6 @@ import { getComposerFromRequest } from '@/lib/composer-middleware'
 import {
   canCreateStudioMusicWithCredits,
   createUniqueProjectSlug,
-  getCurrentProjectAssets,
   getFreeMusicUsage,
   getStudioAccess,
   getStudioCreditUsage,
@@ -24,6 +23,7 @@ import {
 export const dynamic = 'force-dynamic'
 const STUDIO_TITLE_MAX_LENGTH = 30
 const ORIGINALS_FILTER = 'originais'
+const PROJECTS_PAGE_SIZE = 24
 
 function buildProjectDescription(body: any) {
   const idea = typeof body.idea === 'string' ? body.idea.trim() : ''
@@ -81,6 +81,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const filter = searchParams.get('filter') || 'all'
     const dashboardSummary = searchParams.get('dashboard') === '1'
+    const paginated = !dashboardSummary && searchParams.has('page')
+    const requestedPage = Number(searchParams.get('page') || 1)
+    const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, 10000) : 1
 
     let query = supabaseAdmin
       .from('studio_projects')
@@ -89,12 +92,13 @@ export async function GET(request: NextRequest) {
       .order('updated_at', { ascending: false })
 
     if (dashboardSummary) query = query.range(0, 5)
+    else if (paginated) query = query.range((page - 1) * PROJECTS_PAGE_SIZE, page * PROJECTS_PAGE_SIZE)
 
     if (filter === 'drafts') query = query.eq('status', 'draft')
     if (filter === 'published') query = query.eq('status', 'published')
     if (filter === 'favorites') query = query.eq('favorite', true)
     let originalGenerationByProject = new Map<string, any>()
-    if (filter !== 'cifras') {
+    if (filter === ORIGINALS_FILTER) {
       const { data: enhancedGenerations, error: enhancedError } = await supabaseAdmin
         .from('studio_generations')
         .select('project_id,request_payload,created_at')
@@ -115,6 +119,8 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await query
     if (error) throw error
+    const pageData = paginated ? (data || []).slice(0, PROJECTS_PAGE_SIZE) : (data || [])
+    const hasMore = paginated && (data || []).length > PROJECTS_PAGE_SIZE
 
     // The dashboard only needs six cards. Avoid loading every lyric, version,
     // audio URL and signed asset from the full projects endpoint.
@@ -151,38 +157,102 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ projects })
     }
 
+    const projectIds = pageData.map((project: any) => project.id)
+    if (projectIds.length === 0) {
+      return NextResponse.json({ projects: [], page, hasMore })
+    }
+
+    // Load related assets in batches for the current page rather than issuing
+    // several queries for every project. The detail endpoint remains unchanged.
+    const [
+      { data: lyrics, error: lyricsError },
+      { data: versions, error: versionsError },
+      { data: covers, error: coversError },
+    ] = await Promise.all([
+      supabaseAdmin.from('studio_lyrics').select('id, project_id, content, created_at')
+        .eq('is_current', true).in('project_id', projectIds).order('created_at', { ascending: false }),
+      supabaseAdmin.from('studio_versions').select('*')
+        .eq('composer_id', composer.composerId).in('project_id', projectIds)
+        .order('created_at', { ascending: false }),
+      supabaseAdmin.from('studio_covers').select('*')
+        .eq('is_current', true).in('project_id', projectIds)
+        .order('created_at', { ascending: false }),
+    ])
+    if (lyricsError) throw lyricsError
+    if (versionsError) throw versionsError
+    if (coversError) throw coversError
+
+    // Only enhanced generations for displayed projects are needed outside the
+    // originals filter. Originals were identified before paging.
+    if (filter !== ORIGINALS_FILTER && filter !== 'cifras') {
+      const { data: enhancedGenerations, error: enhancedError } = await supabaseAdmin
+        .from('studio_generations')
+        .select('project_id,request_payload,created_at')
+        .eq('composer_id', composer.composerId)
+        .eq('request_payload->>feature', 'enhance_music')
+        .in('project_id', projectIds)
+        .order('created_at', { ascending: false })
+      if (enhancedError) throw enhancedError
+      for (const generation of enhancedGenerations || []) {
+        if (!originalGenerationByProject.has(generation.project_id)) {
+          originalGenerationByProject.set(generation.project_id, generation)
+        }
+      }
+    }
+
+    const lyricByProject = new Map<string, any>()
+    for (const lyric of lyrics || []) {
+      if (!lyricByProject.has(lyric.project_id)) lyricByProject.set(lyric.project_id, lyric)
+    }
+    const coverByProject = new Map<string, any>()
+    for (const cover of covers || []) {
+      if (!coverByProject.has(cover.project_id)) coverByProject.set(cover.project_id, cover)
+    }
+    const versionsByProject = new Map<string, any[]>()
+    const currentVersionByProject = new Map<string, any>()
+    for (const version of versions || []) {
+      const list = versionsByProject.get(version.project_id) || []
+      list.push(version)
+      versionsByProject.set(version.project_id, list)
+      if (version.is_current && !currentVersionByProject.has(version.project_id)) {
+        currentVersionByProject.set(version.project_id, version)
+      }
+    }
+    const voiceByVersionId = await getStudioVersionVoices(composer.composerId, versions || [])
+    const audioUrlPromises = new Map<string, ReturnType<typeof getStudioVersionAudioUrls>>()
+    const getAudio = (version: any) => {
+      if (!audioUrlPromises.has(version.id)) {
+        audioUrlPromises.set(version.id, getStudioVersionAudioUrls(version))
+      }
+      return audioUrlPromises.get(version.id)!
+    }
+
     const projects = await Promise.all(
-      (data || []).map(async (project: any) => {
-        const { lyric, version, cover } = await getCurrentProjectAssets(project.id)
-        const versionAudio = version ? await getStudioVersionAudioUrls(version) : null
-        // A grade de projetos só precisa de uma miniatura; a imagem original
-        // continua sendo usada ao abrir ou baixar a capa no projeto.
-        const coverImageUrl = cover ? await getStudioCoverImageUrl(cover, { preview: true }) : null
-        const { data: projectVersions } = await supabaseAdmin
-          .from('studio_versions')
-          .select('*')
-          .eq('project_id', project.id)
-          .eq('composer_id', composer.composerId)
-          .order('created_at', { ascending: false })
-
-        const versionsWithAudio = await Promise.all((projectVersions || [])
-          .filter((item: any) => item.audio_url || item.stream_audio_url || item.audio_path || item.stream_audio_path)
-          .map(async (item: any) => {
-            const audio = await getStudioVersionAudioUrls(item)
-            return {
-              id: item.id,
-              audioUrl: audio.audioUrl,
-              streamAudioUrl: audio.streamAudioUrl,
-              duration: item.duration,
-              versionName: item.version_name,
-              style: item.style,
-              isCurrent: Boolean(item.is_current),
-              createdAt: item.created_at,
-            }
-          }))
-        const voiceByVersionId = await getStudioVersionVoices(composer.composerId, projectVersions || [])
-        const latestVoice = (projectVersions || []).map((item: any) => voiceByVersionId.get(item.id)).find(Boolean) || null
-
+      pageData.map(async (project: any) => {
+        const lyric = lyricByProject.get(project.id)
+        const version = currentVersionByProject.get(project.id)
+        const cover = coverByProject.get(project.id)
+        const projectVersions = versionsByProject.get(project.id) || []
+        const [versionAudio, coverImageUrl, versionsWithAudio] = await Promise.all([
+          version ? getAudio(version) : Promise.resolve(null),
+          cover ? getStudioCoverImageUrl(cover, { preview: true }) : Promise.resolve(null),
+          Promise.all(projectVersions
+            .filter((item: any) => item.audio_url || item.stream_audio_url || item.audio_path || item.stream_audio_path)
+            .map(async (item: any) => {
+              const audio = await getAudio(item)
+              return {
+                id: item.id,
+                audioUrl: audio.audioUrl,
+                streamAudioUrl: audio.streamAudioUrl,
+                duration: item.duration,
+                versionName: item.version_name,
+                style: item.style,
+                isCurrent: Boolean(item.is_current),
+                createdAt: item.created_at,
+              }
+            })),
+        ])
+        const latestVoice = projectVersions.map((item: any) => voiceByVersionId.get(item.id)).find(Boolean) || null
         const originalGeneration = originalGenerationByProject.get(project.id)
         const originalAudio = originalGeneration?.request_payload?.originalAudio
         const originalAudioUrl = filter === ORIGINALS_FILTER && originalAudio?.path
@@ -191,22 +261,22 @@ export async function GET(request: NextRequest) {
 
         return {
           ...mapStudioProject(project, {
-          lyric: lyric?.content || null,
-          version: version ? {
-            id: version.id,
-            audioUrl: versionAudio?.audioUrl,
-            streamAudioUrl: versionAudio?.streamAudioUrl,
-            duration: version.duration,
-            versionName: version.version_name,
-          } : null,
-          cover: cover ? {
-            id: cover.id,
-            imageUrl: coverImageUrl,
-            isPremium: cover.is_premium,
-          } : null,
-          versions: versionsWithAudio,
-          versionCount: versionsWithAudio.length,
-          customVoice: latestVoice,
+            lyric: lyric?.content || null,
+            version: version ? {
+              id: version.id,
+              audioUrl: versionAudio?.audioUrl,
+              streamAudioUrl: versionAudio?.streamAudioUrl,
+              duration: version.duration,
+              versionName: version.version_name,
+            } : null,
+            cover: cover ? {
+              id: cover.id,
+              imageUrl: coverImageUrl,
+              isPremium: cover.is_premium,
+            } : null,
+            versions: versionsWithAudio,
+            versionCount: versionsWithAudio.length,
+            customVoice: latestVoice,
           }),
           createdFromOriginal: Boolean(originalAudio?.path),
           ...(filter === ORIGINALS_FILTER && originalAudio?.path ? {
@@ -232,7 +302,7 @@ export async function GET(request: NextRequest) {
         })
       : projects
 
-    return NextResponse.json({ projects: responseProjects })
+    return NextResponse.json({ projects: responseProjects, page, hasMore })
   } catch (error: any) {
     console.error('[Studio IA] Erro listar projetos:', error)
     return NextResponse.json({ error: 'Erro ao listar projetos', errorCode: 'load' }, { status: 500 })

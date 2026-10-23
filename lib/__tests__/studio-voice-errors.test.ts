@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   isStudioVoiceExpiredError,
+  studioVoiceErrorCode,
   translateStudioVoiceError,
   VOICE_EXPIRED_ERROR_MESSAGE,
 } from '../studio-voice-errors'
@@ -15,6 +16,14 @@ describe('erros de vozes expiradas', () => {
 
   it('reconhece mensagens em inglês devolvidas pelo fornecedor', () => {
     expect(isStudioVoiceExpiredError('This voice has expired. Please recreate the voice.')).toBe(true)
+  })
+
+  it('reconhece registro de verificação inválido sem culpar o áudio do usuário', () => {
+    const message = 'Validate record is not in valid status'
+    expect(studioVoiceErrorCode(message)).toBe('verificationPhraseExpired')
+    expect(translateStudioVoiceError(message)).toBe(
+      'A frase de verificação expirou ou não foi encontrada. Gere uma nova frase e grave novamente.'
+    )
   })
 
   it('não confunde expiração da frase com expiração da voz', () => {

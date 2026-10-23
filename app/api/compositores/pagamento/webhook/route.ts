@@ -120,7 +120,14 @@ export async function POST(request: Request) {
       const status = paymentData.status // approved, pending, rejected, cancelled, etc.
 
       if (!externalReference) {
-        console.error('[WEBHOOK] External reference não encontrada:', paymentData)
+        // Legitimate bank transfers to this Mercado Pago account are not DCC purchases.
+        // Acknowledge them to stop IPN retries without granting credits or access.
+        if (paymentData.point_of_interaction?.type === 'PSP_TRANSFER') {
+          console.info('[WEBHOOK] Transferência externa ignorada:', { paymentId, status })
+          return NextResponse.json({ received: true, processed: false, ignored: 'external_transfer' })
+        }
+        // Keep genuine unknown checkout notifications visible for reconciliation.
+        console.error('[WEBHOOK] Pagamento sem referência para conciliação:', { paymentId, status, operationType: paymentData.operation_type })
         return NextResponse.json({ error: 'External reference não encontrada' }, { status: 400 })
       }
 

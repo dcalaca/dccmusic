@@ -61,6 +61,8 @@ function StudioProjectsContent() {
   const currentFilter = searchParams.get('filter') || 'all'
   const choosingPlayback = searchParams.get('acao') === 'playback'
   const [projects, setProjects] = useState<any[]>([])
+  const [projectPage, setProjectPage] = useState(1)
+  const [hasMoreProjects, setHasMoreProjects] = useState(false)
   const [transcriptions, setTranscriptions] = useState<any[]>([])
   const [playbackAssets, setPlaybackAssets] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -90,7 +92,7 @@ function StudioProjectsContent() {
     setError(t('studio.projects.errors.sessionExpired'))
   }
 
-  const loadProjects = () => {
+  const loadProjects = (page = 1, append = false) => {
     const token = localStorage.getItem('composer_token')
     if (!token) {
       showSessionExpired()
@@ -145,7 +147,7 @@ function StudioProjectsContent() {
 
     setTranscriptions([])
     setPlaybackAssets([])
-    fetch(`/api/compositores/studio/projects?filter=${currentFilter}`, {
+    fetch(`/api/compositores/studio/projects?filter=${encodeURIComponent(currentFilter)}&page=${page}`, {
       headers: { Authorization: `Bearer ${token}` },
       cache: 'no-store',
     })
@@ -156,14 +158,17 @@ function StudioProjectsContent() {
           return
         }
         if (!response.ok) throw new Error(t('studio.projects.errors.loadProjects'))
-        setProjects(data.projects || [])
+        setProjects((previous) => append ? [...previous, ...(data.projects || [])] : (data.projects || []))
+        setProjectPage(page)
+        setHasMoreProjects(Boolean(data.hasMore))
       })
       .catch(() => setError(t('studio.projects.errors.loadProjects')))
       .finally(() => setLoading(false))
   }
 
   useEffect(() => {
-    loadProjects()
+    setHasMoreProjects(false)
+    loadProjects(1)
   }, [currentFilter])
 
   useEffect(() => {
@@ -787,7 +792,7 @@ function StudioProjectsContent() {
                   </button>
                 </div>
 
-                {currentFilter === 'drafts' && projects.some((project) => project.status === 'draft') && (
+                {currentFilter === 'drafts' && !hasMoreProjects && projects.some((project) => project.status === 'draft') && (
                   <button
                     type="button"
                     onClick={discardAllDrafts}
@@ -1023,6 +1028,14 @@ function StudioProjectsContent() {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+              {hasMoreProjects && !loading && currentFilter !== TRANSCRIPTIONS_FILTER && currentFilter !== PLAYBACKS_FILTER && (
+                <div className="mt-8 flex justify-center">
+                  <button type="button" onClick={() => loadProjects(projectPage + 1, true)}
+                    className="rounded-xl border border-primary-600 bg-gray-900 px-7 py-3 text-sm font-bold text-white hover:bg-gray-800">
+                    {i18n.language.startsWith('en') ? 'Load more projects' : i18n.language.startsWith('es') ? 'Cargar más proyectos' : 'Carregar mais projetos'}
+                  </button>
                 </div>
               )}
             </section>

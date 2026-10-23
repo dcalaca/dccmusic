@@ -326,6 +326,9 @@ export async function POST(
     const voice = await getVoice(params.id, composer.composerId)
     voiceForFailure = voice
     if (!voice) return NextResponse.json({ error: 'Voz não encontrada', errorCode: 'voiceNotFound' }, { status: 404 })
+    if (voice.status !== 'awaiting_verification') {
+      return NextResponse.json({ error: 'Essa voz não está pronta para verificação. Atualize o status ou gere uma nova frase.', errorCode: 'voiceNotReadyForVerification' }, { status: 409 })
+    }
     if (!voice.validation_task_id || !voice.validate_info) {
       return NextResponse.json({ error: 'A frase de verificação ainda não está pronta. Clique em atualizar status.', errorCode: 'validationPhraseNotReady' }, { status: 400 })
     }

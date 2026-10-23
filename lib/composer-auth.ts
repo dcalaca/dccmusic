@@ -474,7 +474,11 @@ export async function loginComposer(email: string, password: string) {
       requiresPasswordChange: isTempPassword,
     }
   } catch (error: any) {
-    console.error('[COMPOSER-AUTH] Erro ao fazer login:', error)
+    if (['INVALID_PASSWORD', 'EMAIL_NOT_FOUND', 'EMAIL_NOT_VERIFIED'].includes(error?.code)) {
+      console.info('[COMPOSER-AUTH] Login recusado:', { code: error.code })
+    } else {
+      console.error('[COMPOSER-AUTH] Erro ao fazer login:', error)
+    }
     throw error
   }
 }
