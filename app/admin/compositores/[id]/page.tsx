@@ -51,9 +51,9 @@ export default function AdminComposerProfilePage() {
   const [emailing, setEmailing] = useState(false)
   const [editForm, setEditForm] = useState({ name: '', slug: '', email: '' })
   const [creditForm, setCreditForm] = useState({
-    musicQuantity: '2',
-    reason: 'Correção de saldo do Studio IA',
-    message: 'Identificamos o erro e creditamos músicas como compensação pelo transtorno.',
+    musicQuantity: '1',
+    reason: '',
+    message: '',
     sendEmail: true,
   })
   const [emailForm, setEmailForm] = useState({ email: '', subject: '', message: '' })
@@ -233,6 +233,7 @@ export default function AdminComposerProfilePage() {
     if (!composer) return
     const musicQuantity = Math.floor(Number(creditForm.musicQuantity) || 0)
     if (musicQuantity <= 0) return alert('Informe a quantidade de músicas.')
+    if (!creditForm.reason.trim()) return alert('Informe o motivo do crédito antes de continuar.')
     try {
       setActionLoading('credit')
       const response = await fetch(`/api/admin/composers/${composer.id}`, {
@@ -436,11 +437,12 @@ export default function AdminComposerProfilePage() {
         {crediting && (
           <Modal title="Creditar Studio IA" onClose={() => setCrediting(false)}>
             <FormInput label="Quantidade de músicas" type="number" value={creditForm.musicQuantity} onChange={(value) => setCreditForm({ ...creditForm, musicQuantity: value })} />
-            <FormInput label="Motivo interno" value={creditForm.reason} onChange={(value) => setCreditForm({ ...creditForm, reason: value })} />
-            <FormTextarea label="Mensagem para o compositor" value={creditForm.message} onChange={(value) => setCreditForm({ ...creditForm, message: value })} />
+            <p className="text-sm text-amber-300">O motivo e a mensagem abaixo serão exibidos ao cliente caso o e-mail esteja ativado.</p>
+            <FormInput label="Motivo do crédito (aparece no e-mail)" value={creditForm.reason} onChange={(value) => setCreditForm({ ...creditForm, reason: value })} />
+            <FormTextarea label="Mensagem adicional (aparece no e-mail)" value={creditForm.message} onChange={(value) => setCreditForm({ ...creditForm, message: value })} />
             <label className="flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-900/70 p-3 text-sm text-gray-200">
               <input type="checkbox" checked={creditForm.sendEmail} onChange={(event) => setCreditForm({ ...creditForm, sendEmail: event.target.checked })} className="h-4 w-4 accent-emerald-500" />
-              Enviar e-mail avisando o compositor
+              Enviar e-mail com o motivo e a mensagem acima
             </label>
             <ModalActions primary="Creditar" busy={actionLoading === 'credit'} onPrimary={saveCredit} onCancel={() => setCrediting(false)} />
           </Modal>
