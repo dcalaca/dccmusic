@@ -103,11 +103,17 @@ export async function GET(request: Request) {
       allRows<PaymentRow>('studio_credit_topups', 'id, composer_id, amount, status, payment_id, payment_preference_id, paid_at, created_at'),
       allRows<PaymentRow>('dccmusic_featured_payments', 'id, composer_id, amount, payment_status, mercado_pago_payment_id, created_at'),
     ])
-    const planTotals = sumPaidRows(planPayments, 'plan', start, end)
-    const topupTotals = sumPaidRows(topups, 'topup', start, end)
-    const featuredTotals = sumPaidRows(featuredPayments, 'featured', start, end)
+    const planTotals = sumPaidRows(planPayments, 'plan', -Infinity, Infinity)
+    const topupTotals = sumPaidRows(topups, 'topup', -Infinity, Infinity)
+    const featuredTotals = sumPaidRows(featuredPayments, 'featured', -Infinity, Infinity)
 
     const ranking = composers
+      .filter((composer: any) => {
+        if (start === -Infinity && end === Infinity) return true
+        const raw = composer.created_at
+        const date = raw ? new Date(/[zZ]|[+-]\d\d:\d\d$/.test(raw) ? raw : raw + 'Z').getTime() : NaN
+        return date >= start && date < end
+      })
       .map((composer: any) => {
         const plans = planTotals.get(composer.id) || { amount: 0, count: 0, historicalAmount: 0, historicalCount: 0, first: null, last: null }
         const topupsValue = topupTotals.get(composer.id) || { amount: 0, count: 0, historicalAmount: 0, historicalCount: 0, first: null, last: null }
@@ -132,7 +138,6 @@ export async function GET(request: Request) {
           lastPurchaseAt: [plans.last, topupsValue.last, featured.last].filter(Boolean).sort().reverse()[0] || null,
         }
       })
-      .filter((row) => row.totalSpent > 0)
       .sort((a, b) => b.totalSpent - a.totalSpent)
       .map((row, index) => ({
         position: index + 1,

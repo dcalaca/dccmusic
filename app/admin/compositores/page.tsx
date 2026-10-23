@@ -93,7 +93,6 @@ export default function AdminComposersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
-  const [exportProgress, setExportProgress] = useState('')
   const [spendingRankingOpen, setSpendingRankingOpen] = useState(false)
   const [spendingRankingLoading, setSpendingRankingLoading] = useState(false)
   const [spendingRanking, setSpendingRanking] = useState<SpendingRankingItem[]>([])
@@ -612,123 +611,32 @@ export default function AdminComposersPage() {
     }
 
     try {
+      setExporting(true)
       const XLSX = await import('xlsx')
-      const rows = spendingRanking.map((row) => ({
-        Posição: row.position,
-        Nome: row.name,
-        Email: row.email || 'Sem email',
-        Slug: row.slug,
-        'Total gasto no período': row.totalSpent,
-        'Total gasto histórico': row.historicalTotalSpent,
-        'Compras no histórico': row.historicalPaymentCount,
-        'Primeira compra (histórico)': row.firstPurchaseAt ? formatDateTime(new Date(row.firstPurchaseAt)) : '',
-        'Última compra (histórico)': row.lastPurchaseAt ? formatDateTime(new Date(row.lastPurchaseAt)) : '',
-        'Período inicial': spendingAppliedRange.startDate || 'Todo o histórico',
-        'Período final': spendingAppliedRange.endDate || 'Até hoje',
-        'Gasto com planos': row.planSpent,
-        'Gasto com recargas avulsas': row.topupSpent,
-        'Gasto com destaques': row.featuredSpent,
-        'Quantidade de compras no período': row.paymentCount,
-        'Data de cadastro': row.createdAt ? formatDateTime(new Date(row.createdAt)) : 'N/A',
+      const rows = spendingRanking.map(row => ({
+        email: row.email || '',
+        'Qtde de compras': row.paymentCount,
+        'Total gasto': row.totalSpent,
+        'Data cadastro': row.createdAt ? formatDateTime(new Date(row.createdAt)) : '',
+        'Data primeira compra': row.firstPurchaseAt ? formatDateTime(new Date(row.firstPurchaseAt)) : '',
+        'Data última compra': row.lastPurchaseAt ? formatDateTime(new Date(row.lastPurchaseAt)) : '',
       }))
 
       const worksheet = XLSX.utils.json_to_sheet(rows)
+      worksheet['!cols'] = [{ wch: 38 }, { wch: 18 }, { wch: 18 }, { wch: 22 }, { wch: 22 }, { wch: 22 }]
       const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Ranking de gastos')
-      XLSX.writeFile(workbook, `ranking-gastos-compositores-${new Date().toISOString().slice(0, 10)}.xlsx`)
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Relatório de clientes')
+      XLSX.writeFile(workbook, `clientes-${new Date().toISOString().slice(0, 10)}.xlsx`)
     } catch (error) {
       console.error('Erro ao exportar ranking de gastos:', error)
-      alert('Erro ao exportar ranking de gastos')
+      alert('Erro ao exportar clientes')
+    } finally {
+      setExporting(false)
     }
   }
 
-  const exportToXLSX = async () => {
-    if (summary.total === 0) {
-      alert('Nenhum compositor para exportar')
-      return
-    }
-
-    try {
-      setExporting(true)
-      setExportProgress('Preparando...')
-
-      const exportComposers: Composer[] = []
-      const chunkSize = 15
-      let offset = 0
-      let total = 0
-      let done = false
-
-      while (!done) {
-        const exportParams = new URLSearchParams({
-          export: '1',
-          offset: String(offset),
-          limit: String(chunkSize),
-        })
-        if (countryFilter) exportParams.set('country', countryFilter)
-
-        const exportResponse = await fetch(`/api/admin/composers/list?${exportParams.toString()}`, { cache: 'no-store' })
-        if (!exportResponse.ok) {
-          const data = await exportResponse.json().catch(() => ({}))
-          throw new Error(data.details || data.error || 'Erro ao buscar dados completos para exportação')
-        }
-
-        const payload = await exportResponse.json()
-        const items = Array.isArray(payload?.items) ? payload.items : []
-        total = Number(payload?.total || total || items.length)
-        exportComposers.push(...items)
-
-        offset = Number(payload?.nextOffset || offset + items.length)
-        done = Boolean(payload?.done) || items.length === 0
-        setExportProgress(`Gerando ${Math.min(exportComposers.length, total)}/${total}...`)
-      }
-
-      const term = appliedSearch.trim().toLowerCase()
-      const composersToExport = term
-        ? exportComposers.filter((composer) => (
-            composer.name.toLowerCase().includes(term) ||
-            composer.slug.toLowerCase().includes(term) ||
-            composer.email?.toLowerCase().includes(term)
-          ))
-        : exportComposers
-
-      const XLSX = await import('xlsx')
-      const rows = composersToExport.map((composer) => {
-        const hasAccess = composer.hasActiveSubscription && composer.isPremium
-        const isExpired = composer.subscriptionExpiresAt
-          ? new Date(composer.subscriptionExpiresAt) < new Date()
-          : false
-
-        const hasEmail = Boolean(composer.email)
-        const emailConfirmed = hasEmail && composer.emailVerified
-
-        return {
-          Nome: composer.name,
-          Email: composer.email || 'Sem email',
-          'E-mail confirmado': !hasEmail ? 'Sem e-mail' : emailConfirmed ? 'Sim' : 'Não',
-          'E-mail confirmado em': emailConfirmed ? formatDateTime(composer.emailVerifiedAt) : '',
-          Slug: composer.slug,
-          'Músicas cadastradas': composer.musicCount ?? 0,
-          'Vídeos cadastrados': composer.videoCount ?? 0,
-          'Letras Studio IA': composer.studioLyricCount ?? 0,
-          'Músicas Studio IA': composer.studioMusicCount ?? 0,
-          'Data de cadastro': formatDateTime(composer.createdAt),
-          Visualizações: composer.totalViews ?? 0,
-          Status: hasAccess && !isExpired ? 'Ativo' : 'Inativo',
-          'Expira em': composer.subscriptionExpiresAt ? formatDate(composer.subscriptionExpiresAt) : 'N/A',
-        }
-      })
-
-      const worksheet = XLSX.utils.json_to_sheet(rows)
-      const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Compositores')
-      XLSX.writeFile(workbook, `compositores-${new Date().toISOString().slice(0, 10)}.xlsx`)
-    } catch (error) {
-      console.error('Erro ao exportar compositores:', error)
-      alert('Erro ao exportar XLSX')
-    } finally {
-      setExporting(false)
-      setExportProgress('')
-    }
+  const exportToXLSX = () => {
+    loadSpendingRanking()
   }
 
   if (loading) {
@@ -821,16 +729,16 @@ export default function AdminComposersPage() {
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-700 bg-emerald-950/40 px-4 py-2 text-sm font-bold text-emerald-100 hover:border-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {spendingRankingLoading ? <FiRefreshCw className="w-4 h-4 animate-spin" /> : <FiCreditCard className="w-4 h-4" />}
-              Ranking de gastos
+              Relatório de clientes
             </button>
             <button
               type="button"
               onClick={exportToXLSX}
-              disabled={exporting}
+              disabled={spendingRankingLoading || exporting}
               className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-4 py-2 text-sm font-bold text-gray-100 hover:border-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {exporting ? <FiRefreshCw className="w-4 h-4 animate-spin" /> : <FiDownload className="w-4 h-4" />}
-              {exporting ? exportProgress || 'Gerando...' : 'Exportar XLSX'}
+              {exporting ? 'Gerando...' : 'Exportar XLSX'}
             </button>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -1285,9 +1193,9 @@ export default function AdminComposersPage() {
                       <FiCreditCard className="h-6 w-6" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold text-white">Ranking de gastos</h2>
+                      <h2 className="text-2xl font-bold text-white">Relatório de clientes</h2>
                       <p className="mt-1 text-sm text-gray-400">
-                        Compositores ordenados pelo total pago em planos, recargas avulsas e destaques.
+                        Clientes por data de cadastro, com quantidade de compras e total gasto em todo o histórico.
                       </p>
                     </div>
                   </div>
@@ -1301,12 +1209,12 @@ export default function AdminComposersPage() {
                 </div>
 
                 <div className="mt-4 flex flex-wrap items-end gap-3">
-                  <label className="text-sm text-gray-300">Data inicial
+                  <label className="text-sm text-gray-300">Cadastro a partir de
                     <input type="date" value={spendingRange.startDate} disabled={spendingRankingLoading}
                       onChange={e => setSpendingRange(r => ({ ...r, startDate: e.target.value }))}
                       className="mt-1 block rounded-lg border border-gray-700 bg-gray-900 p-2 text-white" />
                   </label>
-                  <label className="text-sm text-gray-300">Data final
+                  <label className="text-sm text-gray-300">Cadastro até
                     <input type="date" value={spendingRange.endDate} disabled={spendingRankingLoading}
                       onChange={e => setSpendingRange(r => ({ ...r, endDate: e.target.value }))}
                       className="mt-1 block rounded-lg border border-gray-700 bg-gray-900 p-2 text-white" />
@@ -1320,8 +1228,8 @@ export default function AdminComposersPage() {
                   }} className="rounded-lg border border-gray-700 px-4 py-2 disabled:opacity-50">Todo o histórico</button>
                 </div>
                 <p className="mt-3 text-xs text-gray-400">
-                  Período aplicado: {spendingAppliedRange.startDate || 'Início'} até {spendingAppliedRange.endDate || 'hoje'} (horário de Brasília).
-                  Totais e compras consideram esse período. Primeira e última compra consideram todo o histórico.
+                  Cadastros: {spendingAppliedRange.startDate || 'Início'} até {spendingAppliedRange.endDate || 'hoje'} (horário de Brasília).
+                  O período filtra a data de cadastro. Compras, gasto total e primeira/última compra consideram todo o histórico. Inclui clientes sem compras.
                 </p>
                 {spendingError && <p role="alert" className="mt-3 text-sm text-red-300">{spendingError}</p>}
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -1330,7 +1238,7 @@ export default function AdminComposersPage() {
                     <p className="mt-1 text-2xl font-black text-emerald-300">{formatMoney(spendingTotal)}</p>
                   </div>
                   <div className="rounded-xl border border-gray-800 bg-black/30 p-4">
-                    <p className="text-xs text-gray-500">Compositores pagantes</p>
+                    <p className="text-xs text-gray-500">Clientes encontrados</p>
                     <p className="mt-1 text-2xl font-black text-white">{spendingRanking.length}</p>
                   </div>
                   <div className="rounded-xl border border-gray-800 bg-black/30 p-4">
@@ -1350,43 +1258,27 @@ export default function AdminComposersPage() {
                   </div>
                 ) : spendingRanking.length === 0 ? (
                   <div className="rounded-xl border border-gray-800 bg-black/30 p-8 text-center text-gray-400">
-                    Nenhum pagamento aprovado encontrado.
+                    Nenhum cliente cadastrado no período escolhido.
                   </div>
                 ) : (
                   <div className="overflow-hidden rounded-xl border border-gray-800">
-                    <table className="w-full min-w-[1400px]">
+                    <table className="w-full min-w-[1000px]">
                       <thead className="bg-gray-900">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">#</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Compositor</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Total</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Planos</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Recargas</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Destaques</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Compras no período</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Cadastro</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Primeira compra</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Última compra</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">Total histórico</th>
+                          {['email', 'Qtde de compras', 'Total gasto', 'Data cadastro', 'Data primeira compra', 'Data última compra'].map(label => (
+                            <th key={label} className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-gray-400">{label}</th>
+                          ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-800 bg-gray-950">
-                        {spendingRanking.map((row) => (
-                          <tr key={row.composerId} className="hover:bg-gray-900/80">
-                            <td className="px-4 py-3 text-sm font-black text-emerald-300">{row.position}</td>
-                            <td className="px-4 py-3">
-                              <p className="font-semibold text-white">{row.name}</p>
-                              <p className="text-xs text-gray-500">{row.email || 'Sem email'} · /{row.slug}</p>
-                            </td>
-                            <td className="px-4 py-3 text-sm font-black text-white">{formatMoney(row.totalSpent)}</td>
-                            <td className="px-4 py-3 text-sm text-gray-300">{formatMoney(row.planSpent)}</td>
-                            <td className="px-4 py-3 text-sm text-gray-300">{formatMoney(row.topupSpent)}</td>
-                            <td className="px-4 py-3 text-sm text-gray-300">{formatMoney(row.featuredSpent)}</td>
-                            <td className="px-4 py-3 text-sm text-gray-300">{row.paymentCount}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{row.createdAt ? formatDateTime(new Date(row.createdAt)) : '—'}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{row.firstPurchaseAt ? formatDateTime(new Date(row.firstPurchaseAt)) : '—'}</td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-300">{row.lastPurchaseAt ? formatDateTime(new Date(row.lastPurchaseAt)) : '—'}</td>
-                            <td className="px-4 py-3 text-sm text-gray-300">{formatMoney(row.historicalTotalSpent)}</td>
+                        {spendingRanking.map(row => (
+                          <tr key={row.composerId} className="text-sm text-gray-300 hover:bg-gray-900/80">
+                            <td className="px-4 py-3">{row.email || '—'}</td>
+                            <td className="px-4 py-3">{row.paymentCount}</td>
+                            <td className="px-4 py-3">{formatMoney(row.totalSpent)}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">{row.createdAt ? formatDateTime(new Date(row.createdAt)) : '—'}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">{row.firstPurchaseAt ? formatDateTime(new Date(row.firstPurchaseAt)) : '—'}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">{row.lastPurchaseAt ? formatDateTime(new Date(row.lastPurchaseAt)) : '—'}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -1399,11 +1291,11 @@ export default function AdminComposersPage() {
                 <button
                   type="button"
                   onClick={exportSpendingRankingToXLSX}
-                  disabled={spendingRankingLoading || spendingRanking.length === 0 || spendingRange.startDate !== spendingAppliedRange.startDate || spendingRange.endDate !== spendingAppliedRange.endDate}
+                  disabled={exporting || spendingRankingLoading || spendingRanking.length === 0 || spendingRange.startDate !== spendingAppliedRange.startDate || spendingRange.endDate !== spendingAppliedRange.endDate}
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 py-3 font-bold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <FiDownload className="h-4 w-4" />
-                  Exportar ranking XLSX
+                  Exportar XLSX
                 </button>
                 <button
                   type="button"
