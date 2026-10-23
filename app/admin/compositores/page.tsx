@@ -635,6 +635,26 @@ export default function AdminComposersPage() {
     }
   }
 
+  const exportBuyersCsv = () => {
+    const buyers = spendingRanking.filter(row => row.paymentCount > 0 && row.totalSpent > 0 && row.email?.trim())
+    if (!buyers.length) {
+      alert('Nenhum comprador com e-mail no filtro selecionado.')
+      return
+    }
+    const escapeCsv = (value: string) => /[",\r\n]/.test(value) ? '"' + value.replace(/"/g, '""') + '"' : value
+    const csv = ['email,value', ...buyers.map(row =>
+      escapeCsv(row.email.trim().toLowerCase()) + ',' + row.totalSpent.toFixed(2)
+    )].join('\r\n') + '\r\n'
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'compradores-meta-' + new Date().toISOString().slice(0, 10) + '.csv'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
   const exportToXLSX = () => {
     loadSpendingRanking()
   }
@@ -1288,6 +1308,16 @@ export default function AdminComposersPage() {
               </div>
 
               <div className="flex flex-col gap-3 border-t border-gray-800 p-5 sm:flex-row sm:justify-end sm:p-6">
+                <button
+                  type="button"
+                  onClick={exportBuyersCsv}
+                  disabled={exporting || spendingRankingLoading || !spendingRanking.some(row => row.paymentCount > 0 && row.totalSpent > 0 && row.email?.trim()) || spendingRange.startDate !== spendingAppliedRange.startDate || spendingRange.endDate !== spendingAppliedRange.endDate}
+                  title="Somente compradores: email e value, pronto para o Meta"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-600 px-5 py-3 font-bold text-emerald-200 hover:bg-emerald-950 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <FiDownload className="h-4 w-4" />
+                  Exportar CSV (Meta)
+                </button>
                 <button
                   type="button"
                   onClick={exportSpendingRankingToXLSX}
