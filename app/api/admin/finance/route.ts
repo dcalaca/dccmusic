@@ -731,14 +731,40 @@ function isMissingTopupTableError(error: any) {
   return Boolean(error && String(error.message || '').includes('studio_credit_topups'))
 }
 
+async function readAllFinanceRows(query: any) {
+  const rows: any[] = []
+  const ordered = query.order('id')
+  for (let offset = 0; ; offset += 500) {
+    const result = await ordered.range(offset, offset + 499)
+    if (result.error) return { data: null, error: result.error }
+    rows.push(...(result.data || []))
+    if (!result.data || result.data.length < 500) return { data: rows, error: null }
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     await requireAuth()
 
     const { searchParams } = new URL(request.url)
+    const monthly = searchParams.get('monthly') === '1'
     const defaultRange = getDefaultRange()
     const startDate = parseDateOnly(searchParams.get('startDate'), defaultRange.start)
     const endDate = parseDateOnly(searchParams.get('endDate'), defaultRange.end)
+    if (monthly) {
+      for (const [key, date] of [['startDate', startDate], ['endDate', endDate]] as const) {
+        const value = searchParams.get(key)
+        if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value) || date.toISOString().slice(0, 10) !== value) {
+          return NextResponse.json({ error: 'Período mensal inválido' }, { status: 400 })
+        }
+      }
+      // Monthly buckets follow the same local calendar the admin sees.
+      startDate.setTime(new Date(searchParams.get('startDate') + 'T00:00:00-03:00').getTime())
+      endDate.setTime(new Date(searchParams.get('endDate') + 'T00:00:00-03:00').getTime())
+      if (startDate > endDate || (endDate.getTime() - startDate.getTime()) > 31 * 86400000) {
+        return NextResponse.json({ error: 'Consulte um mês por vez' }, { status: 400 })
+      }
+    }
     const endExclusive = addDays(endDate, 1)
     const requestedCountry = String(searchParams.get('country') || '').trim().toUpperCase()
     const country = /^[A-Z]{2}$/.test(requestedCountry) ? requestedCountry : null
@@ -758,9 +784,12 @@ export async function GET(request: NextRequest) {
 
     const countryComposerIds = (countryComposersResult.data || []).map((row: any) => row.id)
     const noComposerId = '00000000-0000-0000-0000-000000000000'
-    const filterComposer = (query: any) => country
-      ? query.in('composer_id', countryComposerIds.length > 0 ? countryComposerIds : [noComposerId])
-      : query
+    const filterComposer = (query: any) => {
+      const filtered = country
+        ? query.in('composer_id', countryComposerIds.length > 0 ? countryComposerIds : [noComposerId])
+        : query
+      return monthly ? readAllFinanceRows(filtered) : filtered
+    }
 
     const [
       paymentsResult,
@@ -843,17 +872,20 @@ export async function GET(request: NextRequest) {
         .not('prompt', 'is', null)
         .gte('created_at', startIso)
         .lt('created_at', endIso)),
-      supabaseAdmin
-        .from('dccmusic_email_events')
+      monthly ? supabaseAdmin.from('dccmusic_email_events')
+        .select('id', { count: 'exact', head: true })
+        .or('category.is.null,category.neq.admin_email_campaign')
+        .gte('sent_at', startIso).lt('sent_at', endIso) : supabaseAdmin.from('dccmusic_email_events')
         .select('id, event_key, category, recipient, sent_at, created_at')
         .gte('sent_at', startIso)
         .lt('sent_at', endIso),
-      supabaseAdmin
+      monthly ? supabaseAdmin.from('admin_email_campaign_deliveries')
+        .select('id', { count: 'exact', head: true }).eq('status', 'sent')
+        .gte('sent_at', startIso).lt('sent_at', endIso) : supabaseAdmin
         .from('admin_email_campaign_deliveries')
         .select('id, campaign_id, recipient_email, status, sent_at, created_at')
         .eq('status', 'sent')
-        .gte('sent_at', startIso)
-        .lt('sent_at', endIso),
+        .gte('sent_at', startIso).lt('sent_at', endIso),
       (country ? supabaseAdmin
         .from('dccmusic_composers')
         .select('id', { count: 'exact', head: true })
@@ -864,22 +896,22 @@ export async function GET(request: NextRequest) {
         .select('id', { count: 'exact', head: true })
         .gte('created_at', startIso)
         .lt('created_at', endIso)),
-      getSunoCreditBalance(),
+      monthly ? Promise.resolve(null) : getSunoCreditBalance(),
       getOpenAiCostSummary(startDate, endExclusive),
-      getOpenAiCostSummary(monthStart, monthEnd, 900),
+      monthly ? Promise.resolve({ configured: false, costUsd: null, currency: 'usd', error: null, checkedAt: '' }) : getOpenAiCostSummary(monthStart, monthEnd, 900),
       getMetaAdsSummary(startDate, endExclusive),
-      getMetaAdsBalanceSummary(),
+      monthly ? Promise.resolve(null) : getMetaAdsBalanceSummary(),
     ])
 
-    await Promise.all([
+    if (!monthly) await Promise.all([
       maybeSendOpenAiBudgetAlert(openAiMonthCost),
-      maybeSendSunoLowCreditAlert(sunoCreditBalance),
-      maybeSendMetaAdsLowBalanceAlert(metaAdsBalance),
+      maybeSendSunoLowCreditAlert(sunoCreditBalance!),
+      maybeSendMetaAdsLowBalanceAlert(metaAdsBalance!),
     ])
 
     const topupTableMissing = isMissingTopupTableError(studioTopupsResult.error)
     const studioTopups = topupTableMissing ? [] : (studioTopupsResult.data || [])
-    await Promise.all(studioTopups.map(async (topup: any) => {
+    if (!monthly) await Promise.all(studioTopups.map(async (topup: any) => {
       if (
         topup.payment_gateway !== 'stripe' ||
         String(topup.currency || 'BRL').toUpperCase() === 'BRL' ||
@@ -927,6 +959,7 @@ export async function GET(request: NextRequest) {
     const campaignEmailTableMissing = isMissingTableError(campaignEmailDeliveriesResult.error, 'admin_email_campaign_deliveries')
     const errors = [
       paymentsResult.error,
+      ...(monthly ? [realRegistrationsResult.error] : []),
       featuredPaymentsResult.error,
       topupTableMissing ? null : studioTopupsResult.error,
       videoPaymentsResult.error,
@@ -956,7 +989,7 @@ export async function GET(request: NextRequest) {
     ].filter(Boolean)))
 
     const composersResult = await (
-      composerIds.length > 0
+      !monthly && composerIds.length > 0
         ? supabaseAdmin
             .from('dccmusic_composers')
             .select('id, name, email')
@@ -1092,7 +1125,9 @@ export async function GET(request: NextRequest) {
       sent_at: delivery.sent_at || delivery.created_at,
     }))
     const emailRowsForFinance = [...transactionalEmailRows, ...campaignEmailRows]
-    const sentEmails = emailRowsForFinance.length
+    const sentEmails = monthly
+      ? (emailEventsResult.count || 0) + (campaignEmailDeliveriesResult.count || 0)
+      : emailRowsForFinance.length
     const realRegistrationsInPeriod = realRegistrationsResult?.count || 0
     const periodDayCount = getPeriodDayCount(startDate, endExclusive)
     const proratedResendFixedCost = (COST_ASSUMPTIONS.resendMonthlyFixed / 30.44) * periodDayCount
@@ -1142,6 +1177,27 @@ export async function GET(request: NextRequest) {
     const totalCost = fixedCosts.total + variableCosts.total
     const estimatedProfit = totalRevenue - totalCost
     const margin = totalRevenue > 0 ? (estimatedProfit / totalRevenue) * 100 : 0
+
+    if (monthly) {
+      const adsAvailable = metaAdsSummary.configured && !metaAdsSummary.error
+      const costWarnings = [
+        ...(!adsAvailable ? ['Gasto de anúncios Meta indisponível; gastos e lucro não foram calculados.'] : []),
+        ...(openAiPeriodCost.costUsd == null ? ['Custo de IA criativa estimado pelas gerações registradas.'] : []),
+        ...(campaignEmailTableMissing ? ['Histórico de e-mails de campanhas indisponível.'] : []),
+      ]
+      return NextResponse.json({
+        month: searchParams.get('startDate')!.slice(0, 7),
+        purchases: paymentDetails.length,
+        revenue: totalRevenue,
+        registrations: realRegistrationsInPeriod,
+        averageTicket,
+        costs: adsAvailable ? totalCost : null,
+        netProfit: adsAvailable ? estimatedProfit : null,
+        musics: (generationsResult.data || []).filter((row: any) => ['completed', 'first_ready'].includes(row.status)).length,
+        emails: campaignEmailTableMissing ? null : sentEmails,
+        warnings: costWarnings,
+      })
+    }
 
     return NextResponse.json({
       period: {

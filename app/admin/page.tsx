@@ -30,6 +30,13 @@ const adminGroups = [
     description: 'Receita, pagamentos, cupons e compradores.',
     items: [
       {
+        href: '/admin/financeiro#evolucao-mensal',
+        title: 'Evolução mensal',
+        description: 'Oito gráficos: compras, receita, cadastros, ticket, gastos, lucro, músicas e e-mails',
+        icon: FiBarChart2,
+        accent: 'cyan',
+      },
+      {
         href: '/admin/financeiro',
         title: 'Financeiro',
         description: 'Entrada, custos, lucro estimado, anúncios, Resend, Vercel e pagamentos',
