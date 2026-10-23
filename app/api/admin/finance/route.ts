@@ -1179,6 +1179,8 @@ export async function GET(request: NextRequest) {
     const margin = totalRevenue > 0 ? (estimatedProfit / totalRevenue) * 100 : 0
 
     if (monthly) {
+      // Match /finance-adjusted: Resend and Cursor are excluded from this admin's costs.
+      const monthlyCost = totalCost - costs.resendEmails - costs.cursor
       const adsAvailable = metaAdsSummary.configured && !metaAdsSummary.error
       const costWarnings = [
         ...(!adsAvailable ? ['Gasto de anúncios Meta indisponível; gastos e lucro não foram calculados.'] : []),
@@ -1191,8 +1193,8 @@ export async function GET(request: NextRequest) {
         revenue: totalRevenue,
         registrations: realRegistrationsInPeriod,
         averageTicket,
-        costs: adsAvailable ? totalCost : null,
-        netProfit: adsAvailable ? estimatedProfit : null,
+        costs: adsAvailable ? monthlyCost : null,
+        netProfit: adsAvailable ? totalRevenue - monthlyCost : null,
         musics: (generationsResult.data || []).filter((row: any) => ['completed', 'first_ready'].includes(row.status)).length,
         emails: campaignEmailTableMissing ? null : sentEmails,
         warnings: costWarnings,

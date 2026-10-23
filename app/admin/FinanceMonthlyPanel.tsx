@@ -139,8 +139,14 @@ export default function FinanceMonthlyPanel() {
         const lastDay = new Date(Date.UTC(Number(month.slice(0, 4)), Number(month.slice(5)), 0)).toISOString().slice(0, 10)
         const params = new URLSearchParams({ monthly: '1', startDate: month + '-01', endDate: month === currentMonth ? todayKey() : lastDay })
         const response = await fetch('/api/admin/finance?' + params, { cache: 'no-store', signal: AbortSignal.timeout(120000) })
-        if (!response.ok || !response.headers.get('content-type')?.includes('application/json')) throw new Error('Não foi possível consultar ' + monthLabel(month) + '. Atualize a sessão e tente novamente.')
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Sua sessão expirou. Entre novamente no admin.')
+        }
+        if (!response.headers.get('content-type')?.includes('application/json')) {
+          throw new Error('Erro do servidor ao consultar ' + monthLabel(month) + ' (HTTP ' + response.status + '). Tente novamente.')
+        }
         const data = await response.json()
+        if (!response.ok) throw new Error('Erro ao consultar ' + monthLabel(month) + ': ' + (data.error || 'falha no servidor. Tente novamente.'))
         next.push(data)
         for (const warning of data.warnings || []) issues.push(monthLabel(month) + ': ' + warning)
       }
@@ -176,7 +182,7 @@ export default function FinanceMonthlyPanel() {
           <summary className="cursor-pointer text-sm font-bold text-gray-200">Ver números por mês</summary>
           <div className="mt-4 overflow-x-auto"><table className="min-w-[1100px] w-full text-left text-xs"><thead><tr className="text-gray-400"><th className="p-2">Mês</th>{metrics.map(metric => <th key={metric.key} className="p-2">{metric.label}</th>)}</tr></thead><tbody>{rows.map(row => <tr key={row.month} className="border-t border-gray-800 text-gray-200"><td className="p-2 whitespace-nowrap">{monthLabel(row.month)}</td>{metrics.map(metric => <td key={metric.key} className="p-2 whitespace-nowrap">{format(row[metric.key], metric.money)}</td>)}</tr>)}</tbody></table></div>
         </details>
-        <p className="mt-4 text-xs leading-relaxed text-gray-500">Ticket médio = receita ÷ compras. Lucro líquido estimado = receita − custos do painel financeiro (IA musical/criativa, vídeos, taxas de pagamento, anúncios Meta e serviços fixos proporcionais aos dias). Mantém as premissas atuais do painel; não representa lucro contábil. Músicas: criações com áudio pronto, sem somar versões. E-mails: envios transacionais e campanhas registrados, contados uma vez por envio.</p>
+        <p className="mt-4 text-xs leading-relaxed text-gray-500">Ticket médio = receita ÷ compras. Lucro líquido estimado = receita − custos do painel financeiro (IA musical/criativa, vídeos, taxas de pagamento, anúncios Meta e hospedagem proporcional aos dias). Mantém as premissas atuais do painel; não representa lucro contábil. Músicas: criações com áudio pronto, sem somar versões. E-mails: envios transacionais e campanhas registrados, contados uma vez por envio.</p>
         {!!warnings.length && <details className="mt-3 rounded-lg border border-amber-900/60 p-3 text-xs text-amber-200"><summary className="cursor-pointer">Observações dos dados ({warnings.length})</summary><ul className="mt-2 space-y-1">{warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul></details>}
       </>}
     </section>

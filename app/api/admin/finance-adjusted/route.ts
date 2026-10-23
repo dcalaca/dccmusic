@@ -10,6 +10,10 @@ export async function GET(request: NextRequest) {
     return response
   }
 
+  // Monthly summaries are compact numeric totals, not the daily cost object.
+  // They already use the same cost exclusions as this adjusted daily view.
+  if (new URL(request.url).searchParams.get('monthly') === '1') return response
+
   const data = await response.json()
 
   if (data?.costs) {

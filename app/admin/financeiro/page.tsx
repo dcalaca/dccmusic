@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { FiArrowLeft } from 'react-icons/fi'
 import { requireAuth } from '@/lib/auth-helpers'
 import FinancePanel from '../FinancePanel'
-import FinanceMonthlyPanel from '../FinanceMonthlyPanel'
 import FinancePanelCleanup from '../FinancePanelCleanup'
 import FinanceChartTapDetails from '../FinanceChartTapDetails'
 
@@ -32,7 +31,6 @@ export default async function AdminFinanceiroPage() {
           <Link href="/admin" className="mb-6 inline-flex items-center gap-2 text-primary-400 hover:text-primary-300">
             <FiArrowLeft /> Voltar ao admin
           </Link>
-          <FinanceMonthlyPanel />
           <div className="dcc-finance-no-cursor">
             <FinancePanel />
             <FinanceChartTapDetails />
