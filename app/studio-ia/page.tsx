@@ -97,6 +97,15 @@ function formatCurrency(value: number, currency: StudioTopupCurrency) {
   return new Intl.NumberFormat(selected.locale, { style: 'currency', currency, maximumFractionDigits: selected.maximumFractionDigits }).format(value)
 }
 
+function musicEquivalentLabel(amount: number, currency: StudioTopupCurrency, featureKeys: string[], locale: string) {
+  const creditKey = featureKeys.find((key) => /^credits\d+$/.test(key))
+  const credits = creditKey ? Number(creditKey.slice(7)) : 0
+  if (!credits || !Number.isFinite(amount) || amount <= 0) return null
+  const unitPrice = amount / (credits / 10)
+  const value = formatCurrency(unitPrice, currency)
+  return locale.startsWith('en') ? `Equivalent to ${value} per song` : locale.startsWith('es') ? `Equivale a ${value} por canción` : `Equivale a ${value} por música`
+}
+
 async function getStudioPlans() {
   const plans = await db.getPlans()
   return plans.filter(isStudioPlan)
@@ -239,6 +248,9 @@ async function StudioPricingSection({ country }: { country: DccCountry }) {
                   <div className="mb-4">
                     <span className="text-3xl font-black text-white">{formatCurrency(priceQuote.amount, priceQuote.currency)}</span>
                     <span className="text-gray-400">/{t('studioLanding.pricing.months', { count: plan.durationMonths })}</span>
+                    {musicEquivalentLabel(priceQuote.amount, priceQuote.currency, plan.featureKeys || [], getLocaleForCountry(country)) && (
+                      <p className="mt-1 text-xs font-medium text-purple-200/80">{musicEquivalentLabel(priceQuote.amount, priceQuote.currency, plan.featureKeys || [], getLocaleForCountry(country))}</p>
+                    )}
                   </div>
                   {planFeatures.length > 0 && (
                     <ul className="mb-5 space-y-2">
